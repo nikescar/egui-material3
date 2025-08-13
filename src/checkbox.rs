@@ -1,0 +1,164 @@
+use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+
+pub struct MaterialCheckbox<'a> {
+    checked: &'a mut bool,
+    text: String,
+    indeterminate: bool,
+    enabled: bool,
+}
+
+impl<'a> MaterialCheckbox<'a> {
+    pub fn new(checked: &'a mut bool, text: impl Into<String>) -> Self {
+        Self {
+            checked,
+            text: text.into(),
+            indeterminate: false,
+            enabled: true,
+        }
+    }
+
+    pub fn indeterminate(mut self, indeterminate: bool) -> Self {
+        self.indeterminate = indeterminate;
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+}
+
+impl<'a> Widget for MaterialCheckbox<'a> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        let desired_size = Vec2::new(
+            ui.available_width().min(300.0),
+            24.0,
+        );
+
+        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+
+        if response.clicked() && self.enabled {
+            if self.indeterminate {
+                *self.checked = true;
+            } else {
+                *self.checked = !*self.checked;
+            }
+            response.mark_changed();
+        }
+
+        let visuals = ui.style().interact(&response);
+        let checkbox_size = 18.0;
+        let checkbox_rect = Rect::from_min_size(
+            Pos2::new(rect.min.x, rect.center().y - checkbox_size / 2.0),
+            Vec2::splat(checkbox_size),
+        );
+
+        // Material Design colors
+        let primary_color = Color32::from_rgb(103, 80, 164); // Material Purple
+        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
+        let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 245 });
+        let outline = Color32::from_gray(if ui.visuals().dark_mode { 146 } else { 121 });
+
+        let (bg_color, border_color, check_color) = if !self.enabled {
+            (
+                Color32::from_gray(if ui.visuals().dark_mode { 31 } else { 245 }),
+                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
+                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
+            )
+        } else if *self.checked || self.indeterminate {
+            (primary_color, primary_color, Color32::WHITE)
+        } else if response.hovered() {
+            (surface_variant, outline, on_surface)
+        } else {
+            (Color32::TRANSPARENT, outline, on_surface)
+        };
+
+        // Draw checkbox background
+        ui.painter().rect_filled(
+            checkbox_rect,
+            2.0,
+            bg_color,
+        );
+
+        // Draw checkbox border
+        ui.painter().rect_stroke(
+            checkbox_rect,
+            2.0,
+            Stroke::new(2.0, border_color),
+            egui::epaint::StrokeKind::Outside,
+        );
+
+        // Draw checkmark or indeterminate mark
+        if *self.checked && !self.indeterminate {
+            // Draw checkmark
+            let center = checkbox_rect.center();
+            let checkmark_size = checkbox_size * 0.6;
+            
+            let start = Pos2::new(
+                center.x - checkmark_size * 0.3,
+                center.y,
+            );
+            let middle = Pos2::new(
+                center.x - checkmark_size * 0.1,
+                center.y + checkmark_size * 0.2,
+            );
+            let end = Pos2::new(
+                center.x + checkmark_size * 0.3,
+                center.y - checkmark_size * 0.2,
+            );
+
+            ui.painter().line_segment([start, middle], Stroke::new(2.0, check_color));
+            ui.painter().line_segment([middle, end], Stroke::new(2.0, check_color));
+        } else if self.indeterminate {
+            // Draw indeterminate mark (horizontal line)
+            let center = checkbox_rect.center();
+            let line_width = checkbox_size * 0.5;
+            let start = Pos2::new(center.x - line_width / 2.0, center.y);
+            let end = Pos2::new(center.x + line_width / 2.0, center.y);
+            
+            ui.painter().line_segment([start, end], Stroke::new(2.0, check_color));
+        }
+
+        // Draw label text
+        if !self.text.is_empty() {
+            let text_pos = Pos2::new(
+                checkbox_rect.max.x + 8.0,
+                rect.center().y,
+            );
+            
+            let text_color = if self.enabled { on_surface } else { 
+                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+            };
+
+            ui.painter().text(
+                text_pos,
+                egui::Align2::LEFT_CENTER,
+                &self.text,
+                egui::FontId::default(),
+                text_color,
+            );
+        }
+
+        // Add ripple effect on hover/click
+        if response.hovered() && self.enabled {
+            let ripple_rect = Rect::from_center_size(checkbox_rect.center(), Vec2::splat(40.0));
+            let ripple_color = if *self.checked || self.indeterminate {
+                Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20)
+            } else {
+                Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20)
+            };
+            
+            ui.painter().circle_filled(
+                ripple_rect.center(),
+                ripple_rect.width() / 2.0,
+                ripple_color,
+            );
+        }
+
+        response
+    }
+}
+
+pub fn checkbox(checked: &mut bool, text: impl Into<String>) -> MaterialCheckbox {
+    MaterialCheckbox::new(checked, text)
+}
