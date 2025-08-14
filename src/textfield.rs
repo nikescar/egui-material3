@@ -3,6 +3,7 @@ use egui::{
     epaint::{Stroke, CornerRadius},
     Rect, Response, Sense, TextStyle, Ui, Vec2, Widget, TextEdit,
 };
+use crate::get_global_color;
 
 /// Material Design text field component.
 ///
@@ -186,14 +187,14 @@ impl Widget for MaterialTextField<'_> {
         } = self;
 
         // Material Design colors
-        let md_surface = Color32::from_rgb(254, 251, 254); // md-sys-color-surface
-        let md_surface_variant = Color32::from_rgb(231, 224, 236); // md-sys-color-surface-variant
-        let md_on_surface = Color32::from_rgb(28, 27, 31); // md-sys-color-on-surface
-        let md_on_surface_variant = Color32::from_rgb(73, 69, 79); // md-sys-color-on-surface-variant
-        let md_primary = Color32::from_rgb(103, 80, 164); // md-sys-color-primary
-        let md_outline = Color32::from_rgb(121, 116, 126); // md-sys-color-outline
-        let md_outline_variant = Color32::from_rgb(196, 199, 197); // md-sys-color-outline-variant
-        let md_error = Color32::from_rgb(179, 38, 30); // md-sys-color-error
+        let md_surface = get_global_color("surface"); // md-sys-color-surface
+        let md_surface_variant = get_global_color("surfaceVariant"); // md-sys-color-surface-variant
+        let md_on_surface = get_global_color("onSurface"); // md-sys-color-on-surface
+        let md_on_surface_variant = get_global_color("onSurfaceVariant"); // md-sys-color-on-surface-variant
+        let md_primary = get_global_color("primary"); // md-sys-color-primary
+        let md_outline = get_global_color("outline"); // md-sys-color-outline
+        let md_outline_variant = get_global_color("outlineVariant"); // md-sys-color-outline-variant
+        let md_error = get_global_color("error"); // md-sys-color-error
 
         let desired_width = width.unwrap_or(200.0);
         let field_height = if multiline {

@@ -1,5 +1,5 @@
 use eframe::egui::{self, Window};
-use crate::checkbox;
+use crate::{checkbox, MaterialCheckbox};
 
 pub struct CheckboxWindow {
     pub open: bool,
@@ -53,9 +53,9 @@ impl CheckboxWindow {
             }
         });
         
-        ui.checkbox(&mut self.checked, "Checked");
-        ui.checkbox(&mut self.disabled, "Disabled");
-        ui.checkbox(&mut self.indeterminate, "Indeterminate");
+        ui.add(MaterialCheckbox::new(&mut self.checked, "Checked"));
+        ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
+        ui.add(MaterialCheckbox::new(&mut self.indeterminate, "Indeterminate"));
     }
 
     fn render_basic_checkbox(&mut self, ui: &mut egui::Ui) {

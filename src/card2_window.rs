@@ -34,7 +34,9 @@ impl Card2Window {
         let mut open = self.open;
         Window::new("Enhanced Card (Card2) Stories")
             .open(&mut open)
-            .default_size([1000.0, 700.0])
+            .default_size([400.0, 300.0])
+            .max_size([400.0, 350.0])
+            .resizable(false)
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_controls(ui);
@@ -115,10 +117,10 @@ impl Card2Window {
             
             if self.show_actions {
                 elevated_card = elevated_card.actions(|ui| {
-                    if ui.button("Share").clicked() {
+                    if ui.add(MaterialButton::text("Share")).clicked() {
                         println!("Elevated card: Share clicked!");
                     }
-                    if ui.button("Learn More").clicked() {
+                    if ui.add(MaterialButton::text("Learn More")).clicked() {
                         println!("Elevated card: Learn More clicked!");
                     }
                 });
@@ -155,7 +157,7 @@ impl Card2Window {
             
             if self.show_actions {
                 filled_card = filled_card.actions(|ui| {
-                    if ui.button("Action").clicked() {
+                    if ui.add(MaterialButton::text("Action")).clicked() {
                         println!("Filled card: Action clicked!");
                     }
                 });
@@ -192,10 +194,10 @@ impl Card2Window {
             
             if self.show_actions {
                 outlined_card = outlined_card.actions(|ui| {
-                    if ui.button("View").clicked() {
+                    if ui.add(MaterialButton::text("View")).clicked() {
                         println!("Outlined card: View clicked!");
                     }
-                    if ui.button("Edit").clicked() {
+                    if ui.add(MaterialButton::text("Edit")).clicked() {
                         println!("Outlined card: Edit clicked!");
                     }
                 });
@@ -227,10 +229,10 @@ impl Card2Window {
                     ui.label("★★★★★ 4.8/5 stars");
                 })
                 .actions(|ui| {
-                    if ui.button("Buy Now").clicked() {
+                    if ui.add(MaterialButton::text("Buy Now")).clicked() {
                         println!("Product card: Buy Now clicked!");
                     }
-                    if ui.button("Add to Cart").clicked() {
+                    if ui.add(MaterialButton::text("Add to Cart")).clicked() {
                         println!("Product card: Add to Cart clicked!");
                     }
                 }));
@@ -254,10 +256,10 @@ impl Card2Window {
                     });
                 })
                 .actions(|ui| {
-                    if ui.button("Read More").clicked() {
+                    if ui.add(MaterialButton::text("Read More")).clicked() {
                         println!("Article card: Read More clicked!");
                     }
-                    if ui.button("Share").clicked() {
+                    if ui.add(MaterialButton::text("Share")).clicked() {
                         println!("Article card: Share clicked!");
                     }
                 }));
@@ -279,10 +281,10 @@ impl Card2Window {
                     ui.label("🎂 Joined March 2020");
                 })
                 .actions(|ui| {
-                    if ui.button("Follow").clicked() {
+                    if ui.add(MaterialButton::text("Follow")).clicked() {
                         println!("Profile card: Follow clicked!");
                     }
-                    if ui.button("Message").clicked() {
+                    if ui.add(MaterialButton::text("Message")).clicked() {
                         println!("Profile card: Message clicked!");
                     }
                 }));
@@ -316,13 +318,13 @@ impl Card2Window {
                 ui.label("Try toggling different sections on and off.");
             })
             .actions(|ui| {
-                if ui.button("Refresh").clicked() {
+                if ui.add(MaterialButton::text("Refresh")).clicked() {
                     println!("Interactive card: Refresh clicked!");
                 }
-                if ui.button("Settings").clicked() {
+                if ui.add(MaterialButton::text("Settings")).clicked() {
                     println!("Interactive card: Settings clicked!");
                 }
-                if ui.button("Info").clicked() {
+                if ui.add(MaterialButton::text("Info")).clicked() {
                     println!("Interactive card: Info clicked!");
                 }
             }));

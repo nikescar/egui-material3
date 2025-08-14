@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::get_global_color;
 
 pub struct MaterialTabs<'a> {
     selected: &'a mut usize,
@@ -67,7 +68,7 @@ impl<'a> Widget for MaterialTabs<'a> {
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
+        let primary_color = get_global_color("primary");
         let surface = Color32::from_gray(if ui.visuals().dark_mode { 16 } else { 254 });
         let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
         let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });

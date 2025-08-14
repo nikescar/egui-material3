@@ -1,10 +1,9 @@
-use eframe::egui::{self, Color32, Stroke, Ui, Context, Window, Id};
+use eframe::egui::{self, Color32, Stroke, Ui, Context, Modal, Id};
 
 pub struct MaterialDialog<'a> {
     id: Id,
     title: String,
     open: &'a mut bool,
-    modal: bool,
     icon: Option<String>,
     content: Box<dyn FnOnce(&mut Ui) + 'a>,
     actions: Vec<DialogAction<'a>>,
@@ -27,16 +26,10 @@ impl<'a> MaterialDialog<'a> {
             id: id.into(),
             title: title.into(),
             open,
-            modal: true,
             icon: None,
             content: Box::new(|_| {}),
             actions: Vec::new(),
         }
-    }
-
-    pub fn modal(mut self, modal: bool) -> Self {
-        self.modal = modal;
-        self
     }
 
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
@@ -83,49 +76,31 @@ impl<'a> MaterialDialog<'a> {
             return;
         }
 
-        let window = Window::new(&self.title)
-            .id(self.id)
-            .collapsible(false)
-            .resizable(false)
-            .default_size([400.0, 300.0])
-            .max_size([400.0, 350.0])
-            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0]);
-
-        let window = if self.modal {
-            window.movable(false)
-        } else {
-            window.movable(true)
-        };
-
-        // Show modal background if modal
-        if self.modal {
-            let screen_rect = ctx.screen_rect();
-            let painter = ctx.layer_painter(egui::LayerId::background());
-            painter.rect_filled(
-                screen_rect,
-                0.0,
-                Color32::from_black_alpha(128),
-            );
-        }
-
         let mut should_close = false;
         let mut pending_actions = Vec::new();
 
-        window.show(ctx, |ui| {
+        let modal = Modal::new(self.id).show(ctx, |ui| {
+            // Set the modal width
+            ui.set_width(400.0);
+            
             // Set Material Design styling
             ui.style_mut().visuals.widgets.noninteractive.bg_fill = 
                 Color32::from_gray(if ui.visuals().dark_mode { 28 } else { 251 });
             ui.style_mut().visuals.widgets.noninteractive.fg_stroke = 
                 Stroke::new(1.0, Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 }));
 
+            // Title
+            ui.heading(&self.title);
+            ui.add_space(8.0);
+
             // Show icon if present
             if let Some(ref _icon) = self.icon {
                 // Placeholder for icon rendering
                 ui.label("📋"); // placeholder icon
+                ui.add_space(4.0);
             }
 
             // Content area
-            ui.add_space(8.0);
             (self.content)(ui);
             ui.add_space(16.0);
 
@@ -173,8 +148,6 @@ impl<'a> MaterialDialog<'a> {
                             pending_actions.push((index, action.action));
                         }
                     }
-
-                    // Remove the automatic Cancel button
                 });
 
                 ui.add_space(8.0);
@@ -187,13 +160,8 @@ impl<'a> MaterialDialog<'a> {
             should_close = true;
         }
 
-        // Handle close
-        if should_close {
-            *self.open = false;
-        }
-
-        // Handle escape key for modal dialogs
-        if self.modal && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        // Handle modal close events (escape key, click outside, etc.)
+        if modal.should_close() || should_close {
             *self.open = false;
         }
     }

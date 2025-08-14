@@ -63,57 +63,61 @@ impl TabsWindow {
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.heading("Tabs Controls");
+        ui.push_id("tabs_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Tabs Controls");
 
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/tabs/stories/");
-            }
-        });
-        
-        ui.horizontal(|ui| {
-            ui.label("Active Tab Index:");
-            ui.add(egui::Slider::new(&mut self.active_tab_index, 0..=4));
-        });
-        
-        ui.checkbox(&mut self.auto_activate, "Auto Activate");
-        ui.checkbox(&mut self.inline_icon, "Inline Icon");
-        
-        ui.horizontal(|ui| {
-            ui.label("Content:");
-            egui::ComboBox::from_label("")
-                .selected_text(&self.content)
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.content, "both".to_string(), "Both");
-                    ui.selectable_value(&mut self.content, "icon".to_string(), "Icon");
-                    ui.selectable_value(&mut self.content, "label".to_string(), "Label");
-                });
+                if ui.button("Target").clicked() {
+                    let _ = webbrowser::open("https://material-web.dev/components/tabs/stories/");
+                }
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Active Tab Index:");
+                ui.add(egui::Slider::new(&mut self.active_tab_index, 0..=4));
+            });
+            
+            ui.checkbox(&mut self.auto_activate, "Auto Activate");
+            ui.checkbox(&mut self.inline_icon, "Inline Icon");
+            
+            ui.horizontal(|ui| {
+                ui.label("Content:");
+                egui::ComboBox::from_label("")
+                    .selected_text(&self.content)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.content, "both".to_string(), "Both");
+                        ui.selectable_value(&mut self.content, "icon".to_string(), "Icon");
+                        ui.selectable_value(&mut self.content, "label".to_string(), "Label");
+                    });
+            });
         });
     }
 
     fn render_primary_tabs(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Primary Tabs");
-        
-        // Music instrument tabs
-        ui.add(tabs_primary(&mut self.music_primary_selected)
-            .tab("🎹 Keyboard")
-            .tab("🎸 Guitar")
-            .tab("🥁 Drums")
-            .tab("🎻 Bass")
-            .tab("🎷 Saxophone"));
-        
-        // Content for selected tab
-        let content = match self.music_primary_selected {
-            0 => "Keyboard content - Play beautiful melodies",
-            1 => "Guitar content - Strum your favorite chords",
-            2 => "Drums content - Keep the rhythm alive",
-            3 => "Bass content - Lay down the foundation",
-            4 => "Saxophone content - Smooth jazz vibes",
-            _ => "No content selected",
-        };
-        
-        ui.add_space(10.0);
-        ui.label(content);
+        ui.push_id("primary_tabs_section", |ui| {
+            ui.heading("Primary Tabs");
+            
+            // Music instrument tabs
+            ui.add(tabs_primary(&mut self.music_primary_selected)
+                .tab("🎹 Keyboard")
+                .tab("🎸 Guitar")
+                .tab("🥁 Drums")
+                .tab("🎻 Bass")
+                .tab("🎷 Saxophone"));
+            
+            // Content for selected tab
+            let content = match self.music_primary_selected {
+                0 => "Keyboard content - Play beautiful melodies",
+                1 => "Guitar content - Strum your favorite chords",
+                2 => "Drums content - Keep the rhythm alive",
+                3 => "Bass content - Lay down the foundation",
+                4 => "Saxophone content - Smooth jazz vibes",
+                _ => "No content selected",
+            };
+            
+            ui.add_space(10.0);
+            ui.label(content);
+        });
     }
 
     fn render_secondary_tabs(&mut self, ui: &mut egui::Ui) {

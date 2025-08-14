@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::MaterialElevation;
+use crate::{MaterialElevation, MaterialButton};
 
 pub struct ElevationWindow {
     pub open: bool,
@@ -135,7 +135,7 @@ impl ElevationWindow {
                 .content(|ui| {
                     ui.vertical_centered(|ui| {
                         ui.add_space(20.0);
-                        if ui.add_sized([100.0, 32.0], egui::Button::new("Elevated Button")).clicked() {
+                        if ui.add(MaterialButton::elevated("Elevated Button").min_size(egui::Vec2::new(100.0, 32.0))).clicked() {
                             println!("Elevated button clicked!");
                         }
                         ui.add_space(20.0);

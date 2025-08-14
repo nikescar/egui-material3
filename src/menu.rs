@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Context, Id};
+use crate::get_global_color;
 
 pub struct MaterialMenu<'a> {
     id: Id,
@@ -93,10 +94,10 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
     let (rect, response) = ui.allocate_exact_size(size, Sense::hover());
 
     // Material Design colors
-    let surface_container = Color32::from_gray(if ui.visuals().dark_mode { 28 } else { 244 });
-    let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-    let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
-    let outline_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
+    let surface_container = get_global_color("surfaceContainer");
+    let on_surface = get_global_color("onSurface");
+    let on_surface_variant = get_global_color("onSurfaceVariant");
+    let outline_variant = get_global_color("outlineVariant");
 
     // Draw shadow for elevation
     let shadow_offset = elevation as f32 * 2.0;
@@ -163,7 +164,7 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
             );
             
             let icon_color = if item.enabled { on_surface_variant } else {
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                get_global_color("outline")
             };
 
             ui.painter().circle_filled(icon_rect.center(), 8.0, icon_color);
@@ -172,7 +173,7 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
 
         // Draw text
         let text_color = if item.enabled { on_surface } else {
-            Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+            get_global_color("outline")
         };
 
         let text_pos = Pos2::new(content_x, content_y);
@@ -192,7 +193,7 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
             );
             
             let icon_color = if item.enabled { on_surface_variant } else {
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                get_global_color("outline")
             };
 
             ui.painter().circle_filled(icon_rect.center(), 8.0, icon_color);

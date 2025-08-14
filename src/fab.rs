@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::get_global_color;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum FabVariant {
@@ -6,6 +7,7 @@ pub enum FabVariant {
     Primary,
     Secondary,
     Tertiary,
+    Branded,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -51,6 +53,10 @@ impl<'a> MaterialFab<'a> {
 
     pub fn tertiary() -> Self {
         Self::new(FabVariant::Tertiary)
+    }
+
+    pub fn branded() -> Self {
+        Self::new(FabVariant::Branded)
     }
 
     pub fn size(mut self, size: FabSize) -> Self {
@@ -116,24 +122,24 @@ impl<'a> Widget for MaterialFab<'a> {
         }
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
-        let secondary_color = Color32::from_rgb(98, 91, 113);
-        let tertiary_color = Color32::from_rgb(125, 82, 96);
-        let surface = Color32::from_gray(if ui.visuals().dark_mode { 16 } else { 254 });
-        let on_primary = Color32::WHITE;
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
+        let primary_color = get_global_color("primary");
+        let secondary_color = get_global_color("secondary");
+        let tertiary_color = get_global_color("tertiary");
+        let surface = get_global_color("surface");
+        let on_primary = get_global_color("onPrimary");
+        let on_surface = get_global_color("onSurface");
 
         let (bg_color, icon_color) = if !self.enabled {
             (
-                Color32::from_gray(if ui.visuals().dark_mode { 31 } else { 245 }),
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
+                get_global_color("surfaceContainer"),
+                get_global_color("outline"),
             )
         } else {
             match self.variant {
                 FabVariant::Surface => {
                     if response.hovered() {
                         (
-                            Color32::from_gray(if ui.visuals().dark_mode { 45 } else { 240 }),
+                            get_global_color("surfaceContainerHigh"),
                             on_surface,
                         )
                     } else {
@@ -183,6 +189,23 @@ impl<'a> Widget for MaterialFab<'a> {
                         )
                     } else {
                         (tertiary_color, on_primary)
+                    }
+                }
+                FabVariant::Branded => {
+                    // Google brand colors
+                    let google_brand = Color32::from_rgb(66, 133, 244);
+                    if response.hovered() {
+                        (
+                            Color32::from_rgba_premultiplied(
+                                google_brand.r().saturating_add(20),
+                                google_brand.g().saturating_add(20),
+                                google_brand.b().saturating_add(20),
+                                255,
+                            ),
+                            on_primary,
+                        )
+                    } else {
+                        (google_brand, on_primary)
                     }
                 }
             }
@@ -294,4 +317,8 @@ pub fn fab_secondary() -> MaterialFab<'static> {
 
 pub fn fab_tertiary() -> MaterialFab<'static> {
     MaterialFab::tertiary()
+}
+
+pub fn fab_branded() -> MaterialFab<'static> {
+    MaterialFab::branded()
 }

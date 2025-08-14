@@ -1,4 +1,5 @@
 use eframe::egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::get_global_color;
 use std::f32::consts::PI;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -104,9 +105,9 @@ impl Widget for MaterialProgress {
 impl MaterialProgress {
     fn render_linear(&self, ui: &mut Ui, rect: Rect) {
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
-        let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
-        let primary_container = Color32::from_rgb(234, 221, 255);
+        let primary_color = get_global_color("primary");
+        let surface_variant = get_global_color("surfaceVariant");
+        let primary_container = get_global_color("primaryContainer");
 
         // Draw track background
         ui.painter().rect_filled(
@@ -181,8 +182,8 @@ impl MaterialProgress {
         let stroke_width = 4.0;
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
-        let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
+        let primary_color = get_global_color("primary");
+        let surface_variant = get_global_color("surfaceVariant");
 
         // Draw track circle
         ui.painter().circle_stroke(

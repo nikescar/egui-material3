@@ -5,6 +5,7 @@ pub struct FocusWindow {
     pub open: bool,
     inward: bool,
     always_visible: bool,
+    animated: bool,
 }
 
 impl Default for FocusWindow {
@@ -13,6 +14,7 @@ impl Default for FocusWindow {
             open: false,
             inward: false,
             always_visible: false,
+            animated: true,
         }
     }
 }
@@ -46,6 +48,7 @@ impl FocusWindow {
 
         ui.checkbox(&mut self.inward, "inward");
         ui.checkbox(&mut self.always_visible, "Always visible (for demonstration)");
+        ui.checkbox(&mut self.animated, "Animated focus ring");
     }
 
     fn render_focus_ring_examples(&mut self, ui: &mut Ui) {
@@ -63,6 +66,7 @@ impl FocusWindow {
                 ui.add(MaterialFocusRing::new()
                     .visible(true)
                     .inward(self.inward)
+                    .animated(self.animated)
                     .target_rect(button1.rect)
                     .corner_radius(16.0));
             }
@@ -77,6 +81,7 @@ impl FocusWindow {
                 ui.add(MaterialFocusRing::new()
                     .visible(true)
                     .inward(self.inward)
+                    .animated(self.animated)
                     .target_rect(button2.rect)
                     .corner_radius(16.0));
             }
@@ -91,6 +96,7 @@ impl FocusWindow {
                 ui.add(MaterialFocusRing::new()
                     .visible(true)
                     .inward(self.inward)
+                    .animated(self.animated)
                     .target_rect(button3.rect)
                     .corner_radius(16.0));
             }

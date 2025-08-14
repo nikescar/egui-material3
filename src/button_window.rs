@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::MaterialButton;
+use crate::{MaterialButton, icons::{icon_text, ICON_UPLOAD, ICON_OPEN_IN_NEW}};
 
 pub struct ButtonWindow {
     pub open: bool,
@@ -63,46 +63,46 @@ impl ButtonWindow {
         ui.horizontal(|ui| {
             let label = if self.label.is_empty() { "Filled" } else { &self.label };
             let mut button = MaterialButton::filled(label);
-            if self.disabled {
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Filled button clicked!");
             }
 
             let label = if self.label.is_empty() { "Outlined" } else { &self.label };
             let mut button = MaterialButton::outlined(label);
-            if self.disabled {
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Outlined button clicked!");
             }
 
             let label = if self.label.is_empty() { "Elevated" } else { &self.label };
             let mut button = MaterialButton::elevated(label);
-            if self.disabled {
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Elevated button clicked!");
             }
 
             let label = if self.label.is_empty() { "Tonal" } else { &self.label };
             let mut button = MaterialButton::filled_tonal(label);
-            if self.disabled {
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Tonal button clicked!");
             }
 
             let label = if self.label.is_empty() { "Text" } else { &self.label };
             let mut button = MaterialButton::text(label);
-            if self.disabled {
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Text button clicked!");
             }
         });
@@ -111,48 +111,53 @@ impl ButtonWindow {
 
         // Second row - buttons with icons
         ui.horizontal(|ui| {
-            let label = if self.label.is_empty() { "Filled" } else { &self.label };
-            let mut button = MaterialButton::filled(label).leading_icon("upload");
-            if self.disabled {
+            let base_label = if self.label.is_empty() { "Filled" } else { &self.label };
+            let label = format!("{} {}", icon_text("upload"), base_label);
+            let mut button = MaterialButton::filled(&label);
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Filled button with icon clicked!");
             }
 
-            let label = if self.label.is_empty() { "Outlined" } else { &self.label };
-            let mut button = MaterialButton::outlined(label).leading_icon("upload");
-            if self.disabled {
+            let base_label = if self.label.is_empty() { "Outlined" } else { &self.label };
+            let label = format!("{} {}", icon_text("upload"), base_label);
+            let mut button = MaterialButton::outlined(&label);
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Outlined button with icon clicked!");
             }
 
-            let label = if self.label.is_empty() { "Elevated" } else { &self.label };
-            let mut button = MaterialButton::elevated(label).leading_icon("upload");
-            if self.disabled {
+            let base_label = if self.label.is_empty() { "Elevated" } else { &self.label };
+            let label = format!("{} {}", icon_text("upload"), base_label);
+            let mut button = MaterialButton::elevated(&label);
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Elevated button with icon clicked!");
             }
 
-            let label = if self.label.is_empty() { "Tonal" } else { &self.label };
-            let mut button = MaterialButton::filled_tonal(label).leading_icon("upload");
-            if self.disabled {
+            let base_label = if self.label.is_empty() { "Tonal" } else { &self.label };
+            let label = format!("{} {}", icon_text("upload"), base_label);
+            let mut button = MaterialButton::filled_tonal(&label);
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Tonal button with icon clicked!");
             }
 
-            let label = if self.label.is_empty() { "Text" } else { &self.label };
-            let mut button = MaterialButton::text(label).leading_icon("upload");
-            if self.disabled {
+            let base_label = if self.label.is_empty() { "Text" } else { &self.label };
+            let label = format!("{} {}", icon_text("upload"), base_label);
+            let mut button = MaterialButton::text(&label);
+            if self.disabled || self.soft_disabled {
                 button = button.enabled(false);
             }
-            if ui.add(button).clicked() {
+            if ui.add(button).clicked() && !self.disabled && !self.soft_disabled {
                 println!("Text button with icon clicked!");
             }
         });
@@ -163,47 +168,37 @@ impl ButtonWindow {
         
         // First row - basic link buttons
         ui.horizontal(|ui| {
-            let label = if self.label.is_empty() { "Filled" } else { &self.label };
-            let mut button = MaterialButton::filled(label).trailing_icon("open_in_new");
-            if self.disabled {
-                button = button.enabled(false);
-            }
+            let base_label = if self.label.is_empty() { "Filled" } else { &self.label };
+            let label = format!("{} {}", base_label, icon_text("open_in_new"));
+            let button = MaterialButton::filled(&label);
             if ui.add(button).clicked() {
                 println!("Filled link button clicked!");
             }
 
-            let label = if self.label.is_empty() { "Outlined" } else { &self.label };
-            let mut button = MaterialButton::outlined(label).trailing_icon("open_in_new");
-            if self.disabled {
-                button = button.enabled(false);
-            }
+            let base_label = if self.label.is_empty() { "Outlined" } else { &self.label };
+            let label = format!("{} {}", base_label, icon_text("open_in_new"));
+            let button = MaterialButton::outlined(&label);
             if ui.add(button).clicked() {
                 println!("Outlined link button clicked!");
             }
 
-            let label = if self.label.is_empty() { "Elevated" } else { &self.label };
-            let mut button = MaterialButton::elevated(label).trailing_icon("open_in_new");
-            if self.disabled {
-                button = button.enabled(false);
-            }
+            let base_label = if self.label.is_empty() { "Elevated" } else { &self.label };
+            let label = format!("{} {}", base_label, icon_text("open_in_new"));
+            let button = MaterialButton::elevated(&label);
             if ui.add(button).clicked() {
                 println!("Elevated link button clicked!");
             }
 
-            let label = if self.label.is_empty() { "Tonal" } else { &self.label };
-            let mut button = MaterialButton::filled_tonal(label).trailing_icon("open_in_new");
-            if self.disabled {
-                button = button.enabled(false);
-            }
+            let base_label = if self.label.is_empty() { "Tonal" } else { &self.label };
+            let label = format!("{} {}", base_label, icon_text("open_in_new"));
+            let button = MaterialButton::filled_tonal(&label);
             if ui.add(button).clicked() {
                 println!("Tonal link button clicked!");
             }
 
-            let label = if self.label.is_empty() { "Text" } else { &self.label };
-            let mut button = MaterialButton::text(label).trailing_icon("open_in_new");
-            if self.disabled {
-                button = button.enabled(false);
-            }
+            let base_label = if self.label.is_empty() { "Text" } else { &self.label };
+            let label = format!("{} {}", base_label, icon_text("open_in_new"));
+            let button = MaterialButton::text(&label);
             if ui.add(button).clicked() {
                 println!("Text link button clicked!");
             }
@@ -214,56 +209,41 @@ impl ButtonWindow {
         // Second row - link buttons with both leading and trailing icons
         ui.horizontal(|ui| {
             let label = if self.label.is_empty() { "Filled" } else { &self.label };
-            let mut button = MaterialButton::filled(label)
+            let button = MaterialButton::filled(label)
                 .leading_icon("open_in_new")
                 .trailing_icon("arrow_forward");
-            if self.disabled {
-                button = button.enabled(false);
-            }
             if ui.add(button).clicked() {
                 println!("Filled link button with both icons clicked!");
             }
 
             let label = if self.label.is_empty() { "Outlined" } else { &self.label };
-            let mut button = MaterialButton::outlined(label)
+            let button = MaterialButton::outlined(label)
                 .leading_icon("open_in_new")
                 .trailing_icon("arrow_forward");
-            if self.disabled {
-                button = button.enabled(false);
-            }
             if ui.add(button).clicked() {
                 println!("Outlined link button with both icons clicked!");
             }
 
             let label = if self.label.is_empty() { "Elevated" } else { &self.label };
-            let mut button = MaterialButton::elevated(label)
+            let button = MaterialButton::elevated(label)
                 .leading_icon("open_in_new")
                 .trailing_icon("arrow_forward");
-            if self.disabled {
-                button = button.enabled(false);
-            }
             if ui.add(button).clicked() {
                 println!("Elevated link button with both icons clicked!");
             }
 
             let label = if self.label.is_empty() { "Tonal" } else { &self.label };
-            let mut button = MaterialButton::filled_tonal(label)
+            let button = MaterialButton::filled_tonal(label)
                 .leading_icon("open_in_new")
                 .trailing_icon("arrow_forward");
-            if self.disabled {
-                button = button.enabled(false);
-            }
             if ui.add(button).clicked() {
                 println!("Tonal link button with both icons clicked!");
             }
 
             let label = if self.label.is_empty() { "Text" } else { &self.label };
-            let mut button = MaterialButton::text(label)
+            let button = MaterialButton::text(label)
                 .leading_icon("open_in_new")
                 .trailing_icon("arrow_forward");
-            if self.disabled {
-                button = button.enabled(false);
-            }
             if ui.add(button).clicked() {
                 println!("Text link button with both icons clicked!");
             }

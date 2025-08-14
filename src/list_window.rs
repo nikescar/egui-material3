@@ -42,26 +42,30 @@ impl ListWindow {
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.heading("List Controls");
+        ui.push_id("list_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("List Controls");
 
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/list/stories/");
-            }
+                if ui.button("Target").clicked() {
+                    let _ = webbrowser::open("https://material-web.dev/components/list/stories/");
+                }
+            });
+            
+            ui.checkbox(&mut self.disabled, "Disabled");
+            ui.checkbox(&mut self.leading_icon, "Leading Icon");
+            ui.checkbox(&mut self.trailing_icon, "Trailing Icon");
         });
         
-        ui.checkbox(&mut self.disabled, "Disabled");
-        ui.checkbox(&mut self.leading_icon, "Leading Icon");
-        ui.checkbox(&mut self.trailing_icon, "Trailing Icon");
-        
-        ui.horizontal(|ui| {
-            ui.label("Overline:");
-            ui.text_edit_singleline(&mut self.overline);
-        });
-        
-        ui.horizontal(|ui| {
-            ui.label("Trailing Supporting Text:");
-            ui.text_edit_singleline(&mut self.trailing_supporting_text);
+        ui.push_id("list_text_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Overline:");
+                ui.text_edit_singleline(&mut self.overline);
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Trailing Supporting Text:");
+                ui.text_edit_singleline(&mut self.trailing_supporting_text);
+            });
         });
     }
 

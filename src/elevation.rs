@@ -88,6 +88,7 @@ impl<'a> MaterialElevation<'a> {
     fn get_shadow(&self) -> Shadow {
         // Material Design elevation shadows based on level
         // These values approximate Material Design 3 elevation specifications
+        // As elevation increases, shadows get darker and spread more
         match self.level {
             0 => Shadow::NONE,
             1 => Shadow {
@@ -123,6 +124,79 @@ impl<'a> MaterialElevation<'a> {
             _ => Shadow::NONE,
         }
     }
+    
+    fn get_shadow_layers(&self) -> Vec<Shadow> {
+        // Multiple shadow layers for more realistic elevation effect
+        // As elevation increases, we add more shadows with different properties
+        match self.level {
+            0 => vec![],
+            1 => vec![
+                Shadow {
+                    offset: [0, 1],
+                    blur: 2,
+                    spread: 0,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 20),
+                },
+            ],
+            2 => vec![
+                Shadow {
+                    offset: [0, 1],
+                    blur: 2,
+                    spread: 0,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 20),
+                },
+                Shadow {
+                    offset: [0, 2],
+                    blur: 4,
+                    spread: 0,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 14),
+                },
+            ],
+            3 => vec![
+                Shadow {
+                    offset: [0, 1],
+                    blur: 3,
+                    spread: 0,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 20),
+                },
+                Shadow {
+                    offset: [0, 4],
+                    blur: 8,
+                    spread: 3,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 14),
+                },
+            ],
+            4 => vec![
+                Shadow {
+                    offset: [0, 1],
+                    blur: 3,
+                    spread: 0,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 20),
+                },
+                Shadow {
+                    offset: [0, 6],
+                    blur: 10,
+                    spread: 4,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 14),
+                },
+            ],
+            5 => vec![
+                Shadow {
+                    offset: [0, 1],
+                    blur: 3,
+                    spread: 0,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 20),
+                },
+                Shadow {
+                    offset: [0, 8],
+                    blur: 12,
+                    spread: 6,
+                    color: Color32::from_rgba_unmultiplied(0, 0, 0, 14),
+                },
+            ],
+            _ => vec![],
+        }
+    }
 }
 
 impl<'a> Default for MaterialElevation<'a> {
@@ -133,7 +207,7 @@ impl<'a> Default for MaterialElevation<'a> {
 
 impl Widget for MaterialElevation<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let shadow = self.get_shadow();
+        let shadow_layers = self.get_shadow_layers();
         
         let MaterialElevation {
             level,
@@ -159,7 +233,24 @@ impl Widget for MaterialElevation<'_> {
         let rect = response.rect;
 
         if ui.is_rect_visible(rect) {
-            // Draw the elevated surface with shadow
+            // Draw multiple shadow layers for better elevation effect
+            for shadow in shadow_layers.iter().rev() { // Draw from furthest to nearest
+                let shadow_rect = Rect::from_min_size(
+                    rect.min + Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32),
+                    rect.size() + Vec2::splat(shadow.spread as f32 * 2.0),
+                );
+                
+                // Draw shadow with increased opacity for higher levels
+                ui.painter().rect(
+                    shadow_rect,
+                    corner_radius,
+                    shadow.color,
+                    egui::Stroke::NONE,
+                    egui::epaint::StrokeKind::Outside,
+                );
+            }
+
+            // Draw the elevated surface on top of shadows
             ui.painter().rect(
                 rect,
                 corner_radius,
@@ -167,23 +258,6 @@ impl Widget for MaterialElevation<'_> {
                 egui::Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 0, 0, 31)),
                 egui::epaint::StrokeKind::Outside,
             );
-
-            // Apply shadow if level > 0
-            if level > 0 {
-                let shadow_rect = Rect::from_min_size(
-                    rect.min + Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32),
-                    rect.size(),
-                );
-                
-                // Draw shadow (simplified - egui doesn't have built-in shadow support like CSS)
-                ui.painter().rect(
-                    shadow_rect,
-                    corner_radius,
-                    Color32::from_rgba_unmultiplied(0, 0, 0, 20),
-                    egui::Stroke::NONE,
-                    egui::epaint::StrokeKind::Outside,
-                );
-            }
 
             // Render content or text
             let content_rect = rect.shrink(8.0); // Add some padding

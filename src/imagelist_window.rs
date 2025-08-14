@@ -38,27 +38,29 @@ impl ImageListWindow {
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            ui.heading("Image List Controls");
+        ui.push_id("imagelist_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Image List Controls");
 
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/image-list/stories/");
-            }
-        });
+                if ui.button("Target").clicked() {
+                    let _ = webbrowser::open("https://material-web.dev/components/image-list/stories/");
+                }
+            });
 
-        ui.horizontal(|ui| {
-            ui.label("Columns:");
-            ui.add(egui::Slider::new(&mut self.columns, 1..=6));
-        });
+            ui.horizontal(|ui| {
+                ui.label("Columns:");
+                ui.add(egui::Slider::new(&mut self.columns, 1..=6));
+            });
 
-        ui.horizontal(|ui| {
-            ui.label("Item Spacing:");
-            ui.add(egui::Slider::new(&mut self.item_spacing, 0.0..=20.0).suffix("px"));
-        });
+            ui.horizontal(|ui| {
+                ui.label("Item Spacing:");
+                ui.add(egui::Slider::new(&mut self.item_spacing, 0.0..=20.0).suffix("px"));
+            });
 
-        ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.text_protected, "Text Protected"));
-            ui.add(MaterialCheckbox::new(&mut self.show_supporting_text, "Show Supporting Text"));
+            ui.horizontal(|ui| {
+                ui.add(MaterialCheckbox::new(&mut self.text_protected, "Text Protected"));
+                ui.add(MaterialCheckbox::new(&mut self.show_supporting_text, "Show Supporting Text"));
+            });
         });
     }
 

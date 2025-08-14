@@ -3,6 +3,7 @@ use egui::{
     epaint::{Stroke, CornerRadius},
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
+use std::time::{Duration, Instant};
 
 /// Material Design focus ring component.
 ///
@@ -33,6 +34,8 @@ pub struct MaterialFocusRing {
     color: Option<Color32>,
     width: f32,
     offset: f32,
+    animated: bool,
+    focus_start_time: Option<Instant>,
 }
 
 impl MaterialFocusRing {
@@ -46,6 +49,8 @@ impl MaterialFocusRing {
             color: None,
             width: 2.0,
             offset: 2.0,
+            animated: false,
+            focus_start_time: None,
         }
     }
 
@@ -91,6 +96,15 @@ impl MaterialFocusRing {
         self
     }
 
+    /// Enable animated focus ring that fades from thick to lighter over time.
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.animated = animated;
+        if animated && self.visible && self.focus_start_time.is_none() {
+            self.focus_start_time = Some(Instant::now());
+        }
+        self
+    }
+
     /// Attach the focus ring to a response, automatically setting visibility based on focus state.
     pub fn attach_to_response(mut self, response: &Response) -> Self {
         self.visible = response.has_focus();
@@ -106,7 +120,7 @@ impl Default for MaterialFocusRing {
 }
 
 impl Widget for MaterialFocusRing {
-    fn ui(self, ui: &mut Ui) -> Response {
+    fn ui(mut self, ui: &mut Ui) -> Response {
         let MaterialFocusRing {
             visible,
             inward,
@@ -115,10 +129,67 @@ impl Widget for MaterialFocusRing {
             color,
             width,
             offset,
+            animated,
+            mut focus_start_time,
         } = self;
 
         // Material Design focus ring color
-        let focus_color = color.unwrap_or_else(|| Color32::from_rgb(103, 80, 164)); // md-sys-color-primary
+        let base_color = color.unwrap_or_else(|| Color32::from_rgb(103, 80, 164)); // md-sys-color-primary
+        
+        // Animation logic
+        let (focus_color, current_width) = if animated && visible {
+            if focus_start_time.is_none() {
+                focus_start_time = Some(Instant::now());
+            }
+            
+            if let Some(start_time) = focus_start_time {
+                let elapsed = start_time.elapsed();
+                let total_animation_duration = Duration::from_millis(500); // 0.5 seconds total
+                
+                if elapsed < total_animation_duration {
+                    // Calculate animation progress (0.0 to 1.0)
+                    let progress = elapsed.as_millis() as f32 / total_animation_duration.as_millis() as f32;
+                    
+                    // Phase 1: 0.0 to 0.5 (first 0.25 seconds) - thick edge
+                    // Phase 2: 0.5 to 1.0 (second 0.25 seconds) - lighter edge
+                    let (alpha, stroke_width) = if progress < 0.5 {
+                        // First phase: thick edge with full opacity
+                        (255, width * 2.0)
+                    } else {
+                        // Second phase: fade to lighter
+                        let fade_progress = (progress - 0.5) * 2.0; // 0.0 to 1.0 for second half
+                        let alpha = (255.0 * (1.0 - fade_progress * 0.6)) as u8; // Fade to 40% opacity
+                        let stroke_width = width * (2.0 - fade_progress); // Reduce width gradually
+                        (alpha, stroke_width)
+                    };
+                    
+                    let animated_color = Color32::from_rgba_unmultiplied(
+                        base_color.r(),
+                        base_color.g(),
+                        base_color.b(),
+                        alpha,
+                    );
+                    
+                    // Request repaint for next frame
+                    ui.ctx().request_repaint();
+                    
+                    (animated_color, stroke_width)
+                } else {
+                    // Animation finished, show final lighter state
+                    let final_color = Color32::from_rgba_unmultiplied(
+                        base_color.r(),
+                        base_color.g(),
+                        base_color.b(),
+                        102, // ~40% opacity
+                    );
+                    (final_color, width)
+                }
+            } else {
+                (base_color, width)
+            }
+        } else {
+            (base_color, width)
+        };
 
         let rect = if let Some(target) = target_rect {
             if inward {
@@ -142,7 +213,7 @@ impl Widget for MaterialFocusRing {
             ui.painter().rect_stroke(
                 rect,
                 corner_radius,
-                Stroke::new(width, focus_color),
+                Stroke::new(current_width, focus_color),
                 egui::epaint::StrokeKind::Outside,
             );
         }

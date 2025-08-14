@@ -3,6 +3,7 @@ use egui::{
     epaint::{Stroke, CornerRadius},
     Rect, Response, Sense, TextStyle, Ui, Vec2, Widget,
 };
+use crate::get_global_color;
 
 /// Material Design segmented button set component.
 ///
@@ -148,14 +149,14 @@ impl Widget for MaterialSegmentedButtonSet<'_> {
         }
 
         // Material Design colors
-        let md_outline = Color32::from_rgb(121, 116, 126); // md-sys-color-outline
-        let md_outline_variant = Color32::from_rgb(196, 199, 197); // md-sys-color-outline-variant
-        let md_on_surface = Color32::from_rgb(28, 27, 31); // md-sys-color-on-surface
-        let md_on_surface_variant = Color32::from_rgb(73, 69, 79); // md-sys-color-on-surface-variant
-        let md_primary = Color32::from_rgb(103, 80, 164); // md-sys-color-primary
-        let md_on_primary = Color32::WHITE; // md-sys-color-on-primary
-        let md_secondary_container = Color32::from_rgb(232, 222, 248); // md-sys-color-secondary-container
-        let md_on_secondary_container = Color32::from_rgb(31, 31, 35); // md-sys-color-on-secondary-container
+        let md_outline = get_global_color("outline"); // md-sys-color-outline
+        let md_outline_variant = get_global_color("outlineVariant"); // md-sys-color-outline-variant
+        let md_on_surface = get_global_color("onSurface"); // md-sys-color-on-surface
+        let md_on_surface_variant = get_global_color("onSurfaceVariant"); // md-sys-color-on-surface-variant
+        let md_primary = get_global_color("primary"); // md-sys-color-primary
+        let md_on_primary = get_global_color("onPrimary"); // md-sys-color-on-primary
+        let md_secondary_container = get_global_color("secondaryContainer"); // md-sys-color-secondary-container
+        let md_on_secondary_container = get_global_color("onSecondaryContainer"); // md-sys-color-on-secondary-container
 
         // Button dimensions
         let button_height = 40.0;

@@ -28,7 +28,7 @@ impl Default for SelectWindow {
             label: "Choose a fruit".to_string(),
             quick: false,
             required: false,
-            no_asterisk: false,
+            no_asterisk: true, // Hide red asterisk indicators
             disabled: false,
             error_text: String::new(),
             supporting_text: "Select your favorite fruit".to_string(),

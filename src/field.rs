@@ -3,6 +3,7 @@ use egui::{
     epaint::{Stroke, CornerRadius},
     Align, Rect, Response, Sense, TextStyle, Ui, Vec2, Widget, WidgetText,
 };
+use crate::get_global_color;
 
 /// Material Design field component variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -231,13 +232,13 @@ impl Widget for MaterialField<'_> {
         };
 
         // Material Design colors
-        let md_surface = Color32::from_rgb(248, 248, 248);
-        let md_on_surface = Color32::from_rgb(28, 27, 31);
-        let md_on_surface_variant = Color32::from_rgb(73, 69, 79);
-        let md_outline = Color32::from_rgb(121, 116, 126);
-        let md_outline_variant = Color32::from_rgb(196, 199, 197);
-        let md_primary = Color32::from_rgb(103, 80, 164);
-        let md_error = Color32::from_rgb(186, 26, 26);
+        let md_surface = get_global_color("surface");
+        let md_on_surface = get_global_color("onSurface");
+        let md_on_surface_variant = get_global_color("onSurfaceVariant");
+        let md_outline = get_global_color("outline");
+        let md_outline_variant = get_global_color("outlineVariant");
+        let md_primary = get_global_color("primary");
+        let md_error = get_global_color("error");
 
         // Calculate colors based on state
         let (background_color, border_color, label_color) = match variant {

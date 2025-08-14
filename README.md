@@ -1,9 +1,5 @@
 # rust-egui-material
 
+look at example folder.
 
-
-# reference
-
-material-component-web
-material-web
-
+![screenshot](./resources/screenshot.png)

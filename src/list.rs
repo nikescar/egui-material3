@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::icons::icon_text;
 
 pub struct MaterialList<'a> {
     items: Vec<ListItem<'a>>,
@@ -144,17 +145,21 @@ impl<'a> Widget for MaterialList<'a> {
             let content_y = item_rect.center().y;
 
             // Draw leading icon
-            if let Some(_icon) = &item.leading_icon {
-                let icon_rect = Rect::from_min_size(
-                    Pos2::new(content_x, content_y - 12.0),
-                    Vec2::splat(24.0),
-                );
+            if let Some(icon_name) = &item.leading_icon {
+                let icon_pos = Pos2::new(content_x + 12.0, content_y);
                 
                 let icon_color = if item.enabled { on_surface_variant } else {
                     Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
                 };
 
-                ui.painter().circle_filled(icon_rect.center(), 8.0, icon_color);
+                let icon_string = icon_text(icon_name);
+                ui.painter().text(
+                    icon_pos,
+                    egui::Align2::CENTER_CENTER,
+                    &icon_string,
+                    egui::FontId::proportional(20.0),
+                    icon_color,
+                );
                 content_x += 40.0;
             }
 
@@ -200,17 +205,21 @@ impl<'a> Widget for MaterialList<'a> {
             }
 
             // Draw trailing icon
-            if let Some(_icon) = &item.trailing_icon {
-                let icon_rect = Rect::from_min_size(
-                    Pos2::new(item_rect.max.x - 40.0, content_y - 12.0),
-                    Vec2::splat(24.0),
-                );
+            if let Some(icon_name) = &item.trailing_icon {
+                let icon_pos = Pos2::new(item_rect.max.x - 28.0, content_y);
                 
                 let icon_color = if item.enabled { on_surface_variant } else {
                     Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
                 };
 
-                ui.painter().circle_filled(icon_rect.center(), 8.0, icon_color);
+                let icon_string = icon_text(icon_name);
+                ui.painter().text(
+                    icon_pos,
+                    egui::Align2::CENTER_CENTER,
+                    &icon_string,
+                    egui::FontId::proportional(20.0),
+                    icon_color,
+                );
             }
 
             current_y += item_height;

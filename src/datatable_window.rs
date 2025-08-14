@@ -38,18 +38,20 @@ impl DataTableWindow {
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            ui.heading("Data Table Controls");
+        ui.push_id("datatable_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Data Table Controls");
 
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://m2.material.io/components/data-tables");
-            }
-        });
+                if ui.button("Target").clicked() {
+                    let _ = webbrowser::open("https://m2.material.io/components/data-tables");
+                }
+            });
 
-        ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.allow_selection, "Allow Selection"));
-            ui.add(MaterialCheckbox::new(&mut self.sticky_header, "Sticky Header"));
-            ui.add(MaterialCheckbox::new(&mut self.show_progress, "Show Progress"));
+            ui.horizontal(|ui| {
+                ui.add(MaterialCheckbox::new(&mut self.allow_selection, "Allow Selection"));
+                ui.add(MaterialCheckbox::new(&mut self.sticky_header, "Sticky Header"));
+                ui.add(MaterialCheckbox::new(&mut self.show_progress, "Show Progress"));
+            });
         });
     }
 

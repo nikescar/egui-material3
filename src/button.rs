@@ -5,6 +5,7 @@ use egui::{
     Align, Image, Rect, Response, Sense, TextStyle,
     TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetText, WidgetType,
 };
+use crate::get_global_color;
 
 /// Material Design button with support for different variants.
 ///
@@ -310,13 +311,13 @@ impl Widget for MaterialButton<'_> {
             disabled,
         } = self;
 
-        // Material Design color palette 
-        let md_primary = Color32::from_rgb(103, 80, 164);
-        let md_on_primary = Color32::WHITE;
-        let md_surface = Color32::from_rgb(248, 248, 248);
-        let md_on_surface = Color32::from_rgb(28, 27, 31);
-        let md_outline = Color32::from_rgb(121, 116, 126);
-        let md_surface_variant = Color32::from_rgb(232, 222, 248);
+        // Material Design color palette from theme
+        let md_primary = get_global_color("primary");
+        let md_on_primary = get_global_color("onPrimary");
+        let md_surface = get_global_color("surface");
+        let md_on_surface = get_global_color("onSurface");
+        let md_outline = get_global_color("outline");
+        let md_surface_variant = get_global_color("surfaceVariant");
         
         // Material Design button defaults based on variant
         let (default_fill, default_stroke, default_corner_radius, _has_elevation) = match variant {
@@ -360,6 +361,9 @@ impl Widget for MaterialButton<'_> {
         // Material Design button padding (24px left/right, calculated based on height)
         let mut button_padding = if frame {
             Vec2::new(24.0, if small { 0.0 } else { 10.0 })
+        } else if variant == MaterialButtonVariant::Text {
+            // Text buttons still need horizontal padding for consistent width
+            Vec2::new(24.0, if small { 0.0 } else { 10.0 })
         } else {
             Vec2::ZERO
         };
@@ -368,7 +372,7 @@ impl Widget for MaterialButton<'_> {
         let min_button_height = if small { 32.0 } else { 40.0 };
 
         let space_available_for_image = if let Some(text) = &text {
-            let font_height = ui.text_style_height(&TextStyle::Button);
+            let font_height = ui.text_style_height(&TextStyle::Body);
             Vec2::splat(font_height) // Reasonable?
         } else {
             ui.available_size() - 2.0 * button_padding
@@ -395,7 +399,7 @@ impl Widget for MaterialButton<'_> {
                 ui,
                 Some(TextWrapMode::Extend),
                 f32::INFINITY,
-                TextStyle::Button,
+                TextStyle::Body,
             )
         });
 
@@ -405,7 +409,7 @@ impl Widget for MaterialButton<'_> {
         }
 
         let galley =
-            text.map(|text| text.into_galley(ui, wrap_mode, text_wrap_width, TextStyle::Button));
+            text.map(|text| text.into_galley(ui, wrap_mode, text_wrap_width, TextStyle::Body));
 
         let mut desired_size = Vec2::ZERO;
         if image.is_some() {
@@ -461,8 +465,18 @@ impl Widget for MaterialButton<'_> {
                 Default::default()
             };
             let frame_cr = corner_radius.unwrap_or(default_corner_radius);
-            let frame_fill = fill.unwrap_or(default_fill.unwrap_or(frame_fill));
-            let frame_stroke = stroke.unwrap_or(default_stroke.unwrap_or(frame_stroke));
+            let mut frame_fill = fill.unwrap_or(default_fill.unwrap_or(frame_fill));
+            let mut frame_stroke = stroke.unwrap_or(default_stroke.unwrap_or(frame_stroke));
+            
+            // Apply disabled styling - Material Design spec
+            if disabled {
+                // Disabled buttons have 12% opacity on surface color
+                let surface_color = get_global_color("surface");
+                let disabled_overlay = get_global_color("onSurface").gamma_multiply(0.12);
+                frame_fill = surface_color; // Use surface as base
+                frame_stroke.color = get_global_color("onSurface").gamma_multiply(0.12);
+                frame_stroke.width = if matches!(variant, MaterialButtonVariant::Outlined) { 1.0 } else { 0.0 };
+            }
             
             // Draw elevation shadow if present
             if let Some(shadow) = elevation {
@@ -514,7 +528,22 @@ impl Widget for MaterialButton<'_> {
                 if image.is_some() || shortcut_galley.is_some() {
                     text_pos.x = cursor_x;
                 }
-                ui.painter().galley(text_pos, galley, visuals.text_color());
+                
+                // Material Design text colors based on button variant
+                let text_color = if disabled {
+                    // Disabled text has 38% opacity of onSurface
+                    get_global_color("onSurface").gamma_multiply(0.38)
+                } else {
+                    match variant {
+                        MaterialButtonVariant::Filled => md_on_primary,
+                        MaterialButtonVariant::Outlined => md_primary,
+                        MaterialButtonVariant::Text => md_primary,
+                        MaterialButtonVariant::Elevated => md_primary,
+                        MaterialButtonVariant::FilledTonal => get_global_color("onSecondaryContainer"),
+                    }
+                };
+                
+                ui.painter().galley(text_pos, galley, text_color);
             }
 
             if let Some(shortcut_galley) = shortcut_galley {

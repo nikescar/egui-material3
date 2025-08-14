@@ -42,29 +42,31 @@ impl TopAppBarWindow {
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            ui.heading("Top App Bar Controls");
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/top-app-bar/stories/");
-            }
-        });
+        ui.push_id("topappbar_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Top App Bar Controls");
+                if ui.button("Target").clicked() {
+                    let _ = webbrowser::open("https://material-web.dev/components/top-app-bar/stories/");
+                }
+            });
 
-        ui.horizontal(|ui| {
-            ui.label("Title:");
-            ui.text_edit_singleline(&mut self.title_text);
-        });
+            ui.horizontal(|ui| {
+                ui.label("Title:");
+                ui.text_edit_singleline(&mut self.title_text);
+            });
 
-        ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.show_navigation, "Show Navigation Icon"));
-            ui.add(MaterialCheckbox::new(&mut self.show_actions, "Show Action Icons"));
-            ui.add(MaterialCheckbox::new(&mut self.is_scrolled, "Scrolled State"));
-        });
+            ui.horizontal(|ui| {
+                ui.add(MaterialCheckbox::new(&mut self.show_navigation, "Show Navigation Icon"));
+                ui.add(MaterialCheckbox::new(&mut self.show_actions, "Show Action Icons"));
+                ui.add(MaterialCheckbox::new(&mut self.is_scrolled, "Scrolled State"));
+            });
 
-        ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.use_custom_height, "Custom Height"));
-            if self.use_custom_height {
-                ui.add(egui::Slider::new(&mut self.custom_height, 48.0..=200.0).suffix("px"));
-            }
+            ui.horizontal(|ui| {
+                ui.add(MaterialCheckbox::new(&mut self.use_custom_height, "Custom Height"));
+                if self.use_custom_height {
+                    ui.add(egui::Slider::new(&mut self.custom_height, 48.0..=200.0).suffix("px"));
+                }
+            });
         });
     }
 

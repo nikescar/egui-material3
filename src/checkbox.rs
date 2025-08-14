@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::get_global_color;
 
 pub struct MaterialCheckbox<'a> {
     checked: &'a mut bool,
@@ -54,19 +55,21 @@ impl<'a> Widget for MaterialCheckbox<'a> {
         );
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164); // Material Purple
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 245 });
-        let outline = Color32::from_gray(if ui.visuals().dark_mode { 146 } else { 121 });
+        let primary_color = get_global_color("primary");
+        let on_surface = get_global_color("onSurface");
+        let surface_variant = get_global_color("surfaceVariant");
+        let outline = get_global_color("outline");
 
         let (bg_color, border_color, check_color) = if !self.enabled {
+            // Material Design disabled state: onSurface with 38% opacity
+            let disabled_color = on_surface.gamma_multiply(0.38);
             (
-                Color32::from_gray(if ui.visuals().dark_mode { 31 } else { 245 }),
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
+                Color32::TRANSPARENT,
+                disabled_color,
+                disabled_color,
             )
         } else if *self.checked || self.indeterminate {
-            (primary_color, primary_color, Color32::WHITE)
+            (primary_color, primary_color, get_global_color("onPrimary"))
         } else if response.hovered() {
             (surface_variant, outline, on_surface)
         } else {
@@ -126,8 +129,10 @@ impl<'a> Widget for MaterialCheckbox<'a> {
                 rect.center().y,
             );
             
-            let text_color = if self.enabled { on_surface } else { 
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+            let text_color = if self.enabled { 
+                on_surface 
+            } else { 
+                on_surface.gamma_multiply(0.38)
             };
 
             ui.painter().text(

@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::get_global_color;
 
 pub struct MaterialSwitch<'a> {
     selected: &'a mut bool,
@@ -48,7 +49,7 @@ impl<'a> Widget for MaterialSwitch<'a> {
         }
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
+        let primary_color = get_global_color("primary");
         let on_primary = Color32::WHITE;
         let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
         let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });

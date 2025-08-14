@@ -42,22 +42,23 @@ impl DrawerWindow {
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            ui.heading("Drawer Controls");
+        ui.push_id("drawer_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Drawer Controls");
 
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/drawer/stories/");
-            }
-        });
+                if ui.button("Target").clicked() {
+                    let _ = webbrowser::open("https://material-web.dev/components/drawer/stories/");
+                }
+            });
 
-        ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.show_header, "Show Header"));
-            ui.add(MaterialCheckbox::new(&mut self.show_icons, "Show Icons"));
-        });
+            ui.horizontal(|ui| {
+                ui.add(MaterialCheckbox::new(&mut self.show_header, "Show Header"));
+                ui.add(MaterialCheckbox::new(&mut self.show_icons, "Show Icons"));
+            });
 
-        ui.horizontal(|ui| {
-            ui.label("Drawer Width:");
-            ui.add(egui::Slider::new(&mut self.drawer_width, 200.0..=400.0).suffix("px"));
+            ui.horizontal(|ui| {
+                ui.label("Drawer Width:");
+                ui.add(egui::Slider::new(&mut self.drawer_width, 200.0..=400.0).suffix("px"));
         });
 
         ui.horizontal(|ui| {
@@ -70,6 +71,7 @@ impl DrawerWindow {
             if ui.add(MaterialButton::filled("Toggle Dismissible")).clicked() {
                 self.dismissible_drawer_open = !self.dismissible_drawer_open;
             }
+        });
         });
     }
 

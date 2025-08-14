@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
+use crate::get_global_color;
 use std::ops::RangeInclusive;
 
 pub struct MaterialSlider<'a> {
@@ -64,7 +65,7 @@ impl<'a> Widget for MaterialSlider<'a> {
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click_and_drag());
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
+        let primary_color = get_global_color("primary");
         let on_primary = Color32::WHITE;
         let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
         let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });

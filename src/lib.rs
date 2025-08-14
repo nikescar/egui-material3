@@ -4,6 +4,7 @@
 //! including buttons, text fields, and other UI elements that follow
 //! Material Design guidelines.
 
+pub mod icons;
 pub mod button;
 pub mod button_window;
 pub mod card;
@@ -67,6 +68,7 @@ pub mod topappbar;
 pub mod topappbar_window;
 pub mod card2;
 pub mod card2_window;
+pub mod theme;
 
 pub use {
     button::{MaterialButton, MaterialButtonVariant},
@@ -87,7 +89,7 @@ pub use {
     field_window::FieldWindow,
     focus::{MaterialFocusRing, add_focus_ring_to_response, demo_focus_ring},
     focus_window::FocusWindow,
-    fab::{MaterialFab, FabVariant, FabSize, fab_surface, fab_primary, fab_secondary, fab_tertiary},
+    fab::{MaterialFab, FabVariant, FabSize, fab_surface, fab_primary, fab_secondary, fab_tertiary, fab_branded},
     fab_window::FabWindow,
     icon::{MaterialIcon, icon},
     iconbutton::{MaterialIconButton, IconButtonVariant, icon_button_standard, icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_toggle},
@@ -132,5 +134,6 @@ pub use {
     topappbar_window::TopAppBarWindow,
     card2::{MaterialCard2, Card2Variant, elevated_card2, filled_card2, outlined_card2},
     card2_window::Card2Window,
+    theme::{get_global_color, get_global_theme, update_global_theme, MaterialThemeContext, ThemeMode, ContrastLevel, MaterialThemeFile},
     egui::TextEdit, // Re-export egui's TextEdit
 };

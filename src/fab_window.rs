@@ -1,5 +1,5 @@
 use eframe::egui::{self, Window};
-use crate::{fab_surface, fab_primary, fab_secondary, fab_tertiary, FabSize};
+use crate::{fab_surface, fab_primary, fab_secondary, fab_tertiary, fab_branded, FabSize};
 
 pub struct FabWindow {
     pub open: bool,
@@ -148,7 +148,7 @@ impl FabWindow {
             ui.vertical(|ui| {
                 ui.label("Branded");
                 let icon = if self.icon.is_empty() { "star" } else { &self.icon };
-                let mut fab = fab_primary()
+                let mut fab = fab_branded()
                     .icon(icon)
                     .size(self.size);
                 

@@ -3,6 +3,7 @@ use egui::{
     epaint::CornerRadius,
     Rect, Response, Sense, TextStyle, Ui, Vec2, Widget,
 };
+use crate::get_global_color;
 
 /// Material Design navigation bar component.
 ///
@@ -129,12 +130,12 @@ impl Widget for MaterialNavigationBar<'_> {
         }
 
         // Material Design colors
-        let md_surface = Color32::from_rgb(254, 247, 255); // md-sys-color-surface
-        let md_surface_container = Color32::from_rgb(243, 237, 247); // md-sys-color-surface-container
-        let md_on_surface = Color32::from_rgb(28, 27, 31); // md-sys-color-on-surface
-        let md_on_surface_variant = Color32::from_rgb(73, 69, 79); // md-sys-color-on-surface-variant
-        let md_primary = Color32::from_rgb(103, 80, 164); // md-sys-color-primary
-        let md_on_secondary_container = Color32::from_rgb(31, 31, 35); // md-sys-color-on-secondary-container
+        let md_surface = get_global_color("surface"); // md-sys-color-surface
+        let md_surface_container = get_global_color("surfaceContainer"); // md-sys-color-surface-container
+        let md_on_surface = get_global_color("onSurface"); // md-sys-color-on-surface
+        let md_on_surface_variant = get_global_color("onSurfaceVariant"); // md-sys-color-on-surface-variant
+        let md_primary = get_global_color("primary"); // md-sys-color-primary
+        let md_on_secondary_container = get_global_color("onSecondaryContainer"); // md-sys-color-on-secondary-container
 
         // Navigation bar height
         let nav_height = 80.0;
@@ -223,7 +224,7 @@ impl Widget for MaterialNavigationBar<'_> {
                                 ui.painter().circle_filled(
                                     badge_rect.center(),
                                     8.0,
-                                    Color32::from_rgb(186, 26, 26), // md-sys-color-error
+                                    get_global_color("error"), // md-sys-color-error
                                 );
                                 
                                 // Badge text

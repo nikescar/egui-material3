@@ -1,4 +1,5 @@
 use eframe::egui::{Color32, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::get_global_color;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum IconButtonVariant {
@@ -88,18 +89,18 @@ impl<'a> Widget for MaterialIconButton<'a> {
         }
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
-        let secondary_container = Color32::from_rgb(232, 222, 248);
-        let on_secondary_container = Color32::from_rgb(29, 25, 43);
-        let _surface = Color32::from_gray(if ui.visuals().dark_mode { 16 } else { 254 });
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
-        let outline = Color32::from_gray(if ui.visuals().dark_mode { 146 } else { 121 });
+        let primary_color = get_global_color("primary");
+        let secondary_container = get_global_color("secondaryContainer");
+        let on_secondary_container = get_global_color("onSecondaryContainer");
+        let _surface = get_global_color("surface");
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let outline = get_global_color("outline");
 
         let (bg_color, icon_color, border_color) = if !self.enabled {
             (
-                Color32::from_gray(if ui.visuals().dark_mode { 31 } else { 245 }),
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
+                get_global_color("surfaceContainer"),
+                get_global_color("outline"),
                 Color32::TRANSPARENT,
             )
         } else {
@@ -119,7 +120,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
                 }
                 IconButtonVariant::Filled => {
                     if is_selected {
-                        (primary_color, Color32::WHITE, Color32::TRANSPARENT)
+                        (primary_color, get_global_color("onPrimary"), Color32::TRANSPARENT)
                     } else if response.hovered() {
                         (
                             Color32::from_rgba_premultiplied(
@@ -128,7 +129,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
                                 primary_color.b().saturating_add(20),
                                 255,
                             ),
-                            Color32::WHITE,
+                            get_global_color("onPrimary"),
                             Color32::TRANSPARENT,
                         )
                     } else {

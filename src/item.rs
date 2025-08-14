@@ -243,7 +243,9 @@ impl Widget for MaterialItem {
 
                     // Main text content
                     ui.vertical(|ui| {
-                        ui.set_width(ui.available_width() - if trailing_supporting_text.is_some() || trailing_icon.is_some() || trailing_content.is_some() { 80.0 } else { 0.0 });
+                        let reserved_width = if trailing_supporting_text.is_some() || trailing_icon.is_some() || trailing_content.is_some() { 80.0 } else { 0.0 };
+                        let content_width = (ui.available_width() - reserved_width).max(120.0); // Minimum 120px for text content
+                        ui.set_width(content_width);
                         
                         // Overline
                         if let Some(overline_text) = &overline {

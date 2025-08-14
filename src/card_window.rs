@@ -18,7 +18,9 @@ impl CardWindow {
         let mut open = self.open;
         Window::new("Card Stories")
             .open(&mut open)
-            .default_size([800.0, 600.0])
+            .default_size([400.0, 300.0])
+            .max_size([400.0, 350.0])
+            .resizable(false)
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_controls(ui);
@@ -50,9 +52,8 @@ impl CardWindow {
         ui.add_space(10.0);
         
         ui.horizontal_wrapped(|ui| {
-            // Set available width and calculate card width
-            let available_width = ui.available_width();
-            let card_width = (available_width / 3.0 - 16.0).min(192.0).max(150.0);
+            // Set fixed card width
+            let card_width = 400.0;
             
             // Elevated card
             ui.add(MaterialCard::elevated()
@@ -151,9 +152,8 @@ impl CardWindow {
         ui.add_space(10.0);
         
         ui.horizontal_wrapped(|ui| {
-            // Set available width and calculate card width
-            let available_width = ui.available_width();
-            let card_width = (available_width / 3.0 - 16.0).min(192.0).max(150.0);
+            // Set fixed card width
+            let card_width = 400.0;
             
             // Elevated card with action
             ui.add(MaterialCard::elevated()
@@ -227,13 +227,14 @@ impl CardWindow {
 
             // Outlined card with action
             ui.add(MaterialCard::outlined()
-                .min_size(egui::Vec2::new(192.0, 240.0))
+                .min_size(egui::Vec2::new(card_width, 240.0))
                 .content(|ui| {
                     ui.vertical(|ui| {
-                        // Placeholder image area
+                        // Placeholder image area - adjusted to card width
+                        let image_width = (card_width - 32.0).max(80.0);
                         let image_rect = egui::Rect::from_min_size(
                             ui.next_widget_position(),
-                            egui::Vec2::new(160.0, 96.0),
+                            egui::Vec2::new(image_width, 96.0),
                         );
                         ui.allocate_new_ui(egui::UiBuilder::new().max_rect(image_rect), |ui| {
                             ui.painter().rect_filled(
@@ -261,12 +262,13 @@ impl CardWindow {
 
     fn render_additional_examples(&mut self, ui: &mut Ui) {
         ui.heading("Additional Card Examples");
+        let card_width = 400.0;
         
         // Clickable card
         ui.label("Clickable card:");
         let clickable_card = ui.add(MaterialCard::elevated()
             .clickable(true)
-            .min_size(egui::Vec2::new(300.0, 100.0))
+            .min_size(egui::Vec2::new(card_width, 100.0))
             .content(|ui| {
                 ui.vertical_centered(|ui| {
                     ui.label("Click anywhere on this card");
@@ -281,14 +283,14 @@ impl CardWindow {
         
         ui.add_space(20.0);
 
-        // Different sizes
-        ui.label("Different card sizes:");
-        ui.horizontal(|ui| {
+        // Different sizes (all now 400px width)
+        ui.label("Card examples (all 400px width):");
+        ui.horizontal_wrapped(|ui| {
             ui.add(MaterialCard::outlined()
-                .min_size(egui::Vec2::new(120.0, 80.0))
+                .min_size(egui::Vec2::new(card_width, 120.0))
                 .content(|ui| {
                     ui.centered_and_justified(|ui| {
-                        ui.label("Small");
+                        ui.label("Outlined Card");
                     });
                     ui.allocate_response(egui::Vec2::ZERO, egui::Sense::hover())
                 }));
@@ -296,10 +298,10 @@ impl CardWindow {
             ui.add_space(8.0);
             
             ui.add(MaterialCard::filled()
-                .min_size(egui::Vec2::new(160.0, 120.0))
+                .min_size(egui::Vec2::new(card_width, 120.0))
                 .content(|ui| {
                     ui.centered_and_justified(|ui| {
-                        ui.label("Medium");
+                        ui.label("Filled Card");
                     });
                     ui.allocate_response(egui::Vec2::ZERO, egui::Sense::hover())
                 }));
@@ -307,10 +309,10 @@ impl CardWindow {
             ui.add_space(8.0);
             
             ui.add(MaterialCard::elevated()
-                .min_size(egui::Vec2::new(200.0, 160.0))
+                .min_size(egui::Vec2::new(card_width, 120.0))
                 .content(|ui| {
                     ui.centered_and_justified(|ui| {
-                        ui.label("Large");
+                        ui.label("Elevated Card");
                     });
                     ui.allocate_response(egui::Vec2::ZERO, egui::Sense::hover())
                 }));
@@ -321,7 +323,7 @@ impl CardWindow {
         // Card with complex content
         ui.label("Card with complex content:");
         ui.add(MaterialCard::outlined()
-            .min_size(egui::Vec2::new(400.0, 200.0))
+            .min_size(egui::Vec2::new(card_width, 200.0))
             .content(|ui| {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {

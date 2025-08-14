@@ -1,150 +1,11 @@
 use eframe::egui::{self, Color32, Vec2};
 use egui_material::*;
-use std::sync::{Arc, Mutex};
+use egui_material::theme::{setup_google_fonts, setup_local_fonts, load_fonts};
+use egui_file_dialog::FileDialog;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
-/// Global theme context that can be shared across all Material components
-#[derive(Clone, Debug)]
-pub struct MaterialThemeContext {
-    pub theme_mode: ThemeMode,
-    pub source_color: Color32,
-    pub hue: f32,
-    pub chroma: f32,
-    pub tone: f32,
-}
 
-impl Default for MaterialThemeContext {
-    fn default() -> Self {
-        Self {
-            theme_mode: ThemeMode::Auto,
-            source_color: Color32::from_rgb(103, 80, 164), // Material Purple default
-            hue: 260.0,
-            chroma: 36.0,
-            tone: 40.0,
-        }
-    }
-}
-
-impl MaterialThemeContext {
-    pub fn get_primary_color(&self) -> Color32 {
-        self.source_color
-    }
-    
-    pub fn get_secondary_color(&self) -> Color32 {
-        self.adjust_color_hue(self.source_color, 30.0)
-    }
-    
-    pub fn get_tertiary_color(&self) -> Color32 {
-        self.adjust_color_hue(self.source_color, -30.0)
-    }
-    
-    pub fn get_surface_color(&self, dark_mode: bool) -> Color32 {
-        if dark_mode {
-            Color32::from_rgb(24, 24, 24)
-        } else {
-            Color32::from_rgb(249, 249, 249)
-        }
-    }
-    
-    pub fn get_on_primary_color(&self) -> Color32 {
-        if self.is_dark_color(self.source_color) { 
-            Color32::WHITE 
-        } else { 
-            Color32::BLACK 
-        }
-    }
-    
-    fn adjust_color_hue(&self, color: Color32, hue_shift: f32) -> Color32 {
-        // Convert to HSV, adjust hue, convert back
-        let r = color.r() as f32 / 255.0;
-        let g = color.g() as f32 / 255.0;
-        let b = color.b() as f32 / 255.0;
-        
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
-        let delta = max - min;
-        
-        let mut hue = if delta == 0.0 {
-            0.0
-        } else if max == r {
-            60.0 * (((g - b) / delta) % 6.0)
-        } else if max == g {
-            60.0 * ((b - r) / delta + 2.0)
-        } else {
-            60.0 * ((r - g) / delta + 4.0)
-        };
-        
-        if hue < 0.0 {
-            hue += 360.0;
-        }
-        
-        // Adjust hue
-        hue = (hue + hue_shift) % 360.0;
-        if hue < 0.0 {
-            hue += 360.0;
-        }
-        
-        let saturation = if max == 0.0 { 0.0 } else { delta / max };
-        let value = max;
-        
-        // Convert back to RGB
-        let h = hue / 60.0;
-        let c = value * saturation;
-        let x = c * (1.0 - ((h % 2.0) - 1.0).abs());
-        let m = value - c;
-        
-        let (r_prime, g_prime, b_prime) = if h < 1.0 {
-            (c, x, 0.0)
-        } else if h < 2.0 {
-            (x, c, 0.0)
-        } else if h < 3.0 {
-            (0.0, c, x)
-        } else if h < 4.0 {
-            (0.0, x, c)
-        } else if h < 5.0 {
-            (x, 0.0, c)
-        } else {
-            (c, 0.0, x)
-        };
-        
-        let r = ((r_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        let g = ((g_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        let b = ((b_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        
-        Color32::from_rgb(r, g, b)
-    }
-    
-    fn is_dark_color(&self, color: Color32) -> bool {
-        let luminance = 0.299 * color.r() as f32 + 0.587 * color.g() as f32 + 0.114 * color.b() as f32;
-        luminance < 128.0
-    }
-}
-
-// Global theme context accessible by all components
-static GLOBAL_THEME: std::sync::LazyLock<Arc<Mutex<MaterialThemeContext>>> = 
-    std::sync::LazyLock::new(|| Arc::new(Mutex::new(MaterialThemeContext::default())));
-
-pub fn get_global_theme() -> Arc<Mutex<MaterialThemeContext>> {
-    GLOBAL_THEME.clone()
-}
-
-pub fn update_global_theme(theme: MaterialThemeContext) {
-    if let Ok(mut global_theme) = GLOBAL_THEME.lock() {
-        *global_theme = theme;
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum ThemeMode {
-    Light,
-    Dark,
-    Auto,
-}
-
-impl Default for ThemeMode {
-    fn default() -> Self {
-        ThemeMode::Auto
-    }
-}
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
@@ -155,7 +16,15 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         "Material Design Components Demo",
         options,
-        Box::new(|_cc| Ok(Box::<MaterialApp>::default())),
+        Box::new(|cc| {
+            // Prepare local fonts including Material Symbols
+            setup_local_fonts(Some("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"));
+            // Prepare Google Sans Code font for Material Design (default)
+            setup_google_fonts(Some("Google Sans Code"));
+            // Load all prepared fonts
+            load_fonts(&cc.egui_ctx);
+            Ok(Box::<MaterialApp>::default())
+        }),
     )
 }
 
@@ -175,8 +44,10 @@ struct MaterialApp {
     switch_enabled: bool,
     tab_selected: usize,
     ripple: MaterialRipple,
-    // Theme changer controls (now using global theme)
-    color_picker_open: bool,
+    // Theme changer controls
+    file_dialog: FileDialog,
+    selected_file_path: Option<PathBuf>,
+    color_pickers_open: HashMap<String, bool>,
     // Demo windows
     button_window: ButtonWindow,
     card_window: CardWindow,
@@ -228,7 +99,9 @@ impl Default for MaterialApp {
             switch_enabled: false,
             tab_selected: 0,
             ripple: MaterialRipple::default(),
-            color_picker_open: false,
+            file_dialog: FileDialog::new(),
+            selected_file_path: None,
+            color_pickers_open: HashMap::new(),
             button_window: ButtonWindow::default(),
             card_window: CardWindow::default(),
             checkbox_window: CheckboxWindow::default(),
@@ -282,80 +155,15 @@ impl MaterialApp {
         }
     }
 
-    fn update_hct_from_color(&self) {
-        let theme = self.get_theme();
-        let source_color = theme.source_color;
-        
-        // Convert RGB to HSV (approximation of HCT)
-        let r = source_color.r() as f32 / 255.0;
-        let g = source_color.g() as f32 / 255.0;
-        let b = source_color.b() as f32 / 255.0;
-        
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
-        let delta = max - min;
-        
-        // Hue
-        let hue = if delta == 0.0 {
-            0.0
-        } else if max == r {
-            60.0 * (((g - b) / delta) % 6.0)
-        } else if max == g {
-            60.0 * ((b - r) / delta + 2.0)
-        } else {
-            60.0 * ((r - g) / delta + 4.0)
-        };
-        
-        let hue = if hue < 0.0 { hue + 360.0 } else { hue };
-        
-        // Chroma (approximated as saturation * 150)
-        let chroma = if max == 0.0 { 0.0 } else { (delta / max) * 150.0 };
-        
-        // Tone (approximated as value * 100)
-        let tone = max * 100.0;
-        
-        self.update_theme(|theme| {
-            theme.hue = hue;
-            theme.chroma = chroma;
-            theme.tone = tone;
-        });
+    fn load_theme_from_file(&self, file_path: &PathBuf) -> Result<MaterialThemeFile, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(file_path)?;
+        let theme: MaterialThemeFile = serde_json::from_str(&content)?;
+        Ok(theme)
     }
-    
-    fn update_color_from_hct(&self) {
-        let theme = self.get_theme();
-        
-        // Convert HCT (approximated as HSV) to RGB
-        let h = theme.hue / 60.0;
-        let s = (theme.chroma / 150.0).clamp(0.0, 1.0);
-        let v = (theme.tone / 100.0).clamp(0.0, 1.0);
-        
-        let c = v * s;
-        let x = c * (1.0 - ((h % 2.0) - 1.0).abs());
-        let m = v - c;
-        
-        let (r_prime, g_prime, b_prime) = if h < 1.0 {
-            (c, x, 0.0)
-        } else if h < 2.0 {
-            (x, c, 0.0)
-        } else if h < 3.0 {
-            (0.0, c, x)
-        } else if h < 4.0 {
-            (0.0, x, c)
-        } else if h < 5.0 {
-            (x, 0.0, c)
-        } else {
-            (c, 0.0, x)
-        };
-        
-        let r = ((r_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        let g = ((g_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        let b = ((b_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        
-        let source_color = Color32::from_rgb(r, g, b);
-        
-        self.update_theme(|theme| {
-            theme.source_color = source_color;
-        });
+
+    fn load_theme_file(&mut self) {
+        // Open the file dialog to pick a file.
+        self.file_dialog.pick_file();
     }
 
     fn apply_theme(&self, ctx: &egui::Context) {
@@ -374,25 +182,11 @@ impl MaterialApp {
             }
         };
         
-        // Generate Material Design 3 color scheme from source color
+        // Apply Material Design 3 colors if theme is loaded
         let primary_color = theme.get_primary_color();
-        
-        // Create color variants for Material Design system
-        let _primary_light = self.lighten_color(primary_color, 0.2);
-        let _primary_dark = self.darken_color(primary_color, 0.2);
         let on_primary = theme.get_on_primary_color();
-        
-        // Secondary colors (derived from primary with adjusted hue/chroma)
-        let _secondary_color = theme.get_secondary_color();
-        let _tertiary_color = theme.get_tertiary_color();
-        
-        // Surface colors
-        let _surface_tint = Color32::from_rgba_unmultiplied(
-            primary_color.r(),
-            primary_color.g(),
-            primary_color.b(),
-            10,
-        );
+        let surface = theme.get_surface_color(visuals.dark_mode);
+        let on_surface = theme.get_color_by_name("onSurface");
         
         // Apply colors to visuals
         visuals.selection.bg_fill = primary_color;
@@ -400,11 +194,7 @@ impl MaterialApp {
         visuals.hyperlink_color = primary_color;
         
         // Button and widget colors
-        visuals.widgets.noninteractive.bg_fill = if visuals.dark_mode {
-            Color32::from_gray(30)
-        } else {
-            Color32::from_gray(245)
-        };
+        visuals.widgets.noninteractive.bg_fill = surface;
         
         visuals.widgets.inactive.bg_fill = Color32::from_rgba_unmultiplied(
             primary_color.r(),
@@ -423,21 +213,15 @@ impl MaterialApp {
         visuals.widgets.active.bg_fill = primary_color;
         visuals.widgets.active.fg_stroke.color = on_primary;
         
-        // Window background tinting
-        if visuals.dark_mode {
-            visuals.window_fill = Color32::from_rgb(16, 16, 16);
-            visuals.panel_fill = Color32::from_rgb(24, 24, 24);
-        } else {
-            visuals.window_fill = Color32::from_rgb(254, 247, 255);
-            visuals.panel_fill = Color32::from_rgb(249, 249, 249);
-        }
+        // Window background
+        visuals.window_fill = surface;
+        visuals.panel_fill = theme.get_color_by_name("surfaceContainer");
         
-        // Apply surface tinting
-        visuals.extreme_bg_color = if visuals.dark_mode {
-            Color32::from_rgb(16, 16, 20)
-        } else {
-            Color32::from_rgb(255, 251, 254)
-        };
+        // Text colors
+        visuals.override_text_color = Some(on_surface);
+        
+        // Apply surface colors
+        visuals.extreme_bg_color = theme.get_color_by_name("surfaceContainerLowest");
         
         ctx.set_visuals(visuals);
     }
@@ -520,6 +304,42 @@ impl MaterialApp {
         
         Color32::from_rgb(r, g, b)
     }
+    
+    /// Close all open demo windows
+    fn close_all_windows(&mut self) {
+        self.button_window.open = false;
+        self.card_window.open = false;
+        self.checkbox_window.open = false;
+        self.chips_window.open = false;
+        self.dialog_window.open = false;
+        self.divider_window.open = false;
+        self.elevation_window.open = false;
+        self.fab_window.open = false;
+        self.iconbutton_window.open = false;
+        self.field_window.open = false;
+        self.focus_window.open = false;
+        self.item_window.open = false;
+        self.list_window.open = false;
+        self.menu_window.open = false;
+        self.navigationbar_window.open = false;
+        self.progress_window.open = false;
+        self.radio_window.open = false;
+        self.ripple_window.open = false;
+        self.segmentedbuttonset_window.open = false;
+        self.select_window.open = false;
+        self.slider_window.open = false;
+        self.switch_window.open = false;
+        self.tabs_window.open = false;
+        self.textfield_window.open = false;
+        self.datatable_window.open = false;
+        self.drawer_window.open = false;
+        self.imagelist_window.open = false;
+        self.layoutgrid_window.open = false;
+        self.snackbar_window.open = false;
+        self.topappbar_window.open = false;
+        self.card2_window.open = false;
+        self.color_pickers_open.clear(); // Also close all color pickers
+    }
 }
 
 impl eframe::App for MaterialApp {
@@ -527,191 +347,72 @@ impl eframe::App for MaterialApp {
         // Apply theme based on settings
         self.apply_theme(ctx);
         
+        // Global ESC key handler to close all sub windows
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.close_all_windows();
+        }
+        
+        // Update the file dialog
+        self.file_dialog.update(ctx);
+
+        // Check if the user picked a file.
+        if let Some(path) = self.file_dialog.take_picked() {
+            match self.load_theme_from_file(&path) {
+                Ok(theme) => {
+                    self.selected_file_path = Some(path.clone());
+                    self.update_theme(|global_theme| {
+                        global_theme.material_theme = Some(theme);
+                        global_theme.selected_colors.clear();
+                    });
+                }
+                Err(e) => {
+                    eprintln!("Failed to load theme file: {}", e);
+                }
+            }
+        }
+        
         egui::CentralPanel::default().show(ctx, |ui| {
             let theme = self.get_theme();
             
             ui.heading("Material Design Components Demo");
             ui.add_space(10.0);
             
-            // Enhanced Theme Changer Controls (Material Design Style)
+            // Material Design 3 Theme Controls
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.heading("Theme Controls");
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("📋").on_hover_text("Copy current theme to clipboard").clicked() {
-                            let theme_string = format!(
-                                "Theme: {:?}, Source Color: #{:02X}{:02X}{:02X}, Hue: {:.0}°, Chroma: {:.0}, Tone: {:.0}",
-                                theme.theme_mode, 
-                                theme.source_color.r(), 
-                                theme.source_color.g(), 
-                                theme.source_color.b(),
-                                theme.hue,
-                                theme.chroma, 
-                                theme.tone
-                            );
-                            ui.ctx().copy_text(theme_string);
-                        }
-                    });
-                });
-                
-                ui.add_space(8.0);
-                
-                // Hex Source Color Section
-                ui.group(|ui| {
-                    let mut style = (**ui.style()).clone();
-                    style.visuals.widgets.noninteractive.bg_fill = Color32::from_rgba_unmultiplied(
-                        theme.source_color.r(),
-                        theme.source_color.g(),
-                        theme.source_color.b(),
-                        20
-                    );
-                    ui.set_style(style);
-                    
-                    ui.horizontal(|ui| {
-                        ui.label("Hex Source Color");
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            // Color picker button styled as circular
-                            let color_button_size = Vec2::splat(32.0);
-                            let (rect, response) = ui.allocate_exact_size(color_button_size, egui::Sense::click());
-                            
-                            if ui.is_rect_visible(rect) {
-                                let painter = ui.painter();
-                                
-                                // Draw circular color swatch
-                                painter.circle_filled(
-                                    rect.center(),
-                                    rect.width() * 0.5,
-                                    theme.source_color,
-                                );
-                                
-                                // Draw border
-                                painter.circle_stroke(
-                                    rect.center(),
-                                    rect.width() * 0.5,
-                                    egui::Stroke::new(1.0, Color32::from_gray(128)),
-                                );
-                                
-                                // Draw focus ring if hovered
-                                if response.hovered() {
-                                    painter.circle_stroke(
-                                        rect.center(),
-                                        rect.width() * 0.5 + 2.0,
-                                        egui::Stroke::new(2.0, theme.source_color),
-                                    );
-                                }
-                            }
-                            
-                            if response.clicked() {
-                                self.color_picker_open = !self.color_picker_open;
-                            }
-                            
-                            // Hex value display
-                            ui.monospace(format!("#{:02X}{:02X}{:02X}", 
-                                theme.source_color.r(), 
-                                theme.source_color.g(), 
-                                theme.source_color.b()));
-                        });
-                    });
-                    
-                    if self.color_picker_open {
-                        ui.separator();
-                        
-                        // Color picker with immediate updates
-                        let mut temp_color = theme.source_color;
-                        let color_changed = ui.color_edit_button_srgba(&mut temp_color).changed();
-                        if color_changed {
-                            self.update_theme(|theme| {
-                                theme.source_color = temp_color;
-                            });
-                            self.update_hct_from_color();
-                        }
+                    ui.heading("Material Theme Controls");
+
+                    if ui.button("Theme Builder").clicked() {
+                        let _ = webbrowser::open("https://material-foundation.github.io/material-theme-builder/");
+                    }
+
+                    if ui.button("Google Fonts").clicked() {
+                        let _ = webbrowser::open("https://fonts.google.com/specimen/Google+Sans+Code?query=google+sans");
                     }
                 });
                 
                 ui.add_space(8.0);
                 
-                // HCT Sliders Section  
+                // File Upload Section
                 ui.group(|ui| {
-                    let mut style = (**ui.style()).clone();
-                    style.visuals.widgets.noninteractive.bg_fill = Color32::from_rgba_unmultiplied(
-                        theme.source_color.r(),
-                        theme.source_color.g(),
-                        theme.source_color.b(),
-                        20
-                    );
-                    ui.set_style(style);
-                    
-                    ui.label("HCT Color Space Controls");
-                    
-                    ui.add_space(4.0);
-                    
-                    // Hue Slider with gradient background
                     ui.horizontal(|ui| {
-                        ui.label("Hue");
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            ui.label(format!("{:.0}°", theme.hue));
-                            let mut temp_hue = theme.hue;
-                            let hue_response = ui.add_sized(
-                                [200.0, 20.0],
-                                egui::Slider::new(&mut temp_hue, 0.0..=360.0)
-                                    .show_value(false)
-                            );
-                            
-                            if hue_response.changed() {
-                                self.update_theme(|theme| {
-                                    theme.hue = temp_hue;
-                                });
-                                self.update_color_from_hct();
-                            }
-                        });
-                    });
-                    
-                    // Chroma Slider
-                    ui.horizontal(|ui| {
-                        ui.label("Chroma");
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            ui.label(format!("{:.0}", theme.chroma));
-                            let mut temp_chroma = theme.chroma;
-                            let chroma_response = ui.add_sized(
-                                [200.0, 20.0],
-                                egui::Slider::new(&mut temp_chroma, 0.0..=150.0)
-                                    .show_value(false)
-                            );
-                            
-                            if chroma_response.changed() {
-                                self.update_theme(|theme| {
-                                    theme.chroma = temp_chroma;
-                                });
-                                self.update_color_from_hct();
-                            }
-                        });
-                    });
-                    
-                    // Tone Slider
-                    ui.horizontal(|ui| {
-                        ui.label("Tone");
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            ui.label(format!("{:.0}", theme.tone));
-                            let mut temp_tone = theme.tone;
-                            let tone_response = ui.add_sized(
-                                [200.0, 20.0],
-                                egui::Slider::new(&mut temp_tone, 0.0..=100.0)
-                                    .show_value(false)
-                            );
-                            
-                            if tone_response.changed() {
-                                self.update_theme(|theme| {
-                                    theme.tone = temp_tone;
-                                });
-                                self.update_color_from_hct();
-                            }
-                        });
+                        ui.label("Theme File:");
+                        
+                        if ui.button("📁 Load JSON Theme").clicked() {
+                            self.load_theme_file();
+                        }
+                        
+                        if let Some(ref path) = self.selected_file_path {
+                            ui.label(format!("Loaded: {}", path.file_name().unwrap_or_default().to_string_lossy()));
+                        } else {
+                            ui.label("No theme loaded");
+                        }
                     });
                 });
                 
                 ui.add_space(8.0);
                 
-                // Theme Mode Selector (Segmented Button Style)
+                // Theme Mode Selector
                 ui.horizontal(|ui| {
                     ui.label("Color Mode:");
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -746,34 +447,82 @@ impl eframe::App for MaterialApp {
                     });
                 });
                 
-                // Color Preview Section
                 ui.add_space(8.0);
+                
+                // Contrast Level Selection
                 ui.horizontal(|ui| {
-                    ui.label("Color Preview:");
-                    
-                    // Primary color swatch
-                    let swatch_size = Vec2::new(24.0, 24.0);
-                    let (rect, _) = ui.allocate_exact_size(swatch_size, egui::Sense::hover());
-                    if ui.is_rect_visible(rect) {
-                        ui.painter().rect_filled(rect, 4.0, theme.source_color);
-                        ui.painter().rect_stroke(rect, 4.0, egui::Stroke::new(1.0, Color32::GRAY), egui::epaint::StrokeKind::Middle);
-                    }
-                    
-                    // Secondary colors
-                    let secondary = theme.get_secondary_color();
-                    let (rect, _) = ui.allocate_exact_size(swatch_size, egui::Sense::hover());
-                    if ui.is_rect_visible(rect) {
-                        ui.painter().rect_filled(rect, 4.0, secondary);
-                        ui.painter().rect_stroke(rect, 4.0, egui::Stroke::new(1.0, Color32::GRAY), egui::epaint::StrokeKind::Middle);
-                    }
-                    
-                    let tertiary = theme.get_tertiary_color();
-                    let (rect, _) = ui.allocate_exact_size(swatch_size, egui::Sense::hover());
-                    if ui.is_rect_visible(rect) {
-                        ui.painter().rect_filled(rect, 4.0, tertiary);
-                        ui.painter().rect_stroke(rect, 4.0, egui::Stroke::new(1.0, Color32::GRAY), egui::epaint::StrokeKind::Middle);
-                    }
+                    ui.label("Contrast:");
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.horizontal(|ui| {
+                            let normal_selected = theme.contrast_level == ContrastLevel::Normal;
+                            let normal_button = ui.selectable_label(normal_selected, "Normal");
+                            if normal_button.clicked() {
+                                self.update_theme(|theme| {
+                                    theme.contrast_level = ContrastLevel::Normal;
+                                });
+                            }
+                            
+                            let medium_selected = theme.contrast_level == ContrastLevel::Medium;
+                            let medium_button = ui.selectable_label(medium_selected, "Medium");
+                            if medium_button.clicked() {
+                                self.update_theme(|theme| {
+                                    theme.contrast_level = ContrastLevel::Medium;
+                                });
+                            }
+                            
+                            let high_selected = theme.contrast_level == ContrastLevel::High;
+                            let high_button = ui.selectable_label(high_selected, "High");
+                            if high_button.clicked() {
+                                self.update_theme(|theme| {
+                                    theme.contrast_level = ContrastLevel::High;
+                                });
+                            }
+                        });
+                    });
                 });
+                
+                ui.add_space(8.0);
+                
+                // 49 Color Selectors - always show since we have default theme
+                {
+                    ui.group(|ui| {
+                        ui.label("Material Color Tokens:");
+                        ui.add_space(4.0);
+                        
+                        let color_names = [
+                            "primary", "surfaceTint", "onPrimary", "primaryContainer", "onPrimaryContainer",
+                            "secondary", "onSecondary", "secondaryContainer", "onSecondaryContainer",
+                            "tertiary", "onTertiary", "tertiaryContainer", "onTertiaryContainer",
+                            "error", "onError", "errorContainer", "onErrorContainer",
+                            "background", "onBackground", "surface", "onSurface",
+                            "surfaceVariant", "onSurfaceVariant", "outline", "outlineVariant",
+                            "shadow", "scrim", "inverseSurface", "inverseOnSurface", "inversePrimary",
+                            "primaryFixed", "onPrimaryFixed", "primaryFixedDim", "onPrimaryFixedVariant",
+                            "secondaryFixed", "onSecondaryFixed", "secondaryFixedDim", "onSecondaryFixedVariant",
+                            "tertiaryFixed", "onTertiaryFixed", "tertiaryFixedDim", "onTertiaryFixedVariant",
+                            "surfaceDim", "surfaceBright", "surfaceContainerLowest", "surfaceContainerLow",
+                            "surfaceContainer", "surfaceContainerHigh", "surfaceContainerHighest"
+                        ];
+                        
+                        ui.horizontal_wrapped(|ui| {
+                            for color_name in &color_names {
+                                let current_color = theme.get_color_by_name(color_name);
+                            
+                                // Color name label
+                                ui.label(*color_name);
+                            
+                                let mut temp_color = current_color;
+                                let color_changed = ui.color_edit_button_srgba(&mut temp_color).changed();
+                                if color_changed {
+                                    self.update_theme(|theme| {
+                                        theme.selected_colors.insert(color_name.to_string(), temp_color);
+                                    });
+                                }
+                                ui.separator();
+                            }
+                        });
+                    });
+                }
             });
             
             ui.add_space(15.0);
@@ -781,10 +530,6 @@ impl eframe::App for MaterialApp {
             ui.horizontal_wrapped(|ui| {
                 if ui.add(MaterialButton::filled("Button Stories")).clicked() {
                     self.button_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Card Stories")).clicked() {
-                    self.card_window.open = true;
                 }
                 
                 if ui.add(MaterialButton::filled("Checkbox Stories")).clicked() {
@@ -799,14 +544,6 @@ impl eframe::App for MaterialApp {
                     self.dialog_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Divider Stories")).clicked() {
-                    self.divider_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Elevation Stories")).clicked() {
-                    self.elevation_window.open = true;
-                }
-                
                 if ui.add(MaterialButton::filled("FAB Stories")).clicked() {
                     self.fab_window.open = true;
                 }
@@ -815,28 +552,12 @@ impl eframe::App for MaterialApp {
                     self.iconbutton_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Field Stories")).clicked() {
-                    self.field_window.open = true;
-                }
-                
                 if ui.add(MaterialButton::filled("Focus Stories")).clicked() {
                     self.focus_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Item Stories")).clicked() {
-                    self.item_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("List Stories")).clicked() {
-                    self.list_window.open = true;
-                }
-                
                 if ui.add(MaterialButton::filled("Menu Stories")).clicked() {
                     self.menu_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Navigation Bar Stories")).clicked() {
-                    self.navigationbar_window.open = true;
                 }
                 
                 if ui.add(MaterialButton::filled("Progress Stories")).clicked() {
@@ -855,10 +576,6 @@ impl eframe::App for MaterialApp {
                     self.segmentedbuttonset_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Select Stories")).clicked() {
-                    self.select_window.open = true;
-                }
-                
                 if ui.add(MaterialButton::filled("Slider Stories")).clicked() {
                     self.slider_window.open = true;
                 }
@@ -867,12 +584,60 @@ impl eframe::App for MaterialApp {
                     self.switch_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
-                    self.tabs_window.open = true;
+                if ui.add(MaterialButton::filled("Layout Grid Stories")).clicked() {
+                    self.layoutgrid_window.open = true;
                 }
                 
+                if ui.add(MaterialButton::filled("Snackbar Stories")).clicked() {
+                    self.snackbar_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Enhanced Card (Card2) Stories")).clicked() {
+                    self.card2_window.open = true;
+                }
+            });
+
+            ui.add_space(15.0);
+            ui.label("Labs Windows:");
+            ui.horizontal_wrapped(|ui| {
+                if ui.add(MaterialButton::filled("Card Stories")).clicked() {
+                    self.card_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Divider Stories")).clicked() {
+                    self.divider_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Elevation Stories")).clicked() {
+                    self.elevation_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Field Stories")).clicked() {
+                    self.field_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("Text Field Stories")).clicked() {
                     self.textfield_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Item Stories")).clicked() {
+                    self.item_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("List Stories")).clicked() {
+                    self.list_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Navigation Bar Stories")).clicked() {
+                    self.navigationbar_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Select Stories")).clicked() {
+                    self.select_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
+                    self.tabs_window.open = true;
                 }
                 
                 if ui.add(MaterialButton::filled("Data Table Stories")).clicked() {
@@ -887,23 +652,13 @@ impl eframe::App for MaterialApp {
                     self.imagelist_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Layout Grid Stories")).clicked() {
-                    self.layoutgrid_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Snackbar Stories")).clicked() {
-                    self.snackbar_window.open = true;
-                }
-                
                 if ui.add(MaterialButton::filled("Top App Bar Stories")).clicked() {
                     self.topappbar_window.open = true;
                 }
-                
-                if ui.add(MaterialButton::filled("Enhanced Card (Card2) Stories")).clicked() {
-                    self.card2_window.open = true;
-                }
             });
         });
+
+        
 
         // Show demo windows
         self.button_window.show(ctx);
@@ -937,6 +692,5 @@ impl eframe::App for MaterialApp {
         self.snackbar_window.show(ctx);
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
-
     }
 }
