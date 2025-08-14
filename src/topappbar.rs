@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius, Shadow},
@@ -123,8 +124,8 @@ impl<'a> MaterialTopAppBar<'a> {
     }
 
     fn get_app_bar_style(&self) -> (Color32, Option<Stroke>) {
-        let md_surface = Color32::from_rgb(254, 247, 255);
-        let md_primary = Color32::from_rgb(103, 80, 164);
+        let md_surface = get_global_color("surface");
+        let md_primary = get_global_color("primary");
         
         match self.variant {
             TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => {
@@ -139,10 +140,10 @@ impl<'a> MaterialTopAppBar<'a> {
     fn get_text_color(&self) -> Color32 {
         match self.variant {
             TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => {
-                Color32::from_rgb(28, 27, 31) // On surface
+                get_global_color("onSurface")
             },
             TopAppBarVariant::Medium | TopAppBarVariant::Large => {
-                Color32::WHITE // On primary
+                get_global_color("onPrimary")
             },
         }
     }
@@ -150,10 +151,10 @@ impl<'a> MaterialTopAppBar<'a> {
     fn get_icon_color(&self) -> Color32 {
         match self.variant {
             TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => {
-                Color32::from_rgb(73, 69, 79) // On surface variant
+                get_global_color("onSurfaceVariant")
             },
             TopAppBarVariant::Medium | TopAppBarVariant::Large => {
-                Color32::WHITE // On primary
+                get_global_color("onPrimary")
             },
         }
     }

@@ -69,10 +69,10 @@ impl<'a> Widget for MaterialTabs<'a> {
 
         // Material Design colors
         let primary_color = get_global_color("primary");
-        let surface = Color32::from_gray(if ui.visuals().dark_mode { 16 } else { 254 });
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
-        let outline_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
+        let surface = get_global_color("surface");
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let outline_variant = get_global_color("outlineVariant");
 
         // Draw tab bar background
         ui.painter().rect_filled(

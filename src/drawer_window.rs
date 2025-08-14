@@ -47,7 +47,7 @@ impl DrawerWindow {
                 ui.heading("Drawer Controls");
 
                 if ui.button("Target").clicked() {
-                    let _ = webbrowser::open("https://material-web.dev/components/drawer/stories/");
+                    let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/drawer");
                 }
             });
 

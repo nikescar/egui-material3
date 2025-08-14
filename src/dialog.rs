@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Stroke, Ui, Context, Modal, Id};
+use crate::theme::get_global_color;
 
 pub struct MaterialDialog<'a> {
     id: Id,
@@ -82,12 +83,13 @@ impl<'a> MaterialDialog<'a> {
         let modal = Modal::new(self.id).show(ctx, |ui| {
             // Set the modal width
             ui.set_width(400.0);
+            ui.set_height(100.0);
             
             // Set Material Design styling
             ui.style_mut().visuals.widgets.noninteractive.bg_fill = 
-                Color32::from_gray(if ui.visuals().dark_mode { 28 } else { 251 });
+                get_global_color("surface");
             ui.style_mut().visuals.widgets.noninteractive.fg_stroke = 
-                Stroke::new(1.0, Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 }));
+                Stroke::new(1.0, get_global_color("outline"));
 
             // Title
             ui.heading(&self.title);
@@ -116,23 +118,24 @@ impl<'a> MaterialDialog<'a> {
                         let desired_size = egui::Vec2::new(button_text.len() as f32 * 8.0 + 16.0, 32.0);
                         let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
                         
-                        // Draw transparent background with purple hover
+                        // Draw transparent background with primary color hover
                         if response.hovered() {
+                            let primary_color = get_global_color("primary");
                             ui.painter().rect_filled(
                                 rect,
                                 4.0,
-                                Color32::from_rgba_unmultiplied(147, 51, 234, 50), // Purple with transparency
+                                Color32::from_rgba_unmultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 50),
                             );
                         }
                         
                         // Draw button text
                         let text_color = if response.hovered() {
-                            Color32::from_rgb(147, 51, 234) // Purple color on hover
+                            get_global_color("primary")
                         } else {
                             if action.primary {
-                                Color32::from_rgb(147, 51, 234) // Purple for primary
+                                get_global_color("primary")
                             } else {
-                                Color32::from_gray(100) // Gray for secondary
+                                get_global_color("onSurfaceVariant")
                             }
                         };
                         

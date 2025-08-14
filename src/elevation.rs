@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Shadow, CornerRadius},
@@ -219,7 +220,7 @@ impl Widget for MaterialElevation<'_> {
         } = self;
 
         // Material Design colors
-        let default_bg = Color32::from_rgb(232, 222, 248); // md-sys-color-primary-container
+        let default_bg = get_global_color("primaryContainer");
         let background = background_color.unwrap_or(default_bg);
 
         // Calculate the desired size
@@ -255,7 +256,7 @@ impl Widget for MaterialElevation<'_> {
                 rect,
                 corner_radius,
                 background,
-                egui::Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 0, 0, 31)),
+                egui::Stroke::new(1.0, get_global_color("outline").linear_multiply(0.12)),
                 egui::epaint::StrokeKind::Outside,
             );
 
@@ -269,7 +270,7 @@ impl Widget for MaterialElevation<'_> {
                     });
                 });
             } else if let Some(text) = text {
-                let text_color = Color32::from_rgb(73, 69, 79); // md-sys-color-on-primary-container
+                let text_color = get_global_color("onPrimaryContainer");
                 ui.allocate_new_ui(egui::UiBuilder::new().max_rect(content_rect), |ui| {
                     ui.centered_and_justified(|ui| {
                         ui.colored_label(text_color, text.text());
@@ -277,7 +278,7 @@ impl Widget for MaterialElevation<'_> {
                 });
             } else {
                 // Default content showing the elevation level
-                let text_color = Color32::from_rgb(73, 69, 79);
+                let text_color = get_global_color("onPrimaryContainer");
                 ui.allocate_new_ui(egui::UiBuilder::new().max_rect(content_rect), |ui| {
                     ui.centered_and_justified(|ui| {
                         ui.colored_label(text_color, level.to_string());

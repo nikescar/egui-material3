@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius, Shadow},
@@ -144,8 +145,8 @@ impl<'a> MaterialDrawer<'a> {
     }
 
     fn get_drawer_style(&self) -> (Color32, Option<Stroke>, bool) {
-        let md_surface = Color32::from_rgb(254, 247, 255);
-        let md_outline = Color32::from_rgb(196, 199, 197);
+        let md_surface = get_global_color("surface");
+        let md_outline = get_global_color("outline");
         
         match self.variant {
             DrawerVariant::Standard => {
@@ -236,7 +237,7 @@ impl Widget for MaterialDrawer<'_> {
             // Draw header if present
             if let Some(title) = &header_title {
                 let header_rect = Rect::from_min_size(rect.min, Vec2::new(width, header_height));
-                let header_bg = Color32::from_rgb(245, 245, 245);
+                let header_bg = get_global_color("surfaceVariant");
                 ui.painter().rect_filled(header_rect, CornerRadius::ZERO, header_bg);
 
                 // Title
@@ -246,7 +247,7 @@ impl Widget for MaterialDrawer<'_> {
                     egui::Align2::LEFT_TOP,
                     title,
                     egui::FontId::proportional(18.0),
-                    Color32::from_rgb(28, 27, 31)
+                    get_global_color("onSurface")
                 );
 
                 // Subtitle if present
@@ -257,7 +258,7 @@ impl Widget for MaterialDrawer<'_> {
                         egui::Align2::LEFT_TOP,
                         subtitle,
                         egui::FontId::proportional(14.0),
-                        Color32::from_rgb(121, 116, 126)
+                        get_global_color("onSurfaceVariant")
                     );
                 }
 
@@ -273,7 +274,7 @@ impl Widget for MaterialDrawer<'_> {
 
                 // Item background
                 let item_bg = if item.active {
-                    Color32::from_rgb(230, 224, 233) // Selected state
+                    get_global_color("primaryContainer") // Selected state
                 } else {
                     Color32::TRANSPARENT
                 };
@@ -283,7 +284,7 @@ impl Widget for MaterialDrawer<'_> {
                 // Handle item interaction
                 let item_response = ui.interact(item_rect, ui.next_auto_id(), Sense::click());
                 if item_response.hovered() && !item.active {
-                    let hover_color = Color32::from_rgba_unmultiplied(103, 80, 164, 12);
+                    let hover_color = get_global_color("primary").linear_multiply(0.05);
                     ui.painter().rect_filled(item_rect, CornerRadius::ZERO, hover_color);
                 }
 
@@ -304,9 +305,9 @@ impl Widget for MaterialDrawer<'_> {
                     // Draw a simple placeholder for the icon (circle)
                     let icon_center = egui::pos2(current_x + 12.0, current_y + item_height / 2.0);
                     let icon_color = if item.active {
-                        Color32::from_rgb(103, 80, 164)
+                        get_global_color("primary")
                     } else {
-                        Color32::from_rgb(121, 116, 126)
+                        get_global_color("onSurfaceVariant")
                     };
                     
                     ui.painter().circle_filled(icon_center, 10.0, icon_color);
@@ -315,9 +316,9 @@ impl Widget for MaterialDrawer<'_> {
 
                 // Draw item text
                 let text_color = if item.active {
-                    Color32::from_rgb(103, 80, 164)
+                    get_global_color("primary")
                 } else {
-                    Color32::from_rgb(28, 27, 31)
+                    get_global_color("onSurface")
                 };
 
                 let text_pos = egui::pos2(current_x, current_y + (item_height - ui.text_style_height(&egui::TextStyle::Body)) / 2.0);

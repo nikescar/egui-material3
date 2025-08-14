@@ -1,5 +1,5 @@
 # rust-egui-material
 
-look at example folder.
+look at example folder. controls on Labs is not ready. controls on Demo is ready.
 
-![screenshot](./resources/screenshot.png)
+<img src="./resources/screenshot.png" alt="drawing" width="600"/>

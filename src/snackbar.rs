@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius, Shadow},
@@ -114,7 +115,7 @@ impl<'a> MaterialSnackbar<'a> {
     }
 
     fn get_snackbar_style(&self) -> (Color32, Option<Stroke>) {
-        let md_inverse_surface = Color32::from_rgb(49, 48, 51); // Dark surface for snackbar
+        let md_inverse_surface = get_global_color("inverseSurface");
         (md_inverse_surface, None)
     }
 }
@@ -164,7 +165,7 @@ impl Widget for MaterialSnackbar<'_> {
             ui.painter().layout_no_wrap(
                 text.clone(),
                 egui::FontId::proportional(14.0),
-                Color32::from_rgb(187, 134, 252) // Primary color for action
+                get_global_color("inversePrimary")
             )
         });
 
@@ -229,7 +230,7 @@ impl Widget for MaterialSnackbar<'_> {
             
             // Action button background on hover
             if action_response.hovered() {
-                let hover_color = Color32::from_rgba_unmultiplied(187, 134, 252, 20);
+                let hover_color = get_global_color("inversePrimary").linear_multiply(0.08);
                 ui.painter().rect_filled(action_rect, CornerRadius::from(4.0), hover_color);
             }
             
@@ -241,7 +242,7 @@ impl Widget for MaterialSnackbar<'_> {
             ui.painter().galley(
                 action_text_pos, 
                 action_galley.clone(), 
-                Color32::from_rgb(187, 134, 252)
+                get_global_color("inversePrimary")
             );
             
             if action_response.clicked() {

@@ -2,6 +2,7 @@ use egui::{
     ecolor::Color32, 
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
+use crate::theme::get_global_color;
 
 /// Material Design divider component.
 ///
@@ -72,7 +73,7 @@ impl Widget for MaterialDivider {
         } = self;
 
         // Material Design divider color - outline variant
-        let divider_color = Color32::from_rgb(121, 116, 126); // md-sys-color-outline-variant
+        let divider_color = get_global_color("outlineVariant");
         
         // Material Design divider thickness
         let thickness = 1.0;

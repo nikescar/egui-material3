@@ -53,9 +53,9 @@ impl<'a> Widget for MaterialRadio<'a> {
 
         // Material Design colors
         let primary_color = get_global_color("primary");
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
-        let outline = Color32::from_gray(if ui.visuals().dark_mode { 146 } else { 121 });
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let outline = get_global_color("outline");
 
         let radio_size = 20.0;
         let radio_rect = Rect::from_min_size(
@@ -64,7 +64,7 @@ impl<'a> Widget for MaterialRadio<'a> {
         );
 
         let (border_color, fill_color, inner_color) = if !self.enabled {
-            let disabled_color = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 });
+            let disabled_color = get_global_color("onSurfaceVariant").linear_multiply(0.38);
             (disabled_color, Color32::TRANSPARENT, disabled_color)
         } else if is_selected {
             (primary_color, Color32::TRANSPARENT, primary_color)
@@ -103,7 +103,7 @@ impl<'a> Widget for MaterialRadio<'a> {
             );
             
             let text_color = if self.enabled { on_surface } else {
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                get_global_color("onSurfaceVariant").linear_multiply(0.38)
             };
 
             ui.painter().text(

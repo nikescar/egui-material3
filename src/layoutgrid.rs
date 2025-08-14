@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::CornerRadius,
@@ -204,7 +205,7 @@ impl Widget for MaterialLayoutGrid<'_> {
                 |ui| {
                     // Debug visualization
                     if debug_mode {
-                        let debug_color = Color32::from_rgba_unmultiplied(103, 80, 164, 30);
+                        let debug_color = get_global_color("primary").linear_multiply(0.12);
                         ui.painter().rect_filled(
                             cell_rect,
                             CornerRadius::from(2.0),
@@ -230,7 +231,7 @@ impl Widget for MaterialLayoutGrid<'_> {
         
         // Debug: Draw grid outline
         if debug_mode {
-            let outline_color = Color32::from_rgb(103, 80, 164);
+            let outline_color = get_global_color("primary");
             ui.painter().rect_stroke(
                 grid_rect,
                 CornerRadius::from(4.0),
@@ -247,7 +248,7 @@ impl Widget for MaterialLayoutGrid<'_> {
                             egui::pos2(x, start_pos.y + margin),
                             egui::pos2(x, max_y)
                         ],
-                        egui::epaint::Stroke::new(0.5, Color32::from_rgb(200, 200, 200))
+                        egui::epaint::Stroke::new(0.5, get_global_color("outlineVariant"))
                     );
                 }
             }

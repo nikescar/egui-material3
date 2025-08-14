@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 pub struct MaterialSelect<'a> {
@@ -103,18 +104,18 @@ impl<'a> Widget for MaterialSelect<'a> {
         }
 
         // Material Design colors
-        let primary_color = Color32::from_rgb(103, 80, 164);
-        let surface = Color32::from_gray(if ui.visuals().dark_mode { 16 } else { 254 });
-        let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 245 });
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
-        let outline = Color32::from_gray(if ui.visuals().dark_mode { 146 } else { 121 });
+        let primary_color = get_global_color("primary");
+        let surface = get_global_color("surface");
+        let surface_variant = get_global_color("surfaceVariant");
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let outline = get_global_color("outline");
 
         let (bg_color, border_color, text_color) = if !self.enabled {
             (
-                Color32::from_gray(if ui.visuals().dark_mode { 31 } else { 245 }),
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 }),
+                get_global_color("surfaceVariant").linear_multiply(0.38),
+                get_global_color("outline").linear_multiply(0.38),
+                get_global_color("onSurface").linear_multiply(0.38),
             )
         } else if response.hovered() || open {
             (surface, primary_color, on_surface)

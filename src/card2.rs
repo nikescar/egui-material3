@@ -3,6 +3,7 @@ use egui::{
     epaint::{Stroke, CornerRadius},
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
+use crate::theme::get_global_color;
 
 /// Material Design card component variants (enhanced version).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -148,11 +149,10 @@ impl<'a> MaterialCard2<'a> {
     }
 
     fn get_card_style(&self) -> (Color32, Option<Stroke>, bool) {
-        // Material Design colors
-        let md_surface = Color32::from_rgb(254, 247, 255); // md-sys-color-surface
-        let md_surface_container_low = Color32::from_rgb(247, 243, 249); // md-sys-color-surface-container-low
-        let md_surface_container_highest = Color32::from_rgb(230, 224, 233); // md-sys-color-surface-container-highest
-        let md_outline_variant = Color32::from_rgb(196, 199, 197); // md-sys-color-outline-variant
+        // Material Design theme colors
+        let md_surface = get_global_color("surface");
+        let md_surface_container_highest = get_global_color("surfaceContainerHighest");
+        let md_outline_variant = get_global_color("outlineVariant");
 
         match self.variant {
             Card2Variant::Elevated => {
@@ -252,7 +252,7 @@ impl Widget for MaterialCard2<'_> {
                     egui::Align2::LEFT_TOP,
                     title,
                     egui::FontId::proportional(20.0),
-                    Color32::from_rgb(28, 27, 31)
+                    get_global_color("onSurface")
                 );
                 
                 // Subtitle if present
@@ -263,7 +263,7 @@ impl Widget for MaterialCard2<'_> {
                         egui::Align2::LEFT_TOP,
                         subtitle,
                         egui::FontId::proportional(14.0),
-                        Color32::from_rgb(121, 116, 126)
+                        get_global_color("onSurfaceVariant")
                     );
                 }
                 
@@ -285,7 +285,7 @@ impl Widget for MaterialCard2<'_> {
                         ui.painter().rect_filled(
                             media_rect,
                             CornerRadius::ZERO,
-                            Color32::from_rgb(240, 240, 240)
+                            get_global_color("surfaceVariant")
                         );
                         
                         media_fn(ui)

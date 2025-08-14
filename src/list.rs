@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::icons::icon_text;
 
@@ -107,10 +108,10 @@ impl<'a> Widget for MaterialList<'a> {
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
         // Material Design colors
-        let surface = Color32::from_gray(if ui.visuals().dark_mode { 16 } else { 254 });
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
-        let outline_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
+        let surface = get_global_color("surface");
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let outline_variant = get_global_color("outlineVariant");
 
         // Draw list background
         ui.painter().rect_filled(rect, 8.0, surface);
@@ -149,7 +150,7 @@ impl<'a> Widget for MaterialList<'a> {
                 let icon_pos = Pos2::new(content_x + 12.0, content_y);
                 
                 let icon_color = if item.enabled { on_surface_variant } else {
-                    Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                    get_global_color("onSurfaceVariant").linear_multiply(0.38)
                 };
 
                 let icon_string = icon_text(icon_name);
@@ -169,7 +170,7 @@ impl<'a> Widget for MaterialList<'a> {
 
             // Draw text content
             let text_color = if item.enabled { on_surface } else {
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                get_global_color("onSurfaceVariant").linear_multiply(0.38)
             };
 
             if let Some(ref secondary) = item.secondary_text {
@@ -209,7 +210,7 @@ impl<'a> Widget for MaterialList<'a> {
                 let icon_pos = Pos2::new(item_rect.max.x - 28.0, content_y);
                 
                 let icon_color = if item.enabled { on_surface_variant } else {
-                    Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                    get_global_color("onSurfaceVariant").linear_multiply(0.38)
                 };
 
                 let icon_string = icon_text(icon_name);

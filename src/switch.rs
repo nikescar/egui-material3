@@ -50,11 +50,11 @@ impl<'a> Widget for MaterialSwitch<'a> {
 
         // Material Design colors
         let primary_color = get_global_color("primary");
-        let on_primary = Color32::WHITE;
-        let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
-        let outline = Color32::from_gray(if ui.visuals().dark_mode { 146 } else { 121 });
+        let on_primary = get_global_color("onPrimary");
+        let surface_variant = get_global_color("surfaceVariant");
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let outline = get_global_color("outline");
 
         // Calculate switch area
         let switch_rect = Rect::from_min_size(
@@ -80,8 +80,8 @@ impl<'a> Widget for MaterialSwitch<'a> {
 
         // Determine colors based on state
         let (track_color, thumb_color, thumb_outline) = if !self.enabled {
-            let disabled_track = Color32::from_gray(if ui.visuals().dark_mode { 31 } else { 245 });
-            let disabled_thumb = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 });
+            let disabled_track = get_global_color("surfaceVariant").linear_multiply(0.38);
+            let disabled_thumb = get_global_color("onSurface").linear_multiply(0.38);
             (disabled_track, disabled_thumb, Color32::TRANSPARENT)
         } else if *self.selected {
             if response.hovered() {
@@ -151,7 +151,7 @@ impl<'a> Widget for MaterialSwitch<'a> {
             );
             
             let text_color = if self.enabled { on_surface } else {
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                get_global_color("onSurface").linear_multiply(0.38)
             };
 
             ui.painter().text(

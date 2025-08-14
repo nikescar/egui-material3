@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius},
@@ -163,8 +164,8 @@ impl<'a> MaterialDataTable<'a> {
     }
 
     fn get_table_style(&self) -> (Color32, Stroke) {
-        let md_surface = Color32::from_rgb(254, 247, 255);
-        let md_outline = Color32::from_rgb(196, 199, 197);
+        let md_surface = get_global_color("surface");
+        let md_outline = get_global_color("outline");
         (md_surface, Stroke::new(1.0, md_outline))
     }
 }
@@ -210,7 +211,7 @@ impl Widget for MaterialDataTable<'_> {
 
             // Draw header
             let header_rect = Rect::from_min_size(rect.min, Vec2::new(total_width, header_height));
-            let header_bg = Color32::from_rgb(245, 245, 245);
+            let header_bg = get_global_color("surfaceVariant");
             ui.painter().rect_filled(header_rect, CornerRadius::ZERO, header_bg);
             
             let mut current_x = rect.min.x;
@@ -227,7 +228,7 @@ impl Widget for MaterialDataTable<'_> {
                 let checkbox_inner_rect = Rect::from_center_size(checkbox_center, checkbox_size);
                 
                 let checkbox_color = if header_checkbox {
-                    Color32::from_rgb(103, 80, 164)
+                    get_global_color("primary")
                 } else {
                     Color32::TRANSPARENT
                 };
@@ -240,7 +241,7 @@ impl Widget for MaterialDataTable<'_> {
                 ui.painter().rect_stroke(
                     checkbox_inner_rect,
                     CornerRadius::from(2.0),
-                    Stroke::new(2.0, Color32::from_rgb(121, 116, 126)),
+                    Stroke::new(2.0, get_global_color("outline")),
                     egui::epaint::StrokeKind::Outside
                 );
                 
@@ -290,7 +291,7 @@ impl Widget for MaterialDataTable<'_> {
                     egui::Align2::LEFT_TOP,
                     &column.title,
                     egui::TextStyle::Body.resolve(ui.style()),
-                    Color32::from_rgb(28, 27, 31)
+                    get_global_color("onSurface")
                 );
                 
                 // Draw sort icon if sortable
@@ -302,7 +303,7 @@ impl Widget for MaterialDataTable<'_> {
                     let icon_rect = Rect::from_min_size(icon_pos, Vec2::splat(24.0));
                     
                     // Draw sort arrow (simplified)
-                    let arrow_color = Color32::from_rgb(121, 116, 126);
+                    let arrow_color = get_global_color("onSurfaceVariant");
                     let center = icon_rect.center();
                     let arrow_points = match column.sort_direction {
                         Some(SortDirection::Ascending) => [
@@ -341,9 +342,9 @@ impl Widget for MaterialDataTable<'_> {
                 
                 let row_selected = selected_rows.get(row_idx).copied().unwrap_or(false);
                 let row_bg = if row_selected {
-                    Color32::from_rgb(230, 224, 233)
+                    get_global_color("primaryContainer")
                 } else if row_idx % 2 == 1 {
-                    Color32::from_rgb(251, 251, 251)
+                    get_global_color("surfaceVariant")
                 } else {
                     background_color
                 };
@@ -364,7 +365,7 @@ impl Widget for MaterialDataTable<'_> {
                     let checkbox_inner_rect = Rect::from_center_size(checkbox_center, checkbox_size);
                     
                     let checkbox_color = if row_selected {
-                        Color32::from_rgb(103, 80, 164)
+                        get_global_color("primary")
                     } else {
                         Color32::TRANSPARENT
                     };
@@ -377,7 +378,7 @@ impl Widget for MaterialDataTable<'_> {
                     ui.painter().rect_stroke(
                         checkbox_inner_rect,
                         CornerRadius::from(2.0),
-                        Stroke::new(2.0, Color32::from_rgb(121, 116, 126)),
+                        Stroke::new(2.0, get_global_color("outline")),
                         egui::epaint::StrokeKind::Outside
                     );
                     
@@ -434,7 +435,7 @@ impl Widget for MaterialDataTable<'_> {
                             text_align,
                             cell_text.text(),
                             egui::TextStyle::Body.resolve(ui.style()),
-                            Color32::from_rgb(28, 27, 31)
+                            get_global_color("onSurface")
                         );
                         
                         current_x += column.width;
@@ -455,7 +456,7 @@ impl Widget for MaterialDataTable<'_> {
                     Vec2::new(total_width, 4.0)
                 );
                 
-                let progress_color = Color32::from_rgb(103, 80, 164);
+                let progress_color = get_global_color("primary");
                 ui.painter().rect_filled(progress_rect, CornerRadius::ZERO, progress_color);
             }
         }

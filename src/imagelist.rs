@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius},
@@ -146,7 +147,7 @@ impl<'a> MaterialImageList<'a> {
     }
 
     fn get_image_list_style(&self) -> Color32 {
-        Color32::from_rgb(254, 247, 255) // md-sys-color-surface
+        get_global_color("surface")
     }
 }
 
@@ -212,7 +213,7 @@ impl Widget for MaterialImageList<'_> {
                 // Handle item interaction
                 let item_response = ui.interact(item_rect, ui.next_auto_id(), Sense::click());
                 if item_response.hovered() {
-                    let hover_color = Color32::from_rgba_unmultiplied(103, 80, 164, 20);
+                    let hover_color = get_global_color("primary").linear_multiply(0.08);
                     ui.painter().rect_filled(item_rect, corner_radius, hover_color);
                 }
 
@@ -224,15 +225,15 @@ impl Widget for MaterialImageList<'_> {
 
                 // Draw placeholder image (rectangle with border)
                 let image_rect = item_rect.shrink(2.0);
-                let image_bg = Color32::from_rgb(240, 240, 240);
-                let image_border = Stroke::new(1.0, Color32::from_rgb(200, 200, 200));
+                let image_bg = get_global_color("surfaceVariant");
+                let image_border = Stroke::new(1.0, get_global_color("outline"));
                 
                 ui.painter().rect_filled(image_rect, corner_radius, image_bg);
                 ui.painter().rect_stroke(image_rect, corner_radius, image_border, egui::epaint::StrokeKind::Outside);
 
                 // Draw image icon placeholder (camera icon representation)
                 let icon_center = image_rect.center();
-                let icon_color = Color32::from_rgb(150, 150, 150);
+                let icon_color = get_global_color("onSurfaceVariant");
                 ui.painter().circle_filled(icon_center, 16.0, icon_color);
                 ui.painter().circle_filled(icon_center + Vec2::new(0.0, -4.0), 6.0, Color32::WHITE);
 
@@ -240,7 +241,7 @@ impl Widget for MaterialImageList<'_> {
                 let text_color = if text_protected {
                     Color32::WHITE
                 } else {
-                    Color32::from_rgb(28, 27, 31)
+                    get_global_color("onSurface")
                 };
 
                 if text_protected {
@@ -269,7 +270,7 @@ impl Widget for MaterialImageList<'_> {
                             egui::Align2::LEFT_TOP,
                             supporting_text,
                             egui::FontId::proportional(10.0),
-                            Color32::from_rgb(200, 200, 200)
+                            get_global_color("onSurfaceVariant")
                         );
                     }
                 } else {
@@ -292,7 +293,7 @@ impl Widget for MaterialImageList<'_> {
                             egui::Align2::LEFT_TOP,
                             supporting_text,
                             egui::FontId::proportional(10.0),
-                            Color32::from_rgb(121, 116, 126)
+                            get_global_color("onSurfaceVariant")
                         );
                     }
                 }

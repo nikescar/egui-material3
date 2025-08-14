@@ -66,10 +66,10 @@ impl<'a> Widget for MaterialSlider<'a> {
 
         // Material Design colors
         let primary_color = get_global_color("primary");
-        let on_primary = Color32::WHITE;
-        let surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 231 });
-        let on_surface = Color32::from_gray(if ui.visuals().dark_mode { 230 } else { 30 });
-        let on_surface_variant = Color32::from_gray(if ui.visuals().dark_mode { 202 } else { 73 });
+        let on_primary = get_global_color("onPrimary");
+        let surface_variant = get_global_color("surfaceVariant");
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
 
         // Calculate slider track area
         let track_rect = Rect::from_min_size(
@@ -104,7 +104,7 @@ impl<'a> Widget for MaterialSlider<'a> {
 
         // Determine colors based on state
         let (track_active_color, track_inactive_color, thumb_color) = if !self.enabled {
-            let disabled_color = Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 });
+            let disabled_color = get_global_color("onSurface").linear_multiply(0.38);
             (disabled_color, disabled_color, disabled_color)
         } else if response.hovered() || response.dragged() {
             (
@@ -159,7 +159,7 @@ impl<'a> Widget for MaterialSlider<'a> {
         if let Some(ref text) = self.text {
             let text_pos = Pos2::new(track_rect.max.x + 16.0, rect.center().y - 16.0);
             let text_color = if self.enabled { on_surface } else {
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                get_global_color("onSurface").linear_multiply(0.38)
             };
 
             ui.painter().text(
@@ -189,7 +189,7 @@ impl<'a> Widget for MaterialSlider<'a> {
             );
             
             let value_color = if self.enabled { on_surface_variant } else {
-                Color32::from_gray(if ui.visuals().dark_mode { 68 } else { 189 })
+                get_global_color("onSurface").linear_multiply(0.38)
             };
 
             ui.painter().text(

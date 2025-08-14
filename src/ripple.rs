@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use eframe::egui::{Color32, Pos2, Response, Ui};
 
 #[derive(Default)]
@@ -146,7 +147,7 @@ pub fn add_ripple_to_response(
         let max_radius = (rect.width().max(rect.height()) / 2.0) + 20.0;
         
         let ripple_color = color.unwrap_or_else(|| {
-            Color32::from_rgba_premultiplied(128, 128, 128, 40)
+            get_global_color("onSurface").linear_multiply(0.12)
         });
         
         ripple.add_ripple(center, ripple_color, max_radius, ui);

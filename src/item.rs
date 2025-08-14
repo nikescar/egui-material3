@@ -1,3 +1,4 @@
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius},
@@ -197,9 +198,9 @@ impl Widget for MaterialItem {
         } = self;
 
         // Material Design colors
-        let md_outline = Color32::from_rgb(121, 116, 126); // md-sys-color-outline
-        let md_on_surface = Color32::from_rgb(28, 27, 31); // md-sys-color-on-surface
-        let md_on_surface_variant = Color32::from_rgb(73, 69, 79); // md-sys-color-on-surface-variant
+        let md_outline = get_global_color("outline");
+        let md_on_surface = get_global_color("onSurface");
+        let md_on_surface_variant = get_global_color("onSurfaceVariant");
         let desired_size = Vec2::new(width, item_height);
 
         let sense = if clickable {
