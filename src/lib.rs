@@ -5,6 +5,7 @@
 //! Material Design guidelines.
 
 pub mod icons;
+pub mod image_utils;
 pub mod button;
 pub mod button_window;
 pub mod card;

@@ -1,5 +1,5 @@
 use eframe::egui::{self, Window};
-use crate::{assist_chip, filter_chip, input_chip, suggestion_chip, MaterialCheckbox};
+use crate::{assist_chip, filter_chip, input_chip, suggestion_chip, MaterialCheckbox, image_utils};
 
 pub struct ChipsWindow {
     pub open: bool,
@@ -101,9 +101,9 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Assist chip clicked!")));
 
-        // Assist chip with icon
+        // Assist chip with material icon
         let label = if self.label.is_empty() { "Assist chip with icon" } else { &self.label };
-        let mut chip = assist_chip(label).leading_icon("local_laundry_service");
+        let mut chip = assist_chip(label).leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
         if self.disabled {
             chip = chip.enabled(false);
         }
@@ -112,9 +112,9 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Assist chip with icon clicked!")));
 
-        // Assist link chip
+        // Assist link chip with Google SVG logo
         let label = if self.label.is_empty() { "Assist link chip" } else { &self.label };
-        let mut chip = assist_chip(label).leading_icon("link");
+        let mut chip = assist_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
         if self.disabled {
             chip = chip.enabled(false);
         }
@@ -162,10 +162,10 @@ impl ChipsWindow {
         }
         ui.add(chip);
 
-        // Filter chip with icon
+        // Filter chip with material icon
         let label = if self.label.is_empty() { "Filter chip with icon" } else { &self.label };
         let mut chip = filter_chip(label, &mut self.filter_with_icon_selected)
-            .leading_icon("local_laundry_service");
+            .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
         if self.disabled {
             chip = chip.enabled(false);
         }
@@ -224,25 +224,25 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Input chip clicked!")));
 
-        // Input chip with icon
+        // Input chip with material icon
         let label = if self.label.is_empty() { "Input chip with icon" } else { &self.label };
-        let mut chip = input_chip(label).leading_icon("local_laundry_service");
+        let mut chip = input_chip(label).leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
         if self.disabled {
             chip = chip.enabled(false);
         }
         ui.add(chip.on_click(|| println!("Input chip with icon clicked!")));
 
-        // Input chip with avatar
+        // Input chip with avatar (using SVG)
         let label = if self.label.is_empty() { "Input chip with avatar" } else { &self.label };
-        let mut chip = input_chip(label).leading_icon("account_circle");
+        let mut chip = input_chip(label).leading_icon_svg(image_utils::AVATAR_SVG);
         if self.disabled {
             chip = chip.enabled(false);
         }
         ui.add(chip.on_click(|| println!("Input chip with avatar clicked!")));
 
-        // Input link chip
+        // Input link chip with Google logo
         let label = if self.label.is_empty() { "Input link chip" } else { &self.label };
-        let mut chip = input_chip(label).leading_icon("link");
+        let mut chip = input_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
         if self.disabled {
             chip = chip.enabled(false);
         }
@@ -292,9 +292,9 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Suggestion chip clicked!")));
 
-        // Suggestion chip with icon
+        // Suggestion chip with material icon
         let label = if self.label.is_empty() { "Suggestion chip with icon" } else { &self.label };
-        let mut chip = suggestion_chip(label).leading_icon("local_laundry_service");
+        let mut chip = suggestion_chip(label).leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
         if self.disabled {
             chip = chip.enabled(false);
         }
@@ -303,9 +303,9 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Suggestion chip with icon clicked!")));
 
-        // Suggestion link chip
+        // Suggestion link chip with Google logo
         let label = if self.label.is_empty() { "Suggestion link chip" } else { &self.label };
-        let mut chip = suggestion_chip(label).leading_icon("link");
+        let mut chip = suggestion_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
         if self.disabled {
             chip = chip.enabled(false);
         }

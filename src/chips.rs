@@ -1,5 +1,5 @@
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
-use crate::get_global_color;
+use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget, TextureHandle};
+use crate::{get_global_color, image_utils};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum ChipVariant {
@@ -9,6 +9,14 @@ pub enum ChipVariant {
     Suggestion,
 }
 
+#[derive(Clone)]
+pub enum IconType {
+    MaterialIcon(String),  // Material icon name/unicode
+    SvgData(String),      // SVG content
+    PngBytes(Vec<u8>),    // PNG image data
+    Texture(TextureHandle), // Pre-loaded texture
+}
+
 pub struct MaterialChip<'a> {
     text: String,
     variant: ChipVariant,
@@ -16,7 +24,7 @@ pub struct MaterialChip<'a> {
     enabled: bool,
     elevated: bool,
     removable: bool,
-    leading_icon: Option<String>,
+    leading_icon: Option<IconType>,
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
@@ -68,7 +76,22 @@ impl<'a> MaterialChip<'a> {
     }
 
     pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
-        self.leading_icon = Some(icon.into());
+        self.leading_icon = Some(IconType::MaterialIcon(icon.into()));
+        self
+    }
+
+    pub fn leading_icon_svg(mut self, svg_data: impl Into<String>) -> Self {
+        self.leading_icon = Some(IconType::SvgData(svg_data.into()));
+        self
+    }
+
+    pub fn leading_icon_png(mut self, png_bytes: Vec<u8>) -> Self {
+        self.leading_icon = Some(IconType::PngBytes(png_bytes));
+        self
+    }
+
+    pub fn leading_icon_texture(mut self, texture: TextureHandle) -> Self {
+        self.leading_icon = Some(IconType::Texture(texture));
         self
     }
 
@@ -214,12 +237,55 @@ impl<'a> Widget for MaterialChip<'a> {
         let mut content_x = rect.min.x + 8.0;
         
         // Draw leading icon or checkmark
-        if let Some(_icon) = &self.leading_icon {
+        if let Some(icon) = &self.leading_icon {
             let icon_rect = Rect::from_min_size(
                 Pos2::new(content_x, rect.center().y - 10.0),
                 Vec2::splat(20.0),
             );
-            ui.painter().circle_filled(icon_rect.center(), 8.0, text_color);
+            
+            match icon {
+                IconType::MaterialIcon(icon_str) => {
+                    // Draw material icon as text
+                    ui.painter().text(
+                        icon_rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        icon_str,
+                        egui::FontId::proportional(16.0),
+                        text_color,
+                    );
+                }
+                IconType::SvgData(svg_data) => {
+                    // Convert SVG to texture and draw
+                    if let Ok(texture) = image_utils::create_texture_from_svg(ui.ctx(), svg_data, &format!("chip_svg_{}", svg_data.len())) {
+                        ui.painter().image(
+                            texture.id(),
+                            icon_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
+                    }
+                }
+                IconType::PngBytes(png_bytes) => {
+                    // Convert PNG bytes to texture and draw
+                    if let Ok(texture) = image_utils::create_texture_from_png_bytes(ui.ctx(), png_bytes, &format!("chip_png_{}", png_bytes.len())) {
+                        ui.painter().image(
+                            texture.id(),
+                            icon_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
+                    }
+                }
+                IconType::Texture(texture) => {
+                    // Draw pre-loaded texture
+                    ui.painter().image(
+                        texture.id(),
+                        icon_rect,
+                        Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                        Color32::WHITE,
+                    );
+                }
+            }
             content_x += 24.0;
         } else if self.variant == ChipVariant::Filter && self.selected.as_ref().map_or(false, |s| **s) {
             // Draw checkmark for selected filter chips
