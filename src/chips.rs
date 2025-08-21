@@ -129,79 +129,161 @@ impl<'a> Widget for MaterialChip<'a> {
         );
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        
+        // Track interaction states for state layers
+        let is_pressed = response.is_pointer_button_down_on();
+        let is_hovered = response.hovered();
 
         // Material Design colors
         let primary_color = get_global_color("primary");
         let surface = get_global_color("surface");
         let surface_variant = get_global_color("surfaceVariant");
+        let surface_container_low = get_global_color("surfaceContainerLow");
+        let surface_container_high = get_global_color("surfaceContainerHigh");
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
         let outline = get_global_color("outline");
+        let error = get_global_color("error");
 
-        let (bg_color, border_color, text_color) = match self.variant {
+        let (bg_color, border_color, text_color, state_layer_color) = match self.variant {
             ChipVariant::Assist => {
                 if !self.enabled {
+                    // Disabled state: on-surface with 12% opacity for container, 38% for text
                     (
-                        get_global_color("surfaceContainer"),
-                        get_global_color("outline"),
-                        get_global_color("outline"),
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
+                        Color32::TRANSPARENT,
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
+                        Color32::TRANSPARENT, // No state layer for disabled
                     )
                 } else if self.elevated {
-                    (surface, Color32::TRANSPARENT, on_surface)
-                } else if response.hovered() {
-                    (surface_variant, outline, on_surface_variant)
+                    // Elevated: surface-container-high background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_container_high, Color32::TRANSPARENT, on_surface_variant, state_layer)
                 } else {
-                    (Color32::TRANSPARENT, outline, on_surface_variant)
+                    // Default: surface-variant background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_variant, outline, on_surface_variant, state_layer)
                 }
             }
             ChipVariant::Filter => {
                 let is_selected = self.selected.as_ref().map_or(false, |s| **s);
                 if !self.enabled {
+                    // Disabled state: on-surface with 12% opacity for container, 38% for text
                     (
-                        get_global_color("surfaceContainer"),
-                        get_global_color("outline"),
-                        get_global_color("outline"),
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
+                        Color32::TRANSPARENT,
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
+                        Color32::TRANSPARENT, // No state layer for disabled
                     )
                 } else if is_selected {
+                    // Selected: secondary container background with primary border
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
                     (
-                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 24),
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 24), // Light primary background
                         primary_color,
                         on_surface,
+                        state_layer,
                     )
                 } else if self.elevated {
-                    (surface, Color32::TRANSPARENT, on_surface_variant)
-                } else if response.hovered() {
-                    (surface_variant, outline, on_surface_variant)
+                    // Elevated: surface-container-high background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_container_high, Color32::TRANSPARENT, on_surface_variant, state_layer)
                 } else {
-                    (Color32::TRANSPARENT, outline, on_surface_variant)
+                    // Default: surface-variant background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_variant, outline, on_surface_variant, state_layer)
                 }
             }
             ChipVariant::Input => {
                 if !self.enabled {
+                    // Disabled state: on-surface with 12% opacity for container, 38% for text
                     (
-                        get_global_color("surfaceContainer"),
-                        get_global_color("outline"),
-                        get_global_color("outline"),
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
+                        Color32::TRANSPARENT,
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
+                        Color32::TRANSPARENT, // No state layer for disabled
                     )
-                } else if response.hovered() {
-                    (surface_variant, outline, on_surface_variant)
+                } else if self.elevated {
+                    // Elevated: surface-container-high background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_container_high, Color32::TRANSPARENT, on_surface_variant, state_layer)
                 } else {
-                    (Color32::TRANSPARENT, outline, on_surface_variant)
+                    // Default: surface-variant background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_variant, outline, on_surface_variant, state_layer)
                 }
             }
             ChipVariant::Suggestion => {
                 if !self.enabled {
+                    // Disabled state: on-surface with 12% opacity for container, 38% for text
                     (
-                        get_global_color("surfaceContainer"),
-                        get_global_color("outline"),
-                        get_global_color("outline"),
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
+                        Color32::TRANSPARENT,
+                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
+                        Color32::TRANSPARENT, // No state layer for disabled
                     )
                 } else if self.elevated {
-                    (surface, Color32::TRANSPARENT, on_surface_variant)
-                } else if response.hovered() {
-                    (surface_variant, outline, on_surface_variant)
+                    // Elevated: surface-container-high background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_container_high, Color32::TRANSPARENT, on_surface_variant, state_layer)
                 } else {
-                    (Color32::TRANSPARENT, outline, on_surface_variant)
+                    // Default: surface-variant background
+                    let state_layer = if is_pressed {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 31) // 12% opacity for pressed
+                    } else if is_hovered {
+                        Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20) // 8% opacity for hover
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    (surface_variant, outline, on_surface_variant, state_layer)
                 }
             }
         };
@@ -213,6 +295,15 @@ impl<'a> Widget for MaterialChip<'a> {
             bg_color,
         );
 
+        // Draw state layer (hover/pressed overlay)
+        if state_layer_color != Color32::TRANSPARENT {
+            ui.painter().rect_filled(
+                rect,
+                16.0,
+                state_layer_color,
+            );
+        }
+
         // Draw chip border (if not transparent)
         if border_color != Color32::TRANSPARENT {
             ui.painter().rect_stroke(
@@ -223,13 +314,14 @@ impl<'a> Widget for MaterialChip<'a> {
             );
         }
 
-        // Draw elevation shadow for elevated chips
-        if self.elevated {
-            let shadow_rect = rect.expand(2.0);
+        // Draw elevation shadow for elevated chips (before background) - but not for disabled chips
+        if self.elevated && self.enabled {
+            let shadow_offset = Vec2::new(0.0, 2.0);
+            let shadow_rect = rect.translate(shadow_offset);
             ui.painter().rect_filled(
                 shadow_rect,
                 16.0,
-                Color32::from_black_alpha(20),
+                Color32::from_rgba_unmultiplied(0, 0, 0, 30),
             );
         }
 
@@ -362,15 +454,6 @@ impl<'a> Widget for MaterialChip<'a> {
             }
         }
 
-        // Add ripple effect on hover
-        if response.hovered() && self.enabled {
-            let ripple_color = Color32::from_rgba_premultiplied(text_color.r(), text_color.g(), text_color.b(), 20);
-            ui.painter().rect_filled(
-                rect,
-                16.0,
-                ripple_color,
-            );
-        }
 
         response
     }

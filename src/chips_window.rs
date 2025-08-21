@@ -6,7 +6,6 @@ pub struct ChipsWindow {
     label: String,
     elevated: bool,
     disabled: bool,
-    scrolling: bool,
     // Chip states
     filter_selected: bool,
     filter_with_icon_selected: bool,
@@ -21,7 +20,6 @@ impl Default for ChipsWindow {
             label: String::new(),
             elevated: false,
             disabled: false,
-            scrolling: false,
             filter_selected: false,
             filter_with_icon_selected: false,
             removable_filter_selected: false,
@@ -68,25 +66,14 @@ impl ChipsWindow {
         
         ui.add(MaterialCheckbox::new(&mut self.elevated, "Elevated"));
         ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
-        ui.add(MaterialCheckbox::new(&mut self.scrolling, "Scrolling (demo only)"));
     }
 
     fn render_assist_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Assist Chips");
         
-        if self.scrolling {
-            egui::ScrollArea::horizontal()
-                .max_width(512.0)
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        self.render_assist_chips_content(ui);
-                    });
-                });
-        } else {
-            ui.horizontal_wrapped(|ui| {
-                self.render_assist_chips_content(ui);
-            });
-        }
+        ui.horizontal_wrapped(|ui| {
+            self.render_assist_chips_content(ui);
+        });
     }
 
     fn render_assist_chips_content(&mut self, ui: &mut egui::Ui) {
@@ -112,12 +99,10 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Assist chip with icon clicked!")));
 
-        // Assist link chip with Google SVG logo
+        // Assist link chip with Google SVG logo (never disabled)
         let label = if self.label.is_empty() { "Assist link chip" } else { &self.label };
         let mut chip = assist_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
+        // Link chips are never disabled
         if self.elevated {
             chip = chip.elevated(true);
         }
@@ -135,19 +120,9 @@ impl ChipsWindow {
     fn render_filter_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Filter Chips");
         
-        if self.scrolling {
-            egui::ScrollArea::horizontal()
-                .max_width(512.0)
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        self.render_filter_chips_content(ui);
-                    });
-                });
-        } else {
-            ui.horizontal_wrapped(|ui| {
-                self.render_filter_chips_content(ui);
-            });
-        }
+        ui.horizontal_wrapped(|ui| {
+            self.render_filter_chips_content(ui);
+        });
     }
 
     fn render_filter_chips_content(&mut self, ui: &mut egui::Ui) {
@@ -200,19 +175,9 @@ impl ChipsWindow {
     fn render_input_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Input Chips");
         
-        if self.scrolling {
-            egui::ScrollArea::horizontal()
-                .max_width(512.0)
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        self.render_input_chips_content(ui);
-                    });
-                });
-        } else {
-            ui.horizontal_wrapped(|ui| {
-                self.render_input_chips_content(ui);
-            });
-        }
+        ui.horizontal_wrapped(|ui| {
+            self.render_input_chips_content(ui);
+        });
     }
 
     fn render_input_chips_content(&mut self, ui: &mut egui::Ui) {
@@ -240,12 +205,10 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Input chip with avatar clicked!")));
 
-        // Input link chip with Google logo
+        // Input link chip with Google logo (never disabled)
         let label = if self.label.is_empty() { "Input link chip" } else { &self.label };
-        let mut chip = input_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
+        let chip = input_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
+        // Link chips are never disabled
         ui.add(chip.on_click(|| println!("Input link chip clicked!")));
 
         // Remove-only input chip
@@ -265,19 +228,9 @@ impl ChipsWindow {
     fn render_suggestion_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Suggestion Chips");
         
-        if self.scrolling {
-            egui::ScrollArea::horizontal()
-                .max_width(512.0)
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        self.render_suggestion_chips_content(ui);
-                    });
-                });
-        } else {
-            ui.horizontal_wrapped(|ui| {
-                self.render_suggestion_chips_content(ui);
-            });
-        }
+        ui.horizontal_wrapped(|ui| {
+            self.render_suggestion_chips_content(ui);
+        });
     }
 
     fn render_suggestion_chips_content(&mut self, ui: &mut egui::Ui) {
@@ -303,12 +256,10 @@ impl ChipsWindow {
         }
         ui.add(chip.on_click(|| println!("Suggestion chip with icon clicked!")));
 
-        // Suggestion link chip with Google logo
+        // Suggestion link chip with Google logo (never disabled)
         let label = if self.label.is_empty() { "Suggestion link chip" } else { &self.label };
         let mut chip = suggestion_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
+        // Link chips are never disabled
         if self.elevated {
             chip = chip.elevated(true);
         }
