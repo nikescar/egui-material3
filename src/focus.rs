@@ -49,7 +49,7 @@ impl MaterialFocusRing {
             color: None,
             width: 2.0,
             offset: 2.0,
-            animated: false,
+            animated: true, // Enable animation by default to match Material Web
             focus_start_time: None,
         }
     }
@@ -120,7 +120,7 @@ impl Default for MaterialFocusRing {
 }
 
 impl Widget for MaterialFocusRing {
-    fn ui(mut self, ui: &mut Ui) -> Response {
+    fn ui(self, ui: &mut Ui) -> Response {
         let MaterialFocusRing {
             visible,
             inward,
@@ -133,71 +133,69 @@ impl Widget for MaterialFocusRing {
             mut focus_start_time,
         } = self;
 
-        // Material Design focus ring color
-        let base_color = color.unwrap_or_else(|| Color32::from_rgb(103, 80, 164)); // md-sys-color-primary
+        // Material Design focus ring color - use the global color system
+        let base_color = color.unwrap_or_else(|| crate::get_global_color("primary"));
         
-        // Animation logic
-        let (focus_color, current_width) = if animated && visible {
+        // Animation logic matching Material Web behavior
+        let (focus_color, current_width, current_offset) = if animated && visible {
             if focus_start_time.is_none() {
                 focus_start_time = Some(Instant::now());
             }
             
             if let Some(start_time) = focus_start_time {
                 let elapsed = start_time.elapsed();
-                let total_animation_duration = Duration::from_millis(500); // 0.5 seconds total
+                let total_animation_duration = Duration::from_millis(600); // 0.6 seconds total
                 
                 if elapsed < total_animation_duration {
                     // Calculate animation progress (0.0 to 1.0)
                     let progress = elapsed.as_millis() as f32 / total_animation_duration.as_millis() as f32;
                     
-                    // Phase 1: 0.0 to 0.5 (first 0.25 seconds) - thick edge
-                    // Phase 2: 0.5 to 1.0 (second 0.25 seconds) - lighter edge
-                    let (alpha, stroke_width) = if progress < 0.5 {
-                        // First phase: thick edge with full opacity
-                        (255, width * 2.0)
+                    // Material Design animation: appears thick and fades to thinner with reduced opacity
+                    let thickness_factor = 1.0 + (1.0 - progress) * 2.0; // Start thick, become normal
+                    let alpha_factor = 0.4 + (1.0 - progress) * 0.6; // Start at full, fade to 40%
+                    
+                    // For inward rings, animate the offset as well
+                    let animated_offset = if inward {
+                        offset * (1.0 - progress * 0.3) // Slightly shrink inward during animation
                     } else {
-                        // Second phase: fade to lighter
-                        let fade_progress = (progress - 0.5) * 2.0; // 0.0 to 1.0 for second half
-                        let alpha = (255.0 * (1.0 - fade_progress * 0.6)) as u8; // Fade to 40% opacity
-                        let stroke_width = width * (2.0 - fade_progress); // Reduce width gradually
-                        (alpha, stroke_width)
+                        offset + (progress * 2.0) // Expand outward during animation
                     };
                     
                     let animated_color = Color32::from_rgba_unmultiplied(
                         base_color.r(),
                         base_color.g(),
                         base_color.b(),
-                        alpha,
+                        (255.0 * alpha_factor) as u8,
                     );
                     
                     // Request repaint for next frame
                     ui.ctx().request_repaint();
                     
-                    (animated_color, stroke_width)
+                    (animated_color, width * thickness_factor, animated_offset)
                 } else {
-                    // Animation finished, show final lighter state
+                    // Animation finished, show final stable state
                     let final_color = Color32::from_rgba_unmultiplied(
                         base_color.r(),
                         base_color.g(),
                         base_color.b(),
                         102, // ~40% opacity
                     );
-                    (final_color, width)
+                    (final_color, width, offset)
                 }
             } else {
-                (base_color, width)
+                (base_color, width, offset)
             }
         } else {
-            (base_color, width)
+            (base_color, width, offset)
         };
 
         let rect = if let Some(target) = target_rect {
             if inward {
                 // Inward focus ring shrinks the ring inside the target
-                target.shrink(offset)
+                target.shrink(current_offset)
             } else {
                 // Outward focus ring expands outside the target
-                target.expand(offset)
+                target.expand(current_offset)
             }
         } else {
             // If no target rect is provided, use available space

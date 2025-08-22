@@ -68,13 +68,22 @@ impl RippleEffect {
         true
     }
 
-    pub fn render(&self, ui: &Ui) {
+    pub fn render(&self, ui: &Ui, clip_rect: Option<egui::Rect>) {
         if self.active && self.radius > 0.0 {
-            ui.painter().circle_filled(
-                self.center,
-                self.radius,
-                self.color,
-            );
+            if let Some(clip) = clip_rect {
+                // Clip the ripple to the container bounds
+                ui.painter().with_clip_rect(clip).circle_filled(
+                    self.center,
+                    self.radius,
+                    self.color,
+                );
+            } else {
+                ui.painter().circle_filled(
+                    self.center,
+                    self.radius,
+                    self.color,
+                );
+            }
         }
     }
 }
@@ -111,11 +120,15 @@ impl MaterialRipple {
     }
 
     pub fn update_and_render(&mut self, ui: &Ui) -> bool {
+        self.update_and_render_clipped(ui, None)
+    }
+
+    pub fn update_and_render_clipped(&mut self, ui: &Ui, clip_rect: Option<egui::Rect>) -> bool {
         let mut any_active = false;
         
         for effect in &mut self.effects {
             if effect.update(ui) {
-                effect.render(ui);
+                effect.render(ui, clip_rect);
                 any_active = true;
             }
         }
@@ -141,10 +154,36 @@ pub fn add_ripple_to_response(
     ripple: &mut MaterialRipple,
     color: Option<Color32>,
 ) {
+    add_ripple_to_response_with_bounds(response, ui, ripple, color, true)
+}
+
+pub fn add_ripple_to_response_with_bounds(
+    response: &Response,
+    ui: &Ui,
+    ripple: &mut MaterialRipple,
+    color: Option<Color32>,
+    bounded: bool,
+) {
     if response.clicked() {
         let rect = response.rect;
         let center = response.interact_pointer_pos().unwrap_or(rect.center());
-        let max_radius = (rect.width().max(rect.height()) / 2.0) + 20.0;
+        
+        // Calculate max_radius based on whether ripple should be bounded
+        let max_radius = if bounded {
+            // For bounded ripples, calculate radius to reach furthest corner from click point
+            let corners = [
+                rect.min,
+                egui::pos2(rect.max.x, rect.min.y),
+                rect.max,
+                egui::pos2(rect.min.x, rect.max.y),
+            ];
+            corners.iter()
+                .map(|corner| center.distance(*corner))
+                .fold(0.0_f32, f32::max)
+        } else {
+            // For unbounded ripples, use a larger radius
+            (rect.width().max(rect.height()) / 2.0) + 40.0
+        };
         
         let ripple_color = color.unwrap_or_else(|| {
             get_global_color("onSurface").linear_multiply(0.12)

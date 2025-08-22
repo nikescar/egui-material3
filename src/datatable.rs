@@ -2,8 +2,31 @@ use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius},
-    Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
+    Id, Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
 };
+use std::collections::HashMap;
+
+/// Persistent state for a data table
+#[derive(Clone, Debug, Default)]
+pub struct DataTableState {
+    /// Selection state for each row
+    pub selected_rows: Vec<bool>,
+    /// Header checkbox state
+    pub header_checkbox: bool,
+    /// Column sort states
+    pub column_sorts: HashMap<String, SortDirection>,
+}
+
+/// Response from a data table widget including selection state
+#[derive(Debug)]
+pub struct DataTableResponse {
+    /// The UI response
+    pub response: Response,
+    /// Current selection state for each row
+    pub selected_rows: Vec<bool>,
+    /// Header checkbox state
+    pub header_checkbox: bool,
+}
 
 /// Material Design data table component.
 ///
@@ -31,8 +54,7 @@ use egui::{
 pub struct MaterialDataTable<'a> {
     columns: Vec<DataTableColumn>,
     rows: Vec<DataTableRow<'a>>,
-    selected_rows: Vec<bool>,
-    header_checkbox: bool,
+    id: Option<Id>,
     allow_selection: bool,
     sticky_header: bool,
     progress_visible: bool,
@@ -57,6 +79,7 @@ pub enum SortDirection {
 pub struct DataTableRow<'a> {
     cells: Vec<WidgetText>,
     selected: bool,
+    readonly: bool,
     id: Option<String>,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
@@ -66,6 +89,7 @@ impl<'a> DataTableRow<'a> {
         Self {
             cells: Vec::new(),
             selected: false,
+            readonly: false,
             id: None,
             _phantom: std::marker::PhantomData,
         }
@@ -81,6 +105,11 @@ impl<'a> DataTableRow<'a> {
         self
     }
     
+    pub fn readonly(mut self, readonly: bool) -> Self {
+        self.readonly = readonly;
+        self
+    }
+    
     pub fn id(mut self, id: impl Into<String>) -> Self {
         self.id = Some(id.into());
         self
@@ -93,8 +122,7 @@ impl<'a> MaterialDataTable<'a> {
         Self {
             columns: Vec::new(),
             rows: Vec::new(),
-            selected_rows: Vec::new(),
-            header_checkbox: false,
+            id: None,
             allow_selection: false,
             sticky_header: false,
             progress_visible: false,
@@ -136,12 +164,15 @@ impl<'a> MaterialDataTable<'a> {
         self
     }
 
+    /// Set the ID for state persistence.
+    pub fn id(mut self, id: impl Into<Id>) -> Self {
+        self.id = Some(id.into());
+        self
+    }
+
     /// Enable row selection.
     pub fn allow_selection(mut self, allow: bool) -> Self {
         self.allow_selection = allow;
-        if allow && self.selected_rows.len() != self.rows.len() {
-            self.selected_rows = vec![false; self.rows.len()];
-        }
         self
     }
 
@@ -168,27 +199,55 @@ impl<'a> MaterialDataTable<'a> {
         let md_outline = get_global_color("outline");
         (md_surface, Stroke::new(1.0, md_outline))
     }
-}
 
-impl<'a> Default for MaterialDataTable<'a> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Widget for MaterialDataTable<'_> {
-    fn ui(self, ui: &mut Ui) -> Response {
+    /// Show the data table and return both UI response and selection state
+    pub fn show(self, ui: &mut Ui) -> DataTableResponse {
         let (background_color, border_stroke) = self.get_table_style();
         
+        // Generate table ID for state persistence
+        let table_id = self.id.unwrap_or_else(|| {
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            let mut hasher = DefaultHasher::new();
+            
+            // Hash based on columns and first few rows for uniqueness
+            for col in &self.columns {
+                col.title.hash(&mut hasher);
+                col.width.to_bits().hash(&mut hasher);
+            }
+            for (i, row) in self.rows.iter().take(3).enumerate() {
+                i.hash(&mut hasher);
+                for cell in &row.cells {
+                    cell.text().hash(&mut hasher);
+                }
+            }
+            self.rows.len().hash(&mut hasher);
+            Id::new(format!("datatable_{}", hasher.finish()))
+        });
+
+        // Get or create persistent state
+        let mut state: DataTableState = ui.data_mut(|d| d.get_persisted(table_id).unwrap_or_default());
+        
+        // Ensure state vectors match current row count
+        if state.selected_rows.len() != self.rows.len() {
+            state.selected_rows.resize(self.rows.len(), false);
+        }
+        
+        // Initialize selection from rows if this is the first time or rows changed
+        for (i, row) in self.rows.iter().enumerate() {
+            if i < state.selected_rows.len() && row.selected {
+                state.selected_rows[i] = row.selected;
+            }
+        }
+
         let MaterialDataTable {
             columns,
             rows,
-            mut selected_rows,
-            mut header_checkbox,
             allow_selection,
             sticky_header: _,
             progress_visible,
             corner_radius,
+            ..
         } = self;
 
         // Calculate table dimensions
@@ -199,7 +258,7 @@ impl Widget for MaterialDataTable<'_> {
         let total_height = header_height + (rows.len() as f32 * row_height);
 
         let desired_size = Vec2::new(total_width, total_height);
-        let mut response = ui.allocate_response(desired_size, Sense::click());
+        let response = ui.allocate_response(desired_size, Sense::click());
         let rect = response.rect;
 
         if ui.is_rect_visible(rect) {
@@ -227,7 +286,7 @@ impl Widget for MaterialDataTable<'_> {
                 let checkbox_size = Vec2::splat(18.0);
                 let checkbox_inner_rect = Rect::from_center_size(checkbox_center, checkbox_size);
                 
-                let checkbox_color = if header_checkbox {
+                let checkbox_color = if state.header_checkbox {
                     get_global_color("primary")
                 } else {
                     Color32::TRANSPARENT
@@ -245,7 +304,7 @@ impl Widget for MaterialDataTable<'_> {
                     egui::epaint::StrokeKind::Outside
                 );
                 
-                if header_checkbox {
+                if state.header_checkbox {
                     // Draw checkmark
                     let check_points = [
                         checkbox_inner_rect.min + Vec2::new(4.0, 9.0),
@@ -263,11 +322,17 @@ impl Widget for MaterialDataTable<'_> {
                 }
                 
                 // Handle header checkbox click
-                let checkbox_response = ui.interact(checkbox_inner_rect, ui.next_auto_id(), Sense::click());
+                let header_checkbox_id = table_id.with("header_checkbox");
+                let checkbox_response = ui.interact(checkbox_inner_rect, header_checkbox_id, Sense::click());
                 if checkbox_response.clicked() {
-                    header_checkbox = !header_checkbox;
-                    for selected in &mut selected_rows {
-                        *selected = header_checkbox;
+                    state.header_checkbox = !state.header_checkbox;
+                    // Only update non-readonly rows
+                    for (idx, selected) in state.selected_rows.iter_mut().enumerate() {
+                        if let Some(row) = rows.get(idx) {
+                            if !row.readonly {
+                                *selected = state.header_checkbox;
+                            }
+                        }
                     }
                 }
                 
@@ -340,9 +405,18 @@ impl Widget for MaterialDataTable<'_> {
                     Vec2::new(total_width, row_height)
                 );
                 
-                let row_selected = selected_rows.get(row_idx).copied().unwrap_or(false);
+                let row_selected = state.selected_rows.get(row_idx).copied().unwrap_or(false);
                 let row_bg = if row_selected {
                     get_global_color("primaryContainer")
+                } else if row.readonly {
+                    // Subtle background for readonly rows
+                    let surface_variant = get_global_color("surfaceVariant");
+                    Color32::from_rgba_premultiplied(
+                        surface_variant.r(),
+                        surface_variant.g(), 
+                        surface_variant.b(),
+                        (surface_variant.a() as f32 * 0.3) as u8
+                    )
                 } else if row_idx % 2 == 1 {
                     get_global_color("surfaceVariant")
                 } else {
@@ -370,6 +444,12 @@ impl Widget for MaterialDataTable<'_> {
                         Color32::TRANSPARENT
                     };
                     
+                    let border_color = if row.readonly {
+                        get_global_color("outline").linear_multiply(0.5) // Dimmed for readonly
+                    } else {
+                        get_global_color("outline")
+                    };
+                    
                     ui.painter().rect_filled(
                         checkbox_inner_rect,
                         CornerRadius::from(2.0),
@@ -378,7 +458,7 @@ impl Widget for MaterialDataTable<'_> {
                     ui.painter().rect_stroke(
                         checkbox_inner_rect,
                         CornerRadius::from(2.0),
-                        Stroke::new(2.0, get_global_color("outline")),
+                        Stroke::new(2.0, border_color),
                         egui::epaint::StrokeKind::Outside
                     );
                     
@@ -400,10 +480,27 @@ impl Widget for MaterialDataTable<'_> {
                     }
                     
                     // Handle row checkbox click
-                    let checkbox_response = ui.interact(checkbox_inner_rect, ui.next_auto_id(), Sense::click());
-                    if checkbox_response.clicked() {
-                        if let Some(selected) = selected_rows.get_mut(row_idx) {
+                    let row_checkbox_id = table_id.with(format!("row_checkbox_{}", row_idx));
+                    let checkbox_response = ui.interact(checkbox_inner_rect, row_checkbox_id, Sense::click());
+                    if checkbox_response.clicked() && !row.readonly {
+                        if let Some(selected) = state.selected_rows.get_mut(row_idx) {
                             *selected = !*selected;
+                        }
+                        
+                        // Update header checkbox state based on row selections
+                        // Only consider non-readonly rows for header checkbox state
+                        let non_readonly_indices: Vec<usize> = rows.iter()
+                            .enumerate()
+                            .filter(|(_, row)| !row.readonly)
+                            .map(|(idx, _)| idx)
+                            .collect();
+                        
+                        if !non_readonly_indices.is_empty() {
+                            let all_non_readonly_selected = non_readonly_indices.iter()
+                                .all(|&idx| state.selected_rows.get(idx).copied().unwrap_or(false));
+                            let none_non_readonly_selected = non_readonly_indices.iter()
+                                .all(|&idx| !state.selected_rows.get(idx).copied().unwrap_or(false));
+                            state.header_checkbox = all_non_readonly_selected && !none_non_readonly_selected;
                         }
                     }
                     
@@ -461,7 +558,26 @@ impl Widget for MaterialDataTable<'_> {
             }
         }
 
-        response
+        // Persist the state
+        ui.data_mut(|d| d.insert_persisted(table_id, state.clone()));
+
+        DataTableResponse {
+            response,
+            selected_rows: state.selected_rows,
+            header_checkbox: state.header_checkbox,
+        }
+    }
+}
+
+impl<'a> Default for MaterialDataTable<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Widget for MaterialDataTable<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        self.show(ui).response
     }
 }
 

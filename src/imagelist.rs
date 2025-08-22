@@ -187,7 +187,7 @@ impl Widget for MaterialImageList<'_> {
         let total_height = rows as f32 * (item_height + item_spacing) - item_spacing;
         let total_width = available_width;
 
-        let mut response = ui.allocate_response(
+        let response = ui.allocate_response(
             Vec2::new(total_width, total_height), 
             Sense::hover()
         );

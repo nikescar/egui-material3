@@ -54,6 +54,10 @@ impl Widget for MaterialIcon {
             "remove" => draw_remove_icon(ui, rect, icon_color, self.filled),
             "arrow_back" => draw_arrow_back_icon(ui, rect, icon_color, self.filled),
             "arrow_forward" => draw_arrow_forward_icon(ui, rect, icon_color, self.filled),
+            "favorite" => draw_favorite_icon(ui, rect, icon_color, self.filled),
+            "star" => draw_star_icon(ui, rect, icon_color, self.filled),
+            "bookmark" => draw_bookmark_icon(ui, rect, icon_color, self.filled),
+            "notifications" => draw_notifications_icon(ui, rect, icon_color, self.filled),
             _ => draw_default_icon(ui, rect, icon_color, self.filled),
         }
 
@@ -231,6 +235,120 @@ fn draw_arrow_forward_icon(ui: &mut Ui, rect: Rect, color: Color32, _filled: boo
     ui.painter().line_segment([tip, top], Stroke::new(2.0, color));
     ui.painter().line_segment([tip, bottom], Stroke::new(2.0, color));
     ui.painter().line_segment([tail_end, tip], Stroke::new(2.0, color));
+}
+
+fn draw_favorite_icon(ui: &mut Ui, rect: Rect, color: Color32, filled: bool) {
+    let center = rect.center();
+    let size = rect.width() * 0.7;
+    
+    // Heart shape using two circles and a triangle
+    let left_circle = Pos2::new(center.x - size * 0.2, center.y - size * 0.1);
+    let right_circle = Pos2::new(center.x + size * 0.2, center.y - size * 0.1);
+    let radius = size * 0.15;
+    
+    if filled {
+        // Fill heart shape
+        ui.painter().circle_filled(left_circle, radius, color);
+        ui.painter().circle_filled(right_circle, radius, color);
+        
+        // Triangle bottom part
+        let points = [
+            Pos2::new(center.x - size * 0.3, center.y),
+            Pos2::new(center.x + size * 0.3, center.y),
+            Pos2::new(center.x, center.y + size * 0.3),
+        ];
+        ui.painter().add(egui::Shape::convex_polygon(points.to_vec(), color, Stroke::NONE));
+    } else {
+        // Outline heart
+        ui.painter().circle_stroke(left_circle, radius, Stroke::new(2.0, color));
+        ui.painter().circle_stroke(right_circle, radius, Stroke::new(2.0, color));
+        
+        let points = [
+            Pos2::new(center.x - size * 0.3, center.y),
+            Pos2::new(center.x + size * 0.3, center.y),
+            Pos2::new(center.x, center.y + size * 0.3),
+        ];
+        for i in 0..points.len() {
+            let next = (i + 1) % points.len();
+            ui.painter().line_segment([points[i], points[next]], Stroke::new(2.0, color));
+        }
+    }
+}
+
+fn draw_star_icon(ui: &mut Ui, rect: Rect, color: Color32, filled: bool) {
+    let center = rect.center();
+    let size = rect.width() * 0.4;
+    
+    // 5-pointed star
+    let mut points = Vec::new();
+    for i in 0..10 {
+        let angle = std::f32::consts::PI * 2.0 * i as f32 / 10.0 - std::f32::consts::PI / 2.0;
+        let radius = if i % 2 == 0 { size } else { size * 0.4 };
+        points.push(Pos2::new(
+            center.x + radius * angle.cos(),
+            center.y + radius * angle.sin(),
+        ));
+    }
+    
+    if filled {
+        ui.painter().add(egui::Shape::convex_polygon(points, color, Stroke::NONE));
+    } else {
+        for i in 0..points.len() {
+            let next = (i + 1) % points.len();
+            ui.painter().line_segment([points[i], points[next]], Stroke::new(2.0, color));
+        }
+    }
+}
+
+fn draw_bookmark_icon(ui: &mut Ui, rect: Rect, color: Color32, filled: bool) {
+    let center = rect.center();
+    let size = rect.width() * 0.6;
+    
+    // Bookmark shape
+    let points = [
+        Pos2::new(center.x - size * 0.3, center.y - size * 0.4), // top left
+        Pos2::new(center.x + size * 0.3, center.y - size * 0.4), // top right
+        Pos2::new(center.x + size * 0.3, center.y + size * 0.4), // bottom right
+        Pos2::new(center.x, center.y + size * 0.2),              // bottom center (notch)
+        Pos2::new(center.x - size * 0.3, center.y + size * 0.4), // bottom left
+    ];
+    
+    if filled {
+        ui.painter().add(egui::Shape::convex_polygon(points.to_vec(), color, Stroke::NONE));
+    } else {
+        for i in 0..points.len() {
+            let next = (i + 1) % points.len();
+            ui.painter().line_segment([points[i], points[next]], Stroke::new(2.0, color));
+        }
+    }
+}
+
+fn draw_notifications_icon(ui: &mut Ui, rect: Rect, color: Color32, filled: bool) {
+    let center = rect.center();
+    let size = rect.width() * 0.6;
+    
+    // Bell shape
+    let bell_top = Pos2::new(center.x, center.y - size * 0.3);
+    let bell_left = Pos2::new(center.x - size * 0.3, center.y + size * 0.1);
+    let bell_right = Pos2::new(center.x + size * 0.3, center.y + size * 0.1);
+    let bell_bottom_left = Pos2::new(center.x - size * 0.2, center.y + size * 0.2);
+    let bell_bottom_right = Pos2::new(center.x + size * 0.2, center.y + size * 0.2);
+    
+    if filled {
+        let points = [bell_top, bell_left, bell_bottom_left, bell_bottom_right, bell_right];
+        ui.painter().add(egui::Shape::convex_polygon(points.to_vec(), color, Stroke::NONE));
+    } else {
+        // Draw bell outline
+        ui.painter().line_segment([bell_top, bell_left], Stroke::new(2.0, color));
+        ui.painter().line_segment([bell_left, bell_bottom_left], Stroke::new(2.0, color));
+        ui.painter().line_segment([bell_bottom_left, bell_bottom_right], Stroke::new(2.0, color));
+        ui.painter().line_segment([bell_bottom_right, bell_right], Stroke::new(2.0, color));
+        ui.painter().line_segment([bell_right, bell_top], Stroke::new(2.0, color));
+    }
+    
+    // Small clapper at bottom
+    let clapper = Pos2::new(center.x, center.y + size * 0.35);
+    ui.painter().circle_filled(clapper, 1.5, color);
 }
 
 fn draw_default_icon(ui: &mut Ui, rect: Rect, color: Color32, filled: bool) {

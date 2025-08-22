@@ -197,7 +197,7 @@ impl Widget for MaterialDrawer<'_> {
         let total_height = header_height + items_height;
 
         let desired_size = Vec2::new(width, total_height);
-        let mut response = ui.allocate_response(desired_size, Sense::click());
+        let response = ui.allocate_response(desired_size, Sense::click());
         let rect = response.rect;
 
         if ui.is_rect_visible(rect) {

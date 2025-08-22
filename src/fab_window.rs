@@ -1,5 +1,5 @@
 use eframe::egui::{self, Window};
-use crate::{fab_surface, fab_primary, fab_secondary, fab_tertiary, fab_branded, FabSize};
+use crate::{fab_surface, fab_primary, fab_secondary, fab_tertiary, fab_branded, FabSize, google_branded_icon};
 
 pub struct FabWindow {
     pub open: bool,
@@ -147,9 +147,8 @@ impl FabWindow {
             
             ui.vertical(|ui| {
                 ui.label("Branded");
-                let icon = if self.icon.is_empty() { "star" } else { &self.icon };
                 let mut fab = fab_branded()
-                    .icon(icon)
+                    .svg_icon(google_branded_icon())
                     .size(self.size);
                 
                 if !self.label.is_empty() {

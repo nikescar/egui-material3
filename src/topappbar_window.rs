@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialTopAppBar, TopAppBarVariant, MaterialButton, MaterialCheckbox, top_app_bar, center_aligned_top_app_bar, medium_top_app_bar, large_top_app_bar};
+use crate::{MaterialButton, MaterialCheckbox, top_app_bar, center_aligned_top_app_bar, medium_top_app_bar, large_top_app_bar};
 
 pub struct TopAppBarWindow {
     pub open: bool,

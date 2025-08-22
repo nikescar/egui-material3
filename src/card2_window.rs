@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialCard2, Card2Variant, MaterialButton, MaterialCheckbox, elevated_card2, filled_card2, outlined_card2};
+use crate::{MaterialButton, MaterialCheckbox, elevated_card2, filled_card2, outlined_card2};
 
 pub struct Card2Window {
     pub open: bool,
@@ -51,7 +51,7 @@ impl Card2Window {
         ui.horizontal(|ui| {
             ui.heading("Enhanced Card Controls");
             if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/card/stories/");
+                let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/card");
             }
         });
 

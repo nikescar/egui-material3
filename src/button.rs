@@ -359,7 +359,7 @@ impl Widget for MaterialButton<'_> {
         });
 
         // Material Design button padding (24px left/right, calculated based on height)
-        let mut button_padding = if frame {
+        let button_padding = if frame {
             Vec2::new(24.0, if small { 0.0 } else { 10.0 })
         } else if variant == MaterialButtonVariant::Text {
             // Text buttons still need horizontal padding for consistent width
@@ -433,7 +433,7 @@ impl Widget for MaterialButton<'_> {
         }
         desired_size = desired_size.at_least(min_size);
 
-        let (rect, mut response) = ui.allocate_at_least(desired_size, sense);
+        let (rect, response) = ui.allocate_at_least(desired_size, sense);
         response.widget_info(|| {
             if let Some(galley) = &galley {
                 WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), galley.text())

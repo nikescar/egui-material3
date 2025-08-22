@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialSnackbar, SnackbarPosition, MaterialButton, MaterialCheckbox, snackbar, snackbar_with_action};
+use crate::{SnackbarPosition, MaterialButton, MaterialCheckbox, snackbar, snackbar_with_action};
 use std::time::{Duration, Instant};
 
 pub struct SnackbarWindow {
@@ -62,8 +62,11 @@ impl SnackbarWindow {
     fn render_controls(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading("Snackbar Controls");
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/snackbar/stories/");
+            if ui.button("Material Specs").clicked() {
+                let _ = webbrowser::open("https://m2.material.io/components/snackbars#specs");
+            }
+            if ui.button("MDC Reference").clicked() {
+                let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/snackbar");
             }
         });
 
@@ -102,91 +105,85 @@ impl SnackbarWindow {
     }
 
     fn render_snackbar_examples(&mut self, ui: &mut Ui) {
-        ui.heading("Snackbar Types");
-        
-        ui.vertical(|ui| {
-            ui.label("Basic Snackbar:");
-            ui.label("• Simple message notification");
-            ui.label("• Auto-dismisses after a timeout");
-            ui.label("• Can be dismissed by user interaction");
-            ui.add_space(10.0);
-            
-            ui.label("Action Snackbar:");
-            ui.label("• Includes an action button");
-            ui.label("• Allows user to respond to the notification");
-            ui.label("• Common for undo operations");
-            ui.add_space(10.0);
-            
-            ui.label("Positioning:");
-            ui.label("• Bottom position (default)");
-            ui.label("• Top position (alternative)");
-            ui.label("• Always centered horizontally");
-        });
-
-        ui.add_space(20.0);
-        
-        ui.heading("Usage Guidelines");
+        ui.heading("Material Design Snackbar Specifications");
         
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
-                ui.label("Best Practices:");
-                ui.label("• Keep messages brief");
-                ui.label("• Use for confirmations");
-                ui.label("• Provide undo when possible");
-                ui.label("• Don't stack multiple snackbars");
+                ui.label("📐 Dimensions:");
+                ui.label("• Min width: 344px");
+                ui.label("• Max width: 672px");
+                ui.label("• Height: 48px (fixed)");
+                ui.label("• Corner radius: 4px");
+                ui.add_space(10.0);
+                
+                ui.label("🎨 Colors:");
+                ui.label("• Background: 80% on-surface + 20% surface");
+                ui.label("• Text: surface (high contrast)");
+                ui.label("• Action: inverse-primary");
             });
             
             ui.vertical(|ui| {
-                ui.label("Common Use Cases:");
-                ui.label("• File operations");
-                ui.label("• Form submissions");
-                ui.label("• Network status");
-                ui.label("• Settings changes");
+                ui.label("📏 Padding:");
+                ui.label("• Label: 16px left, 8px right");
+                ui.label("• Vertical: 14px top/bottom");
+                ui.label("• Action button: 8px padding");
+                ui.add_space(10.0);
+                
+                ui.label("🌟 Elevation:");
+                ui.label("• Level: 6dp (shadow)");
+                ui.label("• Typography: body2 (14px)");
+                ui.label("• Position: bottom center");
             });
         });
 
         ui.add_space(20.0);
         
-        ui.heading("Interactive Demo");
+        ui.heading("Snackbar Rectangle Demonstration");
         
-        ui.horizontal(|ui| {
-            if ui.add(MaterialButton::filled("Save Document")).clicked() {
-                self.message_text = "Document saved successfully".to_string();
-                self.action_text = "Open".to_string();
-                self.show_action_snackbar = true;
-                self.action_snackbar_start = Some(Instant::now());
-            }
-            if ui.add(MaterialButton::filled("Delete Item")).clicked() {
-                self.message_text = "Item deleted".to_string();
-                self.action_text = "Undo".to_string();
-                self.show_action_snackbar = true;
-                self.action_snackbar_start = Some(Instant::now());
-            }
-            if ui.add(MaterialButton::filled("Send Message")).clicked() {
-                self.message_text = "Message sent".to_string();
+        // Show properly styled rectangle examples
+        ui.horizontal_wrapped(|ui| {
+            if ui.add(MaterialButton::filled("Basic Rectangle")).clicked() {
+                self.message_text = "This is a basic snackbar with proper rectangle shape".to_string();
                 self.show_basic_snackbar = true;
                 self.basic_snackbar_start = Some(Instant::now());
+            }
+            
+            if ui.add(MaterialButton::filled("With Action")).clicked() {
+                self.message_text = "Rectangle snackbar with action button".to_string();
+                self.action_text = "Action".to_string();
+                self.show_action_snackbar = true;
+                self.action_snackbar_start = Some(Instant::now());
+            }
+            
+            if ui.add(MaterialButton::filled("Long Message")).clicked() {
+                self.message_text = "This is a longer message to demonstrate how the rectangle snackbar handles text wrapping and maintains proper dimensions according to Material Design specifications".to_string();
+                self.action_text = "Got it".to_string();
+                self.show_action_snackbar = true;
+                self.action_snackbar_start = Some(Instant::now());
             }
         });
         
         ui.add_space(10.0);
         
-        ui.horizontal(|ui| {
-            if ui.add(MaterialButton::outlined("Connection Lost")).clicked() {
-                self.message_text = "No internet connection".to_string();
-                self.action_text = "Retry".to_string();
+        ui.horizontal_wrapped(|ui| {
+            if ui.add(MaterialButton::outlined("Top Position")).clicked() {
+                self.message_text = "Snackbar positioned at top".to_string();
+                self.show_top_snackbar = true;
+                self.top_snackbar_start = Some(Instant::now());
+            }
+            
+            if ui.add(MaterialButton::outlined("File Deleted")).clicked() {
+                self.message_text = "File deleted successfully".to_string();
+                self.action_text = "Undo".to_string();
                 self.show_action_snackbar = true;
                 self.action_snackbar_start = Some(Instant::now());
             }
-            if ui.add(MaterialButton::outlined("Settings Updated")).clicked() {
-                self.message_text = "Settings saved".to_string();
-                self.show_basic_snackbar = true;
-                self.basic_snackbar_start = Some(Instant::now());
-            }
-            if ui.add(MaterialButton::outlined("Copy Complete")).clicked() {
-                self.message_text = "Copied to clipboard".to_string();
-                self.show_top_snackbar = true;
-                self.top_snackbar_start = Some(Instant::now());
+            
+            if ui.add(MaterialButton::outlined("No Connection")).clicked() {
+                self.message_text = "No internet connection available".to_string();
+                self.action_text = "Retry".to_string();
+                self.show_action_snackbar = true;
+                self.action_snackbar_start = Some(Instant::now());
             }
         });
     }

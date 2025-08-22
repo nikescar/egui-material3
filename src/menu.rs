@@ -1,12 +1,51 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Context, Id};
 use crate::get_global_color;
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum Corner {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum FocusState {
+    None,
+    ListRoot,
+    FirstItem,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum Positioning {
+    Absolute,
+    Fixed,
+    Document,
+    Popover,
+}
+
 pub struct MaterialMenu<'a> {
     id: Id,
     open: &'a mut bool,
     anchor_rect: Option<Rect>,
     items: Vec<MenuItem<'a>>,
     elevation: u8,
+    // All the missing knobs options from TypeScript
+    anchor_corner: Corner,
+    menu_corner: Corner,
+    default_focus: FocusState,
+    positioning: Positioning,
+    quick: bool,
+    has_overflow: bool,
+    stay_open_on_outside_click: bool,
+    stay_open_on_focusout: bool,
+    skip_restore_focus: bool,
+    x_offset: f32,
+    y_offset: f32,
+    no_horizontal_flip: bool,
+    no_vertical_flip: bool,
+    typeahead_delay: f32,
+    list_tab_index: i32,
 }
 
 pub struct MenuItem<'a> {
@@ -26,6 +65,22 @@ impl<'a> MaterialMenu<'a> {
             anchor_rect: None,
             items: Vec::new(),
             elevation: 3,
+            // Default values matching Material Web behavior
+            anchor_corner: Corner::BottomLeft,
+            menu_corner: Corner::TopLeft,
+            default_focus: FocusState::None,
+            positioning: Positioning::Absolute,
+            quick: false,
+            has_overflow: false,
+            stay_open_on_outside_click: false,
+            stay_open_on_focusout: false,
+            skip_restore_focus: false,
+            x_offset: 0.0,
+            y_offset: 0.0,
+            no_horizontal_flip: false,
+            no_vertical_flip: false,
+            typeahead_delay: 200.0,
+            list_tab_index: -1,
         }
     }
 
@@ -44,9 +99,94 @@ impl<'a> MaterialMenu<'a> {
         self
     }
 
+    pub fn anchor_corner(mut self, corner: Corner) -> Self {
+        self.anchor_corner = corner;
+        self
+    }
+
+    pub fn menu_corner(mut self, corner: Corner) -> Self {
+        self.menu_corner = corner;
+        self
+    }
+
+    pub fn default_focus(mut self, focus: FocusState) -> Self {
+        self.default_focus = focus;
+        self
+    }
+
+    pub fn positioning(mut self, positioning: Positioning) -> Self {
+        self.positioning = positioning;
+        self
+    }
+
+    pub fn quick(mut self, quick: bool) -> Self {
+        self.quick = quick;
+        self
+    }
+
+    pub fn has_overflow(mut self, has_overflow: bool) -> Self {
+        self.has_overflow = has_overflow;
+        self
+    }
+
+    pub fn stay_open_on_outside_click(mut self, stay_open: bool) -> Self {
+        self.stay_open_on_outside_click = stay_open;
+        self
+    }
+
+    pub fn stay_open_on_focusout(mut self, stay_open: bool) -> Self {
+        self.stay_open_on_focusout = stay_open;
+        self
+    }
+
+    pub fn skip_restore_focus(mut self, skip: bool) -> Self {
+        self.skip_restore_focus = skip;
+        self
+    }
+
+    pub fn x_offset(mut self, offset: f32) -> Self {
+        self.x_offset = offset;
+        self
+    }
+
+    pub fn y_offset(mut self, offset: f32) -> Self {
+        self.y_offset = offset;
+        self
+    }
+
+    pub fn no_horizontal_flip(mut self, no_flip: bool) -> Self {
+        self.no_horizontal_flip = no_flip;
+        self
+    }
+
+    pub fn no_vertical_flip(mut self, no_flip: bool) -> Self {
+        self.no_vertical_flip = no_flip;
+        self
+    }
+
+    pub fn typeahead_delay(mut self, delay: f32) -> Self {
+        self.typeahead_delay = delay;
+        self
+    }
+
+    pub fn list_tab_index(mut self, index: i32) -> Self {
+        self.list_tab_index = index;
+        self
+    }
+
     pub fn show(self, ctx: &Context) {
         if !*self.open {
             return;
+        }
+
+        // Store when menu was opened using the input time
+        let stable_id = egui::Id::new(format!("menu_{}", self.id.value()));
+        let current_time = ctx.input(|i| i.time);
+        let menu_open_time = ctx.data_mut(|d| d.get_persisted(stable_id.with("open_time")).unwrap_or(0.0f64));
+        
+        // If menu just opened, store the current time
+        if menu_open_time == 0.0 || current_time < menu_open_time {
+            ctx.data_mut(|d| d.insert_persisted(stable_id.with("open_time"), current_time));
         }
 
         let item_height = 48.0;
@@ -56,10 +196,28 @@ impl<'a> MaterialMenu<'a> {
 
         let menu_size = Vec2::new(menu_width, total_height);
 
-        // Determine position
+        // Determine position based on anchor corner and menu corner
         let position = if let Some(anchor) = self.anchor_rect {
-            // Position menu below the anchor
-            Pos2::new(anchor.min.x, anchor.max.y + 4.0)
+            let anchor_point = match self.anchor_corner {
+                Corner::TopLeft => anchor.min,
+                Corner::TopRight => Pos2::new(anchor.max.x, anchor.min.y),
+                Corner::BottomLeft => Pos2::new(anchor.min.x, anchor.max.y),
+                Corner::BottomRight => anchor.max,
+            };
+
+            let menu_offset = match self.menu_corner {
+                Corner::TopLeft => Vec2::ZERO,
+                Corner::TopRight => Vec2::new(-menu_size.x, 0.0),
+                Corner::BottomLeft => Vec2::new(0.0, -menu_size.y),
+                Corner::BottomRight => -menu_size,
+            };
+
+            // Apply the corner positioning and offsets
+            let base_position = anchor_point + menu_offset;
+            Pos2::new(
+                base_position.x + self.x_offset,
+                base_position.y + self.y_offset + 4.0, // 4px spacing from anchor
+            )
         } else {
             // Center on screen
             let screen_rect = ctx.screen_rect();
@@ -70,6 +228,8 @@ impl<'a> MaterialMenu<'a> {
         let id = self.id;
         let items = self.items;
         let elevation = self.elevation;
+        let stay_open_on_outside_click = self.stay_open_on_outside_click;
+        let stay_open_on_focusout = self.stay_open_on_focusout;
 
         // Create a popup window for the menu with a stable layer and unique ID
         let stable_id = egui::Id::new(format!("menu_{}", id.value()));
@@ -81,10 +241,26 @@ impl<'a> MaterialMenu<'a> {
                 render_menu_content(ui, menu_size, items, elevation, open_ref)
             });
 
-        // Only close menu on explicit click or escape, not on mouse outside
-        // This prevents the menu from closing when mouse cursor is outside
+        // Handle closing behavior based on settings
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             *open_ref = false;
+        } else if !stay_open_on_outside_click {
+            // Only close on outside click if the click didn't happen on the menu itself
+            // and if it happened this frame (not on menu open frame)
+            if ctx.input(|i| i.pointer.any_click()) {
+                // Check if the click was outside the menu area
+                let pointer_pos = ctx.input(|i| i.pointer.interact_pos()).unwrap_or_default();
+                let menu_rect = Rect::from_min_size(position, menu_size);
+                if !menu_rect.contains(pointer_pos) {
+                    // Only close if menu has been open for a minimal duration (e.g., 50ms)
+                    // This prevents closing immediately after opening
+                    let current_time = ctx.input(|i| i.time);
+                    let menu_open_time = ctx.data_mut(|d| d.get_persisted(stable_id.with("open_time")).unwrap_or(0.0f64));
+                    if current_time - menu_open_time > 0.05 {
+                        *open_ref = false;
+                    }
+                }
+            }
         }
     }
 

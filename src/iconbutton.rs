@@ -15,6 +15,7 @@ pub struct MaterialIconButton<'a> {
     selected: Option<&'a mut bool>,
     enabled: bool,
     size: f32,
+    container: bool, // true for rectangular container, false for circular
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
@@ -26,6 +27,7 @@ impl<'a> MaterialIconButton<'a> {
             selected: None,
             enabled: true,
             size: 40.0,
+            container: false, // circular by default
             action: None,
         }
     }
@@ -59,6 +61,11 @@ impl<'a> MaterialIconButton<'a> {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    pub fn container(mut self, container: bool) -> Self {
+        self.container = container;
         self
     }
 
@@ -174,11 +181,20 @@ impl<'a> Widget for MaterialIconButton<'a> {
             }
         };
 
+        // Calculate corner radius based on container style
+        let corner_radius = if self.container {
+            // Rectangular container: smaller radius for more rectangular shape
+            rect.height() * 0.2 // About 8px for 40px button
+        } else {
+            // Circular container: full radius
+            rect.height() / 2.0
+        };
+
         // Draw background
         if bg_color != Color32::TRANSPARENT {
             ui.painter().rect_filled(
                 rect,
-                rect.height() / 2.0,
+                corner_radius,
                 bg_color,
             );
         }
@@ -187,7 +203,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
         if border_color != Color32::TRANSPARENT {
             ui.painter().rect_stroke(
                 rect,
-                rect.height() / 2.0,
+                corner_radius,
                 Stroke::new(1.0, border_color),
                 egui::epaint::StrokeKind::Outside,
             );
@@ -210,7 +226,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
             let ripple_color = Color32::from_rgba_premultiplied(icon_color.r(), icon_color.g(), icon_color.b(), 30);
             ui.painter().rect_filled(
                 rect,
-                rect.height() / 2.0,
+                corner_radius,
                 ripple_color,
             );
         }

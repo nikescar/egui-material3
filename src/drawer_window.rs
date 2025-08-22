@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialDrawer, DrawerVariant, MaterialButton, MaterialCheckbox, standard_drawer, modal_drawer, dismissible_drawer};
+use crate::{MaterialButton, MaterialCheckbox, standard_drawer, modal_drawer, dismissible_drawer};
 
 pub struct DrawerWindow {
     pub open: bool,

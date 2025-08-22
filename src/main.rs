@@ -1,4 +1,4 @@
-use eframe::egui::{self, Color32, Vec2};
+use eframe::egui::{self, Color32};
 use egui_material::*;
 use egui_material::theme::{setup_google_fonts, setup_local_fonts, load_fonts};
 use egui_file_dialog::FileDialog;
@@ -572,10 +572,6 @@ impl eframe::App for MaterialApp {
                     self.ripple_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Segmented Button Set Stories")).clicked() {
-                    self.segmentedbuttonset_window.open = true;
-                }
-                
                 if ui.add(MaterialButton::filled("Slider Stories")).clicked() {
                     self.slider_window.open = true;
                 }
@@ -595,11 +591,29 @@ impl eframe::App for MaterialApp {
                 if ui.add(MaterialButton::filled("Enhanced Card (Card2) Stories")).clicked() {
                     self.card2_window.open = true;
                 }
+
+                if ui.add(MaterialButton::filled("List Stories")).clicked() {
+                    self.list_window.open = true;
+                }
+
+                if ui.add(MaterialButton::filled("Select Stories")).clicked() {
+                    self.select_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Data Table Stories")).clicked() {
+                    self.datatable_window.open = true;
+                }
+                
             });
 
             ui.add_space(15.0);
             ui.label("Labs Windows:");
             ui.horizontal_wrapped(|ui| {
+
+                if ui.add(MaterialButton::filled("Segmented Button Set Stories")).clicked() {
+                    self.segmentedbuttonset_window.open = true;
+                }
+                
                 if ui.add(MaterialButton::filled("Card Stories")).clicked() {
                     self.card_window.open = true;
                 }
@@ -624,25 +638,16 @@ impl eframe::App for MaterialApp {
                     self.item_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("List Stories")).clicked() {
-                    self.list_window.open = true;
-                }
                 
                 if ui.add(MaterialButton::filled("Navigation Bar Stories")).clicked() {
                     self.navigationbar_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Select Stories")).clicked() {
-                    self.select_window.open = true;
-                }
                 
                 if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
                     self.tabs_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Data Table Stories")).clicked() {
-                    self.datatable_window.open = true;
-                }
                 
                 if ui.add(MaterialButton::filled("Drawer Stories")).clicked() {
                     self.drawer_window.open = true;

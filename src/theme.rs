@@ -163,7 +163,7 @@ impl Default for MaterialThemeContext {
 
 fn get_default_material_theme() -> MaterialThemeFile {
     // Create default Material theme programmatically to avoid JSON parsing issues
-    let mut light_scheme = MaterialScheme {
+    let light_scheme = MaterialScheme {
         primary: "#8F4C38".to_string(),
         surface_tint: "#8F4C38".to_string(),
         on_primary: "#FFFFFF".to_string(),
@@ -215,7 +215,7 @@ fn get_default_material_theme() -> MaterialThemeFile {
         surface_container_highest: "#F1DFDA".to_string(),
     };
 
-    let mut dark_scheme = MaterialScheme {
+    let dark_scheme = MaterialScheme {
         primary: "#FFB5A0".to_string(),
         surface_tint: "#FFB5A0".to_string(),
         on_primary: "#561F0F".to_string(),

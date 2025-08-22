@@ -51,7 +51,7 @@ impl<'a> MaterialSnackbar<'a> {
             auto_dismiss: Some(Duration::from_secs(4)),
             show_time: None,
             position: SnackbarPosition::Bottom,
-            corner_radius: CornerRadius::from(4.0),
+            corner_radius: CornerRadius::from(4.0), // Material Design small shape radius
             elevation: None,
         }
     }
@@ -115,8 +115,19 @@ impl<'a> MaterialSnackbar<'a> {
     }
 
     fn get_snackbar_style(&self) -> (Color32, Option<Stroke>) {
-        let md_inverse_surface = get_global_color("inverseSurface");
-        (md_inverse_surface, None)
+        // Material Design spec: mix 80% on-surface with 20% surface
+        let on_surface = get_global_color("onSurface");
+        let surface = get_global_color("surface");
+        
+        // Mix colors: 80% on-surface + 20% surface
+        let bg_color = Color32::from_rgba_unmultiplied(
+            ((on_surface.r() as f32 * 0.8) + (surface.r() as f32 * 0.2)) as u8,
+            ((on_surface.g() as f32 * 0.8) + (surface.g() as f32 * 0.2)) as u8,
+            ((on_surface.b() as f32 * 0.8) + (surface.b() as f32 * 0.2)) as u8,
+            255
+        );
+        
+        (bg_color, None)
     }
 }
 
@@ -154,29 +165,41 @@ impl Widget for MaterialSnackbar<'_> {
             elevation,
         } = self;
 
-        // Calculate snackbar dimensions
+        // Material Design spec dimensions and typography
+        let label_text_color = get_global_color("surface"); // White text on dark background
+        let action_text_color = get_global_color("inversePrimary"); // Material action color
+        
+        // Calculate snackbar dimensions following Material Design specs
         let text_galley = ui.painter().layout_no_wrap(
             message.clone(),
-            egui::FontId::proportional(14.0),
-            Color32::WHITE
+            egui::FontId::proportional(14.0), // body2 typography scale
+            label_text_color
         );
         
         let action_galley = action_text.as_ref().map(|text| {
             ui.painter().layout_no_wrap(
                 text.clone(),
                 egui::FontId::proportional(14.0),
-                get_global_color("inversePrimary")
+                action_text_color
             )
         });
 
-        let padding = Vec2::new(16.0, 12.0);
-        let action_spacing = if action_text.is_some() { 24.0 } else { 0.0 };
-        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 16.0); // Add padding for button
+        // Material Design padding: 16px left, 8px right, 14px top/bottom for 48px height
+        let label_padding = Vec2::new(16.0, 14.0);
+        let action_padding = Vec2::new(8.0, 14.0);
+        let action_spacing = if action_text.is_some() { 8.0 } else { 0.0 };
+        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 16.0); // Button padding
         
-        let snackbar_width = text_galley.size().x + action_width + action_spacing + padding.x * 2.0;
-        let snackbar_height = text_galley.size().y.max(32.0) + padding.y * 2.0; // Min height for touch target
+        // Calculate width following Material Design constraints
+        let content_width = text_galley.size().x + action_width + action_spacing + label_padding.x + action_padding.x;
+        let min_width = 344.0; // Material Design min-width
+        let max_width = 672.0; // Material Design max-width  
+        let available_width = ui.available_width() - 48.0; // 24px margins on each side
         
-        let snackbar_size = Vec2::new(snackbar_width.min(ui.available_width() - 32.0), snackbar_height);
+        let snackbar_width = content_width.max(min_width).min(max_width).min(available_width);
+        let snackbar_height = 48.0; // Fixed height per Material Design spec
+        
+        let snackbar_size = Vec2::new(snackbar_width, snackbar_height);
         
         // Position the snackbar
         let screen_rect = ui.ctx().screen_rect();
@@ -189,14 +212,16 @@ impl Widget for MaterialSnackbar<'_> {
         let snackbar_pos = egui::pos2(snackbar_x, snackbar_y);
         let snackbar_rect = Rect::from_min_size(snackbar_pos, snackbar_size);
 
-        // Draw elevation shadow if present
-        if let Some(_shadow) = elevation {
-            let shadow_rect = snackbar_rect.translate(Vec2::new(0.0, 2.0));
-            ui.painter().rect_filled(
-                shadow_rect,
-                corner_radius,
-                Color32::from_rgba_unmultiplied(0, 0, 0, 60),
-            );
+        // Draw Material Design elevation 6dp shadow
+        let shadow_layers = [
+            (Vec2::new(0.0, 6.0), 10.0, Color32::from_rgba_unmultiplied(0, 0, 0, 20)),
+            (Vec2::new(0.0, 1.0), 18.0, Color32::from_rgba_unmultiplied(0, 0, 0, 14)),
+            (Vec2::new(0.0, 3.0), 5.0, Color32::from_rgba_unmultiplied(0, 0, 0, 12)),
+        ];
+        
+        for (offset, blur_radius, color) in shadow_layers {
+            let shadow_rect = snackbar_rect.translate(offset).expand(blur_radius / 2.0);
+            ui.painter().rect_filled(shadow_rect, corner_radius, color);
         }
 
         // Draw snackbar background
@@ -207,34 +232,39 @@ impl Widget for MaterialSnackbar<'_> {
             ui.painter().rect_stroke(snackbar_rect, corner_radius, stroke, egui::epaint::StrokeKind::Outside);
         }
 
-        // Draw message text
+        // Draw message text with proper Material Design positioning
         let text_pos = egui::pos2(
-            snackbar_rect.min.x + padding.x,
+            snackbar_rect.min.x + label_padding.x,
             snackbar_rect.center().y - text_galley.size().y / 2.0
         );
-        ui.painter().galley(text_pos, text_galley, Color32::WHITE);
+        ui.painter().galley(text_pos, text_galley, label_text_color);
 
         // Draw action button if present
         let mut response = ui.interact(snackbar_rect, ui.next_auto_id(), Sense::hover());
         
-        if let (Some(action_text), Some(action_galley)) = (action_text.as_ref(), action_galley.as_ref()) {
+        if let (Some(_action_text), Some(action_galley)) = (action_text.as_ref(), action_galley.as_ref()) {
+            // Material Design action button positioning (right-aligned with 8px padding)
             let action_rect = Rect::from_min_size(
                 egui::pos2(
-                    snackbar_rect.max.x - action_width - padding.x,
-                    snackbar_rect.center().y - 16.0
+                    snackbar_rect.max.x - action_width - action_padding.x,
+                    snackbar_rect.center().y - 18.0 // 36px button height
                 ),
-                Vec2::new(action_width, 32.0)
+                Vec2::new(action_width, 36.0)
             );
             
             let action_response = ui.interact(action_rect, ui.next_auto_id(), Sense::click());
             
-            // Action button background on hover
+            // Material Design state layers for action button
             if action_response.hovered() {
-                let hover_color = get_global_color("inversePrimary").linear_multiply(0.08);
+                let hover_color = action_text_color.linear_multiply(0.04); // Material hover opacity
                 ui.painter().rect_filled(action_rect, CornerRadius::from(4.0), hover_color);
             }
+            if action_response.is_pointer_button_down_on() {
+                let pressed_color = action_text_color.linear_multiply(0.10); // Material pressed opacity
+                ui.painter().rect_filled(action_rect, CornerRadius::from(4.0), pressed_color);
+            }
             
-            // Action text
+            // Action text centered in button
             let action_text_pos = egui::pos2(
                 action_rect.center().x - action_galley.size().x / 2.0,
                 action_rect.center().y - action_galley.size().y / 2.0
@@ -242,7 +272,7 @@ impl Widget for MaterialSnackbar<'_> {
             ui.painter().galley(
                 action_text_pos, 
                 action_galley.clone(), 
-                get_global_color("inversePrimary")
+                action_text_color
             );
             
             if action_response.clicked() {

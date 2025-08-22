@@ -87,6 +87,7 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip.on_click(|| println!("Assist chip clicked!")));
+        ui.add_space(8.0);
 
         // Assist chip with material icon
         let label = if self.label.is_empty() { "Assist chip with icon" } else { &self.label };
@@ -98,7 +99,11 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip.on_click(|| println!("Assist chip with icon clicked!")));
+        ui.add_space(8.0);
 
+        // Force new line for problematic chip
+        ui.end_row();
+        
         // Assist link chip with Google SVG logo (never disabled)
         let label = if self.label.is_empty() { "Assist link chip" } else { &self.label };
         let mut chip = assist_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
@@ -107,10 +112,11 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip.on_click(|| println!("Assist link chip clicked!")));
+        ui.add_space(12.0);
 
         // Soft-disabled assist chip
         let label = if self.label.is_empty() { "Soft-disabled assist chip (focusable)" } else { &self.label };
-        let mut chip = assist_chip(label).enabled(false);
+        let mut chip = assist_chip(label).soft_disabled(true);
         if self.elevated {
             chip = chip.elevated(true);
         }
@@ -136,6 +142,7 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip);
+        ui.add_space(8.0);
 
         // Filter chip with material icon
         let label = if self.label.is_empty() { "Filter chip with icon" } else { &self.label };
@@ -148,7 +155,11 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip);
+        ui.add_space(8.0);
 
+        // Force new line for problematic chip
+        ui.end_row();
+        
         // Removable filter chip
         let label = if self.label.is_empty() { "Removable filter chip" } else { &self.label };
         let mut chip = filter_chip(label, &mut self.removable_filter_selected)
@@ -160,11 +171,12 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip);
+        ui.add_space(12.0);
 
         // Soft-disabled filter chip
         let label = if self.label.is_empty() { "Soft-disabled filter chip (focusable)" } else { &self.label };
         let mut chip = filter_chip(label, &mut self.soft_disabled_filter_selected)
-            .enabled(false)
+            .soft_disabled(true)
             .removable(true);
         if self.elevated {
             chip = chip.elevated(true);
@@ -188,6 +200,7 @@ impl ChipsWindow {
             chip = chip.enabled(false);
         }
         ui.add(chip.on_click(|| println!("Input chip clicked!")));
+        ui.add_space(8.0);
 
         // Input chip with material icon
         let label = if self.label.is_empty() { "Input chip with icon" } else { &self.label };
@@ -196,20 +209,26 @@ impl ChipsWindow {
             chip = chip.enabled(false);
         }
         ui.add(chip.on_click(|| println!("Input chip with icon clicked!")));
+        ui.add_space(8.0);
 
-        // Input chip with avatar (using SVG)
+        // Force new line for problematic chip
+        ui.end_row();
+        
+        // Input chip with avatar (using SVG) - keep roundy for avatar
         let label = if self.label.is_empty() { "Input chip with avatar" } else { &self.label };
-        let mut chip = input_chip(label).leading_icon_svg(image_utils::AVATAR_SVG);
+        let mut chip = input_chip(label).leading_icon_svg(image_utils::AVATAR_SVG).avatar(true);
         if self.disabled {
             chip = chip.enabled(false);
         }
         ui.add(chip.on_click(|| println!("Input chip with avatar clicked!")));
+        ui.add_space(12.0);
 
         // Input link chip with Google logo (never disabled)
         let label = if self.label.is_empty() { "Input link chip" } else { &self.label };
         let chip = input_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
         // Link chips are never disabled
         ui.add(chip.on_click(|| println!("Input link chip clicked!")));
+        ui.add_space(8.0);
 
         // Remove-only input chip
         let label = if self.label.is_empty() { "Remove-only input chip" } else { &self.label };
@@ -218,10 +237,11 @@ impl ChipsWindow {
             chip = chip.enabled(false);
         }
         ui.add(chip.on_click(|| println!("Remove-only input chip clicked!")));
+        ui.add_space(8.0);
 
         // Soft-disabled input chip
         let label = if self.label.is_empty() { "Soft-disabled input chip (focusable)" } else { &self.label };
-        let chip = input_chip(label).enabled(false);
+        let chip = input_chip(label).soft_disabled(true);
         ui.add(chip.on_click(|| println!("Soft-disabled input chip clicked!")));
     }
 
@@ -244,6 +264,7 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip.on_click(|| println!("Suggestion chip clicked!")));
+        ui.add_space(8.0);
 
         // Suggestion chip with material icon
         let label = if self.label.is_empty() { "Suggestion chip with icon" } else { &self.label };
@@ -255,7 +276,11 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip.on_click(|| println!("Suggestion chip with icon clicked!")));
+        ui.add_space(8.0);
 
+        // Force new line for problematic chip
+        ui.end_row();
+        
         // Suggestion link chip with Google logo (never disabled)
         let label = if self.label.is_empty() { "Suggestion link chip" } else { &self.label };
         let mut chip = suggestion_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
@@ -264,10 +289,11 @@ impl ChipsWindow {
             chip = chip.elevated(true);
         }
         ui.add(chip.on_click(|| println!("Suggestion link chip clicked!")));
+        ui.add_space(12.0);
 
         // Soft-disabled suggestion chip
         let label = if self.label.is_empty() { "Soft-disabled suggestion chip (focusable)" } else { &self.label };
-        let mut chip = suggestion_chip(label).enabled(false);
+        let mut chip = suggestion_chip(label).soft_disabled(true);
         if self.elevated {
             chip = chip.elevated(true);
         }

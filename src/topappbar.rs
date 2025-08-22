@@ -2,7 +2,7 @@ use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius, Shadow},
-    Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
+    Rect, Response, Sense, Ui, Vec2, Widget,
 };
 
 /// Material Design top app bar variants.

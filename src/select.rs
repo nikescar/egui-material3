@@ -5,7 +5,6 @@ pub struct MaterialSelect<'a> {
     selected: &'a mut Option<usize>,
     options: Vec<SelectOption>,
     placeholder: String,
-    open: bool,
     enabled: bool,
     width: Option<f32>,
     error_text: Option<String>,
@@ -26,7 +25,6 @@ impl<'a> MaterialSelect<'a> {
             selected,
             options: Vec::new(),
             placeholder: "Select an option".to_string(),
-            open: false,
             enabled: true,
             width: None,
             error_text: None,
@@ -87,26 +85,42 @@ impl<'a> MaterialSelect<'a> {
 }
 
 impl<'a> Widget for MaterialSelect<'a> {
-    fn ui(mut self, ui: &mut Ui) -> Response {
+    fn ui(self, ui: &mut Ui) -> Response {
         let width = self.width.unwrap_or(200.0);
         let height = 56.0;
         let desired_size = Vec2::new(width, height);
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
-        // Use persistent state for dropdown open/close
-        let select_id = egui::Id::new(format!("select_{}", rect.min.x as i32));
+        // Use persistent state for dropdown open/close with global coordination
+        let select_id = egui::Id::new(("select_widget", rect.min.x as i32, rect.min.y as i32, self.placeholder.clone()));
         let mut open = ui.memory(|mem| mem.data.get_temp::<bool>(select_id).unwrap_or(false));
 
+        // Global state to close other select menus
+        let global_open_select_id = egui::Id::new("global_open_select");
+        let current_open_select = ui.memory(|mem| mem.data.get_temp::<egui::Id>(global_open_select_id));
+
         if response.clicked() && self.enabled {
-            open = !open;
+            if open {
+                // Close this select
+                open = false;
+                ui.memory_mut(|mem| mem.data.remove::<egui::Id>(global_open_select_id));
+            } else {
+                // Close any other open select and open this one
+                if let Some(other_id) = current_open_select {
+                    if other_id != select_id {
+                        ui.memory_mut(|mem| mem.data.insert_temp(other_id, false));
+                    }
+                }
+                open = true;
+                ui.memory_mut(|mem| mem.data.insert_temp(global_open_select_id, select_id));
+            }
             ui.memory_mut(|mem| mem.data.insert_temp(select_id, open));
         }
 
         // Material Design colors
         let primary_color = get_global_color("primary");
         let surface = get_global_color("surface");
-        let surface_variant = get_global_color("surfaceVariant");
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
         let outline = get_global_color("outline");
@@ -185,20 +199,50 @@ impl<'a> Widget for MaterialSelect<'a> {
 
         // Show dropdown if open
         if open {
-            let dropdown_height = self.options.len() as f32 * 48.0 + 16.0;
+            // Calculate available space below and above
+            let available_space_below = ui.max_rect().max.y - rect.max.y - 4.0;
+            let available_space_above = rect.min.y - ui.max_rect().min.y - 4.0;
+            
+            let item_height = 48.0;
+            let dropdown_padding = 16.0;
+            let max_items_below = ((available_space_below - dropdown_padding) / item_height).floor() as usize;
+            let max_items_above = ((available_space_above - dropdown_padding) / item_height).floor() as usize;
+            
+            // Determine dropdown position and size
+            let (dropdown_y, visible_items, scroll_needed) = if max_items_below >= self.options.len() {
+                // Fit below
+                (rect.max.y + 4.0, self.options.len(), false)
+            } else if max_items_above >= self.options.len() {
+                // Fit above
+                let dropdown_height = self.options.len() as f32 * item_height + dropdown_padding;
+                (rect.min.y - 4.0 - dropdown_height, self.options.len(), false)
+            } else if max_items_below >= max_items_above {
+                // Partial fit below with scroll
+                (rect.max.y + 4.0, max_items_below.max(3), true)
+            } else {
+                // Partial fit above with scroll
+                let visible_items = max_items_above.max(3);
+                let dropdown_height = visible_items as f32 * item_height + dropdown_padding;
+                (rect.min.y - 4.0 - dropdown_height, visible_items, true)
+            };
+
+            let dropdown_height = visible_items as f32 * item_height + dropdown_padding;
             let dropdown_rect = Rect::from_min_size(
-                Pos2::new(rect.min.x, rect.max.y + 4.0),
+                Pos2::new(rect.min.x, dropdown_y),
                 Vec2::new(width, dropdown_height),
             );
 
-            // Draw dropdown background
+            // Use proper background color (surface container high for better visibility)
+            let dropdown_bg_color = get_global_color("surfaceContainerHigh");
+
+            // Draw dropdown background with proper elevation
             ui.painter().rect_filled(
                 dropdown_rect,
                 8.0,
-                surface,
+                dropdown_bg_color,
             );
 
-            // Draw dropdown border
+            // Draw dropdown border with elevation shadow
             ui.painter().rect_stroke(
                 dropdown_rect,
                 8.0,
@@ -206,47 +250,110 @@ impl<'a> Widget for MaterialSelect<'a> {
                 egui::epaint::StrokeKind::Outside,
             );
 
-            // Draw options
-            let mut current_y = dropdown_rect.min.y + 8.0;
-            for option in &self.options {
-                let option_rect = Rect::from_min_size(
-                    Pos2::new(dropdown_rect.min.x + 8.0, current_y),
-                    Vec2::new(width - 16.0, 48.0),
-                );
+            // Draw subtle elevation shadow
+            let shadow_color = Color32::from_rgba_premultiplied(0, 0, 0, 20);
+            ui.painter().rect_filled(
+                dropdown_rect.translate(Vec2::new(0.0, 2.0)),
+                8.0,
+                shadow_color,
+            );
 
-                let option_response = ui.interact(
-                    option_rect,
-                    egui::Id::new(("select_option", option.value)),
-                    Sense::click(),
+            // Render options with scrolling support
+            if scroll_needed && visible_items < self.options.len() {
+                // Use scroll area for overflow
+                let scroll_area_rect = Rect::from_min_size(
+                    Pos2::new(dropdown_rect.min.x + 8.0, dropdown_rect.min.y + 8.0),
+                    Vec2::new(width - 16.0, dropdown_height - 16.0),
                 );
+                
+                ui.scope_builder(egui::UiBuilder::new().max_rect(scroll_area_rect), |ui| {
+                    egui::ScrollArea::vertical()
+                        .max_height(dropdown_height - 16.0)
+                        .show(ui, |ui| {
+                            for option in &self.options {
+                                let option_response = ui.selectable_label(
+                                    *self.selected == Some(option.value),
+                                    &option.text,
+                                );
 
-                if option_response.hovered() {
-                    ui.painter().rect_filled(
-                        option_rect,
-                        4.0,
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20),
+                                if option_response.clicked() {
+                                    *self.selected = Some(option.value);
+                                    if !self.keep_open_on_select {
+                                        open = false;
+                                        ui.memory_mut(|mem| {
+                                            mem.data.insert_temp(select_id, open);
+                                            mem.data.remove::<egui::Id>(global_open_select_id);
+                                        });
+                                    }
+                                    response.mark_changed();
+                                }
+                            }
+                        });
+                });
+            } else {
+                // Draw options normally without scrolling
+                let mut current_y = dropdown_rect.min.y + 8.0;
+                let items_to_show = visible_items.min(self.options.len());
+                
+                for option in self.options.iter().take(items_to_show) {
+                    let option_rect = Rect::from_min_size(
+                        Pos2::new(dropdown_rect.min.x + 8.0, current_y),
+                        Vec2::new(width - 16.0, item_height),
                     );
-                }
 
-                if option_response.clicked() {
-                    *self.selected = Some(option.value);
-                    if !self.keep_open_on_select {
-                        open = false;
-                        ui.memory_mut(|mem| mem.data.insert_temp(select_id, open));
+                    let option_response = ui.interact(
+                        option_rect,
+                        egui::Id::new(("select_option", option.value, option.text.clone())),
+                        Sense::click(),
+                    );
+
+                    // Highlight selected option
+                    let is_selected = *self.selected == Some(option.value);
+                    let option_bg_color = if is_selected {
+                        Color32::from_rgba_premultiplied(
+                            on_surface.r(), on_surface.g(), on_surface.b(), 30
+                        )
+                    } else if option_response.hovered() {
+                        Color32::from_rgba_premultiplied(
+                            on_surface.r(), on_surface.g(), on_surface.b(), 20
+                        )
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+
+                    if option_bg_color != Color32::TRANSPARENT {
+                        ui.painter().rect_filled(option_rect, 4.0, option_bg_color);
                     }
-                    response.mark_changed();
+
+                    if option_response.clicked() {
+                        *self.selected = Some(option.value);
+                        if !self.keep_open_on_select {
+                            open = false;
+                            ui.memory_mut(|mem| {
+                                mem.data.insert_temp(select_id, open);
+                                mem.data.remove::<egui::Id>(global_open_select_id);
+                            });
+                        }
+                        response.mark_changed();
+                    }
+
+                    let text_pos = Pos2::new(option_rect.min.x + 12.0, option_rect.center().y);
+                    let text_color = if is_selected { 
+                        get_global_color("primary") 
+                    } else { 
+                        on_surface 
+                    };
+                    
+                    ui.painter().text(
+                        text_pos,
+                        egui::Align2::LEFT_CENTER,
+                        &option.text,
+                        egui::FontId::default(),
+                        text_color,
+                    );
+
+                    current_y += item_height;
                 }
-
-                let text_pos = Pos2::new(option_rect.min.x + 12.0, option_rect.center().y);
-                ui.painter().text(
-                    text_pos,
-                    egui::Align2::LEFT_CENTER,
-                    &option.text,
-                    egui::FontId::default(),
-                    on_surface,
-                );
-
-                current_y += 48.0;
             }
         }
 

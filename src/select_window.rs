@@ -4,6 +4,7 @@ use crate::{select};
 pub struct SelectWindow {
     pub open: bool,
     label: String,
+    typeahead_delay: f32,
     quick: bool,
     required: bool,
     no_asterisk: bool,
@@ -12,6 +13,8 @@ pub struct SelectWindow {
     supporting_text: String,
     error: bool,
     clamp_menu_width: bool,
+    menu_align: String,
+    menu_positioning: String,
     leading_icon: String,
     trailing_icon: String,
     // Select states
@@ -26,6 +29,7 @@ impl Default for SelectWindow {
         Self {
             open: false,
             label: "Choose a fruit".to_string(),
+            typeahead_delay: 200.0,
             quick: false,
             required: false,
             no_asterisk: true, // Hide red asterisk indicators
@@ -34,6 +38,8 @@ impl Default for SelectWindow {
             supporting_text: "Select your favorite fruit".to_string(),
             error: false,
             clamp_menu_width: false,
+            menu_align: "start".to_string(),
+            menu_positioning: "absolute".to_string(),
             leading_icon: String::new(),
             trailing_icon: String::new(),
             filled_select_value: Some(1), // Apple selected by default
@@ -63,114 +69,140 @@ impl SelectWindow {
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.heading("Select Controls");
+        ui.push_id("select_controls", |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Select Controls");
 
-            if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/select/stories/");
-            }
-        });
-        
-        ui.horizontal(|ui| {
-            ui.label("Label:");
-            ui.text_edit_singleline(&mut self.label);
-        });
-        
-        ui.horizontal(|ui| {
-            ui.label("Supporting Text:");
-            ui.text_edit_singleline(&mut self.supporting_text);
-        });
-        
-        ui.horizontal(|ui| {
-            ui.label("Error Text:");
-            ui.text_edit_singleline(&mut self.error_text);
-        });
-        
-        ui.horizontal(|ui| {
-            ui.label("Leading Icon:");
-            ui.text_edit_singleline(&mut self.leading_icon);
-        });
-        
-        ui.horizontal(|ui| {
-            ui.label("Trailing Icon:");
-            ui.text_edit_singleline(&mut self.trailing_icon);
-        });
-        
-        ui.horizontal(|ui| {
-            ui.checkbox(&mut self.quick, "Quick");
-            ui.checkbox(&mut self.required, "Required");
-            ui.checkbox(&mut self.no_asterisk, "No Asterisk");
-        });
-        
-        ui.horizontal(|ui| {
-            ui.checkbox(&mut self.disabled, "Disabled");
-            ui.checkbox(&mut self.error, "Error");
-            ui.checkbox(&mut self.clamp_menu_width, "Clamp Menu Width");
+                if ui.button("Target").clicked() {
+                    let _ = webbrowser::open("https://material-web.dev/components/select/stories/");
+                }
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Label:");
+                ui.text_edit_singleline(&mut self.label);
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Supporting Text:");
+                ui.text_edit_singleline(&mut self.supporting_text);
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Error Text:");
+                ui.text_edit_singleline(&mut self.error_text);
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Leading Icon:");
+                ui.text_edit_singleline(&mut self.leading_icon);
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Trailing Icon:");
+                ui.text_edit_singleline(&mut self.trailing_icon);
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Typeahead Delay (ms):");
+                ui.add(egui::DragValue::new(&mut self.typeahead_delay).range(0.0..=2000.0));
+            });
+            
+            ui.horizontal(|ui| {
+                ui.label("Menu Align:");
+                egui::ComboBox::from_id_salt("menu_align_combo")
+                    .selected_text(&self.menu_align)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.menu_align, "start".to_string(), "start");
+                        ui.selectable_value(&mut self.menu_align, "end".to_string(), "end");
+                    });
+                
+                ui.label("Menu Positioning:");
+                egui::ComboBox::from_id_salt("menu_positioning_combo")
+                    .selected_text(&self.menu_positioning)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.menu_positioning, "absolute".to_string(), "absolute");
+                        ui.selectable_value(&mut self.menu_positioning, "fixed".to_string(), "fixed");
+                        ui.selectable_value(&mut self.menu_positioning, "popover".to_string(), "popover");
+                    });
+            });
+            
+            ui.horizontal(|ui| {
+                ui.checkbox(&mut self.quick, "Quick");
+                ui.checkbox(&mut self.required, "Required");
+                ui.checkbox(&mut self.no_asterisk, "No Asterisk");
+            });
+            
+            ui.horizontal(|ui| {
+                ui.checkbox(&mut self.disabled, "Disabled");
+                ui.checkbox(&mut self.error, "Error");
+                ui.checkbox(&mut self.clamp_menu_width, "Clamp Menu Width");
+            });
         });
     }
 
     fn render_select_variants(&mut self, ui: &mut egui::Ui) {
         ui.heading("Select Variants");
         
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("Filled Select:");
-                let mut filled_select = select(&mut self.filled_select_value)
-                    .option(0, "")
-                    .option(1, "Apple")
-                    .option(2, "Apricot")
-                    .option(3, "Apricots")
-                    .option(4, "Avocado")
-                    .option(5, "Green Apple")
-                    .option(6, "Green Grapes")
-                    .option(7, "Olive")
-                    .option(8, "Orange")
-                    .placeholder(&self.label);
+        ui.push_id("select_variants", |ui| {
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label("Filled Select:");
+                    let mut filled_select = select(&mut self.filled_select_value)
+                        .option(0, "")
+                        .option(1, "Apple")
+                        .option(2, "Apricot")
+                        .option(3, "Apricots")
+                        .option(4, "Avocado")
+                        .option(5, "Green Apple")
+                        .option(6, "Green Grapes")
+                        .option(7, "Olive")
+                        .option(8, "Orange")
+                        .placeholder(&self.label);
+                    
+                    if self.disabled {
+                        filled_select = filled_select.enabled(false);
+                    }
+                    
+                    if self.error && !self.error_text.is_empty() {
+                        filled_select = filled_select.error_text(&self.error_text);
+                    }
+                    
+                    if !self.supporting_text.is_empty() {
+                        filled_select = filled_select.helper_text(&self.supporting_text);
+                    }
+                    
+                    ui.add(filled_select);
+                });
                 
-                if self.disabled {
-                    filled_select = filled_select.enabled(false);
-                }
+                ui.add_space(20.0);
                 
-                if self.error && !self.error_text.is_empty() {
-                    filled_select = filled_select.error_text(&self.error_text);
-                }
-                
-                if !self.supporting_text.is_empty() {
-                    filled_select = filled_select.helper_text(&self.supporting_text);
-                }
-                
-                ui.add(filled_select);
-            });
-            
-            ui.add_space(20.0);
-            
-            ui.vertical(|ui| {
-                ui.label("Outlined Select:");
-                let mut outlined_select = select(&mut self.outlined_select_value)
-                    .option(0, "")
-                    .option(1, "Apple")
-                    .option(2, "Apricot")
-                    .option(3, "Apricots")
-                    .option(4, "Avocado")
-                    .option(5, "Green Apple")
-                    .option(6, "Green Grapes")
-                    .option(7, "Olive")
-                    .option(8, "Orange")
-                    .placeholder(&self.label);
-                
-                if self.disabled {
-                    outlined_select = outlined_select.enabled(false);
-                }
-                
-                if self.error && !self.error_text.is_empty() {
-                    outlined_select = outlined_select.error_text(&self.error_text);
-                }
-                
-                if !self.supporting_text.is_empty() {
-                    outlined_select = outlined_select.helper_text(&self.supporting_text);
-                }
-                
-                ui.add(outlined_select);
+                ui.vertical(|ui| {
+                    ui.label("Outlined Select:");
+                    let mut outlined_select = select(&mut self.outlined_select_value)
+                        .option(0, "")
+                        .option(1, "Apple")
+                        .option(2, "Apricot")
+                        .option(3, "Apricots")
+                        .option(4, "Avocado")
+                        .option(5, "Green Apple")
+                        .option(6, "Green Grapes")
+                        .option(7, "Olive")
+                        .option(8, "Orange")
+                        .placeholder(&self.label);
+                    
+                    if self.disabled {
+                        outlined_select = outlined_select.enabled(false);
+                    }
+                    
+                    if self.error && !self.error_text.is_empty() {
+                        outlined_select = outlined_select.error_text(&self.error_text);
+                    }                    if !self.supporting_text.is_empty() {
+                        outlined_select = outlined_select.helper_text(&self.supporting_text);
+                    }
+                    
+                    ui.add(outlined_select);
+                });
             });
         });
     }
@@ -178,13 +210,14 @@ impl SelectWindow {
     fn render_select_examples(&mut self, ui: &mut egui::Ui) {
         ui.heading("Select Examples");
         
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("Fruits:");
-                let mut fruits_select = select(&mut self.fruits_select)
-                    .option(0, "Apple")
-                    .option(1, "Banana")
-                    .option(2, "Cherry")
+        ui.push_id("select_examples", |ui| {
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label("Fruits:");
+                    let mut fruits_select = select(&mut self.fruits_select)
+                        .option(0, "Apple")
+                        .option(1, "Banana")
+                        .option(2, "Cherry")
                     .option(3, "Date")
                     .option(4, "Elderberry")
                     .option(5, "Fig")
@@ -264,5 +297,6 @@ impl SelectWindow {
             ui.label(format!("Fruits: {:?}", self.fruits_select));
             ui.label(format!("Countries: {:?}", self.countries_select));
         });
+        }); // Close push_id block
     }
 }

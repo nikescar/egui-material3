@@ -1,5 +1,5 @@
 use eframe::egui::{self, Window, Color32, Sense, Vec2};
-use crate::{MaterialRipple, add_ripple_to_response, MaterialButton};
+use crate::{MaterialRipple, add_ripple_to_response_with_bounds, MaterialButton};
 
 pub struct RippleWindow {
     pub open: bool,
@@ -97,11 +97,13 @@ impl RippleWindow {
                     egui::epaint::StrokeKind::Outside,
                 );
                 
-                // Add ripple effect
+                // Add bounded ripple effect
                 if let Ok(color) = self.parse_color(&self.pressed_color) {
-                    add_ripple_to_response(&response, ui, &mut self.bounded_ripple, Some(color));
+                    let mut ripple_color = color;
+                    ripple_color = ripple_color.linear_multiply(self.pressed_opacity);
+                    add_ripple_to_response_with_bounds(&response, ui, &mut self.bounded_ripple, Some(ripple_color), true);
                 } else {
-                    add_ripple_to_response(&response, ui, &mut self.bounded_ripple, None);
+                    add_ripple_to_response_with_bounds(&response, ui, &mut self.bounded_ripple, None, true);
                 }
                 
                 if response.clicked() {
@@ -143,11 +145,13 @@ impl RippleWindow {
                     egui::Stroke::new(1.0, Color32::from_gray(120))
                 );
                 
-                // Add ripple effect
+                // Add unbounded ripple effect
                 if let Ok(color) = self.parse_color(&self.pressed_color) {
-                    add_ripple_to_response(&response, ui, &mut self.unbounded_ripple, Some(color));
+                    let mut ripple_color = color;
+                    ripple_color = ripple_color.linear_multiply(self.pressed_opacity);
+                    add_ripple_to_response_with_bounds(&response, ui, &mut self.unbounded_ripple, Some(ripple_color), false);
                 } else {
-                    add_ripple_to_response(&response, ui, &mut self.unbounded_ripple, None);
+                    add_ripple_to_response_with_bounds(&response, ui, &mut self.unbounded_ripple, None, false);
                 }
                 
                 if response.clicked() {
@@ -156,8 +160,15 @@ impl RippleWindow {
             });
         });
         
-        // Update and render all ripples
-        self.bounded_ripple.update_and_render(ui);
+        // Update and render all ripples with proper clipping
+        // For bounded ripples, we need to clip to a rounded rectangle matching the container
+        let bounded_rect = egui::Rect::from_min_size(
+            ui.min_rect().min + egui::vec2(0.0, 0.0),
+            Vec2::new(128.0, 64.0)
+        );
+        self.bounded_ripple.update_and_render_clipped(ui, Some(bounded_rect));
+        
+        // For unbounded ripples, no clipping needed - they can extend beyond the anchor
         self.unbounded_ripple.update_and_render(ui);
     }
 
@@ -168,9 +179,11 @@ impl RippleWindow {
             // Button with custom ripple
             let button = ui.add(MaterialButton::filled("Custom Ripple"));
             if let Ok(color) = self.parse_color(&self.pressed_color) {
-                add_ripple_to_response(&button, ui, &mut self.button_ripple, Some(color));
+                let mut ripple_color = color;
+                ripple_color = ripple_color.linear_multiply(self.pressed_opacity);
+                add_ripple_to_response_with_bounds(&button, ui, &mut self.button_ripple, Some(ripple_color), true);
             } else {
-                add_ripple_to_response(&button, ui, &mut self.button_ripple, None);
+                add_ripple_to_response_with_bounds(&button, ui, &mut self.button_ripple, None, true);
             }
             if button.clicked() {
                 println!("Custom ripple button clicked!");
@@ -178,7 +191,8 @@ impl RippleWindow {
             
             // Card-like element with ripple
             let card_button = ui.add(MaterialButton::outlined("Card with Ripple"));
-            add_ripple_to_response(&card_button, ui, &mut self.custom_ripple, Some(Color32::from_rgb(25, 118, 210)));
+            let card_ripple_color = Color32::from_rgb(25, 118, 210).linear_multiply(self.pressed_opacity);
+            add_ripple_to_response_with_bounds(&card_button, ui, &mut self.custom_ripple, Some(card_ripple_color), true);
             if card_button.clicked() {
                 println!("Card ripple clicked!");
             }
@@ -214,18 +228,22 @@ impl RippleWindow {
             Color32::from_rgb(28, 27, 31) // Material on-surface
         );
         
-        // Add custom ripple
+        // Add custom ripple (bounded to the custom container)
         if let Ok(color) = self.parse_color(&self.hover_color) {
-            add_ripple_to_response(&custom_response, ui, &mut self.custom_ripple, Some(color));
+            let mut ripple_color = color;
+            ripple_color = ripple_color.linear_multiply(self.hover_opacity);
+            add_ripple_to_response_with_bounds(&custom_response, ui, &mut self.custom_ripple, Some(ripple_color), true);
         }
         
         if custom_response.clicked() {
             println!("Custom styled ripple clicked!");
         }
         
-        // Update and render component ripples
+        // Update and render component ripples with clipping to their respective containers
         self.button_ripple.update_and_render(ui);
-        self.custom_ripple.update_and_render(ui);
+        
+        // Custom ripple should be clipped to the custom container
+        self.custom_ripple.update_and_render_clipped(ui, Some(custom_rect));
     }
 
     fn parse_color(&self, color_str: &str) -> Result<Color32, ()> {

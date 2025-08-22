@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialImageList, ImageListVariant, MaterialButton, MaterialCheckbox, image_list, masonry_image_list, woven_image_list};
+use crate::{MaterialButton, MaterialCheckbox, image_list, masonry_image_list, woven_image_list};
 
 pub struct ImageListWindow {
     pub open: bool,
@@ -68,7 +68,7 @@ impl ImageListWindow {
         ui.heading("Standard Image List");
         ui.label("Images displayed in a regular grid with consistent sizing.");
         
-        let mut standard_list = image_list()
+        let standard_list = image_list()
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)

@@ -22,9 +22,11 @@ pub struct MaterialChip<'a> {
     variant: ChipVariant,
     selected: Option<&'a mut bool>,
     enabled: bool,
+    soft_disabled: bool, // soft-disabled has different coloring than disabled
     elevated: bool,
     removable: bool,
     leading_icon: Option<IconType>,
+    avatar: bool, // true for avatar-style (more rounded), false for regular (less rounded)
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
@@ -35,9 +37,11 @@ impl<'a> MaterialChip<'a> {
             variant,
             selected: None,
             enabled: true,
+            soft_disabled: false,
             elevated: false,
             removable: false,
             leading_icon: None,
+            avatar: false, // regular chips are more rectangular by default
             action: None,
         }
     }
@@ -67,6 +71,17 @@ impl<'a> MaterialChip<'a> {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        if enabled {
+            self.soft_disabled = false; // if enabled, can't be soft disabled
+        }
+        self
+    }
+
+    pub fn soft_disabled(mut self, soft_disabled: bool) -> Self {
+        self.soft_disabled = soft_disabled;
+        if soft_disabled {
+            self.enabled = false; // soft disabled means not enabled
+        }
         self
     }
 
@@ -92,6 +107,11 @@ impl<'a> MaterialChip<'a> {
 
     pub fn leading_icon_texture(mut self, texture: TextureHandle) -> Self {
         self.leading_icon = Some(IconType::Texture(texture));
+        self
+    }
+
+    pub fn avatar(mut self, avatar: bool) -> Self {
+        self.avatar = avatar;
         self
     }
 
@@ -148,13 +168,23 @@ impl<'a> Widget for MaterialChip<'a> {
         let (bg_color, border_color, text_color, state_layer_color) = match self.variant {
             ChipVariant::Assist => {
                 if !self.enabled {
-                    // Disabled state: on-surface with 12% opacity for container, 38% for text
-                    (
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
-                        Color32::TRANSPARENT,
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
-                        Color32::TRANSPARENT, // No state layer for disabled
-                    )
+                    if self.soft_disabled {
+                        // Soft-disabled: lighter opacity, different from hard disabled
+                        (
+                            Color32::from_rgba_premultiplied(on_surface_variant.r(), on_surface_variant.g(), on_surface_variant.b(), 50), // 20% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface_variant.r(), on_surface_variant.g(), on_surface_variant.b(), 153), // 60% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    } else {
+                        // Hard disabled state: on-surface with 12% opacity for container, 38% for text
+                        (
+                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    }
                 } else if self.elevated {
                     // Elevated: surface-container-high background
                     let state_layer = if is_pressed {
@@ -180,13 +210,23 @@ impl<'a> Widget for MaterialChip<'a> {
             ChipVariant::Filter => {
                 let is_selected = self.selected.as_ref().map_or(false, |s| **s);
                 if !self.enabled {
-                    // Disabled state: on-surface with 12% opacity for container, 38% for text
-                    (
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
-                        Color32::TRANSPARENT,
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
-                        Color32::TRANSPARENT, // No state layer for disabled
-                    )
+                    if self.soft_disabled {
+                        // Soft-disabled: lighter opacity, different from hard disabled
+                        (
+                            Color32::from_rgba_premultiplied(on_surface_variant.r(), on_surface_variant.g(), on_surface_variant.b(), 50), // 20% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface_variant.r(), on_surface_variant.g(), on_surface_variant.b(), 153), // 60% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    } else {
+                        // Hard disabled state: on-surface with 12% opacity for container, 38% for text
+                        (
+                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    }
                 } else if is_selected {
                     // Selected: secondary container background with primary border
                     let state_layer = if is_pressed {
@@ -226,13 +266,23 @@ impl<'a> Widget for MaterialChip<'a> {
             }
             ChipVariant::Input => {
                 if !self.enabled {
-                    // Disabled state: on-surface with 12% opacity for container, 38% for text
-                    (
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
-                        Color32::TRANSPARENT,
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
-                        Color32::TRANSPARENT, // No state layer for disabled
-                    )
+                    if self.soft_disabled {
+                        // Soft-disabled Input chips: different opacity from other chips
+                        (
+                            Color32::from_rgba_premultiplied(surface_variant.r(), surface_variant.g(), surface_variant.b(), 80), // 30% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface_variant.r(), on_surface_variant.g(), on_surface_variant.b(), 180), // 70% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    } else {
+                        // Hard disabled Input chips: slightly different from other chips
+                        (
+                            Color32::from_rgba_premultiplied(surface_variant.r(), surface_variant.g(), surface_variant.b(), 40), // 15% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 120), // 47% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    }
                 } else if self.elevated {
                     // Elevated: surface-container-high background
                     let state_layer = if is_pressed {
@@ -257,13 +307,23 @@ impl<'a> Widget for MaterialChip<'a> {
             }
             ChipVariant::Suggestion => {
                 if !self.enabled {
-                    // Disabled state: on-surface with 12% opacity for container, 38% for text
-                    (
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
-                        Color32::TRANSPARENT,
-                        Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
-                        Color32::TRANSPARENT, // No state layer for disabled
-                    )
+                    if self.soft_disabled {
+                        // Soft-disabled: lighter opacity, different from hard disabled
+                        (
+                            Color32::from_rgba_premultiplied(on_surface_variant.r(), on_surface_variant.g(), on_surface_variant.b(), 50), // 20% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface_variant.r(), on_surface_variant.g(), on_surface_variant.b(), 153), // 60% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    } else {
+                        // Hard disabled state: on-surface with 12% opacity for container, 38% for text
+                        (
+                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 31), // 12% opacity
+                            Color32::TRANSPARENT,
+                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 97), // 38% opacity
+                            Color32::TRANSPARENT, // No state layer for disabled
+                        )
+                    }
                 } else if self.elevated {
                     // Elevated: surface-container-high background
                     let state_layer = if is_pressed {
@@ -288,10 +348,13 @@ impl<'a> Widget for MaterialChip<'a> {
             }
         };
 
+        // Calculate corner radius - avatar chips are more rounded, regular chips are more rectangular
+        let corner_radius = if self.avatar { 16.0 } else { 8.0 };
+
         // Draw chip background
         ui.painter().rect_filled(
             rect,
-            16.0,
+            corner_radius,
             bg_color,
         );
 
@@ -299,7 +362,7 @@ impl<'a> Widget for MaterialChip<'a> {
         if state_layer_color != Color32::TRANSPARENT {
             ui.painter().rect_filled(
                 rect,
-                16.0,
+                corner_radius,
                 state_layer_color,
             );
         }
@@ -308,7 +371,7 @@ impl<'a> Widget for MaterialChip<'a> {
         if border_color != Color32::TRANSPARENT {
             ui.painter().rect_stroke(
                 rect,
-                16.0,
+                corner_radius,
                 Stroke::new(1.0, border_color),
                 egui::epaint::StrokeKind::Outside,
             );
@@ -320,7 +383,7 @@ impl<'a> Widget for MaterialChip<'a> {
             let shadow_rect = rect.translate(shadow_offset);
             ui.painter().rect_filled(
                 shadow_rect,
-                16.0,
+                corner_radius,
                 Color32::from_rgba_unmultiplied(0, 0, 0, 30),
             );
         }
@@ -337,14 +400,13 @@ impl<'a> Widget for MaterialChip<'a> {
             
             match icon {
                 IconType::MaterialIcon(icon_str) => {
-                    // Draw material icon as text
-                    ui.painter().text(
-                        icon_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        icon_str,
-                        egui::FontId::proportional(16.0),
-                        text_color,
-                    );
+                    // Draw material icon using proper icon system
+                    let icon = crate::icon::MaterialIcon::new(icon_str)
+                        .size(16.0)
+                        .color(text_color);
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
+                        ui.add(icon);
+                    });
                 }
                 IconType::SvgData(svg_data) => {
                     // Convert SVG to texture and draw

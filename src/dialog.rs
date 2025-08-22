@@ -129,14 +129,14 @@ impl<'a> MaterialDialog<'a> {
     }
 
     // Backward compatibility methods
-    pub fn action<F>(mut self, text: impl Into<String>, action: F) -> Self
+    pub fn action<F>(self, text: impl Into<String>, action: F) -> Self
     where
         F: FnOnce() + 'a,
     {
         self.text_action(text, action)
     }
 
-    pub fn primary_action<F>(mut self, text: impl Into<String>, action: F) -> Self
+    pub fn primary_action<F>(self, text: impl Into<String>, action: F) -> Self
     where
         F: FnOnce() + 'a,
     {

@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialButton, icons::{icon_text, ICON_UPLOAD, ICON_OPEN_IN_NEW}};
+use crate::{MaterialButton, icons::icon_text};
 
 pub struct ButtonWindow {
     pub open: bool,

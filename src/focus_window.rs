@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window, vec2};
-use crate::{MaterialFocusRing, add_focus_ring_to_response, MaterialButton};
+use crate::{MaterialFocusRing, add_focus_ring_to_response, MaterialButton, get_global_color};
 
 pub struct FocusWindow {
     pub open: bool,
@@ -58,47 +58,62 @@ impl FocusWindow {
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
-            // First button with focus ring
-            let button1 = ui.add(MaterialButton::filled("Button 1")
-                .min_size(vec2(64.0, 64.0)));
-            
-            if self.always_visible || button1.has_focus() {
-                ui.add(MaterialFocusRing::new()
-                    .visible(true)
-                    .inward(self.inward)
-                    .animated(self.animated)
-                    .target_rect(button1.rect)
-                    .corner_radius(16.0));
-            }
-            
-            ui.add_space(8.0);
-
-            // Second button with focus ring
-            let button2 = ui.add(MaterialButton::outlined("Button 2")
-                .min_size(vec2(64.0, 64.0)));
-            
-            if self.always_visible || button2.has_focus() {
-                ui.add(MaterialFocusRing::new()
-                    .visible(true)
-                    .inward(self.inward)
-                    .animated(self.animated)
-                    .target_rect(button2.rect)
-                    .corner_radius(16.0));
-            }
-            
-            ui.add_space(8.0);
-
-            // Third button with focus ring
-            let button3 = ui.add(MaterialButton::elevated("Button 3")
-                .min_size(vec2(64.0, 64.0)));
-            
-            if self.always_visible || button3.has_focus() {
-                ui.add(MaterialFocusRing::new()
-                    .visible(true)
-                    .inward(self.inward)
-                    .animated(self.animated)
-                    .target_rect(button3.rect)
-                    .corner_radius(16.0));
+            // Create buttons matching TypeScript Material Web styling
+            for i in 1..=3 {
+                if i > 1 {
+                    ui.add_space(8.0);
+                }
+                
+                let size = vec2(64.0, 64.0);
+                let response = ui.allocate_response(size, egui::Sense::click());
+                let rect = response.rect;
+                
+                // Button colors matching TypeScript implementation
+                let surface_color = get_global_color("surface");
+                let surface_variant_color = get_global_color("surfaceVariant");
+                let outline_color = get_global_color("outline");
+                
+                let bg_color = if response.has_focus() {
+                    surface_variant_color
+                } else {
+                    surface_color
+                };
+                
+                // Draw button background
+                ui.painter().rect_filled(
+                    rect,
+                    16.0,
+                    bg_color,
+                );
+                
+                // Draw button border (matching ::before pseudo-element in TypeScript)
+                ui.painter().rect_stroke(
+                    rect,
+                    16.0,
+                    egui::Stroke::new(1.0, outline_color),
+                    egui::epaint::StrokeKind::Outside,
+                );
+                
+                // Add button label
+                ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(&format!("{}", i));
+                    });
+                });
+                
+                // Add focus ring
+                if self.always_visible || response.has_focus() {
+                    ui.add(MaterialFocusRing::new()
+                        .visible(true)
+                        .inward(self.inward)
+                        .animated(self.animated)
+                        .target_rect(rect)
+                        .corner_radius(16.0));
+                }
+                
+                if response.clicked() {
+                    println!("Button {} clicked!", i);
+                }
             }
         });
 
@@ -113,16 +128,26 @@ impl FocusWindow {
             let response = ui.allocate_response(size, egui::Sense::click());
             let rect = response.rect;
             
-            // Draw a custom surface
+            // Draw a custom surface using Material Design colors
+            let surface_color = get_global_color("surface");
+            let surface_variant_color = get_global_color("surfaceVariant");
+            let outline_color = get_global_color("outline");
+            
+            let bg_color = if response.has_focus() {
+                surface_variant_color
+            } else {
+                surface_color
+            };
+            
             ui.painter().rect_filled(
                 rect,
                 16.0,
-                egui::Color32::from_rgb(232, 222, 248), // md-sys-color-primary-container
+                bg_color,
             );
             ui.painter().rect_stroke(
                 rect,
                 16.0,
-                egui::Stroke::new(1.0, egui::Color32::from_rgb(121, 116, 126)),
+                egui::Stroke::new(1.0, outline_color),
                 egui::epaint::StrokeKind::Outside,
             );
             
@@ -155,11 +180,14 @@ impl FocusWindow {
         ui.add_space(10.0);
 
         // Create a multi-action component similar to Material Web example
+        let surface_color = get_global_color("surface");
+        let outline_color = get_global_color("outline");
+        
         egui::Frame::NONE
-            .fill(egui::Color32::from_rgb(248, 248, 248)) // md-sys-color-surface
+            .fill(surface_color)
             .corner_radius(16.0)
             .inner_margin(egui::Margin::symmetric(16, 8))
-            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(121, 116, 126)))
+            .stroke(egui::Stroke::new(1.0, outline_color))
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     // Primary action area

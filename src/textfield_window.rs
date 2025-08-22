@@ -74,7 +74,7 @@ impl TextFieldWindow {
             ui.heading("Text Field Controls");
 
             if ui.button("Target").clicked() {
-                let _ = webbrowser::open("https://material-web.dev/components/textfield/stories/");
+                let _ = webbrowser::open("https://material-web.dev/components/text-field/stories/");
             }
         });
         
