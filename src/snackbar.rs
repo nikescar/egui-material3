@@ -91,11 +91,29 @@ impl<'a> MaterialSnackbar<'a> {
     }
 
     /// Show the snackbar only if the condition is true.
+    /// This method manages the visibility state properly.
     pub fn show_if(mut self, visible: &mut bool) -> Self {
         self.visible = *visible;
-        if !self.visible {
-            *visible = false;
+        // Initialize show_time when becoming visible
+        if self.visible && self.show_time.is_none() {
+            self.show_time = Some(Instant::now());
         }
+        // Reset show_time when hidden
+        if !self.visible {
+            self.show_time = None;
+        }
+        
+        // Check auto-dismiss and update the visible reference
+        if self.visible {
+            if let (Some(auto_dismiss), Some(show_time)) = (self.auto_dismiss, self.show_time) {
+                if show_time.elapsed() >= auto_dismiss {
+                    self.visible = false;
+                    *visible = false; // Update the external state
+                    self.show_time = None;
+                }
+            }
+        }
+        
         self
     }
 
@@ -133,22 +151,25 @@ impl<'a> MaterialSnackbar<'a> {
 
 impl Widget for MaterialSnackbar<'_> {
     fn ui(mut self, ui: &mut Ui) -> Response {
+        if !self.visible {
+            return ui.allocate_response(Vec2::ZERO, Sense::hover());
+        }
+
         // Initialize show time if not set
-        if self.show_time.is_none() && self.visible {
+        if self.show_time.is_none() {
             self.show_time = Some(Instant::now());
         }
 
-        // Check auto-dismiss
-        if self.visible {
-            if let (Some(auto_dismiss), Some(show_time)) = (self.auto_dismiss, self.show_time) {
-                if show_time.elapsed() >= auto_dismiss {
-                    self.visible = false;
-                }
-            }
-        }
-
-        if !self.visible {
-            return ui.allocate_response(Vec2::ZERO, Sense::hover());
+        // Check auto-dismiss - this will affect next frame
+        let should_dismiss = if let (Some(auto_dismiss), Some(show_time)) = (self.auto_dismiss, self.show_time) {
+            show_time.elapsed() >= auto_dismiss
+        } else {
+            false
+        };
+        
+        // If should dismiss, request repaint for next frame
+        if should_dismiss {
+            ui.ctx().request_repaint();
         }
 
         let (background_color, border_stroke) = self.get_snackbar_style();
@@ -201,12 +222,21 @@ impl Widget for MaterialSnackbar<'_> {
         
         let snackbar_size = Vec2::new(snackbar_width, snackbar_height);
         
-        // Position the snackbar
-        let screen_rect = ui.ctx().screen_rect();
-        let snackbar_x = (screen_rect.width() - snackbar_size.x) / 2.0;
+        // Position the snackbar relative to available space
+        let available_rect = ui.available_rect_before_wrap();
+        let ctx_rect = ui.ctx().screen_rect();
+        
+        // Use full screen positioning if available
+        let positioning_rect = if available_rect.width() > ctx_rect.width() * 0.8 {
+            ctx_rect
+        } else {
+            available_rect
+        };
+        
+        let snackbar_x = (positioning_rect.width() - snackbar_size.x) / 2.0 + positioning_rect.min.x;
         let snackbar_y = match position {
-            SnackbarPosition::Bottom => screen_rect.height() - snackbar_size.y - 32.0,
-            SnackbarPosition::Top => 32.0,
+            SnackbarPosition::Bottom => positioning_rect.max.y - snackbar_size.y - 32.0,
+            SnackbarPosition::Top => positioning_rect.min.y + 32.0,
         };
         
         let snackbar_pos = egui::pos2(snackbar_x, snackbar_y);
@@ -279,14 +309,16 @@ impl Widget for MaterialSnackbar<'_> {
                 if let Some(callback) = action_callback {
                     callback();
                 }
+                // Action clicked should also dismiss the snackbar
+                response = response.on_hover_text("Action executed");
             }
             
             response = response.union(action_response);
         }
 
-        // Allow dismissing by clicking anywhere on the snackbar
-        if response.clicked() && action_text.is_none() {
-            // Dismiss snackbar (in a real implementation, you'd set visible to false)
+        // Mark response if auto-dismiss should happen
+        if should_dismiss {
+            response = response.on_hover_text("Auto-dismissing...");
         }
 
         response
