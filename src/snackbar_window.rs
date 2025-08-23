@@ -189,7 +189,33 @@ impl SnackbarWindow {
     }
     
     fn render_active_snackbars(&mut self, ctx: &egui::Context) {
-        // Auto-dismiss is now handled by the MaterialSnackbar widget itself
+        // Handle auto-dismiss timing at window level for better control
+        if self.show_basic_snackbar && self.use_auto_dismiss {
+            if let Some(start_time) = self.basic_snackbar_start {
+                if start_time.elapsed().as_secs_f32() >= self.auto_dismiss_seconds {
+                    self.show_basic_snackbar = false;
+                    self.basic_snackbar_start = None;
+                }
+            }
+        }
+        
+        if self.show_action_snackbar && self.use_auto_dismiss {
+            if let Some(start_time) = self.action_snackbar_start {
+                if start_time.elapsed().as_secs_f32() >= self.auto_dismiss_seconds {
+                    self.show_action_snackbar = false;
+                    self.action_snackbar_start = None;
+                }
+            }
+        }
+        
+        if self.show_top_snackbar && self.use_auto_dismiss {
+            if let Some(start_time) = self.top_snackbar_start {
+                if start_time.elapsed().as_secs_f32() >= self.auto_dismiss_seconds {
+                    self.show_top_snackbar = false;
+                    self.top_snackbar_start = None;
+                }
+            }
+        }
         
         // Render snackbars as full-screen overlays
         if self.show_basic_snackbar {
@@ -199,17 +225,8 @@ impl SnackbarWindow {
                     // Set UI to full screen so snackbar can position itself properly
                     ui.set_clip_rect(ctx.screen_rect());
                     
-                    let auto_dismiss = if self.use_auto_dismiss {
-                        Some(Duration::from_secs_f32(self.auto_dismiss_seconds))
-                    } else {
-                        None
-                    };
-                    
-                    let mut snackbar = snackbar(&self.message_text);
-                    
-                    if let Some(auto_dismiss) = auto_dismiss {
-                        snackbar = snackbar.auto_dismiss(Some(auto_dismiss));
-                    }
+                    let mut snackbar = snackbar(&self.message_text)
+                        .auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
                     let mut show_snackbar = self.show_basic_snackbar;
                     let response = ui.add(snackbar.show_if(&mut show_snackbar));
@@ -236,12 +253,6 @@ impl SnackbarWindow {
                     // Set UI to full screen so snackbar can position itself properly
                     ui.set_clip_rect(ctx.screen_rect());
                     
-                    let auto_dismiss = if self.use_auto_dismiss {
-                        Some(Duration::from_secs_f32(self.auto_dismiss_seconds))
-                    } else {
-                        None
-                    };
-                    
                     let message = self.message_text.clone();
                     let action_text = self.action_text.clone();
                     
@@ -251,11 +262,7 @@ impl SnackbarWindow {
                         || {
                             println!("Snackbar action clicked!");
                         }
-                    );
-                    
-                    if let Some(auto_dismiss) = auto_dismiss {
-                        snackbar = snackbar.auto_dismiss(Some(auto_dismiss));
-                    }
+                    ).auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
                     let mut show_snackbar = self.show_action_snackbar;
                     let response = ui.add(snackbar.show_if(&mut show_snackbar));
@@ -282,18 +289,9 @@ impl SnackbarWindow {
                     // Set UI to full screen so snackbar can position itself properly
                     ui.set_clip_rect(ctx.screen_rect());
                     
-                    let auto_dismiss = if self.use_auto_dismiss {
-                        Some(Duration::from_secs_f32(self.auto_dismiss_seconds))
-                    } else {
-                        None
-                    };
-                    
                     let mut snackbar = snackbar(&self.message_text)
-                        .position(SnackbarPosition::Top);
-                    
-                    if let Some(auto_dismiss) = auto_dismiss {
-                        snackbar = snackbar.auto_dismiss(Some(auto_dismiss));
-                    }
+                        .position(SnackbarPosition::Top)
+                        .auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
                     let mut show_snackbar = self.show_top_snackbar;
                     let response = ui.add(snackbar.show_if(&mut show_snackbar));

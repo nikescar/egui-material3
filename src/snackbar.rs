@@ -94,26 +94,6 @@ impl<'a> MaterialSnackbar<'a> {
     /// This method manages the visibility state properly.
     pub fn show_if(mut self, visible: &mut bool) -> Self {
         self.visible = *visible;
-        // Initialize show_time when becoming visible
-        if self.visible && self.show_time.is_none() {
-            self.show_time = Some(Instant::now());
-        }
-        // Reset show_time when hidden
-        if !self.visible {
-            self.show_time = None;
-        }
-        
-        // Check auto-dismiss and update the visible reference
-        if self.visible {
-            if let (Some(auto_dismiss), Some(show_time)) = (self.auto_dismiss, self.show_time) {
-                if show_time.elapsed() >= auto_dismiss {
-                    self.visible = false;
-                    *visible = false; // Update the external state
-                    self.show_time = None;
-                }
-            }
-        }
-        
         self
     }
 
@@ -155,21 +135,21 @@ impl Widget for MaterialSnackbar<'_> {
             return ui.allocate_response(Vec2::ZERO, Sense::hover());
         }
 
-        // Initialize show time if not set
+        // Initialize show time when first rendered
         if self.show_time.is_none() {
             self.show_time = Some(Instant::now());
         }
 
-        // Check auto-dismiss - this will affect next frame
-        let should_dismiss = if let (Some(auto_dismiss), Some(show_time)) = (self.auto_dismiss, self.show_time) {
+        // Check auto-dismiss
+        let should_auto_dismiss = if let (Some(auto_dismiss), Some(show_time)) = (self.auto_dismiss, self.show_time) {
             show_time.elapsed() >= auto_dismiss
         } else {
             false
         };
         
-        // If should dismiss, request repaint for next frame
-        if should_dismiss {
-            ui.ctx().request_repaint();
+        if should_auto_dismiss {
+            // Return empty response if auto-dismissed
+            return ui.allocate_response(Vec2::ZERO, Sense::hover());
         }
 
         let (background_color, border_stroke) = self.get_snackbar_style();
@@ -190,13 +170,7 @@ impl Widget for MaterialSnackbar<'_> {
         let label_text_color = get_global_color("surface"); // White text on dark background
         let action_text_color = get_global_color("inversePrimary"); // Material action color
         
-        // Calculate snackbar dimensions following Material Design specs
-        let text_galley = ui.painter().layout_no_wrap(
-            message.clone(),
-            egui::FontId::proportional(14.0), // body2 typography scale
-            label_text_color
-        );
-        
+        // First calculate action button size to determine available space for text
         let action_galley = action_text.as_ref().map(|text| {
             ui.painter().layout_no_wrap(
                 text.clone(),
@@ -204,41 +178,53 @@ impl Widget for MaterialSnackbar<'_> {
                 action_text_color
             )
         });
+        
+        // Calculate available width for message (leave space for action)
+        let action_area_width = if action_galley.is_some() {
+            action_galley.as_ref().unwrap().size().x + 64.0 // action + generous padding
+        } else {
+            0.0
+        };
+        
+        let max_message_width = 600.0 - action_area_width; // reasonable max width
+        
+        // Calculate message text with width constraint to prevent overlap
+        let text_galley = ui.painter().layout(
+            message.clone(),
+            egui::FontId::proportional(14.0), // body2 typography scale
+            label_text_color,
+            max_message_width.max(200.0) // minimum readable width
+        );
 
         // Material Design padding: 16px left, 8px right, 14px top/bottom for 48px height
         let label_padding = Vec2::new(16.0, 14.0);
         let action_padding = Vec2::new(8.0, 14.0);
         let action_spacing = if action_text.is_some() { 8.0 } else { 0.0 };
-        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 16.0); // Button padding
+        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 32.0); // More generous button padding
         
         // Calculate width following Material Design constraints
         let content_width = text_galley.size().x + action_width + action_spacing + label_padding.x + action_padding.x;
         let min_width = 344.0; // Material Design min-width
         let max_width = 672.0; // Material Design max-width  
-        let available_width = ui.available_width() - 48.0; // 24px margins on each side
+        let available_width = ui.available_width().max(min_width + 48.0) - 48.0; // 24px margins on each side, ensure positive
         
-        let snackbar_width = content_width.max(min_width).min(max_width).min(available_width);
+        let snackbar_width = content_width.max(min_width).min(max_width).min(available_width).max(min_width);
         let snackbar_height = 48.0; // Fixed height per Material Design spec
         
         let snackbar_size = Vec2::new(snackbar_width, snackbar_height);
         
-        // Position the snackbar relative to available space
-        let available_rect = ui.available_rect_before_wrap();
-        let ctx_rect = ui.ctx().screen_rect();
+        // Allocate the snackbar size first to ensure proper space allocation
+        let (allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
         
-        // Use full screen positioning if available
-        let positioning_rect = if available_rect.width() > ctx_rect.width() * 0.8 {
-            ctx_rect
-        } else {
-            available_rect
-        };
-        
-        let snackbar_x = (positioning_rect.width() - snackbar_size.x) / 2.0 + positioning_rect.min.x;
+        // For positioning, use screen coordinates but respect the allocated space
+        let screen_rect = ui.ctx().screen_rect();
+        let snackbar_x = (screen_rect.width() - snackbar_size.x).max(0.0) / 2.0;
         let snackbar_y = match position {
-            SnackbarPosition::Bottom => positioning_rect.max.y - snackbar_size.y - 32.0,
-            SnackbarPosition::Top => positioning_rect.min.y + 32.0,
+            SnackbarPosition::Bottom => screen_rect.height() - snackbar_size.y - 32.0,
+            SnackbarPosition::Top => 32.0,
         };
         
+        // Use the calculated position for drawing, but keep allocated_rect for interaction
         let snackbar_pos = egui::pos2(snackbar_x, snackbar_y);
         let snackbar_rect = Rect::from_min_size(snackbar_pos, snackbar_size);
 
@@ -269,14 +255,14 @@ impl Widget for MaterialSnackbar<'_> {
         );
         ui.painter().galley(text_pos, text_galley, label_text_color);
 
-        // Draw action button if present
-        let mut response = ui.interact(snackbar_rect, ui.next_auto_id(), Sense::hover());
+        // Handle action button if present
+        let mut action_clicked = false;
         
         if let (Some(_action_text), Some(action_galley)) = (action_text.as_ref(), action_galley.as_ref()) {
             // Material Design action button positioning (right-aligned with 8px padding)
             let action_rect = Rect::from_min_size(
                 egui::pos2(
-                    snackbar_rect.max.x - action_width - action_padding.x,
+                    snackbar_rect.max.x - action_width - 8.0, // 8px right margin
                     snackbar_rect.center().y - 18.0 // 36px button height
                 ),
                 Vec2::new(action_width, 36.0)
@@ -309,16 +295,20 @@ impl Widget for MaterialSnackbar<'_> {
                 if let Some(callback) = action_callback {
                     callback();
                 }
-                // Action clicked should also dismiss the snackbar
-                response = response.on_hover_text("Action executed");
+                action_clicked = true;
             }
             
             response = response.union(action_response);
         }
 
-        // Mark response if auto-dismiss should happen
-        if should_dismiss {
-            response = response.on_hover_text("Auto-dismissing...");
+        // Update response state
+        if action_clicked {
+            response = response.on_hover_text("Action clicked");
+        }
+        
+        // Allow clicking outside action to dismiss (only for basic snackbars)
+        if response.clicked() && action_text.is_none() {
+            response = response.on_hover_text("Dismissed");
         }
 
         response
