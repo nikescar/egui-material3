@@ -123,7 +123,7 @@ pub use {
     textfield_window::TextFieldWindow,
     datatable::{MaterialDataTable, DataTableColumn, DataTableRow, SortDirection, data_table},
     datatable_window::DataTableWindow,
-    drawer::{MaterialDrawer, DrawerVariant, DrawerItem, standard_drawer, modal_drawer, dismissible_drawer},
+    drawer::{MaterialDrawer, DrawerVariant, DrawerItem, permanent_drawer, modal_drawer, dismissible_drawer, standard_drawer},
     drawer_window::DrawerWindow,
     imagelist::{MaterialImageList, ImageListVariant, ImageListItem, image_list, masonry_image_list, woven_image_list},
     imagelist_window::ImageListWindow,

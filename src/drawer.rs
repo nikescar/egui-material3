@@ -2,15 +2,15 @@ use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius, Shadow},
-    Rect, Response, Sense, Ui, Vec2, Widget,
+    Rect, Response, Sense, Ui, Vec2, Widget, Id, Area, SidePanel, Order, pos2,
 };
 
 /// Material Design navigation drawer variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DrawerVariant {
-    Standard,
+    Permanent,
+    Dismissible, 
     Modal,
-    Dismissible,
 }
 
 /// Material Design navigation drawer component.
@@ -22,16 +22,15 @@ pub enum DrawerVariant {
 /// # egui::__run_test_ui(|ui| {
 /// let mut drawer_open = true;
 /// 
-/// let drawer = MaterialDrawer::new(DrawerVariant::Standard, &mut drawer_open)
+/// let drawer = MaterialDrawer::new(DrawerVariant::Permanent, &mut drawer_open)
 ///     .header("Mail", Some("email@material.io"))
 ///     .item("Inbox", Some("inbox"), true)
 ///     .item("Sent", Some("send"), false)
 ///     .item("Drafts", Some("drafts"), false);
 ///
-/// ui.add(drawer);
+/// drawer.show(ui.ctx());
 /// # });
 /// ```
-#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialDrawer<'a> {
     variant: DrawerVariant,
     open: &'a mut bool,
@@ -41,6 +40,7 @@ pub struct MaterialDrawer<'a> {
     items: Vec<DrawerItem>,
     corner_radius: CornerRadius,
     elevation: Option<Shadow>,
+    id: Id,
 }
 
 pub struct DrawerItem {
@@ -82,6 +82,7 @@ impl DrawerItem {
 impl<'a> MaterialDrawer<'a> {
     /// Create a new navigation drawer.
     pub fn new(variant: DrawerVariant, open: &'a mut bool) -> Self {
+        let id = Id::new(format!("material_drawer_{:?}", variant));
         Self {
             variant,
             open,
@@ -91,6 +92,22 @@ impl<'a> MaterialDrawer<'a> {
             items: Vec::new(),
             corner_radius: CornerRadius::ZERO,
             elevation: None,
+            id,
+        }
+    }
+
+    /// Create a new navigation drawer with custom ID.
+    pub fn new_with_id(variant: DrawerVariant, open: &'a mut bool, id: Id) -> Self {
+        Self {
+            variant,
+            open,
+            width: 256.0,
+            header_title: None,
+            header_subtitle: None,
+            items: Vec::new(),
+            corner_radius: CornerRadius::ZERO,
+            elevation: None,
+            id,
         }
     }
 
@@ -149,8 +166,8 @@ impl<'a> MaterialDrawer<'a> {
         let md_outline = get_global_color("outline");
         
         match self.variant {
-            DrawerVariant::Standard => {
-                // Standard drawer: surface with border
+            DrawerVariant::Permanent => {
+                // Permanent drawer: surface with border
                 (md_surface, Some(Stroke::new(1.0, md_outline)), false)
             },
             DrawerVariant::Modal => {
@@ -163,192 +180,255 @@ impl<'a> MaterialDrawer<'a> {
             },
         }
     }
-}
 
-impl Widget for MaterialDrawer<'_> {
-    fn ui(self, ui: &mut Ui) -> Response {
+    /// Show the drawer using appropriate egui layout.
+    pub fn show(self, ctx: &egui::Context) -> Response {
+        match self.variant {
+            DrawerVariant::Permanent => self.show_permanent(ctx),
+            DrawerVariant::Dismissible => self.show_dismissible(ctx),
+            DrawerVariant::Modal => self.show_modal(ctx),
+        }
+    }
+
+    fn show_permanent(self, ctx: &egui::Context) -> Response {
+        SidePanel::left(self.id.with("permanent"))
+            .default_width(self.width)
+            .resizable(false)
+            .show(ctx, |ui| {
+                self.render_drawer_content(ui)
+            })
+            .response
+    }
+
+    fn show_dismissible(mut self, ctx: &egui::Context) -> Response {
+        if *self.open {
+            SidePanel::left(self.id.with("dismissible"))
+                .default_width(self.width)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    self.render_drawer_content(ui)
+                })
+                .response
+        } else {
+            // Return empty response when closed
+            Area::new(self.id.with("dismissible_dummy"))
+                .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
+                .show(ctx, |ui| {
+                    ui.allocate_response(Vec2::ZERO, Sense::hover())
+                })
+                .response
+        }
+    }
+
+    fn show_modal(mut self, ctx: &egui::Context) -> Response {
+        if *self.open {
+            // Draw scrim background
+            let screen_rect = ctx.screen_rect();
+            Area::new(self.id.with("modal_scrim"))
+                .order(Order::Background)
+                .show(ctx, |ui| {
+                    let scrim_response = ui.allocate_response(screen_rect.size(), Sense::click());
+                    ui.painter().rect_filled(
+                        screen_rect,
+                        CornerRadius::ZERO,
+                        Color32::from_rgba_unmultiplied(0, 0, 0, 128), // Semi-transparent scrim
+                    );
+                    
+                    // Close drawer if scrim is clicked
+                    if scrim_response.clicked() {
+                        *self.open = false;
+                    }
+                });
+
+            // Draw the actual modal drawer
+            Area::new(self.id.with("modal_drawer"))
+                .order(Order::Foreground)
+                .fixed_pos(pos2(0.0, 0.0))
+                .show(ctx, |ui| {
+                    ui.set_width(self.width);
+                    ui.set_height(screen_rect.height());
+                    self.render_drawer_content(ui)
+                })
+                .response
+        } else {
+            // Return empty response when closed
+            Area::new(self.id.with("modal_dummy"))
+                .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
+                .show(ctx, |ui| {
+                    ui.allocate_response(Vec2::ZERO, Sense::hover())
+                })
+                .response
+        }
+    }
+
+    fn render_drawer_content(mut self, ui: &mut Ui) -> Response {
         let (background_color, border_stroke, has_elevation) = self.get_drawer_style();
         
-        let MaterialDrawer {
-            variant,
-            open,
-            width,
-            header_title,
-            header_subtitle,
-            items,
-            corner_radius,
-            elevation: _,
-        } = self;
-
-        // Only show drawer if it's open (for modal and dismissible) or if it's standard
-        let should_show = match variant {
-            DrawerVariant::Standard => true,
-            DrawerVariant::Modal | DrawerVariant::Dismissible => *open,
-        };
-
-        if !should_show {
-            return ui.allocate_response(Vec2::ZERO, Sense::hover());
+        // Handle ESC key for dismissible and modal drawers
+        if matches!(self.variant, DrawerVariant::Dismissible | DrawerVariant::Modal) {
+            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                *self.open = false;
+            }
         }
 
         // Calculate drawer dimensions
-        let header_height = if header_title.is_some() { 64.0 } else { 0.0 };
+        let header_height = if self.header_title.is_some() { 64.0 } else { 0.0 };
         let item_height = 48.0;
-        let items_height = items.len() as f32 * item_height;
+        let items_height = self.items.len() as f32 * item_height;
         let total_height = header_height + items_height;
 
-        let desired_size = Vec2::new(width, total_height);
-        let response = ui.allocate_response(desired_size, Sense::click());
-        let rect = response.rect;
+        let available_rect = ui.available_rect_before_wrap();
+        let drawer_rect = Rect::from_min_size(available_rect.min, Vec2::new(self.width, available_rect.height()));
 
-        if ui.is_rect_visible(rect) {
-            // Draw scrim for modal drawer
-            if variant == DrawerVariant::Modal {
-                let screen_rect = ui.ctx().screen_rect();
-                let scrim_color = Color32::from_rgba_unmultiplied(0, 0, 0, 128);
-                ui.painter().rect_filled(screen_rect, CornerRadius::ZERO, scrim_color);
-                
-                // Handle scrim click to close modal
-                let scrim_response = ui.interact(screen_rect, ui.next_auto_id(), Sense::click());
-                if scrim_response.clicked() {
-                    *open = false;
-                }
-            }
+        // Draw drawer background
+        ui.painter().rect_filled(drawer_rect, self.corner_radius, background_color);
+        
+        // Draw border if present
+        if let Some(stroke) = border_stroke {
+            ui.painter().rect_stroke(drawer_rect, self.corner_radius, stroke, egui::epaint::StrokeKind::Outside);
+        }
 
-            // Draw elevation shadow if needed
-            if has_elevation {
-                let shadow_rect = rect.translate(Vec2::new(2.0, 2.0));
-                ui.painter().rect_filled(
-                    shadow_rect,
-                    corner_radius,
-                    Color32::from_rgba_unmultiplied(0, 0, 0, 20),
-                );
-            }
-
-            // Draw drawer background
-            ui.painter().rect_filled(rect, corner_radius, background_color);
+        // Draw elevation shadow if needed (simplified approach for egui)
+        if has_elevation {
+            // Draw a simple drop shadow by drawing darker rectangles behind
+            let shadow_offset = Vec2::new(0.0, 4.0);
+            let shadow_color = Color32::from_rgba_unmultiplied(0, 0, 0, 20);
             
-            // Draw border if present
-            if let Some(stroke) = border_stroke {
-                ui.painter().rect_stroke(rect, corner_radius, stroke, egui::epaint::StrokeKind::Outside);
-            }
-
-            let mut current_y = rect.min.y;
-
-            // Draw header if present
-            if let Some(title) = &header_title {
-                let header_rect = Rect::from_min_size(rect.min, Vec2::new(width, header_height));
-                let header_bg = get_global_color("surfaceVariant");
-                ui.painter().rect_filled(header_rect, CornerRadius::ZERO, header_bg);
-
-                // Title
-                let title_pos = egui::pos2(rect.min.x + 16.0, current_y + 16.0);
-                ui.painter().text(
-                    title_pos,
-                    egui::Align2::LEFT_TOP,
-                    title,
-                    egui::FontId::proportional(18.0),
-                    get_global_color("onSurface")
-                );
-
-                // Subtitle if present
-                if let Some(subtitle) = &header_subtitle {
-                    let subtitle_pos = egui::pos2(rect.min.x + 16.0, current_y + 40.0);
-                    ui.painter().text(
-                        subtitle_pos,
-                        egui::Align2::LEFT_TOP,
-                        subtitle,
-                        egui::FontId::proportional(14.0),
-                        get_global_color("onSurfaceVariant")
-                    );
-                }
-
-                current_y += header_height;
-            }
-
-            // Draw navigation items
-            for item in &items {
-                let item_rect = Rect::from_min_size(
-                    egui::pos2(rect.min.x, current_y),
-                    Vec2::new(width, item_height)
-                );
-
-                // Item background
-                let item_bg = if item.active {
-                    get_global_color("primaryContainer") // Selected state
-                } else {
-                    Color32::TRANSPARENT
-                };
-
-                ui.painter().rect_filled(item_rect, CornerRadius::ZERO, item_bg);
-
-                // Handle item interaction
-                let item_response = ui.interact(item_rect, ui.next_auto_id(), Sense::click());
-                if item_response.hovered() && !item.active {
-                    let hover_color = get_global_color("primary").linear_multiply(0.05);
-                    ui.painter().rect_filled(item_rect, CornerRadius::ZERO, hover_color);
-                }
-
-                if item_response.clicked() {
-                    if let Some(callback) = &item.on_click {
-                        callback();
-                    }
-                    // For modal drawers, close on item click
-                    if variant == DrawerVariant::Modal {
-                        *open = false;
-                    }
-                }
-
-                let mut current_x = rect.min.x + 16.0;
-
-                // Draw icon if present
-                if let Some(_icon) = &item.icon {
-                    // Draw a simple placeholder for the icon (circle)
-                    let icon_center = egui::pos2(current_x + 12.0, current_y + item_height / 2.0);
-                    let icon_color = if item.active {
-                        get_global_color("primary")
-                    } else {
-                        get_global_color("onSurfaceVariant")
-                    };
-                    
-                    ui.painter().circle_filled(icon_center, 10.0, icon_color);
-                    current_x += 40.0; // Icon width + spacing
-                }
-
-                // Draw item text
-                let text_color = if item.active {
-                    get_global_color("primary")
-                } else {
-                    get_global_color("onSurface")
-                };
-
-                let text_pos = egui::pos2(current_x, current_y + (item_height - ui.text_style_height(&egui::TextStyle::Body)) / 2.0);
-                ui.painter().text(
-                    text_pos,
-                    egui::Align2::LEFT_TOP,
-                    &item.text,
-                    egui::TextStyle::Body.resolve(ui.style()),
-                    text_color
-                );
-
-                current_y += item_height;
+            // Draw multiple shadow layers for better effect
+            for i in 1..=3 {
+                let shadow_rect = drawer_rect.translate(shadow_offset * i as f32 * 0.5);
+                ui.painter().rect_filled(shadow_rect, self.corner_radius, shadow_color);
             }
         }
 
-        // Add close button interaction for modal and dismissible variants
-        if variant != DrawerVariant::Standard {
-            // ESC key handling
-            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
-                *open = false;
+        let mut current_y = drawer_rect.min.y;
+
+        // Draw header if present
+        if let Some(title) = &self.header_title {
+            let header_rect = Rect::from_min_size(
+                egui::pos2(drawer_rect.min.x, current_y),
+                Vec2::new(self.width, header_height)
+            );
+
+            // Header background (slightly different color)
+            let header_color = background_color.linear_multiply(0.95);
+            ui.painter().rect_filled(header_rect, CornerRadius::ZERO, header_color);
+
+            // Header text
+            let title_pos = egui::pos2(
+                header_rect.min.x + 16.0,
+                header_rect.min.y + 16.0
+            );
+            ui.painter().text(
+                title_pos,
+                egui::Align2::LEFT_TOP,
+                title,
+                egui::TextStyle::Heading.resolve(ui.style()),
+                get_global_color("onSurface")
+            );
+
+            if let Some(subtitle) = &self.header_subtitle {
+                let subtitle_pos = egui::pos2(
+                    header_rect.min.x + 16.0,
+                    header_rect.min.y + 36.0
+                );
+                ui.painter().text(
+                    subtitle_pos,
+                    egui::Align2::LEFT_TOP,
+                    subtitle,
+                    egui::TextStyle::Body.resolve(ui.style()),
+                    get_global_color("onSurfaceVariant")
+                );
             }
+
+            current_y += header_height;
+        }
+
+        let mut response = ui.allocate_response(drawer_rect.size(), Sense::hover());
+
+        // Draw navigation items with unique IDs
+        for (index, item) in self.items.iter().enumerate() {
+            let item_rect = Rect::from_min_size(
+                egui::pos2(drawer_rect.min.x, current_y),
+                Vec2::new(self.width, item_height)
+            );
+
+            // Create unique ID for each item
+            let item_id = self.id.with("item").with(index);
+            let item_response = ui.interact(item_rect, item_id, Sense::click());
+
+            // Draw item background for active state or hover
+            if item.active {
+                let active_color = get_global_color("primary").linear_multiply(0.12);
+                ui.painter().rect_filled(item_rect, CornerRadius::ZERO, active_color);
+            } else if item_response.hovered() {
+                let hover_color = get_global_color("onSurface").linear_multiply(0.08);
+                ui.painter().rect_filled(item_rect, CornerRadius::ZERO, hover_color);
+            }
+
+            let mut current_x = item_rect.min.x + 16.0;
+
+            // Draw icon if present
+            if let Some(_icon) = &item.icon {
+                // Draw a simple placeholder for the icon (circle)
+                let icon_center = egui::pos2(current_x + 12.0, current_y + item_height / 2.0);
+                let icon_color = if item.active {
+                    get_global_color("primary")
+                } else {
+                    get_global_color("onSurfaceVariant")
+                };
+                
+                ui.painter().circle_filled(icon_center, 10.0, icon_color);
+                current_x += 40.0; // Icon width + spacing
+            }
+
+            // Draw item text
+            let text_color = if item.active {
+                get_global_color("primary")
+            } else {
+                get_global_color("onSurface")
+            };
+
+            let text_pos = egui::pos2(current_x, current_y + (item_height - ui.text_style_height(&egui::TextStyle::Body)) / 2.0);
+            ui.painter().text(
+                text_pos,
+                egui::Align2::LEFT_TOP,
+                &item.text,
+                egui::TextStyle::Body.resolve(ui.style()),
+                text_color
+            );
+
+            // Handle item click
+            if item_response.clicked() {
+                if let Some(callback) = &item.on_click {
+                    callback();
+                }
+            }
+
+            response = response.union(item_response);
+            current_y += item_height;
         }
 
         response
     }
 }
 
-/// Convenience function to create a standard drawer.
-pub fn standard_drawer(open: &mut bool) -> MaterialDrawer {
-    MaterialDrawer::new(DrawerVariant::Standard, open)
+impl Widget for MaterialDrawer<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        // This implementation is kept for backward compatibility
+        // but the preferred way is to use the show() method
+        self.render_drawer_content(ui)
+    }
+}
+
+/// Convenience function to create a permanent drawer.
+pub fn permanent_drawer(open: &mut bool) -> MaterialDrawer {
+    MaterialDrawer::new(DrawerVariant::Permanent, open)
+}
+
+/// Convenience function to create a dismissible drawer.
+pub fn dismissible_drawer(open: &mut bool) -> MaterialDrawer {
+    MaterialDrawer::new(DrawerVariant::Dismissible, open)
 }
 
 /// Convenience function to create a modal drawer.
@@ -356,7 +436,7 @@ pub fn modal_drawer(open: &mut bool) -> MaterialDrawer {
     MaterialDrawer::new(DrawerVariant::Modal, open)
 }
 
-/// Convenience function to create a dismissible drawer.
-pub fn dismissible_drawer(open: &mut bool) -> MaterialDrawer {
-    MaterialDrawer::new(DrawerVariant::Dismissible, open)
+// Legacy support - these will be deprecated
+pub fn standard_drawer(open: &mut bool) -> MaterialDrawer {
+    permanent_drawer(open)
 }

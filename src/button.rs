@@ -315,7 +315,7 @@ impl Widget for MaterialButton<'_> {
         let md_primary = get_global_color("primary");
         let md_on_primary = get_global_color("onPrimary");
         let md_surface = get_global_color("surface");
-        let md_on_surface = get_global_color("onSurface");
+        let _md_on_surface = get_global_color("onSurface"); // Prefix with _ to silence warning
         let md_outline = get_global_color("outline");
         let md_surface_variant = get_global_color("surfaceVariant");
         
