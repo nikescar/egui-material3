@@ -102,6 +102,22 @@ impl SnackbarWindow {
                 self.top_snackbar_start = Some(Instant::now());
             }
         });
+
+        ui.horizontal(|ui| {
+            if ui.add(MaterialButton::outlined("Long Message Test")).clicked() {
+                self.message_text = "This is a very long message that should demonstrate text wrapping functionality in the snackbar. It should properly wrap to multiple lines without overlapping the action button area.".to_string();
+                self.show_action_snackbar = true;
+                self.action_snackbar_start = Some(Instant::now());
+            }
+            if ui.add(MaterialButton::outlined("Very Long Message Test")).clicked() {
+                self.message_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.".to_string();
+                self.show_action_snackbar = true;
+                self.action_snackbar_start = Some(Instant::now());
+            }
+            if ui.add(MaterialButton::outlined("Reset Message")).clicked() {
+                self.message_text = "Operation completed successfully".to_string();
+            }
+        });
     }
 
     fn render_snackbar_examples(&mut self, ui: &mut Ui) {
@@ -112,7 +128,7 @@ impl SnackbarWindow {
                 ui.label("📐 Dimensions:");
                 ui.label("• Min width: 344px");
                 ui.label("• Max width: 672px");
-                ui.label("• Height: 48px (fixed)");
+                ui.label("• Height: 48px minimum (dynamic for multi-line text)");
                 ui.label("• Corner radius: 4px");
                 ui.add_space(10.0);
                 
@@ -217,23 +233,26 @@ impl SnackbarWindow {
             }
         }
         
-        // Render snackbars as full-screen overlays
+        // Calculate stacking offsets for each position
+        let mut bottom_offset = 0.0;
+        let mut top_offset = 0.0;
+        let snackbar_spacing = 56.0; // Material Design spacing (48px height + 8px margin)
+        
+        // Render bottom-positioned snackbars with stacking
         if self.show_basic_snackbar {
             egui::Area::new("basic_snackbar".into())
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
-                    // Set UI to full screen so snackbar can position itself properly
                     ui.set_clip_rect(ctx.screen_rect());
                     
                     let mut snackbar = snackbar(&self.message_text)
                         .auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
                     let mut show_snackbar = self.show_basic_snackbar;
-                    let response = ui.add(snackbar.show_if(&mut show_snackbar));
+                    let response = ui.add(snackbar.show_with_offset(&mut show_snackbar, bottom_offset));
                     
                     // Update state based on snackbar widget's decision
                     if !show_snackbar && self.show_basic_snackbar {
-                        // Snackbar was dismissed by auto-dismiss or user click
                         self.show_basic_snackbar = false;
                         self.basic_snackbar_start = None;
                     }
@@ -244,13 +263,13 @@ impl SnackbarWindow {
                         self.basic_snackbar_start = None;
                     }
                 });
+            bottom_offset += snackbar_spacing;
         }
         
         if self.show_action_snackbar {
             egui::Area::new("action_snackbar".into())
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
-                    // Set UI to full screen so snackbar can position itself properly
                     ui.set_clip_rect(ctx.screen_rect());
                     
                     let message = self.message_text.clone();
@@ -265,11 +284,10 @@ impl SnackbarWindow {
                     ).auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
                     let mut show_snackbar = self.show_action_snackbar;
-                    let response = ui.add(snackbar.show_if(&mut show_snackbar));
+                    let response = ui.add(snackbar.show_with_offset(&mut show_snackbar, bottom_offset));
                     
                     // Update state based on snackbar widget's decision
                     if !show_snackbar && self.show_action_snackbar {
-                        // Snackbar was dismissed by auto-dismiss or action click
                         self.show_action_snackbar = false;
                         self.action_snackbar_start = None;
                     }
@@ -280,13 +298,14 @@ impl SnackbarWindow {
                         self.action_snackbar_start = None;
                     }
                 });
+            bottom_offset += snackbar_spacing;
         }
         
+        // Render top-positioned snackbars with stacking
         if self.show_top_snackbar {
             egui::Area::new("top_snackbar".into())
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
-                    // Set UI to full screen so snackbar can position itself properly
                     ui.set_clip_rect(ctx.screen_rect());
                     
                     let mut snackbar = snackbar(&self.message_text)
@@ -294,11 +313,10 @@ impl SnackbarWindow {
                         .auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
                     let mut show_snackbar = self.show_top_snackbar;
-                    let response = ui.add(snackbar.show_if(&mut show_snackbar));
+                    let response = ui.add(snackbar.show_with_offset(&mut show_snackbar, top_offset));
                     
                     // Update state based on snackbar widget's decision
                     if !show_snackbar && self.show_top_snackbar {
-                        // Snackbar was dismissed by auto-dismiss or user click
                         self.show_top_snackbar = false;
                         self.top_snackbar_start = None;
                     }
@@ -309,6 +327,7 @@ impl SnackbarWindow {
                         self.top_snackbar_start = None;
                     }
                 });
+            top_offset += snackbar_spacing;
         }
     }
 }
