@@ -16,6 +16,10 @@ pub struct DataTableState {
     pub header_checkbox: bool,
     /// Column sort states
     pub column_sorts: HashMap<String, SortDirection>,
+    /// Currently sorted column index
+    pub sorted_column: Option<usize>,
+    /// Current sort direction
+    pub sort_direction: SortDirection,
 }
 
 /// Response from a data table widget including selection state
@@ -29,6 +33,8 @@ pub struct DataTableResponse {
     pub header_checkbox: bool,
     /// Column that was clicked for sorting (if any)
     pub column_clicked: Option<usize>,
+    /// Current sort state (column index, direction)
+    pub sort_state: (Option<usize>, SortDirection),
 }
 
 /// Material Design data table component.
@@ -62,6 +68,8 @@ pub struct MaterialDataTable<'a> {
     sticky_header: bool,
     progress_visible: bool,
     corner_radius: CornerRadius,
+    sorted_column: Option<usize>,
+    sort_direction: SortDirection,
 }
 
 #[derive(Clone, Debug)]
@@ -77,6 +85,12 @@ pub struct DataTableColumn {
 pub enum SortDirection {
     Ascending,
     Descending,
+}
+
+impl Default for SortDirection {
+    fn default() -> Self {
+        SortDirection::Ascending
+    }
 }
 
 pub struct DataTableRow<'a> {
@@ -130,7 +144,21 @@ impl<'a> MaterialDataTable<'a> {
             sticky_header: false,
             progress_visible: false,
             corner_radius: CornerRadius::from(4.0),
+            sorted_column: None,
+            sort_direction: SortDirection::Ascending,
         }
+    }
+
+    /// Set the initial sort column and direction
+    pub fn sort_by(mut self, column_index: usize, direction: SortDirection) -> Self {
+        self.sorted_column = Some(column_index);
+        self.sort_direction = direction;
+        self
+    }
+    
+    /// Get current sorting state
+    pub fn get_sort_state(&self) -> (Option<usize>, SortDirection) {
+        (self.sorted_column, self.sort_direction.clone())
     }
 
     /// Add a column to the data table.
@@ -231,6 +259,12 @@ impl<'a> MaterialDataTable<'a> {
         // Get or create persistent state
         let mut state: DataTableState = ui.data_mut(|d| d.get_persisted(table_id).unwrap_or_default());
         
+        // Initialize sorting state from widget if not set
+        if state.sorted_column.is_none() && self.sorted_column.is_some() {
+            state.sorted_column = self.sorted_column;
+            state.sort_direction = self.sort_direction.clone();
+        }
+        
         // Ensure state vectors match current row count
         if state.selected_rows.len() != self.rows.len() {
             state.selected_rows.resize(self.rows.len(), false);
@@ -245,13 +279,38 @@ impl<'a> MaterialDataTable<'a> {
 
         let MaterialDataTable {
             columns,
-            rows,
+            mut rows,
             allow_selection,
             sticky_header: _,
             progress_visible,
             corner_radius,
             ..
         } = self;
+        
+        // Sort rows if a column is selected for sorting
+        if let Some(sort_col_idx) = state.sorted_column {
+            if let Some(sort_column) = columns.get(sort_col_idx) {
+                rows.sort_by(|a, b| {
+                    let cell_a = a.cells.get(sort_col_idx).map(|c| c.text()).unwrap_or("");
+                    let cell_b = b.cells.get(sort_col_idx).map(|c| c.text()).unwrap_or("");
+                    
+                    let comparison = if sort_column.numeric {
+                        // Try to parse as numbers for numeric columns
+                        let a_num: f64 = cell_a.trim_start_matches('$').parse().unwrap_or(0.0);
+                        let b_num: f64 = cell_b.trim_start_matches('$').parse().unwrap_or(0.0);
+                        a_num.partial_cmp(&b_num).unwrap_or(std::cmp::Ordering::Equal)
+                    } else {
+                        // Alphabetical comparison for text columns
+                        cell_a.cmp(cell_b)
+                    };
+                    
+                    match state.sort_direction {
+                        SortDirection::Ascending => comparison,
+                        SortDirection::Descending => comparison.reverse(),
+                    }
+                });
+            }
+        }
 
         // Calculate table dimensions with dynamic row heights
         let checkbox_width = if allow_selection { 48.0 } else { 0.0 };
@@ -406,6 +465,18 @@ impl<'a> MaterialDataTable<'a> {
                     let header_click_id = table_id.with(format!("column_header_{}", col_idx));
                     let header_response = ui.interact(col_rect, header_click_id, Sense::click());
                     if header_response.clicked() {
+                        // Handle sorting logic
+                        if state.sorted_column == Some(col_idx) {
+                            // Same column clicked, toggle direction
+                            state.sort_direction = match state.sort_direction {
+                                SortDirection::Ascending => SortDirection::Descending,
+                                SortDirection::Descending => SortDirection::Ascending,
+                            };
+                        } else {
+                            // New column clicked
+                            state.sorted_column = Some(col_idx);
+                            state.sort_direction = SortDirection::Ascending;
+                        }
                         ui.memory_mut(|mem| {
                             mem.data.insert_temp(table_id.with("column_clicked"), Some(col_idx));
                         });
@@ -417,30 +488,67 @@ impl<'a> MaterialDataTable<'a> {
                     );
                     let icon_rect = Rect::from_min_size(icon_pos, Vec2::splat(24.0));
                     
-                    // Draw sort arrow (simplified)
-                    let arrow_color = get_global_color("onSurfaceVariant");
-                    let center = icon_rect.center();
-                    let arrow_points = match column.sort_direction {
-                        Some(SortDirection::Ascending) => [
-                            center + Vec2::new(0.0, -4.0),
-                            center + Vec2::new(-4.0, 4.0),
-                            center + Vec2::new(4.0, 4.0),
-                        ],
-                        Some(SortDirection::Descending) => [
-                            center + Vec2::new(0.0, 4.0),
-                            center + Vec2::new(-4.0, -4.0),
-                            center + Vec2::new(4.0, -4.0),
-                        ],
-                        None => [
-                            center + Vec2::new(0.0, -4.0),
-                            center + Vec2::new(-4.0, 4.0),
-                            center + Vec2::new(4.0, 4.0),
-                        ],
+                    // Determine if this column is currently sorted
+                    let is_sorted = state.sorted_column == Some(col_idx);
+                    let sort_direction = if is_sorted { Some(&state.sort_direction) } else { None };
+                    
+                    // Draw sort arrow with enhanced visual feedback
+                    let arrow_color = if is_sorted {
+                        get_global_color("primary") // Highlight active sort column
+                    } else {
+                        get_global_color("onSurfaceVariant")
                     };
                     
-                    ui.painter().line_segment([arrow_points[0], arrow_points[1]], Stroke::new(1.5, arrow_color));
-                    ui.painter().line_segment([arrow_points[1], arrow_points[2]], Stroke::new(1.5, arrow_color));
-                    ui.painter().line_segment([arrow_points[2], arrow_points[0]], Stroke::new(1.5, arrow_color));
+                    let center = icon_rect.center();
+                    
+                    // Draw triangle arrows
+                    match sort_direction {
+                        Some(SortDirection::Ascending) => {
+                            // Up triangle (▲)
+                            let points = [
+                                center + Vec2::new(0.0, -6.0),  // Top point
+                                center + Vec2::new(-5.0, 4.0),  // Bottom left
+                                center + Vec2::new(5.0, 4.0),   // Bottom right
+                            ];
+                            ui.painter().line_segment([points[0], points[1]], Stroke::new(2.0, arrow_color));
+                            ui.painter().line_segment([points[1], points[2]], Stroke::new(2.0, arrow_color));
+                            ui.painter().line_segment([points[2], points[0]], Stroke::new(2.0, arrow_color));
+                        },
+                        Some(SortDirection::Descending) => {
+                            // Down triangle (▼)
+                            let points = [
+                                center + Vec2::new(0.0, 6.0),   // Bottom point
+                                center + Vec2::new(-5.0, -4.0), // Top left
+                                center + Vec2::new(5.0, -4.0),  // Top right
+                            ];
+                            ui.painter().line_segment([points[0], points[1]], Stroke::new(2.0, arrow_color));
+                            ui.painter().line_segment([points[1], points[2]], Stroke::new(2.0, arrow_color));
+                            ui.painter().line_segment([points[2], points[0]], Stroke::new(2.0, arrow_color));
+                        },
+                        None => {
+                            // Neutral state - show both arrows faintly
+                            let light_color = arrow_color.gamma_multiply(0.5);
+                            // Up triangle
+                            let up_points = [
+                                center + Vec2::new(0.0, -8.0),
+                                center + Vec2::new(-3.0, -2.0),
+                                center + Vec2::new(3.0, -2.0),
+                            ];
+                            ui.painter().line_segment([up_points[0], up_points[1]], Stroke::new(1.0, light_color));
+                            ui.painter().line_segment([up_points[1], up_points[2]], Stroke::new(1.0, light_color));
+                            ui.painter().line_segment([up_points[2], up_points[0]], Stroke::new(1.0, light_color));
+                            
+                            // Down triangle
+                            let down_points = [
+                                center + Vec2::new(0.0, 8.0),
+                                center + Vec2::new(-3.0, 2.0),
+                                center + Vec2::new(3.0, 2.0),
+                            ];
+                            ui.painter().line_segment([down_points[0], down_points[1]], Stroke::new(1.0, light_color));
+                            ui.painter().line_segment([down_points[1], down_points[2]], Stroke::new(1.0, light_color));
+                            ui.painter().line_segment([down_points[2], down_points[0]], Stroke::new(1.0, light_color));
+                        }
+                    }
                 }
                 
                 current_x += column.width;
@@ -647,6 +755,7 @@ impl<'a> MaterialDataTable<'a> {
             selected_rows: state.selected_rows,
             header_checkbox: state.header_checkbox,
             column_clicked,
+            sort_state: (state.sorted_column, state.sort_direction.clone()),
         }
     }
 }

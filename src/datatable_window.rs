@@ -1,5 +1,6 @@
 use eframe::egui::{self, Ui, Window, Id};
 use crate::{MaterialButton, MaterialCheckbox, data_table};
+use crate::datatable::SortDirection as DataTableSortDirection;
 
 #[derive(Clone, Debug)]
 struct TableRow {
@@ -372,31 +373,8 @@ impl DataTableWindow {
 
         ui.add_space(10.0);
         
-        // Sort data if needed
-        let mut sorted_rows = self.interactive_rows.clone();
-        if let Some(sort_col) = &self.sort_column {
-            sorted_rows.sort_by(|a, b| {
-                let comparison = match sort_col {
-                    SortColumn::Product => a.product.cmp(&b.product),
-                    SortColumn::Category => a.category.cmp(&b.category),
-                    SortColumn::Price => {
-                        // Remove $ and parse as float for numeric comparison
-                        let a_val: f32 = a.price.trim_start_matches('$').parse().unwrap_or(0.0);
-                        let b_val: f32 = b.price.trim_start_matches('$').parse().unwrap_or(0.0);
-                        a_val.partial_cmp(&b_val).unwrap_or(std::cmp::Ordering::Equal)
-                    },
-                    SortColumn::Stock => {
-                        let a_val: i32 = a.stock.parse().unwrap_or(0);
-                        let b_val: i32 = b.stock.parse().unwrap_or(0);
-                        a_val.cmp(&b_val)
-                    },
-                };
-                match self.sort_direction {
-                    SortDirection::Ascending => comparison,
-                    SortDirection::Descending => comparison.reverse(),
-                }
-            });
-        }
+        // The data table will now handle sorting internally, but we keep our local sorting for reference
+        let sorted_rows = &self.interactive_rows; // Use reference to original data
 
         // Use the proper data table widget for Interactive Data Table Demo
         let mut interactive_table = data_table()
@@ -408,13 +386,9 @@ impl DataTableWindow {
             .column("Actions", 140.0, false)  // Add Actions column
             .allow_selection(true);
 
-        // Add rows dynamically from sorted data
+        // Add rows dynamically from our data
         for (idx, row) in sorted_rows.iter().enumerate() {
-            // Find original index for selection tracking
-            let original_idx = self.interactive_rows.iter().position(|r| 
-                r.product == row.product && r.category == row.category && 
-                r.price == row.price && r.stock == row.stock
-            ).unwrap_or(idx);
+            let original_idx = idx; // Use direct index since sorting is handled by the data table
             
             let is_selected = self.interactive_selection.get(original_idx).copied().unwrap_or(false);
             
@@ -460,30 +434,25 @@ impl DataTableWindow {
         // Show the table and get the selection state back
         let table_response = interactive_table.show(ui);
         
-        // Handle column sorting (updated for new column layout with Actions column)
-        if let Some(col_idx) = table_response.column_clicked {
-            let new_sort_column = match col_idx {
+        // Get current sort state from the data table response
+        let (current_sort_col, current_sort_dir) = table_response.sort_state;
+        
+        // Update our local sort state to match the data table's internal state
+        if let Some(sort_col_idx) = current_sort_col {
+            let new_sort_column = match sort_col_idx {
                 0 => Some(SortColumn::Product),
                 1 => Some(SortColumn::Category),
                 2 => Some(SortColumn::Price),
                 3 => Some(SortColumn::Stock),
-                4 => None, // Actions column is not sortable
-                _ => None,
+                _ => None, // Actions column or invalid
             };
-            
-            if let Some(new_col) = new_sort_column {
-                if Some(&new_col) == self.sort_column.as_ref() {
-                    // Same column, toggle direction
-                    self.sort_direction = match self.sort_direction {
-                        SortDirection::Ascending => SortDirection::Descending,
-                        SortDirection::Descending => SortDirection::Ascending,
-                    };
-                } else {
-                    // New column, start with ascending
-                    self.sort_column = Some(new_col);
-                    self.sort_direction = SortDirection::Ascending;
-                }
-            }
+            self.sort_column = new_sort_column;
+            self.sort_direction = match current_sort_dir {
+                DataTableSortDirection::Ascending => SortDirection::Ascending,
+                DataTableSortDirection::Descending => SortDirection::Descending,
+            };
+        } else {
+            self.sort_column = None;
         }
         
         // Sync the selection state back to our window state
