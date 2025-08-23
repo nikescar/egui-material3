@@ -1,6 +1,7 @@
 use eframe::egui::{self, Ui, Window, Id};
 use crate::{MaterialButton, MaterialCheckbox, data_table};
-use crate::datatable::SortDirection as DataTableSortDirection;
+use crate::datatable::{SortDirection as DataTableSortDirection, RowAction};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 struct TableRow {
@@ -25,11 +26,6 @@ enum SortDirection {
     Descending,
 }
 
-#[derive(Clone, Debug)]
-enum EditingState {
-    None,
-    Editing(usize), // Index of the row being edited
-}
 
 pub struct DataTableWindow {
     pub open: bool,
@@ -41,13 +37,10 @@ pub struct DataTableWindow {
     interactive_rows: Vec<TableRow>,
     // Track selection state for interactive table
     interactive_selection: Vec<bool>,
-    // Track editing state
-    editing_state: EditingState,
-    // Temporary storage for editing
-    edit_product: String,
-    edit_category: String,
-    edit_price: String,
-    edit_stock: String,
+    // Track editing state - which rows are being edited
+    editing_rows: HashSet<usize>,
+    // Temporary storage for editing data
+    edit_data: HashMap<usize, Vec<String>>,
     // Sorting state
     sort_column: Option<SortColumn>,
     sort_direction: SortDirection,
@@ -102,11 +95,8 @@ impl Default for DataTableWindow {
             selected_rows: vec![false, true, true, false, false],
             interactive_rows,
             interactive_selection,
-            editing_state: EditingState::None,
-            edit_product: String::new(),
-            edit_category: String::new(),
-            edit_price: String::new(),
-            edit_stock: String::new(),
+            editing_rows: HashSet::new(),
+            edit_data: HashMap::new(),
             sort_column: None,
             sort_direction: SortDirection::Ascending,
         }
@@ -349,7 +339,7 @@ impl DataTableWindow {
                     
                     self.interactive_rows = new_rows;
                     self.interactive_selection = new_selection;
-                    self.editing_state = EditingState::None; // Cancel any ongoing edit
+                    self.editing_rows.clear(); // Cancel any ongoing edits
                     println!("Deleted {} selected rows", selected_count);
                 } else {
                     println!("No rows selected for deletion");
@@ -393,7 +383,7 @@ impl DataTableWindow {
             let is_selected = self.interactive_selection.get(original_idx).copied().unwrap_or(false);
             
             // Check if this row is being edited
-            let is_editing = matches!(self.editing_state, EditingState::Editing(edit_idx) if edit_idx == original_idx);
+            let is_editing = self.editing_rows.contains(&original_idx);
             
             // Create cell content - if editing, show placeholder for edit fields
             let (product_text, category_text, price_text, stock_text, actions_text) = if is_editing {
@@ -434,6 +424,80 @@ impl DataTableWindow {
         // Show the table and get the selection state back
         let table_response = interactive_table.show(ui);
         
+        // Process row actions from the data table
+        for action in &table_response.row_actions {
+            match action {
+                RowAction::Edit(row_idx) => {
+                    if let Some(row) = self.interactive_rows.get(*row_idx) {
+                        // Initialize edit data for this row
+                        let row_data = vec![
+                            row.product.clone(),
+                            row.category.clone(),
+                            row.price.clone(),
+                            row.stock.clone(),
+                        ];
+                        self.edit_data.insert(*row_idx, row_data);
+                        self.editing_rows.insert(*row_idx);
+                        println!("Started editing row {}", row_idx);
+                    }
+                },
+                RowAction::Save(row_idx) => {
+                    if let Some(edit_data) = self.edit_data.get(row_idx) {
+                        if let Some(row) = self.interactive_rows.get_mut(*row_idx) {
+                            // Update the row with edited data
+                            if edit_data.len() >= 4 {
+                                row.product = edit_data[0].clone();
+                                row.category = edit_data[1].clone();
+                                row.price = edit_data[2].clone();
+                                row.stock = edit_data[3].clone();
+                            }
+                        }
+                    }
+                    // Stop editing this row
+                    self.editing_rows.remove(row_idx);
+                    self.edit_data.remove(row_idx);
+                    println!("Saved changes to row {}", row_idx);
+                },
+                RowAction::Cancel(row_idx) => {
+                    // Stop editing this row without saving
+                    self.editing_rows.remove(row_idx);
+                    self.edit_data.remove(row_idx);
+                    println!("Cancelled editing row {}", row_idx);
+                },
+                RowAction::Delete(row_idx) => {
+                    // Remove the row and update indices
+                    if *row_idx < self.interactive_rows.len() {
+                        self.interactive_rows.remove(*row_idx);
+                        if self.interactive_selection.len() > *row_idx {
+                            self.interactive_selection.remove(*row_idx);
+                        }
+                        
+                        // Update editing state - remove any references to this row
+                        // and adjust indices for rows that come after
+                        let mut new_editing_rows = HashSet::new();
+                        let mut new_edit_data = HashMap::new();
+                        
+                        for (&editing_idx, data) in &self.edit_data {
+                            if editing_idx < *row_idx {
+                                // Keep rows before the deleted one
+                                new_editing_rows.insert(editing_idx);
+                                new_edit_data.insert(editing_idx, data.clone());
+                            } else if editing_idx > *row_idx {
+                                // Shift rows after the deleted one down by 1
+                                new_editing_rows.insert(editing_idx - 1);
+                                new_edit_data.insert(editing_idx - 1, data.clone());
+                            }
+                            // Skip the deleted row (editing_idx == *row_idx)
+                        }
+                        
+                        self.editing_rows = new_editing_rows;
+                        self.edit_data = new_edit_data;
+                        println!("Deleted row {}", row_idx);
+                    }
+                },
+            }
+        }
+        
         // Get current sort state from the data table response
         let (current_sort_col, current_sort_dir) = table_response.sort_state;
         
@@ -460,30 +524,11 @@ impl DataTableWindow {
             self.interactive_selection = table_response.selected_rows;
         }
 
-        // Show inline editing form when editing
-        if let EditingState::Editing(edit_idx) = self.editing_state {
+        // Show editing status
+        if !self.editing_rows.is_empty() {
             ui.add_space(10.0);
             ui.separator();
-            ui.heading(&format!("Editing Row {} - Enter values in cells above", edit_idx + 1));
-            
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.label("Product:");
-                    ui.add(egui::TextEdit::singleline(&mut self.edit_product).desired_width(150.0));
-                });
-                ui.vertical(|ui| {
-                    ui.label("Category:");
-                    ui.add(egui::TextEdit::singleline(&mut self.edit_category).desired_width(120.0));
-                });
-                ui.vertical(|ui| {
-                    ui.label("Price:");
-                    ui.add(egui::TextEdit::singleline(&mut self.edit_price).desired_width(80.0));
-                });
-                ui.vertical(|ui| {
-                    ui.label("Stock:");
-                    ui.add(egui::TextEdit::singleline(&mut self.edit_stock).desired_width(60.0));
-                });
-            });
+            ui.heading(format!("Currently editing {} row(s) - Edit values directly in the table cells above", self.editing_rows.len()));
         }
 
         // Additional features demonstration

@@ -5,7 +5,7 @@ use egui::{
     FontFamily, FontId,
     Id, Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Persistent state for a data table
 #[derive(Clone, Debug, Default)]
@@ -20,6 +20,10 @@ pub struct DataTableState {
     pub sorted_column: Option<usize>,
     /// Current sort direction
     pub sort_direction: SortDirection,
+    /// Rows currently being edited
+    pub editing_rows: std::collections::HashSet<usize>,
+    /// Temporary edit data for rows being edited
+    pub edit_data: HashMap<usize, Vec<String>>,
 }
 
 /// Response from a data table widget including selection state
@@ -35,6 +39,17 @@ pub struct DataTableResponse {
     pub column_clicked: Option<usize>,
     /// Current sort state (column index, direction)
     pub sort_state: (Option<usize>, SortDirection),
+    /// Row actions (Edit/Delete/Save)
+    pub row_actions: Vec<RowAction>,
+}
+
+/// Actions that can be performed on table rows
+#[derive(Debug, Clone)]
+pub enum RowAction {
+    Edit(usize),
+    Delete(usize), 
+    Save(usize),
+    Cancel(usize),
 }
 
 /// Material Design data table component.
@@ -316,7 +331,39 @@ impl<'a> MaterialDataTable<'a> {
         let checkbox_width = if allow_selection { 48.0 } else { 0.0 };
         let total_width = checkbox_width + columns.iter().map(|col| col.width).sum::<f32>();
         let min_row_height = 52.0;
-        let header_height = 56.0;
+        let min_header_height = 56.0;
+        
+        // Calculate header height with text wrapping
+        let mut header_height: f32 = min_header_height;
+        for column in &columns {
+            let available_width = column.width - 48.0; // Account for padding and sort icon
+            let header_font = FontId::new(16.0, FontFamily::Proportional);
+            
+            let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
+                text: column.title.clone(),
+                sections: vec![egui::text::LayoutSection {
+                    leading_space: 0.0,
+                    byte_range: 0..column.title.len(),
+                    format: egui::TextFormat {
+                        font_id: header_font,
+                        color: get_global_color("onSurface"),
+                        ..Default::default()
+                    },
+                }],
+                wrap: egui::text::TextWrapping {
+                    max_width: available_width,
+                    ..Default::default()
+                },
+                break_on_newline: true,
+                halign: egui::Align::LEFT,
+                justify: false,
+                first_row_min_height: 0.0,
+                round_output_to_gui: true,
+            }));
+            
+            let content_height: f32 = galley.size().y + 16.0; // Add padding
+            header_height = header_height.max(content_height);
+        }
         
         // Calculate individual row heights based on content
         let mut row_heights = Vec::new();
@@ -349,7 +396,7 @@ impl<'a> MaterialDataTable<'a> {
                         round_output_to_gui: true,
                     }));
                     
-                    let content_height = galley.size().y + 16.0f32; // Add padding
+                    let content_height: f32 = galley.size().y + 16.0; // Add padding
                     max_height = max_height.max(content_height);
                 }
             }
@@ -357,6 +404,9 @@ impl<'a> MaterialDataTable<'a> {
         }
         
         let total_height = header_height + row_heights.iter().sum::<f32>();
+        
+        // Collect all row actions from this frame  
+        let mut all_row_actions: Vec<RowAction> = Vec::new();
 
         let desired_size = Vec2::new(total_width, total_height);
         let response = ui.allocate_response(desired_size, Sense::click());
@@ -447,18 +497,38 @@ impl<'a> MaterialDataTable<'a> {
                     Vec2::new(column.width, header_height)
                 );
                 
+                // Render header text with wrapping support
+                let available_width = column.width - 48.0; // Account for padding and sort icon
+                let header_font = FontId::new(16.0, FontFamily::Proportional);
+                
+                let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
+                    text: column.title.clone(),
+                    sections: vec![egui::text::LayoutSection {
+                        leading_space: 0.0,
+                        byte_range: 0..column.title.len(),
+                        format: egui::TextFormat {
+                            font_id: header_font,
+                            color: get_global_color("onSurface"),
+                            ..Default::default()
+                        },
+                    }],
+                    wrap: egui::text::TextWrapping {
+                        max_width: available_width,
+                        ..Default::default()
+                    },
+                    break_on_newline: true,
+                    halign: egui::Align::LEFT,
+                    justify: false,
+                    first_row_min_height: 0.0,
+                    round_output_to_gui: true,
+                }));
+                
                 let text_pos = egui::pos2(
                     current_x + 16.0,
-                    current_y + (header_height - ui.text_style_height(&egui::TextStyle::Body)) / 2.0
+                    current_y + (header_height - galley.size().y) / 2.0
                 );
                 
-                ui.painter().text(
-                    text_pos,
-                    egui::Align2::LEFT_TOP,
-                    &column.title,
-                    egui::TextStyle::Body.resolve(ui.style()),
-                    get_global_color("onSurface")
-                );
+                ui.painter().galley(text_pos, galley, get_global_color("onSurface"));
                 
                 // Handle column header clicks for sorting
                 if column.sortable {
@@ -556,6 +626,7 @@ impl<'a> MaterialDataTable<'a> {
 
             current_y += header_height;
 
+            
             // Draw rows with dynamic heights
             for (row_idx, row) in rows.iter().enumerate() {
                 let row_height = row_heights.get(row_idx).copied().unwrap_or(min_row_height);
@@ -666,6 +737,9 @@ impl<'a> MaterialDataTable<'a> {
                     current_x += checkbox_width;
                 }
                 
+                // Track row actions for this specific row
+                let mut row_actions: Vec<RowAction> = Vec::new();
+                
                 // Row cells
                 for (cell_idx, cell_text) in row.cells.iter().enumerate() {
                     if let Some(column) = columns.get(cell_idx) {
@@ -674,49 +748,109 @@ impl<'a> MaterialDataTable<'a> {
                             Vec2::new(column.width, row_height)
                         );
                         
-                        let text_align = if column.numeric {
-                            egui::Align2::RIGHT_CENTER
+                        let is_row_editing = state.editing_rows.contains(&row_idx);
+                        let is_actions_column = column.title == "Actions";
+                        
+                        if is_actions_column {
+                            // Render action buttons
+                            let button_rect = Rect::from_min_size(
+                                egui::pos2(current_x + 8.0, current_y + (row_height - 32.0) / 2.0),
+                                Vec2::new(column.width - 16.0, 32.0)
+                            );
+                            
+                            ui.scope_builder(egui::UiBuilder::new().max_rect(button_rect), |ui| {
+                                ui.horizontal(|ui| {
+                                    if is_row_editing {
+                                        if ui.small_button("Save").clicked() {
+                                            row_actions.push(RowAction::Save(row_idx));
+                                        }
+                                        if ui.small_button("Cancel").clicked() {
+                                            row_actions.push(RowAction::Cancel(row_idx));
+                                        }
+                                    } else {
+                                        if ui.small_button("Edit").clicked() {
+                                            row_actions.push(RowAction::Edit(row_idx));
+                                        }
+                                        if ui.small_button("Delete").clicked() {
+                                            row_actions.push(RowAction::Delete(row_idx));
+                                        }
+                                    }
+                                });
+                            });
+                        } else if is_row_editing {
+                            // Render editable text field
+                            let edit_rect = Rect::from_min_size(
+                                egui::pos2(current_x + 8.0, current_y + (row_height - 24.0) / 2.0),
+                                Vec2::new(column.width - 16.0, 24.0)
+                            );
+                            
+                            // Get or initialize edit data
+                            let edit_data = state.edit_data
+                                .entry(row_idx)
+                                .or_insert_with(|| {
+                                    row.cells.iter().map(|c| c.text().to_string()).collect()
+                                });
+                            
+                            // Ensure we have enough entries for this cell
+                            if edit_data.len() <= cell_idx {
+                                edit_data.resize(cell_idx + 1, String::new());
+                            }
+                            
+                            let edit_text = &mut edit_data[cell_idx];
+                            
+                            ui.scope_builder(egui::UiBuilder::new().max_rect(edit_rect), |ui| {
+                                ui.add(egui::TextEdit::singleline(edit_text)
+                                    .desired_width(column.width - 16.0));
+                            });
                         } else {
-                            egui::Align2::LEFT_CENTER
-                        };
+                            // Render normal text
+                            let text_align = if column.numeric {
+                                egui::Align2::RIGHT_CENTER
+                            } else {
+                                egui::Align2::LEFT_CENTER
+                            };
                         
-                        // Handle text wrapping for cell content
-                        let available_width = column.width - 32.0; // Account for padding
-                        let cell_font = FontId::new(14.0, FontFamily::Proportional);
-                        
-                        let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
-                            text: cell_text.text().to_string(),
-                            sections: vec![egui::text::LayoutSection {
-                                leading_space: 0.0,
-                                byte_range: 0..cell_text.text().len(),
-                                format: egui::TextFormat {
-                                    font_id: cell_font,
-                                    color: get_global_color("onSurface"),
+                            // Handle text wrapping for cell content (keeping original logic)
+                            let available_width = column.width - 32.0; // Account for padding
+                            let cell_font = FontId::new(14.0, FontFamily::Proportional);
+                            
+                            let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
+                                text: cell_text.text().to_string(),
+                                sections: vec![egui::text::LayoutSection {
+                                    leading_space: 0.0,
+                                    byte_range: 0..cell_text.text().len(),
+                                    format: egui::TextFormat {
+                                        font_id: cell_font,
+                                        color: get_global_color("onSurface"),
+                                        ..Default::default()
+                                    },
+                                }],
+                                wrap: egui::text::TextWrapping {
+                                    max_width: available_width,
                                     ..Default::default()
                                 },
-                            }],
-                            wrap: egui::text::TextWrapping {
-                                max_width: available_width,
-                                ..Default::default()
-                            },
-                            break_on_newline: true,
-                            halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
-                            justify: false,
-                            first_row_min_height: 0.0,
-                            round_output_to_gui: true,
-                        }));
-                        
-                        let text_pos = if column.numeric {
-                            egui::pos2(current_x + column.width - 16.0 - galley.size().x, current_y + (row_height - galley.size().y) / 2.0)
-                        } else {
-                            egui::pos2(current_x + 16.0, current_y + (row_height - galley.size().y) / 2.0)
-                        };
-                        
-                        ui.painter().galley(text_pos, galley, get_global_color("onSurface"));
+                                break_on_newline: true,
+                                halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
+                                justify: false,
+                                first_row_min_height: 0.0,
+                                round_output_to_gui: true,
+                            }));
+                            
+                            let text_pos = if column.numeric {
+                                egui::pos2(current_x + column.width - 16.0 - galley.size().x, current_y + (row_height - galley.size().y) / 2.0)
+                            } else {
+                                egui::pos2(current_x + 16.0, current_y + (row_height - galley.size().y) / 2.0)
+                            };
+                            
+                            ui.painter().galley(text_pos, galley, get_global_color("onSurface"));
+                        }
                         
                         current_x += column.width;
                     }
                 }
+                
+                // Add this row's actions to the global collection
+                all_row_actions.extend(row_actions);
                 
                 current_y += row_height;
             }
@@ -756,6 +890,7 @@ impl<'a> MaterialDataTable<'a> {
             header_checkbox: state.header_checkbox,
             column_clicked,
             sort_state: (state.sorted_column, state.sort_direction.clone()),
+            row_actions: all_row_actions,
         }
     }
 }
