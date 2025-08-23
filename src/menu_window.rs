@@ -91,8 +91,7 @@ impl MenuWindow {
             });
         self.open = open;
 
-        // Only close menu on explicit click or escape, not on mouse outside
-        // This prevents the menu from closing when mouse cursor is outside
+        // Close menus on Escape key
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             self.standard_menu_open = false;
             self.link_menu_open = false;
@@ -100,23 +99,6 @@ impl MenuWindow {
             self.context_menu_open = false;
         }
         
-        // Handle explicit clicks outside to close any open menus
-        if ctx.input(|i| i.pointer.any_click()) {
-            let pointer_pos = ctx.input(|i| i.pointer.interact_pos()).unwrap_or_default();
-            // Only close if clicked in empty space, not on menu areas
-            let screen_rect = ctx.screen_rect();
-            if screen_rect.contains(pointer_pos) {
-                // Check if click was on a menu button area - if not, close menus
-                // This is a simplified check - in a real implementation you'd track button positions
-                if pointer_pos.y > 100.0 && pointer_pos.x < 200.0 {
-                    // Assume click was not on a menu button
-                    self.standard_menu_open = false;
-                    self.link_menu_open = false;
-                    self.submenu_open = false;
-                    self.context_menu_open = false;
-                }
-            }
-        }
         
         // Show menus
         self.show_menus(ctx);
@@ -243,7 +225,14 @@ impl MenuWindow {
             let items_button = ui.add(MaterialButton::filled("Menu with Items"));
             self.items_button_rect = Some(items_button.rect);
             if items_button.clicked() {
-                self.standard_menu_open = true;
+                // Toggle menu instead of just opening
+                self.standard_menu_open = !self.standard_menu_open;
+                // Close other menus when opening this one
+                if self.standard_menu_open {
+                    self.link_menu_open = false;
+                    self.submenu_open = false;
+                    self.context_menu_open = false;
+                }
             }
             ui.add_space(8.0);
             
@@ -251,7 +240,14 @@ impl MenuWindow {
             let links_button = ui.add(MaterialButton::filled("Menu with Links"));
             self.links_button_rect = Some(links_button.rect);
             if links_button.clicked() {
-                self.link_menu_open = true;
+                // Toggle menu instead of just opening
+                self.link_menu_open = !self.link_menu_open;
+                // Close other menus when opening this one
+                if self.link_menu_open {
+                    self.standard_menu_open = false;
+                    self.submenu_open = false;
+                    self.context_menu_open = false;
+                }
             }
             ui.add_space(8.0);
             
@@ -259,14 +255,28 @@ impl MenuWindow {
             let submenu_button = ui.add(MaterialButton::filled("Menu with Sub-menus"));
             self.submenu_button_rect = Some(submenu_button.rect);
             if submenu_button.clicked() {
-                self.submenu_open = true;
+                // Toggle menu instead of just opening
+                self.submenu_open = !self.submenu_open;
+                // Close other menus when opening this one
+                if self.submenu_open {
+                    self.standard_menu_open = false;
+                    self.link_menu_open = false;
+                    self.context_menu_open = false;
+                }
             }
             ui.add_space(8.0);
             
             let context_button = ui.add(MaterialButton::filled("Context Menu"));
             self.context_button_rect = Some(context_button.rect);
             if context_button.clicked() {
-                self.context_menu_open = true;
+                // Toggle menu instead of just opening
+                self.context_menu_open = !self.context_menu_open;
+                // Close other menus when opening this one
+                if self.context_menu_open {
+                    self.standard_menu_open = false;
+                    self.link_menu_open = false;
+                    self.submenu_open = false;
+                }
             }
         });
     }

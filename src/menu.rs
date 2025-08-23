@@ -179,14 +179,20 @@ impl<'a> MaterialMenu<'a> {
             return;
         }
 
-        // Store when menu was opened using the input time
+        // Use a stable ID for the menu
         let stable_id = egui::Id::new(format!("menu_{}", self.id.value()));
-        let current_time = ctx.input(|i| i.time);
-        let menu_open_time = ctx.data_mut(|d| d.get_persisted(stable_id.with("open_time")).unwrap_or(0.0f64));
         
-        // If menu just opened, store the current time
-        if menu_open_time == 0.0 || current_time < menu_open_time {
-            ctx.data_mut(|d| d.insert_persisted(stable_id.with("open_time"), current_time));
+        // Track if this is the frame when menu was opened
+        let was_opened_this_frame = ctx.data_mut(|d| {
+            let last_open_state = d.get_temp::<bool>(stable_id.with("was_open_last_frame")).unwrap_or(false);
+            let just_opened = !last_open_state && *self.open;
+            d.insert_temp(stable_id.with("was_open_last_frame"), *self.open);
+            just_opened
+        });
+        
+        // Request focus when menu opens
+        if was_opened_this_frame && !self.skip_restore_focus {
+            ctx.memory_mut(|mem| mem.request_focus(stable_id));
         }
 
         let item_height = 48.0;
@@ -232,7 +238,6 @@ impl<'a> MaterialMenu<'a> {
         let stay_open_on_focusout = self.stay_open_on_focusout;
 
         // Create a popup window for the menu with a stable layer and unique ID
-        let stable_id = egui::Id::new(format!("menu_{}", id.value()));
         let area_response = egui::Area::new(stable_id)
             .fixed_pos(position)
             .order(egui::Order::Foreground)
@@ -244,21 +249,21 @@ impl<'a> MaterialMenu<'a> {
         // Handle closing behavior based on settings
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             *open_ref = false;
-        } else if !stay_open_on_outside_click {
-            // Only close on outside click if the click didn't happen on the menu itself
-            // and if it happened this frame (not on menu open frame)
+        } else if !stay_open_on_outside_click && !was_opened_this_frame {
+            // Only handle outside clicks if not staying open and not just opened
             if ctx.input(|i| i.pointer.any_click()) {
-                // Check if the click was outside the menu area
                 let pointer_pos = ctx.input(|i| i.pointer.interact_pos()).unwrap_or_default();
                 let menu_rect = Rect::from_min_size(position, menu_size);
-                if !menu_rect.contains(pointer_pos) {
-                    // Only close if menu has been open for a minimal duration (e.g., 50ms)
-                    // This prevents closing immediately after opening
-                    let current_time = ctx.input(|i| i.time);
-                    let menu_open_time = ctx.data_mut(|d| d.get_persisted(stable_id.with("open_time")).unwrap_or(0.0f64));
-                    if current_time - menu_open_time > 0.05 {
-                        *open_ref = false;
-                    }
+                
+                // Include anchor rect in the "inside" area to prevent closing when clicking trigger
+                let mut inside_area = menu_rect;
+                if let Some(anchor) = self.anchor_rect {
+                    inside_area = inside_area.union(anchor);
+                }
+                
+                // Only close if click was outside both menu and anchor areas
+                if !inside_area.contains(pointer_pos) {
+                    *open_ref = false;
                 }
             }
         }
