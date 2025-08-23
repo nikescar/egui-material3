@@ -22,6 +22,8 @@ pub struct SelectWindow {
     outlined_select_value: Option<usize>,
     fruits_select: Option<usize>,
     countries_select: Option<usize>,
+    long_text_select: Option<usize>,
+    many_options_select: Option<usize>,
 }
 
 impl Default for SelectWindow {
@@ -46,6 +48,8 @@ impl Default for SelectWindow {
             outlined_select_value: None,
             fruits_select: Some(0),
             countries_select: None,
+            long_text_select: None,
+            many_options_select: None,
         }
     }
 }
@@ -63,6 +67,8 @@ impl SelectWindow {
                     self.render_select_variants(ui);
                     ui.add_space(20.0);
                     self.render_select_examples(ui);
+                    ui.add_space(20.0);
+                    self.render_special_examples(ui);
                 });
             });
         self.open = open;
@@ -296,7 +302,60 @@ impl SelectWindow {
             ui.label(format!("Outlined: {:?}", self.outlined_select_value));
             ui.label(format!("Fruits: {:?}", self.fruits_select));
             ui.label(format!("Countries: {:?}", self.countries_select));
+            ui.label(format!("Long Text: {:?}", self.long_text_select));
+            ui.label(format!("Many Options: {:?}", self.many_options_select));
         });
         }); // Close push_id block
+    }
+
+    fn render_special_examples(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Special Cases - Text Wrapping & Scrolling");
+        
+        ui.push_id("special_examples", |ui| {
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label("Long Text Options (Text Wrapping):");
+                    let mut long_text_select = select(&mut self.long_text_select)
+                        .option(0, "Short option")
+                        .option(1, "This is a very long option text that should wrap to multiple lines when the content size is bigger than the select menu width")
+                        .option(2, "Another extremely long text option that demonstrates the text wrapping functionality when content exceeds the available menu width and needs to be displayed on multiple lines")
+                        .option(3, "Medium length option text")
+                        .option(4, "Very very very very very very very very long option that will definitely need text wrapping")
+                        .placeholder("Select long text option")
+                        .width(250.0);
+                    
+                    if self.disabled {
+                        long_text_select = long_text_select.enabled(false);
+                    }
+                    
+                    ui.add(long_text_select);
+                });
+                
+                ui.add_space(20.0);
+                
+                ui.vertical(|ui| {
+                    ui.label("Many Options (Scroll Attachment):");
+                    let mut many_options_select = select(&mut self.many_options_select);
+                    
+                    // Add many options to test scrolling
+                    for i in 1..=25 {
+                        many_options_select = many_options_select.option(i, format!("Option {}: Item number {}", i, i));
+                    }
+                    
+                    many_options_select = many_options_select
+                        .placeholder("Select from many options")
+                        .width(200.0);
+                    
+                    if self.disabled {
+                        many_options_select = many_options_select.enabled(false);
+                    }
+                    
+                    ui.add(many_options_select);
+                    
+                    ui.label("⚠️ This select tests scroll attachment to edge.");
+                });
+            });
+            
+        });
     }
 }

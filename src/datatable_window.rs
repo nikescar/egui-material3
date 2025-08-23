@@ -1,6 +1,5 @@
 use eframe::egui::{self, Ui, Window, Id};
 use crate::{MaterialButton, MaterialCheckbox, data_table};
-use egui::TextEdit;
 
 #[derive(Clone, Debug)]
 struct TableRow {
@@ -9,6 +8,20 @@ struct TableRow {
     price: String,
     stock: String,
     selected: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum SortColumn {
+    Product,
+    Category,
+    Price,
+    Stock,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum SortDirection {
+    Ascending,
+    Descending,
 }
 
 #[derive(Clone, Debug)]
@@ -34,6 +47,9 @@ pub struct DataTableWindow {
     edit_category: String,
     edit_price: String,
     edit_stock: String,
+    // Sorting state
+    sort_column: Option<SortColumn>,
+    sort_direction: SortDirection,
 }
 
 impl Default for DataTableWindow {
@@ -90,6 +106,8 @@ impl Default for DataTableWindow {
             edit_category: String::new(),
             edit_price: String::new(),
             edit_stock: String::new(),
+            sort_column: None,
+            sort_direction: SortDirection::Ascending,
         }
     }
 }
@@ -354,37 +372,82 @@ impl DataTableWindow {
 
         ui.add_space(10.0);
         
+        // Sort data if needed
+        let mut sorted_rows = self.interactive_rows.clone();
+        if let Some(sort_col) = &self.sort_column {
+            sorted_rows.sort_by(|a, b| {
+                let comparison = match sort_col {
+                    SortColumn::Product => a.product.cmp(&b.product),
+                    SortColumn::Category => a.category.cmp(&b.category),
+                    SortColumn::Price => {
+                        // Remove $ and parse as float for numeric comparison
+                        let a_val: f32 = a.price.trim_start_matches('$').parse().unwrap_or(0.0);
+                        let b_val: f32 = b.price.trim_start_matches('$').parse().unwrap_or(0.0);
+                        a_val.partial_cmp(&b_val).unwrap_or(std::cmp::Ordering::Equal)
+                    },
+                    SortColumn::Stock => {
+                        let a_val: i32 = a.stock.parse().unwrap_or(0);
+                        let b_val: i32 = b.stock.parse().unwrap_or(0);
+                        a_val.cmp(&b_val)
+                    },
+                };
+                match self.sort_direction {
+                    SortDirection::Ascending => comparison,
+                    SortDirection::Descending => comparison.reverse(),
+                }
+            });
+        }
+
         // Use the proper data table widget for Interactive Data Table Demo
         let mut interactive_table = data_table()
             .id(Id::new("interactive_data_table"))
-            .column("Product", 150.0, false)
+            .column("Product", 180.0, false)  // All columns are sortable by default now
             .column("Category", 120.0, false)
-            .sortable_column("Price", 100.0, true)
-            .sortable_column("Stock", 80.0, true)
-            .column("Actions", 120.0, false)
+            .column("Price", 100.0, true)
+            .column("Stock", 80.0, true)
+            .column("Actions", 140.0, false)  // Add Actions column
             .allow_selection(true);
 
-        // Add rows dynamically from our state
-        for (idx, row) in self.interactive_rows.iter().enumerate() {
-            let is_selected = self.interactive_selection.get(idx).copied().unwrap_or(false);
+        // Add rows dynamically from sorted data
+        for (idx, row) in sorted_rows.iter().enumerate() {
+            // Find original index for selection tracking
+            let original_idx = self.interactive_rows.iter().position(|r| 
+                r.product == row.product && r.category == row.category && 
+                r.price == row.price && r.stock == row.stock
+            ).unwrap_or(idx);
+            
+            let is_selected = self.interactive_selection.get(original_idx).copied().unwrap_or(false);
             
             // Check if this row is being edited
-            let is_editing = matches!(self.editing_state, EditingState::Editing(edit_idx) if edit_idx == idx);
+            let is_editing = matches!(self.editing_state, EditingState::Editing(edit_idx) if edit_idx == original_idx);
             
-            let actions_text = if is_editing {
-                "Save | Cancel"
+            // Create cell content - if editing, show placeholder for edit fields
+            let (product_text, category_text, price_text, stock_text, actions_text) = if is_editing {
+                (
+                    "[Edit: Use form below]".to_string(),
+                    "[Edit: Use form below]".to_string(),
+                    "[Edit: Use form below]".to_string(),
+                    "[Edit: Use form below]".to_string(),
+                    "Submit | Cancel".to_string()
+                )
             } else {
-                "Edit | Delete"
+                (
+                    row.product.clone(), 
+                    row.category.clone(), 
+                    row.price.clone(), 
+                    row.stock.clone(),
+                    "Edit | Delete".to_string()
+                )
             };
             
             interactive_table = interactive_table.row(|table_row| {
                 let mut row_builder = table_row
-                    .cell(&row.product)
-                    .cell(&row.category)
-                    .cell(&row.price)
-                    .cell(&row.stock)
-                    .cell(actions_text)
-                    .id(format!("interactive_table_row_{}", idx));
+                    .cell(&product_text)
+                    .cell(&category_text)
+                    .cell(&price_text)
+                    .cell(&stock_text)
+                    .cell(&actions_text)  // Add actions cell
+                    .id(format!("interactive_table_row_{}", original_idx));
                 
                 if is_selected {
                     row_builder = row_builder.selected(true);
@@ -397,104 +460,112 @@ impl DataTableWindow {
         // Show the table and get the selection state back
         let table_response = interactive_table.show(ui);
         
+        // Handle column sorting (updated for new column layout with Actions column)
+        if let Some(col_idx) = table_response.column_clicked {
+            let new_sort_column = match col_idx {
+                0 => Some(SortColumn::Product),
+                1 => Some(SortColumn::Category),
+                2 => Some(SortColumn::Price),
+                3 => Some(SortColumn::Stock),
+                4 => None, // Actions column is not sortable
+                _ => None,
+            };
+            
+            if let Some(new_col) = new_sort_column {
+                if Some(&new_col) == self.sort_column.as_ref() {
+                    // Same column, toggle direction
+                    self.sort_direction = match self.sort_direction {
+                        SortDirection::Ascending => SortDirection::Descending,
+                        SortDirection::Descending => SortDirection::Ascending,
+                    };
+                } else {
+                    // New column, start with ascending
+                    self.sort_column = Some(new_col);
+                    self.sort_direction = SortDirection::Ascending;
+                }
+            }
+        }
+        
         // Sync the selection state back to our window state
         if table_response.selected_rows.len() == self.interactive_selection.len() {
             self.interactive_selection = table_response.selected_rows;
         }
 
-        // Handle clicking on Actions column for individual row actions
-        // This is a workaround since we can't easily detect column-specific clicks
-        // We'll place action buttons below the table for now, but make them row-specific
-        if !matches!(self.editing_state, EditingState::Editing(_)) {
+        // Show inline editing form when editing
+        if let EditingState::Editing(edit_idx) = self.editing_state {
             ui.add_space(10.0);
-            ui.label("Row Actions (Click to Edit/Delete specific rows):");
+            ui.separator();
+            ui.heading(&format!("Editing Row {} - Enter values in cells above", edit_idx + 1));
             
-            ui.horizontal_wrapped(|ui| {
-                let row_count = self.interactive_rows.len();
-                let mut row_to_edit = None;
-                let mut row_to_delete = None;
-                
-                for idx in 0..row_count {
-                    ui.group(|ui| {
-                        ui.label(&format!("Row {}: {}", idx + 1, self.interactive_rows[idx].product));
-                        ui.horizontal(|ui| {
-                            if ui.small_button("Edit").clicked() {
-                                row_to_edit = Some(idx);
-                            }
-                            if ui.small_button("Delete").clicked() {
-                                row_to_delete = Some(idx);
-                            }
-                        });
-                    });
-                }
-                
-                // Handle edit action
-                if let Some(idx) = row_to_edit {
-                    if let Some(row) = self.interactive_rows.get(idx) {
-                        self.edit_product = row.product.clone();
-                        self.edit_category = row.category.clone();
-                        self.edit_price = row.price.clone();
-                        self.edit_stock = row.stock.clone();
-                        self.editing_state = EditingState::Editing(idx);
-                        println!("Started editing row {}", idx);
-                    }
-                }
-                
-                // Handle delete action
-                if let Some(idx) = row_to_delete {
-                    self.interactive_rows.remove(idx);
-                    if self.interactive_selection.len() > idx {
-                        self.interactive_selection.remove(idx);
-                    }
-                    if matches!(self.editing_state, EditingState::Editing(edit_idx) if edit_idx == idx) {
-                        self.editing_state = EditingState::None;
-                    }
-                    println!("Deleted row {}", idx);
-                }
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label("Product:");
+                    ui.add(egui::TextEdit::singleline(&mut self.edit_product).desired_width(150.0));
+                });
+                ui.vertical(|ui| {
+                    ui.label("Category:");
+                    ui.add(egui::TextEdit::singleline(&mut self.edit_category).desired_width(120.0));
+                });
+                ui.vertical(|ui| {
+                    ui.label("Price:");
+                    ui.add(egui::TextEdit::singleline(&mut self.edit_price).desired_width(80.0));
+                });
+                ui.vertical(|ui| {
+                    ui.label("Stock:");
+                    ui.add(egui::TextEdit::singleline(&mut self.edit_stock).desired_width(60.0));
+                });
             });
         }
 
-        // Show edit form below the table if editing
-        if let EditingState::Editing(edit_idx) = self.editing_state {
-            if let Some(_row) = self.interactive_rows.get(edit_idx) {
-                ui.add_space(10.0);
-                ui.separator();
-                ui.heading("Edit Row");
-                
-                ui.horizontal(|ui| {
-                    ui.label("Product:");
-                    ui.add(TextEdit::singleline(&mut self.edit_product).desired_width(120.0));
-                    
-                    ui.label("Category:");
-                    ui.add(TextEdit::singleline(&mut self.edit_category).desired_width(100.0));
-                    
-                    ui.label("Price:");
-                    ui.add(TextEdit::singleline(&mut self.edit_price).desired_width(80.0));
-                    
-                    ui.label("Stock:");
-                    ui.add(TextEdit::singleline(&mut self.edit_stock).desired_width(60.0));
-                });
-                
-                ui.horizontal(|ui| {
-                    if ui.add(MaterialButton::filled("Save")).clicked() {
-                        // Save changes
-                        if let Some(row) = self.interactive_rows.get_mut(edit_idx) {
-                            row.product = self.edit_product.clone();
-                            row.category = self.edit_category.clone();
-                            row.price = self.edit_price.clone();
-                            row.stock = self.edit_stock.clone();
-                        }
-                        self.editing_state = EditingState::None;
-                        println!("Saved changes to row {}", edit_idx);
-                    }
-                    
-                    if ui.add(MaterialButton::outlined("Cancel")).clicked() {
-                        self.editing_state = EditingState::None;
-                        println!("Cancelled editing");
-                    }
-                });
+        // Additional features demonstration
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Text Wrapping Example");
+        
+        let long_text_table = data_table()
+            .id(Id::new("long_text_table"))
+            .column("Short", 80.0, false)
+            .column("Very Long Text Content That Should Wrap", 150.0, false)
+            .column("Number", 80.0, true)
+            .allow_selection(true)
+            .row(|row| {
+                row.cell("Item 1")
+                   .cell("This is a very long text that should wrap to multiple lines when the content exceeds the available column width")
+                   .cell("100")
+            })
+            .row(|row| {
+                row.cell("Item 2")
+                   .cell("Another extremely long piece of text content that demonstrates the text wrapping functionality in data table cells")
+                   .cell("250")
+            })
+            .row(|row| {
+                row.cell("Item 3")
+                   .cell("Short text")
+                   .cell("75")
+            });
+            
+        ui.add(long_text_table);
+        
+        // Display current sorting state
+        ui.add_space(10.0);
+        ui.horizontal(|ui| {
+            ui.label("Current Sort:");
+            if let Some(col) = &self.sort_column {
+                let col_name = match col {
+                    SortColumn::Product => "Product",
+                    SortColumn::Category => "Category", 
+                    SortColumn::Price => "Price",
+                    SortColumn::Stock => "Stock",
+                };
+                let direction = match self.sort_direction {
+                    SortDirection::Ascending => "↑",
+                    SortDirection::Descending => "↓",
+                };
+                ui.label(format!("{} {}", col_name, direction));
+            } else {
+                ui.label("None");
             }
-        }
+        });
         });
     }
 }

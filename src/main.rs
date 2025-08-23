@@ -552,13 +552,6 @@ impl eframe::App for MaterialApp {
                     self.iconbutton_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Focus Stories")).clicked() {
-                    self.focus_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Menu Stories")).clicked() {
-                    self.menu_window.open = true;
-                }
                 
                 if ui.add(MaterialButton::filled("Progress Stories")).clicked() {
                     self.progress_window.open = true;
@@ -584,9 +577,6 @@ impl eframe::App for MaterialApp {
                     self.layoutgrid_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Snackbar Stories")).clicked() {
-                    self.snackbar_window.open = true;
-                }
                 
                 if ui.add(MaterialButton::filled("Enhanced Card (Card2) Stories")).clicked() {
                     self.card2_window.open = true;
@@ -609,6 +599,16 @@ impl eframe::App for MaterialApp {
             ui.add_space(15.0);
             ui.label("Labs Windows:");
             ui.horizontal_wrapped(|ui| {
+                if ui.add(MaterialButton::filled("Menu Stories")).clicked() {
+                    self.menu_window.open = true;
+                }
+                if ui.add(MaterialButton::filled("Snackbar Stories")).clicked() {
+                    self.snackbar_window.open = true;
+                }
+                
+                if ui.add(MaterialButton::filled("Focus Ring Stories")).clicked() {
+                    self.focus_window.open = true;
+                }
 
                 if ui.add(MaterialButton::filled("Segmented Button Set Stories")).clicked() {
                     self.segmentedbuttonset_window.open = true;

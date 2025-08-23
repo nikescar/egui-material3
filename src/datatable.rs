@@ -2,6 +2,7 @@ use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, 
     epaint::{Stroke, CornerRadius},
+    FontFamily, FontId,
     Id, Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
 };
 use std::collections::HashMap;
@@ -26,6 +27,8 @@ pub struct DataTableResponse {
     pub selected_rows: Vec<bool>,
     /// Header checkbox state
     pub header_checkbox: bool,
+    /// Column that was clicked for sorting (if any)
+    pub column_clicked: Option<usize>,
 }
 
 /// Material Design data table component.
@@ -136,7 +139,7 @@ impl<'a> MaterialDataTable<'a> {
             title: title.into(),
             width,
             numeric,
-            sortable: false,
+            sortable: true, // Make all columns sortable by default
             sort_direction: None,
         });
         self
@@ -250,12 +253,51 @@ impl<'a> MaterialDataTable<'a> {
             ..
         } = self;
 
-        // Calculate table dimensions
+        // Calculate table dimensions with dynamic row heights
         let checkbox_width = if allow_selection { 48.0 } else { 0.0 };
         let total_width = checkbox_width + columns.iter().map(|col| col.width).sum::<f32>();
-        let row_height = 52.0;
+        let min_row_height = 52.0;
         let header_height = 56.0;
-        let total_height = header_height + (rows.len() as f32 * row_height);
+        
+        // Calculate individual row heights based on content
+        let mut row_heights = Vec::new();
+        for row in &rows {
+            let mut max_height: f32 = min_row_height;
+            for (cell_idx, cell_text) in row.cells.iter().enumerate() {
+                if let Some(column) = columns.get(cell_idx) {
+                    let available_width = column.width - 32.0;
+                    let cell_font = FontId::new(14.0, FontFamily::Proportional);
+                    
+                    let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
+                        text: cell_text.text().to_string(),
+                        sections: vec![egui::text::LayoutSection {
+                            leading_space: 0.0,
+                            byte_range: 0..cell_text.text().len(),
+                            format: egui::TextFormat {
+                                font_id: cell_font,
+                                color: get_global_color("onSurface"),
+                                ..Default::default()
+                            },
+                        }],
+                        wrap: egui::text::TextWrapping {
+                            max_width: available_width,
+                            ..Default::default()
+                        },
+                        break_on_newline: true,
+                        halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
+                        justify: false,
+                        first_row_min_height: 0.0,
+                        round_output_to_gui: true,
+                    }));
+                    
+                    let content_height = galley.size().y + 16.0f32; // Add padding
+                    max_height = max_height.max(content_height);
+                }
+            }
+            row_heights.push(max_height);
+        }
+        
+        let total_height = header_height + row_heights.iter().sum::<f32>();
 
         let desired_size = Vec2::new(total_width, total_height);
         let response = ui.allocate_response(desired_size, Sense::click());
@@ -340,7 +382,7 @@ impl<'a> MaterialDataTable<'a> {
             }
             
             // Header columns
-            for column in &columns {
+            for (col_idx, column) in columns.iter().enumerate() {
                 let col_rect = Rect::from_min_size(
                     egui::pos2(current_x, current_y),
                     Vec2::new(column.width, header_height)
@@ -359,8 +401,16 @@ impl<'a> MaterialDataTable<'a> {
                     get_global_color("onSurface")
                 );
                 
-                // Draw sort icon if sortable
+                // Handle column header clicks for sorting
                 if column.sortable {
+                    let header_click_id = table_id.with(format!("column_header_{}", col_idx));
+                    let header_response = ui.interact(col_rect, header_click_id, Sense::click());
+                    if header_response.clicked() {
+                        ui.memory_mut(|mem| {
+                            mem.data.insert_temp(table_id.with("column_clicked"), Some(col_idx));
+                        });
+                    }
+                    
                     let icon_pos = egui::pos2(
                         current_x + column.width - 32.0,
                         current_y + (header_height - 24.0) / 2.0
@@ -398,8 +448,9 @@ impl<'a> MaterialDataTable<'a> {
 
             current_y += header_height;
 
-            // Draw rows
+            // Draw rows with dynamic heights
             for (row_idx, row) in rows.iter().enumerate() {
+                let row_height = row_heights.get(row_idx).copied().unwrap_or(min_row_height);
                 let row_rect = Rect::from_min_size(
                     egui::pos2(rect.min.x, current_y),
                     Vec2::new(total_width, row_height)
@@ -521,19 +572,39 @@ impl<'a> MaterialDataTable<'a> {
                             egui::Align2::LEFT_CENTER
                         };
                         
+                        // Handle text wrapping for cell content
+                        let available_width = column.width - 32.0; // Account for padding
+                        let cell_font = FontId::new(14.0, FontFamily::Proportional);
+                        
+                        let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
+                            text: cell_text.text().to_string(),
+                            sections: vec![egui::text::LayoutSection {
+                                leading_space: 0.0,
+                                byte_range: 0..cell_text.text().len(),
+                                format: egui::TextFormat {
+                                    font_id: cell_font,
+                                    color: get_global_color("onSurface"),
+                                    ..Default::default()
+                                },
+                            }],
+                            wrap: egui::text::TextWrapping {
+                                max_width: available_width,
+                                ..Default::default()
+                            },
+                            break_on_newline: true,
+                            halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
+                            justify: false,
+                            first_row_min_height: 0.0,
+                            round_output_to_gui: true,
+                        }));
+                        
                         let text_pos = if column.numeric {
-                            egui::pos2(current_x + column.width - 16.0, current_y + row_height / 2.0)
+                            egui::pos2(current_x + column.width - 16.0 - galley.size().x, current_y + (row_height - galley.size().y) / 2.0)
                         } else {
-                            egui::pos2(current_x + 16.0, current_y + row_height / 2.0)
+                            egui::pos2(current_x + 16.0, current_y + (row_height - galley.size().y) / 2.0)
                         };
                         
-                        ui.painter().text(
-                            text_pos,
-                            text_align,
-                            cell_text.text(),
-                            egui::TextStyle::Body.resolve(ui.style()),
-                            get_global_color("onSurface")
-                        );
+                        ui.painter().galley(text_pos, galley, get_global_color("onSurface"));
                         
                         current_x += column.width;
                     }
@@ -561,10 +632,21 @@ impl<'a> MaterialDataTable<'a> {
         // Persist the state
         ui.data_mut(|d| d.insert_persisted(table_id, state.clone()));
 
+        // Check for column clicks using stored state
+        let column_clicked = ui.memory(|mem| {
+            mem.data.get_temp::<Option<usize>>(table_id.with("column_clicked"))
+        }).flatten();
+        
+        // Clear the stored click state
+        ui.memory_mut(|mem| {
+            mem.data.remove::<Option<usize>>(table_id.with("column_clicked"));
+        });
+        
         DataTableResponse {
             response,
             selected_rows: state.selected_rows,
             header_checkbox: state.header_checkbox,
+            column_clicked,
         }
     }
 }
