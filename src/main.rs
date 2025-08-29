@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 1200.0]),
         ..Default::default()
     };
     
@@ -580,10 +580,6 @@ impl eframe::App for MaterialApp {
                     self.radio_window.open = true;
                 }
                 
-                if ui.add(MaterialButton::filled("Ripple Stories")).clicked() {
-                    self.ripple_window.open = true;
-                }
-                
                 if ui.add(MaterialButton::filled("Select Stories")).clicked() {
                     self.select_window.open = true;
                 }
@@ -599,6 +595,10 @@ impl eframe::App for MaterialApp {
                 if ui.add(MaterialButton::filled("Switch Stories")).clicked() {
                     self.switch_window.open = true;
                 }
+
+                if ui.add(MaterialButton::filled("Drawer Stories")).clicked() {
+                    self.drawer_window.open = true;
+                }
                 
             });
 
@@ -609,10 +609,11 @@ impl eframe::App for MaterialApp {
                 if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
                     self.tabs_window.open = true;
                 }
-                
-                if ui.add(MaterialButton::filled("Drawer Stories")).clicked() {
-                    self.drawer_window.open = true;
+
+                if ui.add(MaterialButton::filled("Ripple Stories")).clicked() {
+                    self.ripple_window.open = true;
                 }
+                
                 
                 if ui.add(MaterialButton::filled("Image List Stories")).clicked() {
                     self.imagelist_window.open = true;
