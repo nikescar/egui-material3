@@ -1,25 +1,83 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::get_global_color;
 
+/// Material Design radio button component.
+///
+/// Radio buttons allow users to select one option from a set.
+/// Use radio buttons when only one option may be selected.
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut selected = Some(0);
+/// 
+/// ui.add(MaterialRadio::new(&mut selected, 0, "Option 1"));
+/// ui.add(MaterialRadio::new(&mut selected, 1, "Option 2"));
+/// ui.add(MaterialRadio::new(&mut selected, 2, "Option 3"));
+/// # });
+/// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialRadio<'a> {
+    /// Reference to the selected value
     selected: &'a mut Option<usize>,
+    /// Value this radio button represents
     value: usize,
+    /// Text label for the radio button
     text: String,
+    /// Whether the radio button is enabled
     enabled: bool,
 }
 
+/// Material Design radio button group component.
+///
+/// A convenience wrapper for managing multiple radio buttons as a group.
+/// Ensures only one option can be selected at a time.
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut selected = Some(0);
+/// let mut group = MaterialRadioGroup::new(&mut selected)
+///     .option(0, "First Option")
+///     .option(1, "Second Option")
+///     .option(2, "Third Option");
+///
+/// ui.add(group);
+/// # });
+/// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialRadioGroup<'a> {
+    /// Reference to the selected value
     selected: &'a mut Option<usize>,
+    /// List of available options
     options: Vec<RadioOption>,
+    /// Whether the entire group is enabled
     enabled: bool,
 }
 
+/// Individual radio option data.
 pub struct RadioOption {
+    /// Display text for the option
     text: String,
+    /// Unique value identifying this option
     value: usize,
 }
 
 impl<'a> MaterialRadio<'a> {
+    /// Create a new radio button.
+    ///
+    /// # Arguments
+    /// * `selected` - Mutable reference to the currently selected value
+    /// * `value` - The value this radio button represents
+    /// * `text` - The text label to display
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = Some(1);
+    /// ui.add(MaterialRadio::new(&mut selection, 1, "My Option"));
+    /// # });
+    /// ```
     pub fn new(selected: &'a mut Option<usize>, value: usize, text: impl Into<String>) -> Self {
         Self {
             selected,
@@ -29,6 +87,19 @@ impl<'a> MaterialRadio<'a> {
         }
     }
 
+    /// Set whether the radio button is enabled.
+    ///
+    /// # Arguments
+    /// * `enabled` - Whether the radio button should respond to interactions
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialRadio::new(&mut selection, 0, "Disabled Option")
+    ///     .enabled(false));
+    /// # });
+    /// ```
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
@@ -135,6 +206,18 @@ impl<'a> Widget for MaterialRadio<'a> {
 }
 
 impl<'a> MaterialRadioGroup<'a> {
+    /// Create a new radio button group.
+    ///
+    /// # Arguments
+    /// * `selected` - Mutable reference to the currently selected value
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = Some(1);
+    /// let group = MaterialRadioGroup::new(&mut selection);
+    /// # });
+    /// ```
     pub fn new(selected: &'a mut Option<usize>) -> Self {
         Self {
             selected,
@@ -143,6 +226,21 @@ impl<'a> MaterialRadioGroup<'a> {
         }
     }
 
+    /// Add an option to the radio group.
+    ///
+    /// # Arguments
+    /// * `value` - The value this option represents
+    /// * `text` - The text label for this option
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// let group = MaterialRadioGroup::new(&mut selection)
+    ///     .option(0, "First Choice")
+    ///     .option(1, "Second Choice");
+    /// # });
+    /// ```
     pub fn option(mut self, value: usize, text: impl Into<String>) -> Self {
         self.options.push(RadioOption {
             text: text.into(),
@@ -151,6 +249,20 @@ impl<'a> MaterialRadioGroup<'a> {
         self
     }
 
+    /// Set whether the entire radio group is enabled.
+    ///
+    /// # Arguments
+    /// * `enabled` - Whether all radio buttons in the group should respond to interactions
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// let group = MaterialRadioGroup::new(&mut selection)
+    ///     .option(0, "Option 1")
+    ///     .enabled(false); // Disable all options
+    /// # });
+    /// ```
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
@@ -177,16 +289,49 @@ impl<'a> Widget for MaterialRadioGroup<'a> {
         });
 
         group_response.unwrap_or_else(|| {
-            let (rect, response) = ui.allocate_exact_size(Vec2::ZERO, Sense::hover());
+            let (_rect, response) = ui.allocate_exact_size(Vec2::ZERO, Sense::hover());
             response
         })
     }
 }
 
+/// Convenience function to create a radio button.
+///
+/// Shorthand for `MaterialRadio::new()`.
+///
+/// # Arguments
+/// * `selected` - Mutable reference to the currently selected value
+/// * `value` - The value this radio button represents
+/// * `text` - The text label to display
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut selection = Some(0);
+/// ui.add(radio(&mut selection, 0, "First Option"));
+/// ui.add(radio(&mut selection, 1, "Second Option"));
+/// # });
+/// ```
 pub fn radio<'a>(selected: &'a mut Option<usize>, value: usize, text: impl Into<String>) -> MaterialRadio<'a> {
     MaterialRadio::new(selected, value, text)
 }
 
+/// Convenience function to create a radio button group.
+///
+/// Shorthand for `MaterialRadioGroup::new()`.
+///
+/// # Arguments
+/// * `selected` - Mutable reference to the currently selected value
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut selection = None;
+/// ui.add(radio_group(&mut selection)
+///     .option(0, "Option A")
+///     .option(1, "Option B"));
+/// # });
+/// ```
 pub fn radio_group<'a>(selected: &'a mut Option<usize>) -> MaterialRadioGroup<'a> {
     MaterialRadioGroup::new(selected)
 }

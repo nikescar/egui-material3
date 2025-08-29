@@ -254,7 +254,7 @@ impl Widget for MaterialLayoutGrid<'_> {
         }
         
         // Allocate the full grid space
-        let (grid_response_rect, mut grid_response) = ui.allocate_at_least(
+        let (_grid_response_rect, mut grid_response) = ui.allocate_at_least(
             Vec2::new(effective_width, total_height),
             Sense::hover()
         );

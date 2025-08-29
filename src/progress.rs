@@ -2,23 +2,76 @@ use eframe::egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widge
 use crate::get_global_color;
 use std::f32::consts::PI;
 
+/// Material Design progress indicator variants
 #[derive(Clone, Copy, PartialEq)]
 pub enum ProgressVariant {
+    /// Linear progress bar - horizontal bar showing progress
     Linear,
+    /// Circular progress indicator - circular arc showing progress
     Circular,
 }
 
+/// Material Design progress indicator component
+///
+/// Progress indicators inform users about the status of ongoing processes, such as
+/// loading an app, submitting a form, or saving updates. They communicate an app's
+/// state and indicate available actions.
+///
+/// ## Usage Examples
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// // Linear progress with value
+/// ui.add(MaterialProgress::linear()
+///     .value(0.65)
+///     .size(Vec2::new(300.0, 6.0)));
+/// 
+/// // Circular progress with value
+/// ui.add(MaterialProgress::circular()
+///     .value(0.8)
+///     .size(Vec2::splat(64.0)));
+/// 
+/// // Indeterminate linear progress (loading)
+/// ui.add(MaterialProgress::linear()
+///     .indeterminate(true));
+/// 
+/// // Buffered linear progress (like video loading)
+/// ui.add(MaterialProgress::linear()
+///     .value(0.3)
+///     .buffer(0.6));
+/// # });
+/// ```
+///
+/// ## Material Design Spec
+/// - Linear: 4dp height (default), variable width
+/// - Circular: 48dp diameter (default), 4dp stroke width
+/// - Colors: Primary color for progress, surfaceVariant for track
+/// - Animation: Smooth transitions, indeterminate animations
+/// - Corner radius: 2dp for linear progress
 pub struct MaterialProgress {
+    /// Type of progress indicator (linear or circular)
     variant: ProgressVariant,
+    /// Current progress value (0.0 to max)
     value: f32,
+    /// Maximum value for progress calculation
     max: f32,
+    /// Optional buffer value for buffered progress (e.g., video loading)
     buffer: Option<f32>,
+    /// Whether to show indeterminate progress animation
     indeterminate: bool,
+    /// Whether to use four-color animation for indeterminate progress
     four_color_enabled: bool,
+    /// Size of the progress indicator
     size: Vec2,
 }
 
 impl MaterialProgress {
+    /// Create a new progress indicator with the specified variant
+    /// 
+    /// ## Parameters
+    /// - `variant`: Whether to create a linear or circular progress indicator
+    /// 
+    /// ## Returns
+    /// A new MaterialProgress instance with default settings
     pub fn new(variant: ProgressVariant) -> Self {
         Self {
             variant,
@@ -34,55 +87,123 @@ impl MaterialProgress {
         }
     }
 
+    /// Create a linear progress bar
+    /// 
+    /// Linear progress indicators display progress along a horizontal line.
+    /// Best for showing progress of tasks with known duration.
+    /// 
+    /// ## Material Design Usage
+    /// - File downloads/uploads
+    /// - Form submission progress  
+    /// - Loading content with known steps
     pub fn linear() -> Self {
         Self::new(ProgressVariant::Linear)
     }
 
+    /// Create a circular progress indicator
+    /// 
+    /// Circular progress indicators display progress along a circular path.
+    /// Best for compact spaces or indeterminate progress.
+    /// 
+    /// ## Material Design Usage
+    /// - Loading states in buttons or cards
+    /// - Refreshing content
+    /// - Background processing
     pub fn circular() -> Self {
         Self::new(ProgressVariant::Circular)
     }
 
+    /// Set the current progress value
+    /// 
+    /// ## Parameters
+    /// - `value`: Progress value (will be clamped between 0.0 and max)
     pub fn value(mut self, value: f32) -> Self {
         self.value = value.clamp(0.0, self.max);
         self
     }
 
+    /// Set the maximum value for progress calculation
+    /// 
+    /// The progress percentage will be calculated as value/max.
+    /// 
+    /// ## Parameters
+    /// - `max`: Maximum value (default is 1.0 for 0-100% range)
     pub fn max(mut self, max: f32) -> Self {
         self.max = max.max(0.001); // Prevent division by zero
         self.value = self.value.clamp(0.0, self.max);
         self
     }
 
+    /// Set the buffer value for buffered progress
+    /// 
+    /// Buffered progress shows an additional value indicating estimated completion.
+    /// Useful for tasks like video buffering where loading status is variable.
+    /// 
+    /// ## Parameters
+    /// - `buffer`: Buffer value (will be clamped between 0.0 and max)
     pub fn buffer(mut self, buffer: f32) -> Self {
         self.buffer = Some(buffer.clamp(0.0, self.max));
         self
     }
 
+    /// Enable or disable indeterminate progress animation
+    /// 
+    /// Indeterminate progress is used when the actual progress is unknown,
+    /// such as during loading states. It shows a looping animation to indicate
+    /// activity.
+    /// 
+    /// ## Parameters
+    /// - `indeterminate`: true to enable indeterminate mode, false to disable
     pub fn indeterminate(mut self, indeterminate: bool) -> Self {
         self.indeterminate = indeterminate;
         self
     }
 
+    /// Enable or disable four-color animation for indeterminate progress
+    /// 
+    /// Four-color animation provides a more dynamic indeterminate animation
+    /// using four distinct colors. This can be visually appealing but may
+    /// impact performance due to increased draw calls.
+    /// 
+    /// ## Parameters
+    /// - `enabled`: true to enable four-color animation, false to disable
     pub fn four_color_enabled(mut self, enabled: bool) -> Self {
         self.four_color_enabled = enabled;
         self
     }
 
+    /// Set the size of the progress indicator
+    /// 
+    /// ## Parameters
+    /// - `size`: Desired size (width, height) of the progress indicator
     pub fn size(mut self, size: Vec2) -> Self {
         self.size = size;
         self
     }
 
+    /// Set the width of the progress indicator (for linear variant)
+    /// 
+    /// ## Parameters
+    /// - `width`: Desired width of the progress indicator
     pub fn width(mut self, width: f32) -> Self {
         self.size.x = width;
         self
     }
 
+    /// Set the height of the progress indicator (for circular variant)
+    /// 
+    /// ## Parameters
+    /// - `height`: Desired height of the progress indicator
     pub fn height(mut self, height: f32) -> Self {
         self.size.y = height;
         self
     }
 
+    /// Enable or disable four-color animation (deprecated, use four_color_enabled)
+    /// 
+    /// ## Parameters
+    /// - `enabled`: true to enable four-color animation, false to disable
+    #[deprecated(note = "Use four_color_enabled() instead")]
     pub fn four_color(mut self, enabled: bool) -> Self {
         self.four_color_enabled = enabled;
         self

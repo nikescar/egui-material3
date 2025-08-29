@@ -2,23 +2,73 @@ use crate::theme::get_global_color;
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::icons::icon_text;
 
+/// Material Design list component.
+///
+/// Lists are continuous, vertical indexes of text or images.
+/// They are composed of items containing primary and related actions.
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let list = MaterialList::new()
+///     .item(ListItem::new("Inbox")
+///         .leading_icon("inbox")
+///         .trailing_text("12"))
+///     .item(ListItem::new("Starred")
+///         .leading_icon("star")
+///         .trailing_text("3"))
+///     .dividers(true);
+///
+/// ui.add(list);
+/// # });
+/// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialList<'a> {
+    /// List of items to display
     items: Vec<ListItem<'a>>,
+    /// Whether to show dividers between items
     dividers: bool,
 }
 
+/// Individual item in a Material Design list.
+///
+/// List items can contain primary text, secondary text, overline text,
+/// leading and trailing icons, and custom actions.
+///
+/// # Example
+/// ```rust
+/// let item = ListItem::new("Primary Text")
+///     .secondary_text("Secondary supporting text")
+///     .leading_icon("person")
+///     .trailing_icon("more_vert")
+///     .on_click(|| println!("Item clicked"));
+/// ```
 pub struct ListItem<'a> {
+    /// Main text displayed for this item
     primary_text: String,
+    /// Optional secondary text displayed below primary text
     secondary_text: Option<String>,
+    /// Optional overline text displayed above primary text
     overline_text: Option<String>,
+    /// Optional icon displayed at the start of the item
     leading_icon: Option<String>,
+    /// Optional icon displayed at the end of the item
     trailing_icon: Option<String>,
+    /// Optional text displayed at the end of the item
     trailing_text: Option<String>,
+    /// Whether the item is enabled and interactive
     enabled: bool,
+    /// Callback function to execute when the item is clicked
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
 impl<'a> MaterialList<'a> {
+    /// Create a new empty list.
+    ///
+    /// # Example
+    /// ```rust
+    /// let list = MaterialList::new();
+    /// ```
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
@@ -26,11 +76,32 @@ impl<'a> MaterialList<'a> {
         }
     }
 
+    /// Add an item to the list.
+    ///
+    /// # Arguments
+    /// * `item` - The list item to add
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let item = ListItem::new("Sample Item");
+    /// let list = MaterialList::new().item(item);
+    /// # });
+    /// ```
     pub fn item(mut self, item: ListItem<'a>) -> Self {
         self.items.push(item);
         self
     }
 
+    /// Set whether to show dividers between items.
+    ///
+    /// # Arguments
+    /// * `dividers` - Whether to show divider lines between items
+    ///
+    /// # Example
+    /// ```rust
+    /// let list = MaterialList::new().dividers(false); // No dividers
+    /// ```
     pub fn dividers(mut self, dividers: bool) -> Self {
         self.dividers = dividers;
         self
@@ -38,6 +109,15 @@ impl<'a> MaterialList<'a> {
 }
 
 impl<'a> ListItem<'a> {
+    /// Create a new list item with primary text.
+    ///
+    /// # Arguments
+    /// * `primary_text` - The main text to display
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("My List Item");
+    /// ```
     pub fn new(primary_text: impl Into<String>) -> Self {
         Self {
             primary_text: primary_text.into(),
@@ -51,36 +131,122 @@ impl<'a> ListItem<'a> {
         }
     }
 
+    /// Set the secondary text for the item.
+    ///
+    /// Secondary text is displayed below the primary text.
+    ///
+    /// # Arguments
+    /// * `text` - The secondary text to display
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .secondary_text("This is some secondary text");
+    /// ```
     pub fn secondary_text(mut self, text: impl Into<String>) -> Self {
         self.secondary_text = Some(text.into());
         self
     }
 
+    /// Set the overline text for the item.
+    ///
+    /// Overline text is displayed above the primary text.
+    ///
+    /// # Arguments
+    /// * `text` - The overline text to display
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .overline("Important")
+    ///     .secondary_text("This is some secondary text");
+    /// ```
     pub fn overline(mut self, text: impl Into<String>) -> Self {
         self.overline_text = Some(text.into());
         self
     }
 
+    /// Set a leading icon for the item.
+    ///
+    /// A leading icon is displayed at the start of the item, before the text.
+    ///
+    /// # Arguments
+    /// * `icon` - The name of the icon to display
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .leading_icon("check");
+    /// ```
     pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
         self.leading_icon = Some(icon.into());
         self
     }
 
+    /// Set a trailing icon for the item.
+    ///
+    /// A trailing icon is displayed at the end of the item, after the text.
+    ///
+    /// # Arguments
+    /// * `icon` - The name of the icon to display
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .trailing_icon("more_vert");
+    /// ```
     pub fn trailing_icon(mut self, icon: impl Into<String>) -> Self {
         self.trailing_icon = Some(icon.into());
         self
     }
 
+    /// Set trailing text for the item.
+    ///
+    /// Trailing text is displayed at the end of the item, after the icons.
+    ///
+    /// # Arguments
+    /// * `text` - The trailing text to display
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .trailing_text("99+");
+    /// ```
     pub fn trailing_text(mut self, text: impl Into<String>) -> Self {
         self.trailing_text = Some(text.into());
         self
     }
 
+    /// Enable or disable the item.
+    ///
+    /// Disabled items are not interactive and are typically displayed with
+    /// reduced opacity.
+    ///
+    /// # Arguments
+    /// * `enabled` - Whether the item should be enabled
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .enabled(false); // This item is disabled
+    /// ```
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
+    /// Set a click action for the item.
+    ///
+    /// # Arguments
+    /// * `f` - A function to call when the item is clicked
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .on_click(|| {
+    ///         println!("Item was clicked!");
+    ///     });
+    /// ```
     pub fn on_click<F>(mut self, f: F) -> Self
     where
         F: Fn() + 'a,

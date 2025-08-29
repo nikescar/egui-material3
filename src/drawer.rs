@@ -200,7 +200,7 @@ impl<'a> MaterialDrawer<'a> {
             .response
     }
 
-    fn show_dismissible(mut self, ctx: &egui::Context) -> Response {
+    fn show_dismissible(self, ctx: &egui::Context) -> Response {
         if *self.open {
             SidePanel::left(self.id.with("dismissible"))
                 .default_width(self.width)
@@ -220,7 +220,7 @@ impl<'a> MaterialDrawer<'a> {
         }
     }
 
-    fn show_modal(mut self, ctx: &egui::Context) -> Response {
+    fn show_modal(self, ctx: &egui::Context) -> Response {
         if *self.open {
             // Draw scrim background
             let screen_rect = ctx.screen_rect();
@@ -261,7 +261,7 @@ impl<'a> MaterialDrawer<'a> {
         }
     }
 
-    fn render_drawer_content(mut self, ui: &mut Ui) -> Response {
+    fn render_drawer_content(self, ui: &mut Ui) -> Response {
         let (background_color, border_stroke, has_elevation) = self.get_drawer_style();
         
         // Handle ESC key for dismissible and modal drawers
@@ -275,7 +275,7 @@ impl<'a> MaterialDrawer<'a> {
         let header_height = if self.header_title.is_some() { 64.0 } else { 0.0 };
         let item_height = 48.0;
         let items_height = self.items.len() as f32 * item_height;
-        let total_height = header_height + items_height;
+        let _total_height = header_height + items_height;
 
         let available_rect = ui.available_rect_before_wrap();
         let drawer_rect = Rect::from_min_size(available_rect.min, Vec2::new(self.width, available_rect.height()));

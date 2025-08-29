@@ -240,7 +240,7 @@ impl Widget for MaterialCard2<'_> {
 
             // Draw header
             if let Some(title) = &header_title {
-                let header_rect = Rect::from_min_size(
+                let _header_rect = Rect::from_min_size(
                     egui::pos2(rect.min.x, current_y),
                     Vec2::new(rect.width(), header_height)
                 );

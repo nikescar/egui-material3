@@ -245,7 +245,7 @@ impl SnackbarWindow {
                 .show(ctx, |ui| {
                     ui.set_clip_rect(ctx.screen_rect());
                     
-                    let mut snackbar = snackbar(&self.message_text)
+                    let snackbar = snackbar(&self.message_text)
                         .auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
                     let mut show_snackbar = self.show_basic_snackbar;
@@ -263,7 +263,7 @@ impl SnackbarWindow {
                         self.basic_snackbar_start = None;
                     }
                 });
-            bottom_offset += snackbar_spacing;
+            // bottom_offset += snackbar_spacing; // Unused assignment removed
         }
         
         if self.show_action_snackbar {
@@ -275,7 +275,7 @@ impl SnackbarWindow {
                     let message = self.message_text.clone();
                     let action_text = self.action_text.clone();
                     
-                    let mut snackbar = snackbar_with_action(
+                    let snackbar = snackbar_with_action(
                         message,
                         action_text,
                         || {
@@ -298,7 +298,7 @@ impl SnackbarWindow {
                         self.action_snackbar_start = None;
                     }
                 });
-            bottom_offset += snackbar_spacing;
+            // bottom_offset += snackbar_spacing; // Unused assignment removed
         }
         
         // Render top-positioned snackbars with stacking
@@ -308,7 +308,7 @@ impl SnackbarWindow {
                 .show(ctx, |ui| {
                     ui.set_clip_rect(ctx.screen_rect());
                     
-                    let mut snackbar = snackbar(&self.message_text)
+                    let snackbar = snackbar(&self.message_text)
                         .position(SnackbarPosition::Top)
                         .auto_dismiss(None); // Disable widget auto-dismiss, handled by window
                     
@@ -327,7 +327,7 @@ impl SnackbarWindow {
                         self.top_snackbar_start = None;
                     }
                 });
-            top_offset += snackbar_spacing;
+            // top_offset += snackbar_spacing; // Unused assignment removed
         }
     }
 }

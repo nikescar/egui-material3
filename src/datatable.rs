@@ -7,48 +7,58 @@ use egui::{
 };
 use std::collections::{HashMap, HashSet};
 
-/// Persistent state for a data table
+/// Persistent state for a Material Design data table.
+///
+/// This structure maintains the state of the table including selections,
+/// sorting, and editing state across frames.
 #[derive(Clone, Debug, Default)]
 pub struct DataTableState {
-    /// Selection state for each row
+    /// Selection state for each row (true if selected)
     pub selected_rows: Vec<bool>,
-    /// Header checkbox state
+    /// State of the header checkbox (for select-all functionality)
     pub header_checkbox: bool,
-    /// Column sort states
+    /// Sort states for each column by column name
     pub column_sorts: HashMap<String, SortDirection>,
-    /// Currently sorted column index
+    /// Index of the currently sorted column (if any)
     pub sorted_column: Option<usize>,
-    /// Current sort direction
+    /// Current sort direction for the sorted column
     pub sort_direction: SortDirection,
-    /// Rows currently being edited
+    /// Set of row indices currently being edited
     pub editing_rows: std::collections::HashSet<usize>,
-    /// Temporary edit data for rows being edited
+    /// Temporary edit data for rows being edited (row_index -> cell_values)
     pub edit_data: HashMap<usize, Vec<String>>,
 }
 
-/// Response from a data table widget including selection state
+/// Response returned by the data table widget.
+///
+/// Contains both the standard egui Response and additional table-specific
+/// information about user interactions.
 #[derive(Debug)]
 pub struct DataTableResponse {
-    /// The UI response
+    /// The standard egui widget response
     pub response: Response,
     /// Current selection state for each row
     pub selected_rows: Vec<bool>,
-    /// Header checkbox state
+    /// Current state of the header checkbox
     pub header_checkbox: bool,
-    /// Column that was clicked for sorting (if any)
+    /// Index of column that was clicked for sorting (if any)
     pub column_clicked: Option<usize>,
     /// Current sort state (column index, direction)
     pub sort_state: (Option<usize>, SortDirection),
-    /// Row actions (Edit/Delete/Save)
+    /// List of row actions performed (edit, delete, save)
     pub row_actions: Vec<RowAction>,
 }
 
-/// Actions that can be performed on table rows
+/// Actions that can be performed on data table rows.
 #[derive(Debug, Clone)]
 pub enum RowAction {
+    /// User clicked edit button for the specified row
     Edit(usize),
+    /// User clicked delete button for the specified row
     Delete(usize), 
+    /// User clicked save button for the specified row
     Save(usize),
+    /// User clicked cancel button for the specified row
     Cancel(usize),
 }
 
@@ -89,10 +99,15 @@ pub struct MaterialDataTable<'a> {
 
 #[derive(Clone, Debug)]
 pub struct DataTableColumn {
+    /// Display title for the column header
     pub title: String,
+    /// Fixed width of the column in pixels
     pub width: f32,
+    /// Whether the column contains numeric data (affects alignment and sorting)
     pub numeric: bool,
+    /// Whether this column can be sorted by clicking the header
     pub sortable: bool,
+    /// Current sort direction for this column (if sorted)
     pub sort_direction: Option<SortDirection>,
 }
 
@@ -751,7 +766,7 @@ impl<'a> MaterialDataTable<'a> {
                 // Row cells
                 for (cell_idx, cell_text) in row.cells.iter().enumerate() {
                     if let Some(column) = columns.get(cell_idx) {
-                        let cell_rect = Rect::from_min_size(
+                        let _cell_rect = Rect::from_min_size(
                             egui::pos2(current_x, current_y),
                             Vec2::new(column.width, row_height)
                         );
@@ -812,7 +827,7 @@ impl<'a> MaterialDataTable<'a> {
                             });
                         } else {
                             // Render normal text
-                            let text_align = if column.numeric {
+                            let _text_align = if column.numeric {
                                 egui::Align2::RIGHT_CENTER
                             } else {
                                 egui::Align2::LEFT_CENTER

@@ -2,8 +2,9 @@
 name = "egui-material"
 version = "0.0.1"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT or Apache-2.0"
+authors = ["Woojae Park <nikescar@gmail.com>"]
+description = "Material Design components for egui"
 
 [dependencies]
 egui = "0.32"

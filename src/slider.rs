@@ -2,17 +2,67 @@ use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget}
 use crate::get_global_color;
 use std::ops::RangeInclusive;
 
+/// Material Design slider component following Material Design 3 specifications
+///
+/// Sliders allow users to make selections from a range of values. They're ideal for
+/// adjusting settings such as volume, brightness, or applying image filters.
+///
+/// ## Usage Examples
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut volume = 50.0;
+/// let mut brightness = 75.0;
+/// 
+/// // Basic slider
+/// ui.add(MaterialSlider::new(&mut volume, 0.0..=100.0));
+/// 
+/// // Slider with label and custom width
+/// ui.add(MaterialSlider::new(&mut brightness, 0.0..=100.0)
+///     .text("Brightness")
+///     .width(200.0)
+///     .step(5.0));
+/// 
+/// // Slider without value display
+/// let mut opacity = 80.0;
+/// ui.add(MaterialSlider::new(&mut opacity, 0.0..=100.0)
+///     .text("Opacity")
+///     .show_value(false));
+/// # });
+/// ```
+///
+/// ## Material Design Spec
+/// - Track height: 4dp (active) / 2dp (inactive) 
+/// - Thumb diameter: 24dp (20dp when pressed)
+/// - Touch target: 48x48dp minimum
+/// - Corner radius: 2dp for track
+/// - Colors: Primary color for active portion, outline for inactive
+/// - Value indicators: Optional labels showing current value
 pub struct MaterialSlider<'a> {
+    /// Mutable reference to the slider value
     value: &'a mut f32,
+    /// Valid range of values for the slider
     range: RangeInclusive<f32>,
+    /// Optional text label displayed above the slider
     text: Option<String>,
+    /// Whether the slider is interactive (enabled/disabled)
     enabled: bool,
+    /// Custom width for the slider (None uses available width)
     width: Option<f32>,
+    /// Optional step increment for discrete values
     step: Option<f32>,
+    /// Whether to show the current value next to the slider
     show_value: bool,
 }
 
 impl<'a> MaterialSlider<'a> {
+    /// Create a new Material Design slider
+    /// 
+    /// ## Parameters
+    /// - `value`: Mutable reference to the current slider value
+    /// - `range`: Valid range of values (inclusive on both ends)
+    /// 
+    /// ## Returns
+    /// A new MaterialSlider instance with default settings
     pub fn new(value: &'a mut f32, range: RangeInclusive<f32>) -> Self {
         Self {
             value,
@@ -25,26 +75,57 @@ impl<'a> MaterialSlider<'a> {
         }
     }
 
+    /// Set optional text label for the slider
+    /// 
+    /// The label will be displayed above the slider to describe its purpose.
+    /// 
+    /// ## Parameters
+    /// - `text`: Label text to display above the slider
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
         self
     }
 
+    /// Set whether the slider is enabled or disabled
+    /// 
+    /// Disabled sliders cannot be interacted with and are visually dimmed.
+    /// 
+    /// ## Parameters
+    /// - `enabled`: True for interactive, false for disabled
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
+    /// Set custom width for the slider
+    /// 
+    /// If not specified, the slider will use all available horizontal space.
+    /// 
+    /// ## Parameters
+    /// - `width`: Width in pixels for the slider track
     pub fn width(mut self, width: f32) -> Self {
         self.width = Some(width);
         self
     }
 
+    /// Set step increment for discrete value changes
+    /// 
+    /// When specified, the slider will snap to multiples of this step value.
+    /// Useful for creating discrete sliders (e.g., step of 1 for integer values).
+    /// 
+    /// ## Parameters  
+    /// - `step`: Step increment value (e.g., 1.0 for integer steps)
     pub fn step(mut self, step: f32) -> Self {
         self.step = Some(step);
         self
     }
 
+    /// Set whether to display the current value
+    /// 
+    /// When enabled, shows the current numerical value next to the slider.
+    /// 
+    /// ## Parameters
+    /// - `show_value`: True to show value, false to hide it
     pub fn show_value(mut self, show_value: bool) -> Self {
         self.show_value = show_value;
         self
@@ -66,7 +147,7 @@ impl<'a> Widget for MaterialSlider<'a> {
 
         // Material Design colors
         let primary_color = get_global_color("primary");
-        let on_primary = get_global_color("onPrimary");
+        let _on_primary = get_global_color("onPrimary");
         let surface_variant = get_global_color("surfaceVariant");
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");

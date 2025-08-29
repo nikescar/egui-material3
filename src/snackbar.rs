@@ -42,6 +42,16 @@ pub enum SnackbarPosition {
 
 impl<'a> MaterialSnackbar<'a> {
     /// Create a new snackbar with a message.
+    ///
+    /// # Arguments
+    /// * `message` - The message text to display in the snackbar
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let snackbar = MaterialSnackbar::new("File saved successfully");
+    /// # });
+    /// ```
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
@@ -57,6 +67,18 @@ impl<'a> MaterialSnackbar<'a> {
     }
 
     /// Add an action button to the snackbar.
+    ///
+    /// # Arguments
+    /// * `text` - Text label for the action button
+    /// * `callback` - Function to execute when the button is clicked
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let snackbar = MaterialSnackbar::new("File deleted")
+    ///     .action("Undo", || println!("Undo action performed"));
+    /// # });
+    /// ```
     pub fn action<F>(mut self, text: impl Into<String>, callback: F) -> Self 
     where
         F: Fn() + Send + Sync + 'a,
@@ -67,31 +89,98 @@ impl<'a> MaterialSnackbar<'a> {
     }
 
     /// Set auto-dismiss duration. Set to None to disable auto-dismiss.
+    ///
+    /// # Arguments
+    /// * `duration` - How long to show the snackbar before auto-dismissing.
+    ///                Use `None` to disable auto-dismiss.
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::time::Duration;
+    /// # egui::__run_test_ui(|ui| {
+    /// // Auto-dismiss after 6 seconds
+    /// let snackbar = MaterialSnackbar::new("Custom timeout")
+    ///     .auto_dismiss(Some(Duration::from_secs(6)));
+    ///
+    /// // Never auto-dismiss
+    /// let persistent = MaterialSnackbar::new("Persistent message")
+    ///     .auto_dismiss(None);
+    /// # });
+    /// ```
     pub fn auto_dismiss(mut self, duration: Option<Duration>) -> Self {
         self.auto_dismiss = duration;
         self
     }
 
     /// Set the position of the snackbar.
+    ///
+    /// # Arguments
+    /// * `position` - Where to position the snackbar (Bottom or Top)
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let snackbar = MaterialSnackbar::new("Top notification")
+    ///     .position(SnackbarPosition::Top);
+    /// # });
+    /// ```
     pub fn position(mut self, position: SnackbarPosition) -> Self {
         self.position = position;
         self
     }
 
-    /// Set corner radius.
+    /// Set corner radius for rounded corners.
+    ///
+    /// # Arguments
+    /// * `corner_radius` - The corner radius value or CornerRadius struct
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let snackbar = MaterialSnackbar::new("Rounded snackbar")
+    ///     .corner_radius(8.0);
+    /// # });
+    /// ```
     pub fn corner_radius(mut self, corner_radius: impl Into<CornerRadius>) -> Self {
         self.corner_radius = corner_radius.into();
         self
     }
 
-    /// Set elevation shadow.
+    /// Set elevation shadow for the snackbar.
+    ///
+    /// # Arguments
+    /// * `elevation` - Shadow configuration for elevation effect
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// use egui::epaint::Shadow;
+    /// let shadow = Shadow::small_dark();
+    /// let snackbar = MaterialSnackbar::new("Elevated snackbar")
+    ///     .elevation(shadow);
+    /// # });
+    /// ```
     pub fn elevation(mut self, elevation: impl Into<Shadow>) -> Self {
         self.elevation = Some(elevation.into());
         self
     }
 
     /// Show the snackbar only if the condition is true.
-    /// This method manages the visibility state properly.
+    /// 
+    /// This method manages the visibility state properly and is useful for
+    /// toggling snackbar visibility based on application state.
+    ///
+    /// # Arguments
+    /// * `visible` - Mutable reference to a boolean controlling visibility
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut show_notification = true;
+    /// let snackbar = MaterialSnackbar::new("Conditional message")
+    ///     .show_if(&mut show_notification);
+    /// # });
+    /// ```
     pub fn show_if(mut self, visible: &mut bool) -> Self {
         self.visible = *visible;
         self
@@ -173,7 +262,7 @@ impl Widget for MaterialSnackbar<'_> {
             show_time: _,
             position,
             corner_radius,
-            elevation,
+            elevation: _,
         } = self;
 
         // Material Design spec dimensions and typography
@@ -230,7 +319,7 @@ impl Widget for MaterialSnackbar<'_> {
         let snackbar_size = Vec2::new(snackbar_width, snackbar_height);
         
         // Allocate the snackbar size first to ensure proper space allocation
-        let (allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
+        let (_allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
         
         // For positioning, use screen coordinates but respect the allocated space
         let screen_rect = ui.ctx().screen_rect();
@@ -374,7 +463,7 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             show_time: _,
             position,
             corner_radius,
-            elevation,
+            elevation: _,
         } = self.snackbar;
 
         // Material Design spec dimensions and typography
@@ -431,7 +520,7 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
         let snackbar_size = Vec2::new(snackbar_width, snackbar_height);
         
         // Allocate the snackbar size first to ensure proper space allocation
-        let (allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
+        let (_allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
         
         // For positioning, use screen coordinates with vertical offset for stacking
         let screen_rect = ui.ctx().screen_rect();

@@ -114,7 +114,7 @@ impl ProgressWindow {
         }
         
         if self.four_color {
-            progress = progress.four_color(true);
+            progress = progress.four_color_enabled(true);
         }
         
         ui.add(progress);
@@ -147,7 +147,7 @@ impl ProgressWindow {
         }
         
         if self.four_color {
-            progress = progress.four_color(true);
+            progress = progress.four_color_enabled(true);
         }
         
         ui.add(progress);

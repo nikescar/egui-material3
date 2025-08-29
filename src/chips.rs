@@ -1,36 +1,93 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget, TextureHandle};
 use crate::{get_global_color, image_utils};
 
+/// Material Design chip variants following Material Design 3 specifications
 #[derive(Clone, Copy, PartialEq)]
 pub enum ChipVariant {
+    /// Assist chips help users take actions or get information about their current context
     Assist,
+    /// Filter chips let users refine content by selecting or deselecting options
     Filter,
+    /// Input chips represent discrete pieces of information entered by a user
     Input,
+    /// Suggestion chips help users discover relevant, actionable content
     Suggestion,
 }
 
+/// Types of icons that can be displayed in chips
 #[derive(Clone)]
 pub enum IconType {
-    MaterialIcon(String),  // Material icon name/unicode
-    SvgData(String),      // SVG content
-    PngBytes(Vec<u8>),    // PNG image data
-    Texture(TextureHandle), // Pre-loaded texture
+    /// Material Design icon using icon name or unicode
+    MaterialIcon(String),
+    /// Custom SVG icon data
+    SvgData(String),
+    /// PNG image data as bytes
+    PngBytes(Vec<u8>),
+    /// Pre-loaded egui texture handle
+    Texture(TextureHandle),
 }
 
+/// Material Design chip component following Material Design 3 specifications
+/// 
+/// Chips are compact elements that represent an input, attribute, or action.
+/// They allow users to enter information, make selections, filter content, or trigger actions.
+/// 
+/// ## Usage Examples
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// // Assist chip - helps users with contextual actions
+/// if ui.add(MaterialChip::assist("Settings")).clicked() {
+///     // Open settings
+/// }
+/// 
+/// // Filter chip - for filtering content
+/// let mut filter_active = false;
+/// ui.add(MaterialChip::filter("Photos")
+///     .selected(&mut filter_active));
+/// 
+/// // Input chip - represents entered data
+/// ui.add(MaterialChip::input("john@example.com")
+///     .removable(true));
+/// 
+/// // Suggestion chip - suggests actions or content
+/// ui.add(MaterialChip::suggestion("Try this feature"));
+/// # });
+/// ```
+/// 
+/// ## Material Design Spec
+/// - Height: 32dp (standard) or 24dp (small)
+/// - Corner radius: 8dp (filter/input) or 16dp (assist/suggestion)
+/// - Text: Label Large (14sp/500 weight)
+/// - Touch target: Minimum 48x48dp
 pub struct MaterialChip<'a> {
+    /// Text content displayed on the chip
     text: String,
+    /// Which type of chip this is (affects styling and behavior)
     variant: ChipVariant,
+    /// Optional mutable reference to selection state (for filter chips)
     selected: Option<&'a mut bool>,
+    /// Whether the chip is interactive
     enabled: bool,
-    soft_disabled: bool, // soft-disabled has different coloring than disabled
+    /// Whether the chip is soft-disabled (different visual treatment)
+    soft_disabled: bool,
+    /// Whether the chip has elevation shadow
     elevated: bool,
+    /// Whether the chip can be removed (shows X icon)
     removable: bool,
+    /// Optional leading icon to display
     leading_icon: Option<IconType>,
-    avatar: bool, // true for avatar-style (more rounded), false for regular (less rounded)
+    /// Whether to use avatar-style rounded appearance
+    avatar: bool,
+    /// Optional action callback when chip is clicked
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
 impl<'a> MaterialChip<'a> {
+    /// Create a new chip with specified text and variant
+    /// 
+    /// ## Parameters
+    /// - `text`: Text to display on the chip
+    /// - `variant`: Type of chip (Assist, Filter, Input, Suggestion)
     pub fn new(text: impl Into<String>, variant: ChipVariant) -> Self {
         Self {
             text: text.into(),
@@ -46,29 +103,74 @@ impl<'a> MaterialChip<'a> {
         }
     }
 
+    /// Create an assist chip for contextual actions
+    /// 
+    /// Assist chips help users take actions or get information about their current context.
+    /// They should appear dynamically and contextually in the UI.
+    /// 
+    /// ## Material Design Usage
+    /// - Display contextually relevant actions
+    /// - Usually triggered by user actions or context changes  
+    /// - Should not be persistent in the interface
     pub fn assist(text: impl Into<String>) -> Self {
         Self::new(text, ChipVariant::Assist)
     }
 
+    /// Create a filter chip for content filtering
+    /// 
+    /// Filter chips are used for filtering content and are typically displayed in a set.
+    /// They can be selected/deselected to refine displayed content.
+    /// 
+    /// ## Parameters
+    /// - `text`: Label for the filter option
+    /// - `selected`: Mutable reference to selection state
+    /// 
+    /// ## Material Design Usage
+    /// - Group related filter options together
+    /// - Allow multiple selections for broad filtering
+    /// - Provide clear visual feedback for selected state
     pub fn filter(text: impl Into<String>, selected: &'a mut bool) -> Self {
         let mut chip = Self::new(text, ChipVariant::Filter);
         chip.selected = Some(selected);
         chip
     }
 
+    /// Create an input chip representing user-entered data
+    /// 
+    /// Input chips represent discrete pieces of information entered by a user,
+    /// such as tags, contacts, or other structured data.
+    /// 
+    /// ## Material Design Usage
+    /// - Represent complex entities in a compact form
+    /// - Often removable to allow editing of input data
+    /// - Used in forms and data entry interfaces
     pub fn input(text: impl Into<String>) -> Self {
         Self::new(text, ChipVariant::Input)
     }
 
+    /// Create a suggestion chip that provides actionable content suggestions
+    /// 
+    /// Suggestion chips are used to help users discover relevant actions or content.
+    /// They can be used in conjunction with dynamic features like autocomplete or
+    /// content recommendations.
     pub fn suggestion(text: impl Into<String>) -> Self {
         Self::new(text, ChipVariant::Suggestion)
     }
 
+    /// Set whether the chip should have elevation (shadow) effect
+    /// 
+    /// Elevated chips have a surface-container-high background and a shadow
+    /// to indicate elevation. This is typically used for assist and suggestion chips.
     pub fn elevated(mut self, elevated: bool) -> Self {
         self.elevated = elevated;
         self
     }
 
+    /// Enable or disable the chip
+    /// 
+    /// Disabled chips have a different visual treatment and do not respond to
+    /// user interactions. Soft-disabled chips are still visible but appear
+    /// with reduced opacity.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         if enabled {
@@ -77,6 +179,11 @@ impl<'a> MaterialChip<'a> {
         self
     }
 
+    /// Set the chip as soft-disabled
+    /// 
+    /// Soft-disabled chips have a different visual treatment (e.g., lighter opacity)
+    /// compared to hard-disabled chips. They are still interactive but indicate
+    /// that the action is unavailable.
     pub fn soft_disabled(mut self, soft_disabled: bool) -> Self {
         self.soft_disabled = soft_disabled;
         if soft_disabled {
@@ -85,36 +192,66 @@ impl<'a> MaterialChip<'a> {
         self
     }
 
+    /// Set whether the chip can be removed
+    /// 
+    /// Removable chips show an X icon that allows users to remove the chip
+    /// from the UI. This is useful for input and filter chips.
     pub fn removable(mut self, removable: bool) -> Self {
         self.removable = removable;
         self
     }
 
+    /// Set a leading icon for the chip using a Material icon name
+    /// 
+    /// The icon will be displayed on the left side of the chip's text.
+    /// This is commonly used for assist and filter chips.
     pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
         self.leading_icon = Some(IconType::MaterialIcon(icon.into()));
         self
     }
 
+    /// Set a leading icon for the chip using SVG data
+    /// 
+    /// The SVG data will be converted to a texture and displayed on the left
+    /// side of the chip's text. This allows for custom icons with scalable
+    /// vector graphics.
     pub fn leading_icon_svg(mut self, svg_data: impl Into<String>) -> Self {
         self.leading_icon = Some(IconType::SvgData(svg_data.into()));
         self
     }
 
+    /// Set a leading icon for the chip using PNG image data
+    /// 
+    /// The PNG image data will be converted to a texture and displayed on the left
+    /// side of the chip's text. This is useful for using raster images as icons.
     pub fn leading_icon_png(mut self, png_bytes: Vec<u8>) -> Self {
         self.leading_icon = Some(IconType::PngBytes(png_bytes));
         self
     }
 
+    /// Set a pre-loaded texture as the leading icon for the chip
+    /// 
+    /// This allows using any texture as an icon, without the need to convert
+    /// from image data. The texture should be created and managed externally.
     pub fn leading_icon_texture(mut self, texture: TextureHandle) -> Self {
         self.leading_icon = Some(IconType::Texture(texture));
         self
     }
 
+    /// Set whether to use avatar-style rounded appearance for the chip
+    /// 
+    /// Avatar-style chips have a more pronounced roundness, making them suitable
+    /// for representing users or profile-related content. Regular chips are more
+    /// rectangular.
     pub fn avatar(mut self, avatar: bool) -> Self {
         self.avatar = avatar;
         self
     }
 
+    /// Set a callback function to be called when the chip is clicked
+    /// 
+    /// This allows defining custom actions for each chip, such as navigating to
+    /// a different view, opening a dialog, or triggering any other behavior.
     pub fn on_click<F>(mut self, f: F) -> Self 
     where
         F: Fn() + 'a,

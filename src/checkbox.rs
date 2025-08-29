@@ -1,14 +1,56 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::get_global_color;
 
+/// Material Design checkbox component following Material Design 3 specifications
+/// 
+/// Provides a checkbox with three states: checked, unchecked, and indeterminate.
+/// Follows Material Design guidelines for colors, sizing, and interaction states.
+/// 
+/// ## Usage Examples
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut checked = false;
+/// 
+/// // Basic checkbox
+/// ui.add(MaterialCheckbox::new(&mut checked, "Accept terms"));
+/// 
+/// // Checkbox with indeterminate state
+/// let mut partial_checked = false;
+/// ui.add(MaterialCheckbox::new(&mut partial_checked, "Select all")
+///     .indeterminate(true));
+/// 
+/// // Disabled checkbox
+/// let mut disabled_checked = false;  
+/// ui.add(MaterialCheckbox::new(&mut disabled_checked, "Disabled option")
+///     .enabled(false));
+/// # });
+/// ```
+/// 
+/// ## Material Design Spec
+/// - Size: 18x18dp checkbox with 40x40dp touch target
+/// - Colors: Primary color when checked, outline when unchecked
+/// - Animation: 150ms cubic-bezier transition
+/// - States: Normal, hover, focus, pressed, disabled
 pub struct MaterialCheckbox<'a> {
+    /// Mutable reference to the checked state
     checked: &'a mut bool,
+    /// Text label displayed next to the checkbox
     text: String,
+    /// Whether the checkbox is in indeterminate state (partially checked)
     indeterminate: bool,
+    /// Whether the checkbox is interactive (enabled/disabled)
     enabled: bool,
 }
 
 impl<'a> MaterialCheckbox<'a> {
+    /// Create a new Material Design checkbox
+    /// 
+    /// ## Parameters
+    /// - `checked`: Mutable reference to boolean state
+    /// - `text`: Label text displayed next to checkbox
+    /// 
+    /// ## Returns
+    /// A new MaterialCheckbox instance with default settings
     pub fn new(checked: &'a mut bool, text: impl Into<String>) -> Self {
         Self {
             checked,
@@ -18,11 +60,24 @@ impl<'a> MaterialCheckbox<'a> {
         }
     }
 
+    /// Set the indeterminate state of the checkbox
+    /// 
+    /// Indeterminate checkboxes are used when the checkbox represents
+    /// a collection of items where some, but not all, are selected.
+    /// 
+    /// ## Parameters  
+    /// - `indeterminate`: True for indeterminate state, false for normal
     pub fn indeterminate(mut self, indeterminate: bool) -> Self {
         self.indeterminate = indeterminate;
         self
     }
 
+    /// Set whether the checkbox is enabled or disabled
+    /// 
+    /// Disabled checkboxes cannot be interacted with and are visually dimmed.
+    /// 
+    /// ## Parameters
+    /// - `enabled`: True for interactive, false for disabled
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
@@ -47,7 +102,7 @@ impl<'a> Widget for MaterialCheckbox<'a> {
             response.mark_changed();
         }
 
-        let visuals = ui.style().interact(&response);
+        let _visuals = ui.style().interact(&response);
         let checkbox_size = 18.0;
         let checkbox_rect = Rect::from_min_size(
             Pos2::new(rect.min.x, rect.center().y - checkbox_size / 2.0),

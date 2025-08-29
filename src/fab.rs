@@ -2,46 +2,108 @@ use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget}
 use crate::get_global_color;
 use crate::icon::MaterialIcon;
 
+/// Material Design FAB (Floating Action Button) variants
 #[derive(Clone, Copy, PartialEq)]
 pub enum FabVariant {
+    /// Surface FAB - uses surface colors for neutral actions
     Surface,
+    /// Primary FAB - uses primary colors for main actions (most common)
     Primary,
-    Secondary,
+    /// Secondary FAB - uses secondary colors for secondary actions
+    Secondary, 
+    /// Tertiary FAB - uses tertiary colors for alternative actions
     Tertiary,
+    /// Branded FAB - uses custom brand colors
     Branded,
 }
 
+/// Material Design FAB sizes following Material Design 3 specifications
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FabSize {
+    /// Small FAB - 40x40dp, used in compact layouts
     Small,
+    /// Regular FAB - 56x56dp, the standard size
     Regular,
+    /// Large FAB - 96x96dp, used for prominent actions
     Large,
+    /// Extended FAB - Variable width with text, at least 80dp wide
     Extended,
 }
 
+/// Material Design Floating Action Button (FAB) component
+///
+/// FABs help users take primary actions within an app. They appear in front of all screen content,
+/// typically as a circular button with an icon in the center.
+///
+/// ## Usage Examples
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// // Primary FAB with add icon
+/// ui.add(MaterialFab::primary()
+///     .icon("add")
+///     .action(|| println!("Add clicked")));
+/// 
+/// // Extended FAB with text
+/// ui.add(MaterialFab::primary()
+///     .size(FabSize::Extended)
+///     .icon("edit")
+///     .text("Compose")
+///     .action(|| println!("Compose clicked")));
+/// 
+/// // Large FAB for prominent action
+/// ui.add(MaterialFab::primary()
+///     .size(FabSize::Large)
+///     .icon("camera")
+///     .action(|| println!("Camera clicked")));
+/// # });
+/// ```
+///
+/// ## Material Design Spec
+/// - Elevation: 6dp (raised above content)
+/// - Corner radius: 50% (fully rounded)
+/// - Sizes: Small (40dp), Regular (56dp), Large (96dp), Extended (≥80dp)
+/// - Icon size: 24dp for regular, 32dp for large
+/// - Placement: 16dp from screen edge, above navigation bars
 pub struct MaterialFab<'a> {
+    /// Color variant of the FAB
     variant: FabVariant,
+    /// Size of the FAB
     size: FabSize,
+    /// Material Design icon name
     icon: Option<String>,
+    /// Text content (for extended FABs)
     text: Option<String>,
+    /// Custom SVG icon data
     svg_icon: Option<SvgIcon>,
+    /// Whether the FAB is interactive
     enabled: bool,
+    /// Action callback when FAB is pressed
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
+/// SVG icon data for custom FAB icons
 #[derive(Clone)]
 pub struct SvgIcon {
+    /// Vector of SVG paths that make up the icon
     pub paths: Vec<SvgPath>,
+    /// Viewbox dimensions of the SVG
     pub viewbox_size: Vec2,
 }
 
+/// Individual SVG path with styling
 #[derive(Clone)]
 pub struct SvgPath {
+    /// SVG path data string
     pub path: String,
+    /// Fill color for the path
     pub fill: Color32,
 }
 
 impl<'a> MaterialFab<'a> {
+    /// Create a new FAB with the specified variant
+    ///
+    /// ## Parameters
+    /// - `variant`: The color variant to use for the FAB
     pub fn new(variant: FabVariant) -> Self {
         Self {
             variant,
@@ -54,58 +116,70 @@ impl<'a> MaterialFab<'a> {
         }
     }
 
+    /// Create a surface FAB
     pub fn surface() -> Self {
         Self::new(FabVariant::Surface)
     }
 
+    /// Create a primary FAB
     pub fn primary() -> Self {
         Self::new(FabVariant::Primary)
     }
 
+    /// Create a secondary FAB
     pub fn secondary() -> Self {
         Self::new(FabVariant::Secondary)
     }
 
+    /// Create a tertiary FAB
     pub fn tertiary() -> Self {
         Self::new(FabVariant::Tertiary)
     }
 
+    /// Create a branded FAB
     pub fn branded() -> Self {
         Self::new(FabVariant::Branded)
     }
 
+    /// Set the size of the FAB
     pub fn size(mut self, size: FabSize) -> Self {
         self.size = size;
         self
     }
 
+    /// Set the icon of the FAB
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
         self.icon = Some(icon.into());
         self
     }
 
+    /// Set the text of the FAB (for extended FABs)
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
         self.size = FabSize::Extended;
         self
     }
 
+    /// Enable or disable the FAB
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
+    /// Set the lowered state of the FAB (elevation effect)
     pub fn lowered(self, _lowered: bool) -> Self {
         // Placeholder for lowered state (elevation effect)
         // In a real implementation, this would affect the visual elevation
         self
     }
 
+    /// Set a custom SVG icon for the FAB
     pub fn svg_icon(mut self, svg_icon: SvgIcon) -> Self {
         self.svg_icon = Some(svg_icon);
         self
     }
 
+    /// Set the action to perform when the FAB is clicked
     pub fn on_click<F>(mut self, f: F) -> Self
     where
         F: Fn() + 'a,
@@ -268,7 +342,7 @@ impl<'a> Widget for MaterialFab<'a> {
             FabSize::Extended => {
                 // Draw icon and text with proper spacing
                 let left_margin = 16.0;
-                let right_margin = 24.0;
+                let _right_margin = 24.0;
                 let icon_text_gap = 12.0;
                 let mut content_x = rect.min.x + left_margin;
                 

@@ -634,7 +634,7 @@ impl DrawerWindow {
                                     ui.add_space(16.0);
                                     
                                     // Scrollable content area - constrained to available height
-                                    let header_height = 80.0; // Approximate height of header section
+                                    let _header_height = 80.0; // Approximate height of header section
                                     let button_height = 40.0; // Height for close button
                                     let available_height = ui.available_height() - button_height - 20.0; // Reserve space for button and padding
                                     

@@ -1,25 +1,70 @@
 use crate::theme::get_global_color;
 use eframe::egui::{self, Color32, FontFamily, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
+/// Material Design select/dropdown component.
+///
+/// Select components allow users to choose one option from a list.
+/// They display the currently selected option in a text field-style input
+/// and show all options in a dropdown menu when activated.
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut selected = Some(1);
+/// 
+/// ui.add(MaterialSelect::new(&mut selected)
+///     .placeholder("Choose an option")
+///     .option(0, "Option 1")
+///     .option(1, "Option 2")
+///     .option(2, "Option 3")
+///     .helper_text("Select your preferred option"));
+/// # });
+/// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialSelect<'a> {
+    /// Reference to the currently selected option
     selected: &'a mut Option<usize>,
+    /// List of available options
     options: Vec<SelectOption>,
+    /// Placeholder text when no option is selected
     placeholder: String,
+    /// Whether the select is enabled for interaction
     enabled: bool,
+    /// Fixed width of the select component
     width: Option<f32>,
+    /// Error message to display below the select
     error_text: Option<String>,
+    /// Helper text to display below the select
     helper_text: Option<String>,
+    /// Icon to show at the start of the select field
     leading_icon: Option<String>,
+    /// Icon to show at the end of the select field (overrides default dropdown arrow)
     trailing_icon: Option<String>,
+    /// Whether to keep the dropdown open after selecting an option
     keep_open_on_select: bool,
 }
 
+/// Individual option in a select component.
 pub struct SelectOption {
+    /// Unique identifier for this option
     value: usize,
+    /// Display text for this option
     text: String,
 }
 
 impl<'a> MaterialSelect<'a> {
+    /// Create a new select component.
+    ///
+    /// # Arguments
+    /// * `selected` - Mutable reference to the currently selected option value
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// let select = MaterialSelect::new(&mut selection);
+    /// # });
+    /// ```
     pub fn new(selected: &'a mut Option<usize>) -> Self {
         Self {
             selected,
@@ -35,6 +80,21 @@ impl<'a> MaterialSelect<'a> {
         }
     }
 
+    /// Add an option to the select component.
+    ///
+    /// # Arguments
+    /// * `value` - Unique identifier for this option
+    /// * `text` - Display text for this option
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .option(1, "First Option")
+    ///     .option(2, "Second Option"));
+    /// # });
+    /// ```
     pub fn option(mut self, value: usize, text: impl Into<String>) -> Self {
         self.options.push(SelectOption {
             value,
@@ -43,41 +103,146 @@ impl<'a> MaterialSelect<'a> {
         self
     }
 
+    /// Set placeholder text shown when no option is selected.
+    ///
+    /// # Arguments
+    /// * `placeholder` - The placeholder text to display
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .placeholder("Choose your option"));
+    /// # });
+    /// ```
     pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Enable or disable the select component.
+    ///
+    /// # Arguments
+    /// * `enabled` - Whether the select should be enabled (true) or disabled (false)
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .enabled(false)); // Disabled select
+    /// # });
+    /// ```
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
+    /// Set a fixed width for the select component.
+    ///
+    /// # Arguments
+    /// * `width` - The width in pixels
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .width(300.0)); // Fixed width of 300 pixels
+    /// # });
+    /// ```
     pub fn width(mut self, width: f32) -> Self {
         self.width = Some(width);
         self
     }
 
+    /// Set error text to display below the select component.
+    ///
+    /// # Arguments
+    /// * `text` - The error message text
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .error_text("This field is required")); // Error message
+    /// # });
+    /// ```
     pub fn error_text(mut self, text: impl Into<String>) -> Self {
         self.error_text = Some(text.into());
         self
     }
 
+    /// Set helper text to display below the select component.
+    ///
+    /// # Arguments
+    /// * `text` - The helper message text
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .helper_text("Select an option from the list")); // Helper text
+    /// # });
+    /// ```
     pub fn helper_text(mut self, text: impl Into<String>) -> Self {
         self.helper_text = Some(text.into());
         self
     }
 
+    /// Set an icon to display at the start of the select field.
+    ///
+    /// # Arguments
+    /// * `icon` - The icon identifier (e.g., "home", "settings")
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .leading_icon("settings")); // Gear icon on the left
+    /// # });
+    /// ```
     pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
         self.leading_icon = Some(icon.into());
         self
     }
 
+    /// Set an icon to display at the end of the select field (overrides default dropdown arrow).
+    ///
+    /// # Arguments
+    /// * `icon` - The icon identifier (e.g., "check", "close")
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .trailing_icon("check")); // Check icon on the right
+    /// # });
+    /// ```
     pub fn trailing_icon(mut self, icon: impl Into<String>) -> Self {
         self.trailing_icon = Some(icon.into());
         self
     }
 
+    /// Set whether to keep the dropdown open after selecting an option.
+    ///
+    /// # Arguments
+    /// * `keep_open` - If true, the dropdown remains open after selection;
+    ///                 if false, it closes (default behavior)
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .keep_open_on_select(true)); // Dropdown stays open after selection
+    /// # });
+    /// ```
     pub fn keep_open_on_select(mut self, keep_open: bool) -> Self {
         self.keep_open_on_select = keep_open;
         self
@@ -437,6 +602,22 @@ impl<'a> Widget for MaterialSelect<'a> {
     }
 }
 
+/// Convenience function to create a select component.
+///
+/// Shorthand for `MaterialSelect::new()`.
+///
+/// # Arguments
+/// * `selected` - Mutable reference to the currently selected option value
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut selection = Some(1);
+/// ui.add(select(&mut selection)
+///     .option(0, "Option 1")
+///     .option(1, "Option 2"));
+/// # });
+/// ```
 pub fn select<'a>(selected: &'a mut Option<usize>) -> MaterialSelect<'a> {
     MaterialSelect::new(selected)
 }

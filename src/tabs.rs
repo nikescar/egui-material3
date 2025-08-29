@@ -1,26 +1,67 @@
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::get_global_color;
 
+/// Material Design tabs component.
+///
+/// Tabs organize content across different screens, data sets, and other interactions.
+/// They allow users to navigate between related groups of content.
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut selected_tab = 0;
+/// 
+/// ui.add(MaterialTabs::primary(&mut selected_tab)
+///     .tab("Home")
+///     .tab("Profile")
+///     .tab("Settings"));
+/// # });
+/// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialTabs<'a> {
+    /// Reference to the currently selected tab index
     selected: &'a mut usize,
+    /// List of tab items
     tabs: Vec<TabItem>,
+    /// Whether the tabs are enabled for interaction
     enabled: bool,
+    /// Visual variant of the tabs (primary or secondary)
     variant: TabVariant,
+    /// Optional salt for generating unique IDs
     id_salt: Option<String>,
 }
 
+/// Individual tab item data.
 pub struct TabItem {
+    /// Display label for the tab
     label: String,
+    /// Optional icon for the tab
     icon: Option<String>,
 }
 
+/// Visual variants for tabs component.
 #[derive(Clone, Copy, PartialEq)]
 pub enum TabVariant {
+    /// Primary tabs (filled background, more prominent)
     Primary,
+    /// Secondary tabs (outlined style, less prominent)
     Secondary,
 }
 
 impl<'a> MaterialTabs<'a> {
+    /// Create a new tabs component.
+    ///
+    /// # Arguments
+    /// * `selected` - Mutable reference to the currently selected tab index
+    /// * `variant` - Visual variant (Primary or Secondary)
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// let tabs = MaterialTabs::new(&mut tab_index, TabVariant::Primary);
+    /// # });
+    /// ```
     pub fn new(selected: &'a mut usize, variant: TabVariant) -> Self {
         Self {
             selected,
@@ -31,14 +72,56 @@ impl<'a> MaterialTabs<'a> {
         }
     }
 
+    /// Create a primary tabs component.
+    ///
+    /// Primary tabs have a filled background and are more prominent.
+    ///
+    /// # Arguments
+    /// * `selected` - Mutable reference to the currently selected tab index
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// let tabs = MaterialTabs::primary(&mut tab_index);
+    /// # });
+    /// ```
     pub fn primary(selected: &'a mut usize) -> Self {
         Self::new(selected, TabVariant::Primary)
     }
 
+    /// Create a secondary tabs component.
+    ///
+    /// Secondary tabs have an outlined style and are less prominent than primary tabs.
+    ///
+    /// # Arguments
+    /// * `selected` - Mutable reference to the currently selected tab index
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// let tabs = MaterialTabs::secondary(&mut tab_index);
+    /// # });
+    /// ```
     pub fn secondary(selected: &'a mut usize) -> Self {
         Self::new(selected, TabVariant::Secondary)
     }
 
+    /// Add a tab with just a text label.
+    ///
+    /// # Arguments
+    /// * `label` - Text label for the tab
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// ui.add(MaterialTabs::primary(&mut tab_index)
+    ///     .tab("Home")
+    ///     .tab("About"));
+    /// # });
+    /// ```
     pub fn tab(mut self, label: impl Into<String>) -> Self {
         self.tabs.push(TabItem {
             label: label.into(),
@@ -47,6 +130,21 @@ impl<'a> MaterialTabs<'a> {
         self
     }
 
+    /// Add a tab with both an icon and text label.
+    ///
+    /// # Arguments
+    /// * `label` - Text label for the tab
+    /// * `icon` - Icon identifier (e.g., "home", "person", "settings")
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// ui.add(MaterialTabs::primary(&mut tab_index)
+    ///     .tab_with_icon("Home", "home")
+    ///     .tab_with_icon("Profile", "person"));
+    /// # });
+    /// ```
     pub fn tab_with_icon(mut self, label: impl Into<String>, icon: impl Into<String>) -> Self {
         self.tabs.push(TabItem {
             label: label.into(),
@@ -55,11 +153,45 @@ impl<'a> MaterialTabs<'a> {
         self
     }
 
+    /// Set whether the tabs are enabled for interaction.
+    ///
+    /// # Arguments
+    /// * `enabled` - `true` to enable tabs, `false` to disable
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// ui.add(MaterialTabs::primary(&mut tab_index)
+    ///     .tab("Home")
+    ///     .tab("Profile")
+    ///     .tab("Settings")
+    ///     .enabled(false));
+    /// # });
+    /// ```
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
+    /// Set an optional salt for generating unique IDs for the tabs.
+    ///
+    /// This is useful if you have multiple instances of tabs and want to avoid ID collisions.
+    ///
+    /// # Arguments
+    /// * `salt` - Salt string to use in ID generation
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// ui.add(MaterialTabs::primary(&mut tab_index)
+    ///     .tab("Home")
+    ///     .tab("Profile")
+    ///     .tab("Settings")
+    ///     .id_salt("unique_salt"));
+    /// # });
+    /// ```
     pub fn id_salt(mut self, salt: impl Into<String>) -> Self {
         self.id_salt = Some(salt.into());
         self
@@ -230,10 +362,42 @@ impl<'a> Widget for MaterialTabs<'a> {
     }
 }
 
+/// Convenience function to create primary tabs.
+///
+/// Shorthand for `MaterialTabs::primary()`.
+///
+/// # Arguments
+/// * `selected` - Mutable reference to the currently selected tab index
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut tab_index = 0;
+/// ui.add(tabs_primary(&mut tab_index)
+///     .tab("Tab 1")
+///     .tab("Tab 2"));
+/// # });
+/// ```
 pub fn tabs_primary<'a>(selected: &'a mut usize) -> MaterialTabs<'a> {
     MaterialTabs::primary(selected)
 }
 
+/// Convenience function to create secondary tabs.
+///
+/// Shorthand for `MaterialTabs::secondary()`.
+///
+/// # Arguments
+/// * `selected` - Mutable reference to the currently selected tab index
+///
+/// # Example
+/// ```rust
+/// # egui::__run_test_ui(|ui| {
+/// let mut tab_index = 0;
+/// ui.add(tabs_secondary(&mut tab_index)
+///     .tab("Tab 1")
+///     .tab("Tab 2"));
+/// # });
+/// ```
 pub fn tabs_secondary<'a>(selected: &'a mut usize) -> MaterialTabs<'a> {
     MaterialTabs::secondary(selected)
 }
