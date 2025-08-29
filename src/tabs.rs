@@ -6,6 +6,7 @@ pub struct MaterialTabs<'a> {
     tabs: Vec<TabItem>,
     enabled: bool,
     variant: TabVariant,
+    id_salt: Option<String>,
 }
 
 pub struct TabItem {
@@ -26,6 +27,7 @@ impl<'a> MaterialTabs<'a> {
             tabs: Vec::new(),
             enabled: true,
             variant,
+            id_salt: None,
         }
     }
 
@@ -55,6 +57,11 @@ impl<'a> MaterialTabs<'a> {
 
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    pub fn id_salt(mut self, salt: impl Into<String>) -> Self {
+        self.id_salt = Some(salt.into());
         self
     }
 }
@@ -89,9 +96,16 @@ impl<'a> Widget for MaterialTabs<'a> {
                 Vec2::new(tab_width, tab_height),
             );
 
+            // Create unique ID for each tab using optional salt
+            let tab_id = if let Some(ref salt) = self.id_salt {
+                egui::Id::new((salt, "tab", index))
+            } else {
+                egui::Id::new(("tab", index))
+            };
+            
             let tab_response = ui.interact(
                 tab_rect,
-                egui::Id::new(("tab", index)),
+                tab_id,
                 Sense::click(),
             );
 

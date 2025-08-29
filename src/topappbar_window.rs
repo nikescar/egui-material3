@@ -46,7 +46,7 @@ impl TopAppBarWindow {
             ui.horizontal(|ui| {
                 ui.heading("Top App Bar Controls");
                 if ui.button("Target").clicked() {
-                    let _ = webbrowser::open("https://material-web.dev/components/top-app-bar/stories/");
+                    let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/top-app-bar");
                 }
             });
 
@@ -75,6 +75,7 @@ impl TopAppBarWindow {
         ui.label("Standard app bar with consistent height and surface color.");
         
         let mut regular_bar = top_app_bar(&self.title_text)
+            .id_salt("regular_topappbar")
             .scrolled(self.is_scrolled);
             
         if self.use_custom_height {
@@ -88,7 +89,8 @@ impl TopAppBarWindow {
         if self.show_actions {
             regular_bar = regular_bar
                 .action_icon("search", || println!("Search clicked!"))
-                .action_icon("favorite", || println!("Favorite clicked!"))
+                .action_icon("notifications", || println!("Notifications clicked!"))
+                .action_icon("account_circle", || println!("Account clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
         
@@ -100,6 +102,7 @@ impl TopAppBarWindow {
         ui.label("App bar with centered title, typically used for simple layouts.");
         
         let mut center_bar = center_aligned_top_app_bar(&self.title_text)
+            .id_salt("center_topappbar")
             .scrolled(self.is_scrolled);
             
         if self.use_custom_height {
@@ -113,6 +116,7 @@ impl TopAppBarWindow {
         if self.show_actions {
             center_bar = center_bar
                 .action_icon("share", || println!("Share clicked!"))
+                .action_icon("favorite", || println!("Favorite clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
         
@@ -124,6 +128,7 @@ impl TopAppBarWindow {
         ui.label("Taller app bar with title at the bottom, provides more visual weight.");
         
         let mut medium_bar = medium_top_app_bar(&self.title_text)
+            .id_salt("medium_topappbar")
             .scrolled(self.is_scrolled);
             
         if self.show_navigation {
@@ -133,6 +138,7 @@ impl TopAppBarWindow {
         if self.show_actions {
             medium_bar = medium_bar
                 .action_icon("search", || println!("Search clicked!"))
+                .action_icon("settings", || println!("Settings clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
         
@@ -144,6 +150,7 @@ impl TopAppBarWindow {
         ui.label("Tallest app bar variant, creates strong visual hierarchy.");
         
         let mut large_bar = large_top_app_bar(&self.title_text)
+            .id_salt("large_topappbar")
             .scrolled(self.is_scrolled);
             
         if self.show_navigation {
@@ -154,6 +161,7 @@ impl TopAppBarWindow {
             large_bar = large_bar
                 .action_icon("search", || println!("Search clicked!"))
                 .action_icon("favorite", || println!("Favorite clicked!"))
+                .action_icon("share", || println!("Share clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
         
@@ -179,8 +187,10 @@ impl TopAppBarWindow {
         
         // Demo with different contexts
         let demo_bar = top_app_bar("Demo App")
+            .id_salt("demo_topappbar")
             .navigation_icon("menu", || println!("Demo: Menu clicked!"))
             .action_icon("notifications", || println!("Demo: Notifications clicked!"))
+            .action_icon("settings", || println!("Demo: Settings clicked!"))
             .action_icon("account_circle", || println!("Demo: Account clicked!"))
             .scrolled(self.is_scrolled);
         

@@ -7,21 +7,59 @@ pub struct ImageListWindow {
     text_protected: bool,
     show_supporting_text: bool,
     item_spacing: f32,
+    // Dynamic image list for interactive demo
+    dynamic_images: Vec<DynamicImageItem>,
+    next_image_id: usize,
+}
+
+#[derive(Clone)]
+struct DynamicImageItem {
+    id: usize,
+    label: String,
+    image_source: String,
 }
 
 impl Default for ImageListWindow {
     fn default() -> Self {
+        // Initialize with some default images
+        let mut dynamic_images = Vec::new();
+        for i in 1..=8 {
+            dynamic_images.push(DynamicImageItem {
+                id: i,
+                label: format!("Photo {:03}", i),
+                image_source: format!("photo{}.jpg", i),
+            });
+        }
+        
         Self {
             open: false,
             columns: 3,
             text_protected: false,
             show_supporting_text: true,
             item_spacing: 8.0,
+            dynamic_images,
+            next_image_id: 9,
         }
     }
 }
 
 impl ImageListWindow {
+    fn add_image(&mut self) {
+        let new_image = DynamicImageItem {
+            id: self.next_image_id,
+            label: format!("Photo {:03}", self.next_image_id),
+            image_source: format!("photo{}.jpg", self.next_image_id),
+        };
+        self.dynamic_images.push(new_image);
+        self.next_image_id += 1;
+    }
+    
+    fn remove_image(&mut self) {
+        if !self.dynamic_images.is_empty() {
+            self.dynamic_images.pop();
+        }
+    }
+    
     pub fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         Window::new("Image List Stories")
@@ -69,6 +107,7 @@ impl ImageListWindow {
         ui.label("Images displayed in a regular grid with consistent sizing.");
         
         let standard_list = image_list()
+            .id_salt("standard_imagelist")
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
@@ -94,6 +133,7 @@ impl ImageListWindow {
         ui.label("Images with varying heights creating a masonry layout.");
         
         let masonry_list = masonry_image_list()
+            .id_salt("masonry_imagelist")
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
@@ -112,6 +152,7 @@ impl ImageListWindow {
         ui.label("Images arranged in a woven pattern with varied sizing.");
         
         let woven_list = woven_image_list()
+            .id_salt("woven_imagelist")
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
@@ -130,10 +171,10 @@ impl ImageListWindow {
         
         ui.horizontal(|ui| {
             if ui.add(MaterialButton::filled("Add Image")).clicked() {
-                println!("Add image clicked!");
+                self.add_image();
             }
             if ui.add(MaterialButton::outlined("Remove Image")).clicked() {
-                println!("Remove image clicked!");
+                self.remove_image();
             }
             if ui.add(MaterialButton::text("Select All")).clicked() {
                 println!("Select all clicked!");
@@ -142,18 +183,22 @@ impl ImageListWindow {
 
         ui.add_space(10.0);
         
-        let interactive_list = image_list()
+        let mut interactive_list = image_list()
+            .id_salt("interactive_imagelist")
             .columns(4)
             .item_spacing(self.item_spacing)
-            .text_protected(true)
-            .item_with_callback("Photo 001", "photo1.jpg", || println!("Photo 001 selected!"))
-            .item_with_callback("Photo 002", "photo2.jpg", || println!("Photo 002 selected!"))
-            .item_with_callback("Photo 003", "photo3.jpg", || println!("Photo 003 selected!"))
-            .item_with_callback("Photo 004", "photo4.jpg", || println!("Photo 004 selected!"))
-            .item_with_callback("Photo 005", "photo5.jpg", || println!("Photo 005 selected!"))
-            .item_with_callback("Photo 006", "photo6.jpg", || println!("Photo 006 selected!"))
-            .item_with_callback("Photo 007", "photo7.jpg", || println!("Photo 007 selected!"))
-            .item_with_callback("Photo 008", "photo8.jpg", || println!("Photo 008 selected!"));
+            .text_protected(true);
+            
+        // Add dynamic images from vector
+        for image in &self.dynamic_images {
+            let label = image.label.clone();
+            let image_source = image.image_source.clone();
+            interactive_list = interactive_list.item_with_callback(
+                label.clone(),
+                image_source,
+                move || println!("{} selected!", label)
+            );
+        }
         
         ui.add(interactive_list);
 

@@ -39,6 +39,7 @@ pub struct MaterialTopAppBar<'a> {
     corner_radius: CornerRadius,
     elevation: Option<Shadow>,
     scrolled: bool,
+    id_salt: Option<String>,
 }
 
 impl<'a> MaterialTopAppBar<'a> {
@@ -78,6 +79,7 @@ impl<'a> MaterialTopAppBar<'a> {
             corner_radius: CornerRadius::ZERO,
             elevation: None,
             scrolled: false,
+            id_salt: None,
         }
     }
 
@@ -120,6 +122,12 @@ impl<'a> MaterialTopAppBar<'a> {
     /// Set scrolled state (affects elevation).
     pub fn scrolled(mut self, scrolled: bool) -> Self {
         self.scrolled = scrolled;
+        self
+    }
+
+    /// Set unique ID salt to prevent ID clashes.
+    pub fn id_salt(mut self, salt: impl Into<String>) -> Self {
+        self.id_salt = Some(salt.into());
         self
     }
 
@@ -175,6 +183,7 @@ impl Widget for MaterialTopAppBar<'_> {
             corner_radius,
             elevation,
             scrolled,
+            id_salt,
         } = self;
 
         let desired_size = Vec2::new(ui.available_width(), height);
@@ -210,13 +219,18 @@ impl Widget for MaterialTopAppBar<'_> {
             let icon_y = rect.min.y + (64.0 - icon_total_size) / 2.0; // Always center in top 64px
 
             // Draw navigation icon
-            if let Some((_, nav_callback)) = navigation_icon {
+            if let Some((nav_icon, nav_callback)) = navigation_icon {
                 let nav_rect = Rect::from_min_size(
                     egui::pos2(left_x, icon_y),
                     Vec2::splat(icon_total_size)
                 );
                 
-                let nav_response = ui.interact(nav_rect, ui.next_auto_id(), Sense::click());
+                let nav_id = if let Some(ref salt) = id_salt {
+                    egui::Id::new((salt, "nav_icon"))
+                } else {
+                    egui::Id::new(("top_app_bar_nav", &title))
+                };
+                let nav_response = ui.interact(nav_rect, nav_id, Sense::click());
                 
                 // Icon background on hover
                 if nav_response.hovered() {
@@ -224,19 +238,35 @@ impl Widget for MaterialTopAppBar<'_> {
                     ui.painter().rect_filled(nav_rect, CornerRadius::from(20.0), hover_color);
                 }
                 
-                // Draw navigation icon (hamburger menu representation)
+                // Draw different navigation icons based on icon name
                 let icon_center = nav_rect.center();
-                let line_width = 16.0;
-                let line_height = 2.0;
-                let line_spacing = 4.0;
-                
-                for i in 0..3 {
-                    let y_offset = (i as f32 - 1.0) * line_spacing;
-                    let line_rect = Rect::from_center_size(
-                        icon_center + Vec2::new(0.0, y_offset),
-                        Vec2::new(line_width, line_height)
-                    );
-                    ui.painter().rect_filled(line_rect, CornerRadius::from(1.0), icon_color);
+                match nav_icon.as_str() {
+                    "arrow_back" | "arrow_back_ios" => {
+                        // Back arrow
+                        ui.painter().line_segment([icon_center + Vec2::new(4.0, -6.0), icon_center + Vec2::new(-2.0, 0.0)], Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(-2.0, 0.0), icon_center + Vec2::new(4.0, 6.0)], Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(-2.0, 0.0), icon_center + Vec2::new(6.0, 0.0)], Stroke::new(2.0, icon_color));
+                    },
+                    "close" => {
+                        // X close icon
+                        ui.painter().line_segment([icon_center + Vec2::new(-6.0, -6.0), icon_center + Vec2::new(6.0, 6.0)], Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(-6.0, 6.0), icon_center + Vec2::new(6.0, -6.0)], Stroke::new(2.0, icon_color));
+                    },
+                    "menu" | _ => {
+                        // Hamburger menu (default)
+                        let line_width = 16.0;
+                        let line_height = 2.0;
+                        let line_spacing = 4.0;
+                        
+                        for i in 0..3 {
+                            let y_offset = (i as f32 - 1.0) * line_spacing;
+                            let line_rect = Rect::from_center_size(
+                                icon_center + Vec2::new(0.0, y_offset),
+                                Vec2::new(line_width, line_height)
+                            );
+                            ui.painter().rect_filled(line_rect, CornerRadius::from(1.0), icon_color);
+                        }
+                    },
                 }
                 
                 if nav_response.clicked() {
@@ -294,7 +324,7 @@ impl Widget for MaterialTopAppBar<'_> {
             // Draw action icons
             let mut right_x = rect.max.x - 4.0;
             
-            for (_, action_callback) in action_icons.iter().rev() {
+            for (action_index, (action_icon, action_callback)) in action_icons.iter().enumerate().rev() {
                 right_x -= icon_total_size;
                 
                 let action_rect = Rect::from_min_size(
@@ -302,7 +332,12 @@ impl Widget for MaterialTopAppBar<'_> {
                     Vec2::splat(icon_total_size)
                 );
                 
-                let action_response = ui.interact(action_rect, ui.next_auto_id(), Sense::click());
+                let action_id = if let Some(ref salt) = id_salt {
+                    egui::Id::new((salt, "action_icon", action_index))
+                } else {
+                    egui::Id::new(("top_app_bar_action", &title, action_index))
+                };
+                let action_response = ui.interact(action_rect, action_id, Sense::click());
                 
                 // Icon background on hover
                 if action_response.hovered() {
@@ -310,15 +345,70 @@ impl Widget for MaterialTopAppBar<'_> {
                     ui.painter().rect_filled(action_rect, CornerRadius::from(20.0), hover_color);
                 }
                 
-                // Draw action icon (3 dots representation for more_vert)
+                // Draw different action icons based on icon name
                 let icon_center = action_rect.center();
-                for i in 0..3 {
-                    let y_offset = (i as f32 - 1.0) * 3.0;
-                    ui.painter().circle_filled(
-                        icon_center + Vec2::new(0.0, y_offset),
-                        1.5,
-                        icon_color
-                    );
+                match action_icon.as_str() {
+                    "search" => {
+                        // Search icon (magnifying glass)
+                        ui.painter().circle_stroke(icon_center + Vec2::new(-2.0, -2.0), 6.0, Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(3.0, 3.0), icon_center + Vec2::new(6.0, 6.0)], Stroke::new(2.0, icon_color));
+                    },
+                    "favorite" | "favorite_border" => {
+                        // Heart icon
+                        let heart_points = [
+                            icon_center + Vec2::new(0.0, 2.0),
+                            icon_center + Vec2::new(-4.0, -2.0),
+                            icon_center + Vec2::new(-2.0, -4.0),
+                            icon_center + Vec2::new(0.0, -2.0),
+                            icon_center + Vec2::new(2.0, -4.0),
+                            icon_center + Vec2::new(4.0, -2.0),
+                        ];
+                        for i in 0..heart_points.len() {
+                            let next_i = (i + 1) % heart_points.len();
+                            ui.painter().line_segment([heart_points[i], heart_points[next_i]], Stroke::new(1.5, icon_color));
+                        }
+                    },
+                    "share" => {
+                        // Share icon (arrow with dots)
+                        ui.painter().line_segment([icon_center + Vec2::new(-4.0, 2.0), icon_center + Vec2::new(4.0, -2.0)], Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(2.0, -4.0), icon_center + Vec2::new(4.0, -2.0)], Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(2.0, 0.0), icon_center + Vec2::new(4.0, -2.0)], Stroke::new(2.0, icon_color));
+                        ui.painter().circle_filled(icon_center + Vec2::new(-6.0, 4.0), 2.0, icon_color);
+                        ui.painter().circle_filled(icon_center + Vec2::new(6.0, -4.0), 2.0, icon_color);
+                    },
+                    "notifications" | "notifications_none" => {
+                        // Notification bell
+                        ui.painter().circle_stroke(icon_center, 6.0, Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(-2.0, -8.0), icon_center + Vec2::new(2.0, -8.0)], Stroke::new(2.0, icon_color));
+                        ui.painter().line_segment([icon_center + Vec2::new(-2.0, 6.0), icon_center + Vec2::new(2.0, 6.0)], Stroke::new(3.0, icon_color));
+                    },
+                    "account_circle" | "person" => {
+                        // Person icon
+                        ui.painter().circle_stroke(icon_center, 8.0, Stroke::new(2.0, icon_color));
+                        ui.painter().circle_filled(icon_center + Vec2::new(0.0, -3.0), 3.0, icon_color);
+                        ui.painter().circle_stroke(icon_center + Vec2::new(0.0, 2.0), 5.0, Stroke::new(2.0, icon_color));
+                    },
+                    "settings" => {
+                        // Gear icon
+                        ui.painter().circle_stroke(icon_center, 4.0, Stroke::new(2.0, icon_color));
+                        for i in 0..8 {
+                            let angle = i as f32 * std::f32::consts::PI / 4.0;
+                            let start = icon_center + Vec2::new(angle.cos() * 6.0, angle.sin() * 6.0);
+                            let end = icon_center + Vec2::new(angle.cos() * 8.0, angle.sin() * 8.0);
+                            ui.painter().line_segment([start, end], Stroke::new(2.0, icon_color));
+                        }
+                    },
+                    "more_vert" | _ => {
+                        // Three vertical dots (default)
+                        for i in 0..3 {
+                            let y_offset = (i as f32 - 1.0) * 3.0;
+                            ui.painter().circle_filled(
+                                icon_center + Vec2::new(0.0, y_offset),
+                                1.5,
+                                icon_color
+                            );
+                        }
+                    },
                 }
                 
                 if action_response.clicked() {

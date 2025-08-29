@@ -547,6 +547,10 @@ impl eframe::App for MaterialApp {
                 if ui.add(MaterialButton::filled("Dialog Stories")).clicked() {
                     self.dialog_window.open = true;
                 }
+
+                if ui.add(MaterialButton::filled("Drawer Stories")).clicked() {
+                    self.drawer_window.open = true;
+                }
                 
                 if ui.add(MaterialButton::filled("Enhanced Card (Card2) Stories")).clicked() {
                     self.card2_window.open = true;
@@ -558,6 +562,10 @@ impl eframe::App for MaterialApp {
                 
                 if ui.add(MaterialButton::filled("Icon Button Stories")).clicked() {
                     self.iconbutton_window.open = true;
+                }
+
+                if ui.add(MaterialButton::filled("Image List Stories")).clicked() {
+                    self.imagelist_window.open = true;
                 }
                 
                 if ui.add(MaterialButton::filled("Layout Grid Stories")).clicked() {
@@ -596,33 +604,23 @@ impl eframe::App for MaterialApp {
                     self.switch_window.open = true;
                 }
 
-                if ui.add(MaterialButton::filled("Drawer Stories")).clicked() {
-                    self.drawer_window.open = true;
+                if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
+                    self.tabs_window.open = true;
                 }
-                
+
+                if ui.add(MaterialButton::filled("Top App Bar Stories")).clicked() {
+                    self.topappbar_window.open = true;
+                }
             });
 
             ui.add_space(15.0);
             ui.label("Labs Windows:");
             ui.horizontal_wrapped(|ui| {
 
-                if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
-                    self.tabs_window.open = true;
-                }
-
                 if ui.add(MaterialButton::filled("Ripple Stories")).clicked() {
                     self.ripple_window.open = true;
                 }
-                
-                
-                if ui.add(MaterialButton::filled("Image List Stories")).clicked() {
-                    self.imagelist_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Top App Bar Stories")).clicked() {
-                    self.topappbar_window.open = true;
-                }
-                               
+                            
                 if ui.add(MaterialButton::filled("Focus Ring Stories")).clicked() {
                     self.focus_window.open = true;
                 }
@@ -654,7 +652,6 @@ impl eframe::App for MaterialApp {
                 if ui.add(MaterialButton::filled("Item Stories")).clicked() {
                     self.item_window.open = true;
                 }
-                
                 
                 if ui.add(MaterialButton::filled("Navigation Bar Stories")).clicked() {
                     self.navigationbar_window.open = true;

@@ -37,6 +37,7 @@ pub struct MaterialImageList<'a> {
     item_spacing: f32,
     text_protected: bool,
     corner_radius: CornerRadius,
+    id_salt: Option<String>,
 }
 
 pub struct ImageListItem<'a> {
@@ -96,6 +97,7 @@ impl<'a> MaterialImageList<'a> {
             item_spacing: 8.0,
             text_protected: false,
             corner_radius: CornerRadius::from(4.0),
+            id_salt: None,
         }
     }
 
@@ -146,6 +148,12 @@ impl<'a> MaterialImageList<'a> {
         self
     }
 
+    /// Set unique ID salt to prevent ID clashes.
+    pub fn id_salt(mut self, salt: impl Into<String>) -> Self {
+        self.id_salt = Some(salt.into());
+        self
+    }
+
     fn get_image_list_style(&self) -> Color32 {
         get_global_color("surface")
     }
@@ -168,6 +176,7 @@ impl Widget for MaterialImageList<'_> {
             item_spacing,
             text_protected,
             corner_radius,
+            id_salt,
         } = self;
 
         if items.is_empty() {
@@ -210,8 +219,14 @@ impl Widget for MaterialImageList<'_> {
                     Vec2::new(item_width, item_height)
                 );
 
-                // Handle item interaction
-                let item_response = ui.interact(item_rect, ui.next_auto_id(), Sense::click());
+                // Handle item interaction with unique ID
+                let item_id = if let Some(ref salt) = id_salt {
+                    egui::Id::new((salt, "image_item", index))
+                } else {
+                    egui::Id::new(("image_item", index, &item.label))
+                };
+                
+                let item_response = ui.interact(item_rect, item_id, Sense::click());
                 if item_response.hovered() {
                     let hover_color = get_global_color("primary").linear_multiply(0.08);
                     ui.painter().rect_filled(item_rect, corner_radius, hover_color);

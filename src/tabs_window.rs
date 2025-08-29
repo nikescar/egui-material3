@@ -99,24 +99,68 @@ impl TabsWindow {
             
             // Music instrument tabs
             ui.add(tabs_primary(&mut self.music_primary_selected)
+                .id_salt("music_primary")
                 .tab("🎹 Keyboard")
                 .tab("🎸 Guitar")
                 .tab("🥁 Drums")
                 .tab("🎻 Bass")
                 .tab("🎷 Saxophone"));
             
-            // Content for selected tab
-            let content = match self.music_primary_selected {
-                0 => "Keyboard content - Play beautiful melodies",
-                1 => "Guitar content - Strum your favorite chords",
-                2 => "Drums content - Keep the rhythm alive",
-                3 => "Bass content - Lay down the foundation",
-                4 => "Saxophone content - Smooth jazz vibes",
-                _ => "No content selected",
-            };
-            
+            // Enhanced content for selected tab
             ui.add_space(10.0);
-            ui.label(content);
+            ui.separator();
+            ui.add_space(10.0);
+            
+            match self.music_primary_selected {
+                0 => {
+                    ui.heading("🎹 Keyboard");
+                    ui.label("Master the art of keyboard playing with these beautiful melodies:");
+                    ui.add_space(8.0);
+                    ui.label("• Classical compositions: Bach, Mozart, Chopin");
+                    ui.label("• Modern pieces: Jazz standards and pop hits");
+                    ui.label("• Technique: Scales, arpeggios, and finger exercises");
+                    ui.label("• Recommended practice: 30 minutes daily");
+                }
+                1 => {
+                    ui.heading("🎸 Guitar");
+                    ui.label("Strum your way to guitar mastery:");
+                    ui.add_space(8.0);
+                    ui.label("• Basic chords: G, C, D, Em, Am");
+                    ui.label("• Strumming patterns: Down-up, fingerpicking");
+                    ui.label("• Popular songs: Wonderwall, Hotel California");
+                    ui.label("• Equipment: Acoustic vs. Electric guitars");
+                }
+                2 => {
+                    ui.heading("🥁 Drums");
+                    ui.label("Keep the rhythm alive with powerful beats:");
+                    ui.add_space(8.0);
+                    ui.label("• Basic beats: 4/4 time, rock, jazz, funk");
+                    ui.label("• Rudiments: Paradiddles, flams, rolls");
+                    ui.label("• Kit setup: Kick, snare, hi-hat, toms");
+                    ui.label("• Timing: Use metronome for practice");
+                }
+                3 => {
+                    ui.heading("🎻 Bass");
+                    ui.label("Lay down the foundation with deep bass lines:");
+                    ui.add_space(8.0);
+                    ui.label("• Playing techniques: Fingerstyle, slap, pick");
+                    ui.label("• Music theory: Root notes, walking bass");
+                    ui.label("• Rhythm section: Locking in with drums");
+                    ui.label("• Genres: Rock, funk, jazz, reggae");
+                }
+                4 => {
+                    ui.heading("🎷 Saxophone");
+                    ui.label("Create smooth jazz vibes with saxophone:");
+                    ui.add_space(8.0);
+                    ui.label("• Saxophone types: Alto, tenor, soprano, baritone");
+                    ui.label("• Breathing technique: Diaphragmatic breathing");
+                    ui.label("• Embouchure: Proper mouthpiece positioning");
+                    ui.label("• Jazz standards: Take Five, Giant Steps");
+                }
+                _ => {
+                    ui.label("No instrument selected");
+                }
+            }
         });
     }
 
@@ -125,22 +169,58 @@ impl TabsWindow {
         
         // Travel tabs
         ui.add(tabs_secondary(&mut self.travel_secondary_selected)
+            .id_salt("travel_secondary")
             .tab("✈️ Travel")
             .tab("🏨 Hotel")
             .tab("🥾 Activities")
             .tab("🍽️ Food"));
         
-        // Content for selected tab
-        let content = match self.travel_secondary_selected {
-            0 => "Travel content - Plan your next adventure",
-            1 => "Hotel content - Find the perfect accommodation",
-            2 => "Activities content - Discover exciting experiences",
-            3 => "Food content - Taste local cuisine",
-            _ => "No content selected",
-        };
-        
+        // Enhanced content for selected tab
         ui.add_space(10.0);
-        ui.label(content);
+        ui.separator();
+        ui.add_space(10.0);
+        
+        match self.travel_secondary_selected {
+            0 => {
+                ui.heading("✈️ Travel Planning");
+                ui.label("Plan your next adventure with these travel tips:");
+                ui.add_space(8.0);
+                ui.label("• Booking flights: Compare prices, flexible dates");
+                ui.label("• Travel documents: Passport, visa requirements");
+                ui.label("• Packing essentials: Weather-appropriate clothing");
+                ui.label("• Travel insurance: Medical and trip coverage");
+            }
+            1 => {
+                ui.heading("🏨 Hotel Accommodation");
+                ui.label("Find the perfect place to stay:");
+                ui.add_space(8.0);
+                ui.label("• Hotel types: Luxury, boutique, budget, hostel");
+                ui.label("• Amenities: WiFi, pool, gym, breakfast");
+                ui.label("• Location: City center, airport, attractions");
+                ui.label("• Reviews: Check ratings and guest feedback");
+            }
+            2 => {
+                ui.heading("🥾 Activities & Adventures");
+                ui.label("Discover exciting experiences at your destination:");
+                ui.add_space(8.0);
+                ui.label("• Outdoor activities: Hiking, biking, water sports");
+                ui.label("• Cultural experiences: Museums, tours, shows");
+                ui.label("• Adventure sports: Skiing, diving, climbing");
+                ui.label("• Local experiences: Cooking classes, workshops");
+            }
+            3 => {
+                ui.heading("🍽️ Local Cuisine");
+                ui.label("Taste authentic local flavors:");
+                ui.add_space(8.0);
+                ui.label("• Street food: Safe vendors, popular dishes");
+                ui.label("• Fine dining: Michelin-starred restaurants");
+                ui.label("• Local markets: Fresh ingredients, specialties");
+                ui.label("• Food tours: Guided culinary experiences");
+            }
+            _ => {
+                ui.label("No travel option selected");
+            }
+        }
     }
 
     fn render_scrolling_tabs(&mut self, ui: &mut egui::Ui) {
@@ -149,6 +229,7 @@ impl TabsWindow {
         
         // Create many tabs to demonstrate scrolling
         ui.add(tabs_primary(&mut self.scrolling_selected)
+            .id_salt("scrolling_primary")
             .tab("Tab 1")
             .tab("Tab 2")
             .tab("Tab 3")
@@ -161,7 +242,33 @@ impl TabsWindow {
             .tab("Tab 10"));
         
         ui.add_space(10.0);
-        ui.label(format!("Selected tab: {}", self.scrolling_selected + 1));
+        ui.separator();
+        ui.add_space(10.0);
+        
+        ui.heading(format!("Content for Tab {}", self.scrolling_selected + 1));
+        ui.label(format!("You have selected tab number {} out of 10 available tabs.", self.scrolling_selected + 1));
+        ui.add_space(8.0);
+        
+        match self.scrolling_selected {
+            0..=2 => {
+                ui.label("📊 First section - Basic information and getting started guides");
+                ui.label("• Introduction to the system");
+                ui.label("• Setup instructions");
+            }
+            3..=5 => {
+                ui.label("⚙️ Middle section - Configuration and advanced features");
+                ui.label("• Advanced settings");
+                ui.label("• Customization options");
+            }
+            6..=9 => {
+                ui.label("🚀 Final section - Expert features and troubleshooting");
+                ui.label("• Expert configuration");
+                ui.label("• Performance optimization");
+            }
+            _ => {
+                ui.label("Unknown tab selected");
+            }
+        }
     }
 
     fn render_custom_tabs(&mut self, ui: &mut egui::Ui) {
@@ -169,22 +276,54 @@ impl TabsWindow {
         
         // Custom themed tabs
         ui.add(tabs_primary(&mut self.custom_selected)
+            .id_salt("custom_primary")
             .tab("✈️ Travel")
             .tab("🏨 Hotel")
             .tab("🥾 Activities")
             .tab("🍽️ Food"));
         
-        // Content with custom styling
-        let content = match self.custom_selected {
-            0 => "Custom Travel - Enhanced travel planning experience",
-            1 => "Custom Hotel - Premium accommodation search",
-            2 => "Custom Activities - Curated activity recommendations",
-            3 => "Custom Food - Gourmet dining experiences",
-            _ => "Custom content",
-        };
-        
+        // Enhanced content with custom styling
         ui.add_space(10.0);
-        ui.colored_label(egui::Color32::from_rgb(103, 80, 164), content);
+        ui.separator();
+        ui.add_space(10.0);
+        
+        match self.custom_selected {
+            0 => {
+                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "✈️ Custom Travel Experience");
+                ui.label("Enhanced travel planning with personalized recommendations:");
+                ui.add_space(8.0);
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• AI-powered destination suggestions");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Real-time weather and travel alerts");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Integrated booking and itinerary management");
+            }
+            1 => {
+                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "🏨 Premium Hotel Search");
+                ui.label("Luxury accommodation finder with exclusive benefits:");
+                ui.add_space(8.0);
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• VIP room upgrades and early check-in");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Personalized concierge services");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Loyalty points and exclusive rates");
+            }
+            2 => {
+                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "🥾 Curated Activity Hub");
+                ui.label("Handpicked experiences tailored to your interests:");
+                ui.add_space(8.0);
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Local expert-guided tours");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Adventure difficulty matching");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Social group activities");
+            }
+            3 => {
+                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "🍽️ Gourmet Dining Network");
+                ui.label("Exclusive access to world-class culinary experiences:");
+                ui.add_space(8.0);
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Chef's table reservations");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Wine pairing recommendations");
+                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Private cooking masterclasses");
+            }
+            _ => {
+                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "Custom premium content");
+            }
+        }
     }
 
     fn render_nested_tabs(&mut self, ui: &mut egui::Ui) {
@@ -192,6 +331,7 @@ impl TabsWindow {
         
         // Primary tabs
         ui.add(tabs_primary(&mut self.nested_primary_selected)
+            .id_salt("nested_primary")
             .tab("🎬 Movies")
             .tab("📸 Photos")
             .tab("🎵 Music"));
@@ -203,6 +343,7 @@ impl TabsWindow {
             0 => {
                 ui.label("Movies - Secondary tabs:");
                 ui.add(tabs_secondary(&mut self.nested_secondary_selected)
+                    .id_salt("nested_movies_secondary")
                     .tab("Star Wars")
                     .tab("Avengers")
                     .tab("Jaws")
@@ -220,6 +361,7 @@ impl TabsWindow {
             1 => {
                 ui.label("Photos - Secondary tabs:");
                 ui.add(tabs_secondary(&mut self.nested_secondary_selected)
+                    .id_salt("nested_photos_secondary")
                     .tab("Yosemite")
                     .tab("Mona Lisa")
                     .tab("Swiss Alps")
@@ -237,6 +379,7 @@ impl TabsWindow {
             2 => {
                 ui.label("Music - Secondary tabs:");
                 ui.add(tabs_secondary(&mut self.nested_secondary_selected)
+                    .id_salt("nested_music_secondary")
                     .tab("Rock")
                     .tab("Ambient")
                     .tab("Soundscapes")
