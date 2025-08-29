@@ -217,7 +217,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
             .size(icon_size)
             .color(icon_color);
         
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
             ui.add(icon_widget);
         });
 

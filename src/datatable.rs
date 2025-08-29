@@ -274,6 +274,14 @@ impl<'a> MaterialDataTable<'a> {
         // Get or create persistent state
         let mut state: DataTableState = ui.data_mut(|d| d.get_persisted(table_id).unwrap_or_default());
         
+        // Get external editing state from UI memory if available
+        if let Some(external_editing_state) = ui.memory(|mem| {
+            mem.data.get_temp::<(HashSet<usize>, HashMap<usize, Vec<String>>)>(table_id.with("external_edit_state"))
+        }) {
+            state.editing_rows = external_editing_state.0;
+            state.edit_data = external_editing_state.1;
+        }
+        
         // Initialize sorting state from widget if not set
         if state.sorted_column.is_none() && self.sorted_column.is_some() {
             state.sorted_column = self.sorted_column;
@@ -873,6 +881,11 @@ impl<'a> MaterialDataTable<'a> {
 
         // Persist the state
         ui.data_mut(|d| d.insert_persisted(table_id, state.clone()));
+        
+        // Store editing state back to memory for external access
+        ui.memory_mut(|mem| {
+            mem.data.insert_temp(table_id.with("external_edit_state"), (state.editing_rows.clone(), state.edit_data.clone()));
+        });
 
         // Check for column clicks using stored state
         let column_clicked = ui.memory(|mem| {

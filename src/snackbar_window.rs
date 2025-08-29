@@ -1,6 +1,6 @@
 use eframe::egui::{self, Ui, Window};
 use crate::{SnackbarPosition, MaterialButton, MaterialCheckbox, snackbar, snackbar_with_action};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 pub struct SnackbarWindow {
     pub open: bool,

@@ -385,24 +385,14 @@ impl DataTableWindow {
             // Check if this row is being edited
             let is_editing = self.editing_rows.contains(&original_idx);
             
-            // Create cell content - if editing, show placeholder for edit fields
-            let (product_text, category_text, price_text, stock_text, actions_text) = if is_editing {
-                (
-                    "[Edit: Use form below]".to_string(),
-                    "[Edit: Use form below]".to_string(),
-                    "[Edit: Use form below]".to_string(),
-                    "[Edit: Use form below]".to_string(),
-                    "Submit | Cancel".to_string()
-                )
-            } else {
-                (
-                    row.product.clone(), 
-                    row.category.clone(), 
-                    row.price.clone(), 
-                    row.stock.clone(),
-                    "Edit | Delete".to_string()
-                )
-            };
+            // Create cell content - use actual values, let the data table handle edit mode rendering
+            let (product_text, category_text, price_text, stock_text, actions_text) = (
+                row.product.clone(), 
+                row.category.clone(), 
+                row.price.clone(), 
+                row.stock.clone(),
+                if is_editing { "Submit | Cancel".to_string() } else { "Edit | Delete".to_string() }
+            );
             
             interactive_table = interactive_table.row(|table_row| {
                 let mut row_builder = table_row
@@ -421,8 +411,22 @@ impl DataTableWindow {
             });
         }
 
+        // Set external editing state for the data table to use
+        ui.memory_mut(|mem| {
+            mem.data.insert_temp(Id::new("interactive_data_table").with("external_edit_state"), 
+                (self.editing_rows.clone(), self.edit_data.clone()));
+        });
+        
         // Show the table and get the selection state back
         let table_response = interactive_table.show(ui);
+        
+        // Retrieve updated editing state from the data table
+        if let Some((updated_editing_rows, updated_edit_data)) = ui.memory(|mem| {
+            mem.data.get_temp::<(HashSet<usize>, HashMap<usize, Vec<String>>)>(Id::new("interactive_data_table").with("external_edit_state"))
+        }) {
+            self.editing_rows = updated_editing_rows;
+            self.edit_data = updated_edit_data;
+        }
         
         // Process row actions from the data table
         for action in &table_response.row_actions {

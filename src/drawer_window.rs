@@ -1,5 +1,5 @@
-use eframe::egui::{self, Ui, Window, CentralPanel};
-use crate::{MaterialButton, MaterialCheckbox, permanent_drawer, modal_drawer, dismissible_drawer};
+use eframe::egui::{self, Ui, Window};
+use crate::{MaterialButton, MaterialCheckbox};
 use crate::theme::get_global_color;
 
 pub struct DrawerWindow {
@@ -143,13 +143,13 @@ impl DrawerWindow {
                             if is_selected {
                                 ui.painter().rect_filled(
                                     item_rect,
-                                    egui::Rounding::same(12),
+                                    egui::CornerRadius::same(12),
                                     get_global_color("primaryContainer"),
                                 );
                             } else if response.hovered() {
                                 ui.painter().rect_filled(
                                     item_rect,
-                                    egui::Rounding::same(12),
+                                    egui::CornerRadius::same(12),
                                     get_global_color("surfaceVariant").linear_multiply(0.08),
                                 );
                             }
@@ -312,13 +312,13 @@ impl DrawerWindow {
                                 if is_selected {
                                     ui.painter().rect_filled(
                                         item_rect,
-                                        egui::Rounding::same(12),
+                                        egui::CornerRadius::same(12),
                                         get_global_color("primaryContainer"),
                                     );
                                 } else if response.hovered() {
                                     ui.painter().rect_filled(
                                         item_rect,
-                                        egui::Rounding::same(12),
+                                        egui::CornerRadius::same(12),
                                         get_global_color("surfaceVariant").linear_multiply(0.08),
                                     );
                                 }
@@ -605,7 +605,7 @@ impl DrawerWindow {
                     
                     ui.painter().rect_filled(
                         available_rect,
-                        egui::Rounding::ZERO,
+                        egui::CornerRadius::ZERO,
                         egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
                     );
                     
@@ -616,7 +616,7 @@ impl DrawerWindow {
                         egui::Vec2::new(drawer_width, available_rect.height()),
                     );
                     
-                    ui.allocate_new_ui(egui::UiBuilder::new().max_rect(drawer_rect), |ui| {
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(drawer_rect), |ui| {
                         egui::Frame::new()
                             .fill(get_global_color("surface"))
                             .stroke(egui::Stroke::new(1.0, get_global_color("outline")))
@@ -670,13 +670,13 @@ impl DrawerWindow {
                                                 if is_selected {
                                                     ui.painter().rect_filled(
                                                         item_rect,
-                                                        egui::Rounding::same(12),
+                                                        egui::CornerRadius::same(12),
                                                         get_global_color("primaryContainer"),
                                                     );
                                                 } else if response.hovered() {
                                                     ui.painter().rect_filled(
                                                         item_rect,
-                                                        egui::Rounding::same(12),
+                                                        egui::CornerRadius::same(12),
                                                         get_global_color("surfaceVariant").linear_multiply(0.08),
                                                     );
                                                 }

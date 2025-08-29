@@ -335,7 +335,7 @@ impl<'a> Widget for MaterialFab<'a> {
                     
                     let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
                     let icon = MaterialIcon::new("add").size(icon_size).color(icon_color);
-                    ui.allocate_ui_at_rect(icon_rect, |ui| {
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                         ui.add(icon);
                     });
                 }

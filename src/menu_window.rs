@@ -1,5 +1,5 @@
 use eframe::egui::{self, Window, Rect};
-use crate::{MaterialButton, MaterialCheckbox, MaterialSlider, menu, menu_item};
+use crate::{MaterialButton, MaterialCheckbox, menu, menu_item};
 use crate::menu::{Corner, FocusState, Positioning};
 
 pub struct MenuWindow {

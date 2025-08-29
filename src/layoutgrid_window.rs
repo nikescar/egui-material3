@@ -1,5 +1,5 @@
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialButton, MaterialCard, MaterialCheckbox, layout_grid};
+use crate::{MaterialButton, MaterialCard2, MaterialCheckbox, layout_grid};
 
 pub struct LayoutGridWindow {
     pub open: bool,
@@ -94,24 +94,24 @@ impl LayoutGridWindow {
         
         basic_grid = basic_grid
             .cell(4, |ui| {
-                ui.add(MaterialCard::filled()
+                ui.add(MaterialCard2::filled()
                     .content(|ui| {
                         ui.label("Column 1-4");
-                        ui.label("First third of the row")
+                        ui.label("First third of the row");
                     }));
             })
             .cell(4, |ui| {
-                ui.add(MaterialCard::filled()
+                ui.add(MaterialCard2::filled()
                     .content(|ui| {
                         ui.label("Column 5-8");
-                        ui.label("Middle third of the row")
+                        ui.label("Middle third of the row");
                     }));
             })
             .cell(4, |ui| {
-                ui.add(MaterialCard::filled()
+                ui.add(MaterialCard2::filled()
                     .content(|ui| {
                         ui.label("Column 9-12");
-                        ui.label("Last third of the row")
+                        ui.label("Last third of the row");
                     }));
             });
         
@@ -127,30 +127,30 @@ impl LayoutGridWindow {
             .margin(self.margin)
             .debug_mode(self.debug_mode)
             .cell(6, |ui| {
-                ui.add(MaterialCard::elevated()
+                ui.add(MaterialCard2::elevated()
                     .content(|ui| {
                         ui.heading("Main Content");
                         ui.label("This takes up half the width on larger screens.");
                         ui.add_space(10.0);
-                        ui.add(MaterialButton::filled("Primary Action"))
+                        ui.add(MaterialButton::filled("Primary Action"));
                     }));
             })
             .cell(3, |ui| {
-                ui.add(MaterialCard::outlined()
+                ui.add(MaterialCard2::outlined()
                     .content(|ui| {
                         ui.label("Sidebar 1");
                         ui.label("Quarter width content");
                         ui.add_space(5.0);
-                        ui.add(MaterialButton::outlined("Action"))
+                        ui.add(MaterialButton::outlined("Action"));
                     }));
             })
             .cell(3, |ui| {
-                ui.add(MaterialCard::outlined()
+                ui.add(MaterialCard2::outlined()
                     .content(|ui| {
                         ui.label("Sidebar 2");
                         ui.label("Quarter width content");
                         ui.add_space(5.0);
-                        ui.add(MaterialButton::text("Link"))
+                        ui.add(MaterialButton::text("Link"));
                     }));
             });
         
@@ -166,24 +166,24 @@ impl LayoutGridWindow {
             .margin(self.margin)
             .debug_mode(self.debug_mode)
             .cell_with_offset(6, 3, |ui| {
-                ui.add(MaterialCard::filled()
+                ui.add(MaterialCard2::filled()
                     .content(|ui| {
                         ui.label("Centered Content");
-                        ui.label("6 columns wide, offset by 3 columns")
+                        ui.label("6 columns wide, offset by 3 columns");
                     }));
             })
             .cell_with_offset(4, 2, |ui| {
-                ui.add(MaterialCard::elevated()
+                ui.add(MaterialCard2::elevated()
                     .content(|ui| {
                         ui.label("Offset Content");
-                        ui.label("4 columns wide, offset by 2")
+                        ui.label("4 columns wide, offset by 2");
                     }));
             })
             .cell_with_offset(4, 2, |ui| {
-                ui.add(MaterialCard::outlined()
+                ui.add(MaterialCard2::outlined()
                     .content(|ui| {
                         ui.label("Another Offset");
-                        ui.label("Same offset pattern")
+                        ui.label("Same offset pattern");
                     }));
             });
         
@@ -199,23 +199,23 @@ impl LayoutGridWindow {
             .margin(self.margin)
             .debug_mode(self.debug_mode)
             .cell(12, |ui| {
-                ui.add(MaterialCard::filled()
+                ui.add(MaterialCard2::filled()
                     .content(|ui| {
                         ui.heading("Full Width Header");
-                        ui.label("This spans all 12 columns")
+                        ui.label("This spans all 12 columns");
                     }));
             })
             .cell(8, |ui| {
-                ui.add(MaterialCard::outlined()
+                ui.add(MaterialCard2::outlined()
                     .content(|ui| {
                         ui.label("Main Article");
                         ui.label("8 columns for the main content area.");
                         ui.add_space(10.0);
-                        ui.label("Lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+                        ui.label("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
                     }));
             })
             .cell(4, |ui| {
-                ui.add(MaterialCard::elevated()
+                ui.add(MaterialCard2::elevated()
                     .content(|ui| {
                         ui.label("Widget Area");
                         ui.label("4 columns for widgets");
@@ -223,20 +223,20 @@ impl LayoutGridWindow {
                         if ui.add(MaterialButton::filled("Widget Action")).clicked() {
                             println!("Widget action!");
                         }
-                        ui.allocate_response(egui::Vec2::ZERO, egui::Sense::hover())
+                        ui.allocate_response(egui::Vec2::ZERO, egui::Sense::hover());
                     }));
             })
             .cell(3, |ui| {
-                ui.add(MaterialCard::outlined().content(|ui| ui.label("25% width")));
+                ui.add(MaterialCard2::outlined().content(|ui| { ui.label("25% width"); }));
             })
             .cell(3, |ui| {
-                ui.add(MaterialCard::outlined().content(|ui| ui.label("25% width")));
+                ui.add(MaterialCard2::outlined().content(|ui| { ui.label("25% width"); }));
             })
             .cell(3, |ui| {
-                ui.add(MaterialCard::outlined().content(|ui| ui.label("25% width")));
+                ui.add(MaterialCard2::outlined().content(|ui| { ui.label("25% width"); }));
             })
             .cell(3, |ui| {
-                ui.add(MaterialCard::outlined().content(|ui| ui.label("25% width")));
+                ui.add(MaterialCard2::outlined().content(|ui| { ui.label("25% width"); }));
             });
         
         ui.add(mixed_grid);
@@ -265,22 +265,22 @@ impl LayoutGridWindow {
             .margin(self.margin)
             .debug_mode(self.debug_mode)
             .cell(2, |ui| {
-                ui.add(MaterialCard::filled().content(|ui| ui.label("Card 1")));
+                ui.add(MaterialCard2::filled().content(|ui| { ui.label("Card 1"); }));
             })
             .cell(2, |ui| {
-                ui.add(MaterialCard::filled().content(|ui| ui.label("Card 2")));
+                ui.add(MaterialCard2::filled().content(|ui| { ui.label("Card 2"); }));
             })
             .cell(2, |ui| {
-                ui.add(MaterialCard::filled().content(|ui| { ui.label("Card 3") }));
+                ui.add(MaterialCard2::filled().content(|ui| { ui.label("Card 3"); }));
             })
             .cell(2, |ui| {
-                ui.add(MaterialCard::filled().content(|ui| { ui.label("Card 4") }));
+                ui.add(MaterialCard2::filled().content(|ui| { ui.label("Card 4"); }));
             })
             .cell(2, |ui| {
-                ui.add(MaterialCard::filled().content(|ui| { ui.label("Card 5") }));
+                ui.add(MaterialCard2::filled().content(|ui| { ui.label("Card 5"); }));
             })
             .cell(2, |ui| {
-                ui.add(MaterialCard::filled().content(|ui| { ui.label("Card 6") }));
+                ui.add(MaterialCard2::filled().content(|ui| { ui.label("Card 6"); }));
             });
         
         ui.add(interactive_grid);

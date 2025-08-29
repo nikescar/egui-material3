@@ -162,109 +162,109 @@ impl Default for MaterialThemeContext {
 }
 
 fn get_default_material_theme() -> MaterialThemeFile {
-    // Create default Material theme programmatically to avoid JSON parsing issues
+    // Create default Material theme programmatically using colors from material-theme4.json
     let light_scheme = MaterialScheme {
-        primary: "#8F4C38".to_string(),
-        surface_tint: "#8F4C38".to_string(),
+        primary: "#48672F".to_string(),
+        surface_tint: "#48672F".to_string(),
         on_primary: "#FFFFFF".to_string(),
-        primary_container: "#FFDBD1".to_string(),
-        on_primary_container: "#723523".to_string(),
-        secondary: "#77574E".to_string(),
+        primary_container: "#C8EEA8".to_string(),
+        on_primary_container: "#314F19".to_string(),
+        secondary: "#56624B".to_string(),
         on_secondary: "#FFFFFF".to_string(),
-        secondary_container: "#FFDBD1".to_string(),
-        on_secondary_container: "#5D4037".to_string(),
-        tertiary: "#6C5D2F".to_string(),
+        secondary_container: "#DAE7C9".to_string(),
+        on_secondary_container: "#3F4A34".to_string(),
+        tertiary: "#386665".to_string(),
         on_tertiary: "#FFFFFF".to_string(),
-        tertiary_container: "#F5E1A7".to_string(),
-        on_tertiary_container: "#534619".to_string(),
+        tertiary_container: "#BBECEA".to_string(),
+        on_tertiary_container: "#1E4E4D".to_string(),
         error: "#BA1A1A".to_string(),
         on_error: "#FFFFFF".to_string(),
         error_container: "#FFDAD6".to_string(),
         on_error_container: "#93000A".to_string(),
-        background: "#FFF8F6".to_string(),
-        on_background: "#231917".to_string(),
-        surface: "#FFF8F6".to_string(),
-        on_surface: "#231917".to_string(),
-        surface_variant: "#F5DED8".to_string(),
-        on_surface_variant: "#53433F".to_string(),
-        outline: "#85736E".to_string(),
-        outline_variant: "#D8C2BC".to_string(),
+        background: "#F9FAEF".to_string(),
+        on_background: "#191D16".to_string(),
+        surface: "#F9FAEF".to_string(),
+        on_surface: "#191D16".to_string(),
+        surface_variant: "#E0E4D6".to_string(),
+        on_surface_variant: "#44483E".to_string(),
+        outline: "#74796D".to_string(),
+        outline_variant: "#C4C8BA".to_string(),
         shadow: "#000000".to_string(),
         scrim: "#000000".to_string(),
-        inverse_surface: "#392E2B".to_string(),
-        inverse_on_surface: "#FFEDE8".to_string(),
-        inverse_primary: "#FFB5A0".to_string(),
-        primary_fixed: "#FFDBD1".to_string(),
-        on_primary_fixed: "#3A0B01".to_string(),
-        primary_fixed_dim: "#FFB5A0".to_string(),
-        on_primary_fixed_variant: "#723523".to_string(),
-        secondary_fixed: "#FFDBD1".to_string(),
-        on_secondary_fixed: "#2C150F".to_string(),
-        secondary_fixed_dim: "#E7BDB2".to_string(),
-        on_secondary_fixed_variant: "#5D4037".to_string(),
-        tertiary_fixed: "#F5E1A7".to_string(),
-        on_tertiary_fixed: "#231B00".to_string(),
-        tertiary_fixed_dim: "#D8C58D".to_string(),
-        on_tertiary_fixed_variant: "#534619".to_string(),
-        surface_dim: "#E8D6D2".to_string(),
-        surface_bright: "#FFF8F6".to_string(),
+        inverse_surface: "#2E312A".to_string(),
+        inverse_on_surface: "#F0F2E7".to_string(),
+        inverse_primary: "#ADD28E".to_string(),
+        primary_fixed: "#C8EEA8".to_string(),
+        on_primary_fixed: "#0B2000".to_string(),
+        primary_fixed_dim: "#ADD28E".to_string(),
+        on_primary_fixed_variant: "#314F19".to_string(),
+        secondary_fixed: "#DAE7C9".to_string(),
+        on_secondary_fixed: "#141E0C".to_string(),
+        secondary_fixed_dim: "#BECBAE".to_string(),
+        on_secondary_fixed_variant: "#3F4A34".to_string(),
+        tertiary_fixed: "#BBECEA".to_string(),
+        on_tertiary_fixed: "#00201F".to_string(),
+        tertiary_fixed_dim: "#A0CFCE".to_string(),
+        on_tertiary_fixed_variant: "#1E4E4D".to_string(),
+        surface_dim: "#D9DBD1".to_string(),
+        surface_bright: "#F9FAEF".to_string(),
         surface_container_lowest: "#FFFFFF".to_string(),
-        surface_container_low: "#FFF1ED".to_string(),
-        surface_container: "#FCEAE5".to_string(),
-        surface_container_high: "#F7E4E0".to_string(),
-        surface_container_highest: "#F1DFDA".to_string(),
+        surface_container_low: "#F3F5EA".to_string(),
+        surface_container: "#EDEFE4".to_string(),
+        surface_container_high: "#E7E9DE".to_string(),
+        surface_container_highest: "#E2E3D9".to_string(),
     };
 
     let dark_scheme = MaterialScheme {
-        primary: "#FFB5A0".to_string(),
-        surface_tint: "#FFB5A0".to_string(),
-        on_primary: "#561F0F".to_string(),
-        primary_container: "#723523".to_string(),
-        on_primary_container: "#FFDBD1".to_string(),
-        secondary: "#E7BDB2".to_string(),
-        on_secondary: "#442A22".to_string(),
-        secondary_container: "#5D4037".to_string(),
-        on_secondary_container: "#FFDBD1".to_string(),
-        tertiary: "#D8C58D".to_string(),
-        on_tertiary: "#3B2F05".to_string(),
-        tertiary_container: "#534619".to_string(),
-        on_tertiary_container: "#F5E1A7".to_string(),
+        primary: "#ADD28E".to_string(),
+        surface_tint: "#ADD28E".to_string(),
+        on_primary: "#1B3704".to_string(),
+        primary_container: "#314F19".to_string(),
+        on_primary_container: "#C8EEA8".to_string(),
+        secondary: "#BECBAE".to_string(),
+        on_secondary: "#29341F".to_string(),
+        secondary_container: "#3F4A34".to_string(),
+        on_secondary_container: "#DAE7C9".to_string(),
+        tertiary: "#A0CFCE".to_string(),
+        on_tertiary: "#003736".to_string(),
+        tertiary_container: "#1E4E4D".to_string(),
+        on_tertiary_container: "#BBECEA".to_string(),
         error: "#FFB4AB".to_string(),
         on_error: "#690005".to_string(),
         error_container: "#93000A".to_string(),
         on_error_container: "#FFDAD6".to_string(),
-        background: "#1A110F".to_string(),
-        on_background: "#F1DFDA".to_string(),
-        surface: "#1A110F".to_string(),
-        on_surface: "#F1DFDA".to_string(),
-        surface_variant: "#53433F".to_string(),
-        on_surface_variant: "#D8C2BC".to_string(),
-        outline: "#A08C87".to_string(),
-        outline_variant: "#53433F".to_string(),
+        background: "#11140E".to_string(),
+        on_background: "#E2E3D9".to_string(),
+        surface: "#11140E".to_string(),
+        on_surface: "#E2E3D9".to_string(),
+        surface_variant: "#44483E".to_string(),
+        on_surface_variant: "#C4C8BA".to_string(),
+        outline: "#8E9286".to_string(),
+        outline_variant: "#44483E".to_string(),
         shadow: "#000000".to_string(),
         scrim: "#000000".to_string(),
-        inverse_surface: "#F1DFDA".to_string(),
-        inverse_on_surface: "#392E2B".to_string(),
-        inverse_primary: "#8F4C38".to_string(),
-        primary_fixed: "#FFDBD1".to_string(),
-        on_primary_fixed: "#3A0B01".to_string(),
-        primary_fixed_dim: "#FFB5A0".to_string(),
-        on_primary_fixed_variant: "#723523".to_string(),
-        secondary_fixed: "#FFDBD1".to_string(),
-        on_secondary_fixed: "#2C150F".to_string(),
-        secondary_fixed_dim: "#E7BDB2".to_string(),
-        on_secondary_fixed_variant: "#5D4037".to_string(),
-        tertiary_fixed: "#F5E1A7".to_string(),
-        on_tertiary_fixed: "#231B00".to_string(),
-        tertiary_fixed_dim: "#D8C58D".to_string(),
-        on_tertiary_fixed_variant: "#534619".to_string(),
-        surface_dim: "#1A110F".to_string(),
-        surface_bright: "#423734".to_string(),
-        surface_container_lowest: "#140C0A".to_string(),
-        surface_container_low: "#231917".to_string(),
-        surface_container: "#271D1B".to_string(),
-        surface_container_high: "#322825".to_string(),
-        surface_container_highest: "#3D322F".to_string(),
+        inverse_surface: "#E2E3D9".to_string(),
+        inverse_on_surface: "#2E312A".to_string(),
+        inverse_primary: "#48672F".to_string(),
+        primary_fixed: "#C8EEA8".to_string(),
+        on_primary_fixed: "#0B2000".to_string(),
+        primary_fixed_dim: "#ADD28E".to_string(),
+        on_primary_fixed_variant: "#314F19".to_string(),
+        secondary_fixed: "#DAE7C9".to_string(),
+        on_secondary_fixed: "#141E0C".to_string(),
+        secondary_fixed_dim: "#BECBAE".to_string(),
+        on_secondary_fixed_variant: "#3F4A34".to_string(),
+        tertiary_fixed: "#BBECEA".to_string(),
+        on_tertiary_fixed: "#00201F".to_string(),
+        tertiary_fixed_dim: "#A0CFCE".to_string(),
+        on_tertiary_fixed_variant: "#1E4E4D".to_string(),
+        surface_dim: "#11140E".to_string(),
+        surface_bright: "#373A33".to_string(),
+        surface_container_lowest: "#0C0F09".to_string(),
+        surface_container_low: "#191D16".to_string(),
+        surface_container: "#1E211A".to_string(),
+        surface_container_high: "#282B24".to_string(),
+        surface_container_highest: "#33362F".to_string(),
     };
 
     let mut schemes = HashMap::new();
@@ -272,11 +272,11 @@ fn get_default_material_theme() -> MaterialThemeFile {
     schemes.insert("dark".to_string(), dark_scheme);
 
     let mut core_colors = HashMap::new();
-    core_colors.insert("primary".to_string(), "#B33B15".to_string());
+    core_colors.insert("primary".to_string(), "#5C883A".to_string());
 
     MaterialThemeFile {
-        description: "Default Material Theme".to_string(),
-        seed: "#B33B15".to_string(),
+        description: "TYPE: CUSTOM Material Theme Builder export 2025-08-21 11:51:45".to_string(),
+        seed: "#5C883A".to_string(),
         core_colors,
         extended_colors: Vec::new(),
         schemes,
@@ -516,29 +516,57 @@ impl MaterialThemeContext {
             
             Self::hex_to_color32(hex).unwrap_or(Color32::GRAY)
         } else {
-            // Fallback colors when no theme is loaded (using material-theme1.json light values)
+            // Fallback colors when no theme is loaded (using material-theme4.json light values)
             match name {
-                "primary" => Color32::from_rgb(143, 76, 56), // #8F4C38
+                "primary" => Color32::from_rgb(72, 103, 47), // #48672F
+                "surfaceTint" => Color32::from_rgb(72, 103, 47), // #48672F
                 "onPrimary" => Color32::WHITE, // #FFFFFF
-                "surface" => Color32::from_rgb(255, 248, 246), // #FFF8F6
-                "onSurface" => Color32::from_rgb(35, 25, 23), // #231917
-                "surfaceContainer" => Color32::from_rgb(252, 234, 229), // #FCEAE5
-                "surfaceContainerHigh" => Color32::from_rgb(247, 228, 224), // #F7E4E0
-                "surfaceContainerHighest" => Color32::from_rgb(241, 223, 218), // #F1DFDA
-                "surfaceContainerLow" => Color32::from_rgb(255, 241, 237), // #FFF1ED
-                "surfaceContainerLowest" => Color32::from_rgb(255, 255, 255), // #FFFFFF
-                "outline" => Color32::from_rgb(133, 115, 110), // #85736E
-                "outlineVariant" => Color32::from_rgb(216, 194, 188), // #D8C2BC
-                "surfaceVariant" => Color32::from_rgb(245, 222, 216), // #F5DED8
-                "onSurfaceVariant" => Color32::from_rgb(83, 67, 63), // #53433F
-                "secondary" => Color32::from_rgb(119, 87, 78), // #77574E
+                "primaryContainer" => Color32::from_rgb(200, 238, 168), // #C8EEA8
+                "onPrimaryContainer" => Color32::from_rgb(49, 79, 25), // #314F19
+                "secondary" => Color32::from_rgb(86, 98, 75), // #56624B
                 "onSecondary" => Color32::WHITE, // #FFFFFF
-                "tertiary" => Color32::from_rgb(108, 93, 47), // #6C5D2F
+                "secondaryContainer" => Color32::from_rgb(218, 231, 201), // #DAE7C9
+                "onSecondaryContainer" => Color32::from_rgb(63, 74, 52), // #3F4A34
+                "tertiary" => Color32::from_rgb(56, 102, 101), // #386665
                 "onTertiary" => Color32::WHITE, // #FFFFFF
+                "tertiaryContainer" => Color32::from_rgb(187, 236, 234), // #BBECEA
+                "onTertiaryContainer" => Color32::from_rgb(30, 78, 77), // #1E4E4D
                 "error" => Color32::from_rgb(186, 26, 26), // #BA1A1A
                 "onError" => Color32::WHITE, // #FFFFFF
-                "background" => Color32::from_rgb(255, 248, 246), // #FFF8F6
-                "onBackground" => Color32::from_rgb(35, 25, 23), // #231917
+                "errorContainer" => Color32::from_rgb(255, 218, 214), // #FFDAD6
+                "onErrorContainer" => Color32::from_rgb(147, 0, 10), // #93000A
+                "background" => Color32::from_rgb(249, 250, 239), // #F9FAEF
+                "onBackground" => Color32::from_rgb(25, 29, 22), // #191D16
+                "surface" => Color32::from_rgb(249, 250, 239), // #F9FAEF
+                "onSurface" => Color32::from_rgb(25, 29, 22), // #191D16
+                "surfaceVariant" => Color32::from_rgb(224, 228, 214), // #E0E4D6
+                "onSurfaceVariant" => Color32::from_rgb(68, 72, 62), // #44483E
+                "outline" => Color32::from_rgb(116, 121, 109), // #74796D
+                "outlineVariant" => Color32::from_rgb(196, 200, 186), // #C4C8BA
+                "shadow" => Color32::BLACK, // #000000
+                "scrim" => Color32::BLACK, // #000000
+                "inverseSurface" => Color32::from_rgb(46, 49, 42), // #2E312A
+                "inverseOnSurface" => Color32::from_rgb(240, 242, 231), // #F0F2E7
+                "inversePrimary" => Color32::from_rgb(173, 210, 142), // #ADD28E
+                "primaryFixed" => Color32::from_rgb(200, 238, 168), // #C8EEA8
+                "onPrimaryFixed" => Color32::from_rgb(11, 32, 0), // #0B2000
+                "primaryFixedDim" => Color32::from_rgb(173, 210, 142), // #ADD28E
+                "onPrimaryFixedVariant" => Color32::from_rgb(49, 79, 25), // #314F19
+                "secondaryFixed" => Color32::from_rgb(218, 231, 201), // #DAE7C9
+                "onSecondaryFixed" => Color32::from_rgb(20, 30, 12), // #141E0C
+                "secondaryFixedDim" => Color32::from_rgb(190, 203, 174), // #BECBAE
+                "onSecondaryFixedVariant" => Color32::from_rgb(63, 74, 52), // #3F4A34
+                "tertiaryFixed" => Color32::from_rgb(187, 236, 234), // #BBECEA
+                "onTertiaryFixed" => Color32::from_rgb(0, 32, 31), // #00201F
+                "tertiaryFixedDim" => Color32::from_rgb(160, 207, 206), // #A0CFCE
+                "onTertiaryFixedVariant" => Color32::from_rgb(30, 78, 77), // #1E4E4D
+                "surfaceDim" => Color32::from_rgb(217, 219, 209), // #D9DBD1
+                "surfaceBright" => Color32::from_rgb(249, 250, 239), // #F9FAEF
+                "surfaceContainerLowest" => Color32::WHITE, // #FFFFFF
+                "surfaceContainerLow" => Color32::from_rgb(243, 245, 234), // #F3F5EA
+                "surfaceContainer" => Color32::from_rgb(237, 239, 228), // #EDEFE4
+                "surfaceContainerHigh" => Color32::from_rgb(231, 233, 222), // #E7E9DE
+                "surfaceContainerHighest" => Color32::from_rgb(226, 227, 217), // #E2E3D9
                 _ => Color32::GRAY,
             }
         }

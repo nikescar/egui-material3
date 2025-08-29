@@ -43,36 +43,25 @@ struct MaterialApp {
     slider_value: f32,
     switch_enabled: bool,
     tab_selected: usize,
-    ripple: MaterialRipple,
     // Theme changer controls
     file_dialog: FileDialog,
     selected_file_path: Option<PathBuf>,
     color_pickers_open: HashMap<String, bool>,
     // Demo windows
     button_window: ButtonWindow,
-    card_window: CardWindow,
     checkbox_window: CheckboxWindow,
     chips_window: ChipsWindow,
     dialog_window: DialogWindow,
-    divider_window: DividerWindow,
-    elevation_window: ElevationWindow,
     fab_window: FabWindow,
     iconbutton_window: IconButtonWindow,
-    field_window: FieldWindow,
-    focus_window: FocusWindow,
-    item_window: ItemWindow,
     list_window: ListWindow,
     menu_window: MenuWindow,
-    navigationbar_window: NavigationBarWindow,
     progress_window: ProgressWindow,
     radio_window: RadioWindow,
-    ripple_window: RippleWindow,
-    segmentedbuttonset_window: SegmentedButtonSetWindow,
     select_window: SelectWindow,
     slider_window: SliderWindow,
     switch_window: SwitchWindow,
     tabs_window: TabsWindow,
-    textfield_window: TextFieldWindow,
     datatable_window: DataTableWindow,
     drawer_window: DrawerWindow,
     imagelist_window: ImageListWindow,
@@ -98,34 +87,23 @@ impl Default for MaterialApp {
             slider_value: 0.0,
             switch_enabled: false,
             tab_selected: 0,
-            ripple: MaterialRipple::default(),
             file_dialog: FileDialog::new(),
             selected_file_path: None,
             color_pickers_open: HashMap::new(),
             button_window: ButtonWindow::default(),
-            card_window: CardWindow::default(),
             checkbox_window: CheckboxWindow::default(),
             chips_window: ChipsWindow::default(),
             dialog_window: DialogWindow::default(),
-            divider_window: DividerWindow::default(),
-            elevation_window: ElevationWindow::default(),
             fab_window: FabWindow::default(),
             iconbutton_window: IconButtonWindow::default(),
-            field_window: FieldWindow::default(),
-            focus_window: FocusWindow::default(),
-            item_window: ItemWindow::default(),
             list_window: ListWindow::default(),
             menu_window: MenuWindow::default(),
-            navigationbar_window: NavigationBarWindow::default(),
             progress_window: ProgressWindow::default(),
             radio_window: RadioWindow::default(),
-            ripple_window: RippleWindow::default(),
-            segmentedbuttonset_window: SegmentedButtonSetWindow::default(),
             select_window: SelectWindow::default(),
             slider_window: SliderWindow::default(),
             switch_window: SwitchWindow::default(),
             tabs_window: TabsWindow::default(),
-            textfield_window: TextFieldWindow::default(),
             datatable_window: DataTableWindow::default(),
             drawer_window: DrawerWindow::default(),
             imagelist_window: ImageListWindow::default(),
@@ -308,29 +286,19 @@ impl MaterialApp {
     /// Close all open demo windows
     fn close_all_windows(&mut self) {
         self.button_window.open = false;
-        self.card_window.open = false;
         self.checkbox_window.open = false;
         self.chips_window.open = false;
         self.dialog_window.open = false;
-        self.divider_window.open = false;
-        self.elevation_window.open = false;
         self.fab_window.open = false;
         self.iconbutton_window.open = false;
-        self.field_window.open = false;
-        self.focus_window.open = false;
-        self.item_window.open = false;
         self.list_window.open = false;
         self.menu_window.open = false;
-        self.navigationbar_window.open = false;
         self.progress_window.open = false;
         self.radio_window.open = false;
-        self.ripple_window.open = false;
-        self.segmentedbuttonset_window.open = false;
         self.select_window.open = false;
         self.slider_window.open = false;
         self.switch_window.open = false;
         self.tabs_window.open = false;
-        self.textfield_window.open = false;
         self.datatable_window.open = false;
         self.drawer_window.open = false;
         self.imagelist_window.open = false;
@@ -614,80 +582,23 @@ impl eframe::App for MaterialApp {
             });
 
             ui.add_space(15.0);
-            ui.label("Labs Windows:");
-            ui.horizontal_wrapped(|ui| {
-
-                if ui.add(MaterialButton::filled("Ripple Stories")).clicked() {
-                    self.ripple_window.open = true;
-                }
-                            
-                if ui.add(MaterialButton::filled("Focus Ring Stories")).clicked() {
-                    self.focus_window.open = true;
-                }
-
-                if ui.add(MaterialButton::filled("Segmented Button Set Stories")).clicked() {
-                    self.segmentedbuttonset_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Card Stories")).clicked() {
-                    self.card_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Divider Stories")).clicked() {
-                    self.divider_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Elevation Stories")).clicked() {
-                    self.elevation_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Field Stories")).clicked() {
-                    self.field_window.open = true;
-                }
-
-                if ui.add(MaterialButton::filled("Text Field Stories")).clicked() {
-                    self.textfield_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Item Stories")).clicked() {
-                    self.item_window.open = true;
-                }
-                
-                if ui.add(MaterialButton::filled("Navigation Bar Stories")).clicked() {
-                    self.navigationbar_window.open = true;
-                }
-                
-                
-            });
         });
-
-        
 
         // Show demo windows
         self.button_window.show(ctx);
-        self.card_window.show(ctx);
         self.checkbox_window.show(ctx);
         self.chips_window.show(ctx);
         self.dialog_window.show(ctx);
-        self.divider_window.show(ctx);
-        self.elevation_window.show(ctx);
         self.fab_window.show(ctx);
         self.iconbutton_window.show(ctx);
-        self.field_window.show(ctx);
-        self.focus_window.show(ctx);
-        self.item_window.show(ctx);
         self.list_window.show(ctx);
         self.menu_window.show(ctx);
-        self.navigationbar_window.show(ctx);
         self.progress_window.show(ctx);
         self.radio_window.show(ctx);
-        self.ripple_window.show(ctx);
-        self.segmentedbuttonset_window.show(ctx);
         self.select_window.show(ctx);
         self.slider_window.show(ctx);
         self.switch_window.show(ctx);
         self.tabs_window.show(ctx);
-        self.textfield_window.show(ctx);
         self.datatable_window.show(ctx);
         self.drawer_window.show(ctx);
         self.imagelist_window.show(ctx);
