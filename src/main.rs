@@ -1,6 +1,6 @@
 use eframe::egui::{self, Color32};
 use egui_material::*;
-use egui_material::theme::{setup_google_fonts, setup_local_fonts, load_fonts};
+use egui_material::theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, load_fonts, load_themes};
 use egui_file_dialog::FileDialog;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -21,8 +21,11 @@ fn main() -> Result<(), eframe::Error> {
             setup_local_fonts(Some("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"));
             // Prepare Google Sans Code font for Material Design (default)
             setup_google_fonts(Some("Google Sans Code"));
-            // Load all prepared fonts
+            // Prepare themes from build-time constants
+            setup_local_theme(None);
+            // Load all prepared fonts and themes
             load_fonts(&cc.egui_ctx);
+            load_themes();
             Ok(Box::<MaterialApp>::default())
         }),
     )
