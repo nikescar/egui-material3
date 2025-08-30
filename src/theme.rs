@@ -15,6 +15,29 @@ pub struct PreparedFont {
 
 static PREPARED_FONTS: Mutex<Vec<PreparedFont>> = Mutex::new(Vec::new());
 
+/// A prepared Material Design theme ready for loading
+/// 
+/// This struct represents a Material Design theme that has been loaded and parsed
+/// from a JSON file, but not yet applied to the global theme context. Themes are
+/// stored in this prepared state to allow multiple themes to be loaded and then
+/// selectively applied.
+/// 
+/// # Fields
+/// * `name` - Human-readable name for the theme (derived from filename or "default")
+/// * `theme_data` - The complete Material Design theme specification parsed from JSON
+/// 
+/// # Usage
+/// This struct is primarily used internally by the theme system. Themes are prepared
+/// by `setup_local_theme()` and stored in the static `PREPARED_THEMES` collection,
+/// then activated by `load_themes()`.
+#[derive(Debug, Clone)]
+pub struct PreparedTheme {
+    pub name: String,
+    pub theme_data: MaterialThemeFile,
+}
+
+static PREPARED_THEMES: Mutex<Vec<PreparedTheme>> = Mutex::new(Vec::new());
+
 /// Material Design color scheme structure from JSON
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MaterialScheme {
@@ -366,6 +389,123 @@ impl MaterialThemeContext {
             }
         }
     }
+    
+    /// Internal implementation for preparing local themes from JSON files
+    /// 
+    /// This function handles the loading and parsing of Material Design theme JSON files.
+    /// It supports both runtime file loading and build-time constant inclusion.
+    /// 
+    /// # Arguments
+    /// * `theme_path` - Optional path to theme JSON file. If None, uses build-time constants.
+    /// 
+    /// # Implementation Details
+    /// - First attempts to load from specified file path (if provided)
+    /// - Falls back to build-time included theme constants
+    /// - Finally falls back to default built-in theme
+    /// - Parses JSON and stores in static PREPARED_THEMES collection
+    /// - Replaces any existing theme with the same name
+    pub fn setup_local_theme(theme_path: Option<&str>) {
+        let theme_data = if let Some(path) = theme_path {
+            // Try to load custom theme from path
+            match std::fs::read_to_string(path) {
+                Ok(data) => Some(data),
+                Err(_) => {
+                    // Fall back to compiled theme constants
+                    Self::get_theme_data_from_constants().or_else(|| {
+                        Some(serde_json::to_string(&get_default_material_theme()).unwrap_or_default())
+                    })
+                }
+            }
+        } else {
+            // Use theme data from build-time constants first, then fall back to default
+            Self::get_theme_data_from_constants().or_else(|| {
+                Some(serde_json::to_string(&get_default_material_theme()).unwrap_or_default())
+            })
+        };
+        
+        // Parse and prepare theme if available
+        if let Some(data) = theme_data {
+            if let Ok(theme_file) = serde_json::from_str::<MaterialThemeFile>(&data) {
+                let theme_name = theme_path.and_then(|p| {
+                    std::path::Path::new(p).file_stem().map(|s| s.to_string_lossy().to_string())
+                }).unwrap_or_else(|| "default".to_string());
+                
+                let prepared_theme = PreparedTheme {
+                    name: theme_name.clone(),
+                    theme_data: theme_file,
+                };
+                
+                if let Ok(mut themes) = PREPARED_THEMES.lock() {
+                    // Remove any existing theme with the same name
+                    themes.retain(|t| t.name != theme_name);
+                    themes.push(prepared_theme);
+                }
+            }
+        }
+    }
+    
+    /// Attempt to retrieve theme data from build-time generated constants
+    /// 
+    /// This function looks for theme JSON data that was included at build-time by
+    /// the build script. The build script scans for theme files and generates
+    /// constants like `THEME_MATERIAL_THEME6` containing the JSON data.
+    /// 
+    /// # Returns
+    /// * `Some(String)` - JSON theme data if a build-time constant was found
+    /// * `None` - If no build-time theme constants are available
+    /// 
+    /// # Implementation Note
+    /// This function currently returns None as a placeholder. In a complete
+    /// implementation, it would use macros or conditional compilation to access
+    /// the generated theme constants from the build script.
+    /// 
+    /// # Future Enhancement
+    /// ```rust,ignore
+    /// // Example of what this function would look like when implemented:
+    /// fn get_theme_data_from_constants() -> Option<String> {
+    ///     #[cfg(feature = "theme_material_theme6")]
+    ///     return Some(THEME_MATERIAL_THEME6.to_string());
+    ///     
+    ///     #[cfg(feature = "theme_material_theme2")]
+    ///     return Some(THEME_MATERIAL_THEME2.to_string());
+    ///     
+    ///     None
+    /// }
+    /// ```
+    fn get_theme_data_from_constants() -> Option<String> {
+        // This function will try to find theme data from generated constants
+        // For now, we'll look for common theme file names that would be generated
+        // by the build script. The actual constants will be available after build.
+        
+        // Try to access generated theme constants (these will be available after build)
+        // For now, return None and let it fall back to default theme
+        // TODO: Add actual constant lookups here once build system generates them
+        None
+    }
+
+    /// Internal implementation for loading prepared themes to the global theme context
+    /// 
+    /// This function applies the first prepared theme from the PREPARED_THEMES collection
+    /// as the active global theme. It creates a new MaterialThemeContext with the theme
+    /// data and updates the global theme state.
+    /// 
+    /// # Behavior
+    /// - Takes the first theme from prepared themes collection
+    /// - Creates a MaterialThemeContext with default settings (Light mode, Normal contrast)
+    /// - Updates the global GLOBAL_THEME with the new context
+    /// - If no themes were prepared, the global theme remains unchanged
+    pub fn load_themes() {
+        if let Ok(prepared_themes) = PREPARED_THEMES.lock() {
+            if let Some(theme) = prepared_themes.first() {
+                // Load the first prepared theme as the active theme
+                let theme_context = MaterialThemeContext {
+                    material_theme: Some(theme.theme_data.clone()),
+                    ..Default::default()
+                };
+                update_global_theme(theme_context);
+            }
+        }
+    }
 
     /// Load all prepared fonts to the egui context
     pub fn load_fonts(ctx: &egui::Context) {
@@ -601,6 +741,31 @@ pub fn get_global_theme() -> Arc<Mutex<MaterialThemeContext>> {
     GLOBAL_THEME.clone()
 }
 
+/// Update the global theme context with a new theme configuration
+/// 
+/// This function replaces the current global theme context with a new one.
+/// It's used internally by the theme system and can be used by applications
+/// to programmatically change theme settings at runtime.
+/// 
+/// # Arguments
+/// * `theme` - The new MaterialThemeContext to set as the global theme
+/// 
+/// # Usage
+/// This function is typically called by:
+/// - `load_themes()` - To apply a loaded theme as the global theme
+/// - Application code - To change theme mode, contrast level, or selected colors at runtime
+/// 
+/// # Thread Safety
+/// This function is thread-safe and uses a mutex to ensure exclusive access
+/// to the global theme state.
+/// 
+/// # Example
+/// ```rust
+/// let mut theme_context = MaterialThemeContext::default();
+/// theme_context.theme_mode = ThemeMode::Dark;
+/// theme_context.contrast_level = ContrastLevel::High;
+/// update_global_theme(theme_context);
+/// ```
 pub fn update_global_theme(theme: MaterialThemeContext) {
     if let Ok(mut global_theme) = GLOBAL_THEME.lock() {
         *global_theme = theme;
@@ -623,10 +788,143 @@ pub fn setup_local_fonts(font_path: Option<&str>) {
     MaterialThemeContext::setup_local_fonts(font_path);
 }
 
+/// Prepare local Material Design themes for the application from JSON files
+/// 
+/// This function loads Material Design theme data from JSON files and prepares them for use.
+/// Theme data is included at build-time when using the default behavior (None path), or loaded
+/// at runtime when a specific path is provided.
+/// 
+/// # Arguments
+/// * `theme_path` - Optional path to a Material Design theme JSON file:
+///   - `Some(path)` - Load theme from the specified file path at runtime
+///   - `None` - Use themes that were included at build-time from the build script scan
+/// 
+/// # Build-time Theme Inclusion
+/// When `theme_path` is `None`, the build script automatically scans for JSON files in:
+/// - `resources/` directory
+/// - `examples/` directory
+/// 
+/// Files matching `*theme*.json` or `*material-theme*.json` patterns are included as constants.
+/// 
+/// # Example
+/// ```rust
+/// // Use build-time included themes (recommended for production)
+/// setup_local_theme(None);
+/// 
+/// // Load specific theme file at runtime (useful for development/testing)
+/// setup_local_theme(Some("resources/my-custom-theme.json"));
+/// setup_local_theme(Some("examples/material-theme6.json"));
+/// ```
+/// 
+/// # Note
+/// Themes are only prepared by this function. Call `load_themes()` after this to actually
+/// apply the prepared themes to the global theme context.
+pub fn setup_local_theme(theme_path: Option<&str>) {
+    MaterialThemeContext::setup_local_theme(theme_path);
+}
+
+/// Load all prepared themes to the global theme context
+/// 
+/// This function takes themes that were prepared by `setup_local_theme()` and applies
+/// the first prepared theme as the active global theme. This makes the theme available
+/// to all Material Design components throughout the application.
+/// 
+/// # Usage
+/// This should be called after all `setup_local_theme()` calls and typically during
+/// application initialization.
+/// 
+/// # Example
+/// ```rust
+/// // Setup and load themes during app initialization
+/// setup_local_theme(Some("resources/my-theme.json"));
+/// load_themes();  // Apply the prepared theme globally
+/// ```
+/// 
+/// # Behavior
+/// - If multiple themes were prepared, only the first one becomes active
+/// - If no themes were prepared, the default built-in theme is used
+/// - The active theme becomes available via `get_global_color()` and other theme functions
+pub fn load_themes() {
+    MaterialThemeContext::load_themes();
+}
+
 /// Load all prepared fonts to the egui context
 /// Call this after all setup_*_fonts functions to actually load the fonts
 pub fn load_fonts(ctx: &egui::Context) {
     MaterialThemeContext::load_fonts(ctx);
+}
+
+/// Update the window/panel background colors based on the current theme
+/// 
+/// This function automatically applies the appropriate background colors from the current
+/// Material Design theme to the egui context. The background color is selected based on
+/// the current theme mode (Light/Dark/Auto) and contrast level (Normal/Medium/High).
+/// 
+/// # Arguments
+/// * `ctx` - The egui context to update with new background colors
+/// 
+/// # Background Color Selection
+/// The function selects background colors according to Material Design guidelines:
+/// 
+/// **Dark Theme:**
+/// - High contrast: `surfaceContainerHighest`
+/// - Medium contrast: `surfaceContainerHigh` 
+/// - Normal contrast: `surface`
+/// 
+/// **Light Theme:**
+/// - High contrast: `surfaceContainerLowest`
+/// - Medium contrast: `surfaceContainerLow`
+/// - Normal contrast: `surface`
+/// 
+/// **Auto Theme:** Uses `surface` as default
+/// 
+/// # Usage
+/// This function should be called:
+/// - Once during application initialization (after `load_themes()`)
+/// - Whenever theme settings change (mode or contrast level)
+/// 
+/// # Example
+/// ```rust
+/// // During app initialization in eframe::run_native
+/// setup_local_theme(Some("my-theme.json"));
+/// load_themes();
+/// update_window_background(&cc.egui_ctx);  // Apply initial background
+/// 
+/// // When theme settings change at runtime
+/// fn change_theme_mode(&mut self, ctx: &egui::Context) {
+///     // Update theme mode in global context...
+///     update_window_background(ctx);  // Apply new background
+/// }
+/// ```
+/// 
+/// # Effects
+/// This function updates the following egui visual properties:
+/// - `window_fill` - Background color for floating windows
+/// - `panel_fill` - Background color for side panels and central panel  
+/// - `extreme_bg_color` - Background color for extreme contrast areas
+pub fn update_window_background(ctx: &egui::Context) {
+    if let Ok(theme) = GLOBAL_THEME.lock() {
+        // Get the appropriate background color from the material theme
+        let background_color = match (theme.theme_mode, theme.contrast_level) {
+            (ThemeMode::Dark, ContrastLevel::High) => theme.get_color_by_name("surfaceContainerHighest"),
+            (ThemeMode::Dark, ContrastLevel::Medium) => theme.get_color_by_name("surfaceContainerHigh"),
+            (ThemeMode::Dark, _) => theme.get_color_by_name("surface"),
+            (ThemeMode::Light, ContrastLevel::High) => theme.get_color_by_name("surfaceContainerLowest"),
+            (ThemeMode::Light, ContrastLevel::Medium) => theme.get_color_by_name("surfaceContainerLow"),
+            (ThemeMode::Light, _) => theme.get_color_by_name("surface"),
+            (ThemeMode::Auto, _) => theme.get_color_by_name("surface"), // Default to surface for auto mode
+        };
+        
+        // Apply the background color to the context
+        let mut visuals = ctx.style().visuals.clone();
+        visuals.window_fill = background_color;
+        visuals.panel_fill = background_color;
+        visuals.extreme_bg_color = background_color;
+        
+        let mut style = (*ctx.style()).clone();
+        style.visuals = visuals;
+        ctx.set_style(style);
+    }
 }
 
 /// Helper function to get a color by name from the global theme

@@ -19,6 +19,15 @@ serde_json = "1.0"
 lazy_static = "1.4"
 resvg = "0.42"
 image = "0.25"
+ureq = { version = "2.9", features = ["json"] }
+
+[[example]]
+name = "flight_departures_example"
+path = "examples/flight_departures_example.rs"
+
+[[example]]
+name = "test_api"
+path = "test_api.rs"
 
 [build-dependencies]
 ureq = { version = "2.9", features = ["json"] }

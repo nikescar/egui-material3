@@ -24,6 +24,11 @@ fn main() {
         font_code.push_str(&local_code);
     }
     
+    // Generate theme data
+    if let Ok(theme_code) = generate_local_themes() {
+        font_code.push_str(&theme_code);
+    }
+    
     // Generate font data for each requested font
     for font_name in &requested_fonts {
         let const_name = font_name_to_const(font_name);
@@ -69,6 +74,53 @@ fn scan_source_for_fonts() -> HashSet<String> {
     }
     
     fonts
+}
+
+fn generate_local_themes() -> Result<String, Box<dyn std::error::Error>> {
+    let mut code = String::new();
+    
+    // Look for JSON theme files in the resources and examples directories
+    for dir_path in &["resources", "examples"] {
+        let dir = Path::new(dir_path);
+        if !dir.exists() {
+            continue;
+        }
+        
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            
+            if let Some(extension) = path.extension() {
+                if extension == "json" {
+                    if let Some(file_name) = path.file_stem() {
+                        let file_name_str = file_name.to_string_lossy();
+                        
+                        // Only process files that look like Material theme files
+                        if file_name_str.contains("material-theme") || file_name_str.contains("theme") {
+                            // Generate constant name from file name
+                            let const_name = format!("THEME_{}", 
+                                file_name_str
+                                    .to_uppercase()
+                                    .replace("-", "_")
+                                    .replace(" ", "_")
+                            );
+                            
+                            // Read theme file data
+                            let theme_data = fs::read_to_string(&path)?;
+                            
+                            // Generate Rust code for theme JSON string - escape the JSON properly
+                            code.push_str(&format!("// Local theme: {}\n", file_name_str));
+                            code.push_str(&format!("pub const {}: &str = r###\"{}\"###;\n\n", const_name, theme_data));
+                            
+                            println!("Generated constant {} for theme {}", const_name, file_name_str);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    Ok(code)
 }
 
 fn generate_local_fonts() -> Result<String, Box<dyn std::error::Error>> {
