@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window};
 use crate::{MaterialButton, icons::icon_text};
 
+#[doc(hidden)]
 pub struct ButtonWindow {
     pub open: bool,
     label: String,

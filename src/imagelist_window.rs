@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window};
 use crate::{MaterialButton, MaterialCheckbox, image_list, masonry_image_list, woven_image_list};
 
+#[doc(hidden)]
 pub struct ImageListWindow {
     pub open: bool,
     columns: usize,
@@ -14,7 +17,7 @@ pub struct ImageListWindow {
 
 #[derive(Clone)]
 struct DynamicImageItem {
-    id: usize,
+    _id: usize,
     label: String,
     image_source: String,
 }
@@ -25,7 +28,7 @@ impl Default for ImageListWindow {
         let mut dynamic_images = Vec::new();
         for i in 1..=8 {
             dynamic_images.push(DynamicImageItem {
-                id: i,
+                _id: i,
                 label: format!("Photo {:03}", i),
                 image_source: format!("photo{}.jpg", i),
             });
@@ -46,7 +49,7 @@ impl Default for ImageListWindow {
 impl ImageListWindow {
     fn add_image(&mut self) {
         let new_image = DynamicImageItem {
-            id: self.next_image_id,
+            _id: self.next_image_id,
             label: format!("Photo {:03}", self.next_image_id),
             image_source: format!("photo{}.jpg", self.next_image_id),
         };

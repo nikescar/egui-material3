@@ -222,6 +222,6 @@ impl<'a> Widget for MaterialSwitch<'a> {
     }
 }
 
-pub fn switch(selected: &mut bool) -> MaterialSwitch {
+pub fn switch(selected: &mut bool) -> MaterialSwitch<'_> {
     MaterialSwitch::new(selected)
 }

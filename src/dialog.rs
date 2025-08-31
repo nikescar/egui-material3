@@ -76,7 +76,7 @@ pub struct DialogAction<'a> {
     /// Visual style of the action button
     action_type: ActionType,
     /// Whether the action is currently enabled
-    enabled: bool,
+    _enabled: bool,
     /// Callback function executed when action is triggered
     action: Box<dyn FnOnce() + 'a>,
 }
@@ -211,7 +211,7 @@ impl<'a> MaterialDialog<'a> {
         self.actions.push(DialogAction {
             text: text.into(),
             action_type: ActionType::Text,
-            enabled: true,
+            _enabled: true,
             action: Box::new(action),
         });
         self
@@ -232,7 +232,7 @@ impl<'a> MaterialDialog<'a> {
         self.actions.push(DialogAction {
             text: text.into(),
             action_type: ActionType::FilledTonal,
-            enabled: true,
+            _enabled: true,
             action: Box::new(action),
         });
         self
@@ -253,7 +253,7 @@ impl<'a> MaterialDialog<'a> {
         self.actions.push(DialogAction {
             text: text.into(),
             action_type: ActionType::Filled,
-            enabled: true,
+            _enabled: true,
             action: Box::new(action),
         });
         self
@@ -497,7 +497,7 @@ impl<'a> MaterialDialog<'a> {
         response
     }
 
-    fn draw_action_button(&self, ui: &mut Ui, action: &DialogAction) -> Response {
+    fn _draw_action_button(&self, ui: &mut Ui, action: &DialogAction) -> Response {
         Self::draw_action_button_static(ui, action)
     }
 }
@@ -516,7 +516,7 @@ pub fn dialog(
     id: impl Into<egui::Id>,
     title: impl Into<String>,
     open: &mut bool,
-) -> MaterialDialog {
+) -> MaterialDialog<'_> {
     MaterialDialog::new(id, title, open)
 }
 
@@ -533,7 +533,7 @@ pub fn alert_dialog(
     id: impl Into<egui::Id>,
     title: impl Into<String>,
     open: &mut bool,
-) -> MaterialDialog {
+) -> MaterialDialog<'_> {
     MaterialDialog::new(id, title, open).dialog_type(DialogType::Alert)
 }
 
@@ -550,7 +550,7 @@ pub fn confirm_dialog(
     id: impl Into<egui::Id>,
     title: impl Into<String>,
     open: &mut bool,
-) -> MaterialDialog {
+) -> MaterialDialog<'_> {
     MaterialDialog::new(id, title, open).dialog_type(DialogType::Confirm)
 }
 
@@ -567,6 +567,6 @@ pub fn form_dialog(
     id: impl Into<egui::Id>,
     title: impl Into<String>,
     open: &mut bool,
-) -> MaterialDialog {
+) -> MaterialDialog<'_> {
     MaterialDialog::new(id, title, open).dialog_type(DialogType::Form)
 }

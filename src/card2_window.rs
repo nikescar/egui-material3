@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window};
 use crate::{MaterialButton, MaterialCheckbox, elevated_card2, filled_card2, outlined_card2};
 
+#[doc(hidden)]
 pub struct Card2Window {
     pub open: bool,
     show_header: bool,

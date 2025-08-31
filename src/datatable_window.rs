@@ -1,3 +1,5 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window, Id};
 use crate::{MaterialButton, MaterialCheckbox, data_table};
 use crate::datatable::{SortDirection as DataTableSortDirection, RowAction};
@@ -9,7 +11,7 @@ struct TableRow {
     category: String,
     price: String,
     stock: String,
-    selected: bool,
+    _selected: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -27,12 +29,13 @@ enum SortDirection {
 }
 
 
+#[doc(hidden)]
 pub struct DataTableWindow {
     pub open: bool,
     allow_selection: bool,
     sticky_header: bool,
     show_progress: bool,
-    selected_rows: Vec<bool>,
+    _selected_rows: Vec<bool>,
     // Interactive table data
     interactive_rows: Vec<TableRow>,
     // Track selection state for interactive table
@@ -54,35 +57,35 @@ impl Default for DataTableWindow {
                 category: "Electronics".to_string(),
                 price: "$999".to_string(),
                 stock: "15".to_string(),
-                selected: false,
+                _selected: false,
             },
             TableRow {
                 product: "Book".to_string(),
                 category: "Education".to_string(),
                 price: "$29".to_string(),
                 stock: "50".to_string(),
-                selected: false,
+                _selected: false,
             },
             TableRow {
                 product: "Shirt".to_string(),
                 category: "Clothing".to_string(),
                 price: "$49".to_string(),
                 stock: "100".to_string(),
-                selected: false,
+                _selected: false,
             },
             TableRow {
                 product: "Phone".to_string(),
                 category: "Electronics".to_string(),
                 price: "$799".to_string(),
                 stock: "25".to_string(),
-                selected: false,
+                _selected: false,
             },
             TableRow {
                 product: "Headphones".to_string(),
                 category: "Electronics".to_string(),
                 price: "$199".to_string(),
                 stock: "40".to_string(),
-                selected: false,
+                _selected: false,
             },
         ];
         let interactive_selection = vec![false; interactive_rows.len()];
@@ -92,7 +95,7 @@ impl Default for DataTableWindow {
             allow_selection: true,
             sticky_header: false,
             show_progress: false,
-            selected_rows: vec![false, true, true, false, false],
+            _selected_rows: vec![false, true, true, false, false],
             interactive_rows,
             interactive_selection,
             editing_rows: HashSet::new(),
@@ -314,7 +317,7 @@ impl DataTableWindow {
                     category: "New Category".to_string(),
                     price: "$99".to_string(),
                     stock: "10".to_string(),
-                    selected: false,
+                    _selected: false,
                 };
                 self.interactive_rows.push(new_row);
                 self.interactive_selection.push(false);

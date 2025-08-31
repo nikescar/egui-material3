@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{fab_surface, fab_primary, fab_secondary, fab_tertiary, fab_branded, FabSize, google_branded_icon};
 
+#[doc(hidden)]
 pub struct FabWindow {
     pub open: bool,
     icon: String,

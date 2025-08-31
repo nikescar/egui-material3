@@ -1,7 +1,10 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window, Rect};
 use crate::{MaterialButton, MaterialCheckbox, menu, menu_item};
 use crate::menu::{Corner, FocusState, Positioning};
 
+#[doc(hidden)]
 pub struct MenuWindow {
     pub open: bool,
     // Knob options from TypeScript stories

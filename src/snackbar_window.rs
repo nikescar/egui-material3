@@ -1,7 +1,10 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window};
 use crate::{SnackbarPosition, MaterialButton, MaterialCheckbox, snackbar, snackbar_with_action};
 use std::time::Instant;
 
+#[doc(hidden)]
 pub struct SnackbarWindow {
     pub open: bool,
     show_basic_snackbar: bool,
@@ -234,9 +237,9 @@ impl SnackbarWindow {
         }
         
         // Calculate stacking offsets for each position
-        let mut bottom_offset = 0.0;
-        let mut top_offset = 0.0;
-        let snackbar_spacing = 56.0; // Material Design spacing (48px height + 8px margin)
+        let bottom_offset = 0.0;
+        let top_offset = 0.0;
+        let _snackbar_spacing = 56.0; // Material Design spacing (48px height + 8px margin)
         
         // Render bottom-positioned snackbars with stacking
         if self.show_basic_snackbar {

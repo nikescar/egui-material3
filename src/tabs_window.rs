@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{tabs_primary, tabs_secondary};
 
+#[doc(hidden)]
 pub struct TabsWindow {
     pub open: bool,
     active_tab_index: usize,
@@ -8,8 +11,8 @@ pub struct TabsWindow {
     inline_icon: bool,
     content: String,
     // Tab states
-    primary_selected: usize,
-    secondary_selected: usize,
+    _primary_selected: usize,
+    _secondary_selected: usize,
     music_primary_selected: usize,
     travel_secondary_selected: usize,
     custom_selected: usize,
@@ -26,8 +29,8 @@ impl Default for TabsWindow {
             auto_activate: true,
             inline_icon: false,
             content: "both".to_string(),
-            primary_selected: 0,
-            secondary_selected: 0,
+            _primary_selected: 0,
+            _secondary_selected: 0,
             music_primary_selected: 0,
             travel_secondary_selected: 0,
             custom_selected: 0,

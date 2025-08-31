@@ -458,6 +458,6 @@ pub fn icon_button_outlined(icon: impl Into<String>) -> MaterialIconButton<'stat
 /// ui.add(icon_button_toggle("favorite", &mut is_liked));
 /// # });
 /// ```
-pub fn icon_button_toggle(icon: impl Into<String>, selected: &mut bool) -> MaterialIconButton {
+pub fn icon_button_toggle(icon: impl Into<String>, selected: &mut bool) -> MaterialIconButton<'_> {
     MaterialIconButton::toggle(icon, selected)
 }
