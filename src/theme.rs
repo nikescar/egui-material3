@@ -1,3 +1,77 @@
+//! Material Design 3 theming system
+//! 
+//! This module provides a comprehensive theming system for Material Design 3 components,
+//! including support for build-time theme inclusion, runtime theme loading, and dynamic
+//! theme switching with multiple modes and contrast levels.
+//!
+//! # Overview
+//!
+//! The theme system consists of several key components:
+//!
+//! - **Theme Preparation**: Load and parse Material Design theme JSON files
+//! - **Theme Loading**: Apply prepared themes to the global context
+//! - **Font Management**: Handle Google Fonts and local font loading
+//! - **Background Updates**: Apply theme-appropriate background colors
+//! - **Runtime Switching**: Change themes, modes, and contrast levels dynamically
+//!
+//! # Basic Usage
+//!
+//! ```rust,no_run
+//! use egui_material3::theme::{
+//!     setup_google_fonts, setup_local_fonts, setup_local_theme,
+//!     load_fonts, load_themes, update_window_background
+//! };
+//!
+//! // Setup fonts and themes (typically during app initialization)
+//! setup_google_fonts(Some("Roboto"));
+//! setup_local_fonts(Some("path/to/MaterialSymbols.ttf"));
+//! setup_local_theme(None); // Use build-time included themes
+//!
+//! // Load prepared fonts and themes
+//! load_fonts(&egui_ctx);
+//! load_themes();
+//!
+//! // Apply theme background
+//! update_window_background(&egui_ctx);
+//! ```
+//!
+//! # Build-time Theme Inclusion
+//!
+//! The build script automatically scans for theme JSON files in:
+//! - `resources/` directory  
+//! - `examples/` directory
+//!
+//! Files matching patterns like `*theme*.json` or `*material-theme*.json` are
+//! included as string constants for optimal performance.
+//!
+//! # Theme JSON Format
+//!
+//! Themes should follow the Material Design Theme Builder export format:
+//!
+//! ```json
+//! {
+//!   "description": "My Custom Theme",
+//!   "seed": "#6750A4",
+//!   "coreColors": {
+//!     "primary": "#6750A4"
+//!   },
+//!   "schemes": {
+//!     "light": {
+//!       "primary": "#6750A4",
+//!       "onPrimary": "#FFFFFF",
+//!       "surface": "#FEF7FF",
+//!       // ... more colors
+//!     },
+//!     "dark": {
+//!       "primary": "#D0BCFF", 
+//!       "onPrimary": "#381E72",
+//!       "surface": "#141218",
+//!       // ... more colors
+//!     }
+//!   }
+//! }
+//! ```
+
 use egui::{Color32, FontData, FontDefinitions, FontFamily};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

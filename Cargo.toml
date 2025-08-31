@@ -2,9 +2,15 @@
 name = "egui-material3"
 version = "0.0.1"
 edition = "2021"
-license = "MIT or Apache-2.0"
+license = "MIT OR Apache-2.0"
 authors = ["Woojae Park <nikescar@gmail.com>"]
-description = "Material Design components for egui"
+description = "Material Design 3 components for egui with comprehensive theming support"
+homepage = "https://github.com/nikescar/egui-material3"
+repository = "https://github.com/nikescar/egui-material3"
+documentation = "https://docs.rs/egui-material3"
+readme = "README.md"
+keywords = ["egui", "material-design", "gui", "ui", "components"]
+categories = ["gui", "graphics", "visualization"]
 
 [dependencies]
 egui = "0.32"
@@ -26,8 +32,12 @@ name = "flight_departures_example"
 path = "examples/flight_departures_example.rs"
 
 [[example]]
-name = "test_api"
-path = "test_api.rs"
+name = "widget_gallery_example"
+path = "examples/widget_gallery_example.rs"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [build-dependencies]
 ureq = { version = "2.9", features = ["json"] }
