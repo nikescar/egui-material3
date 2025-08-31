@@ -1,6 +1,6 @@
 use eframe::egui::{self, Color32};
-use egui_material::*;
-use egui_material::theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, load_fonts, load_themes};
+use egui_material3::*;
+use egui_material3::theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, load_fonts, load_themes};
 use egui_file_dialog::FileDialog;
 use std::collections::HashMap;
 use std::path::PathBuf;

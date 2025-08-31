@@ -1,5 +1,5 @@
 use eframe::egui;
-use egui_material::{
+use egui_material3::{
     MaterialButton, MaterialCheckbox, MaterialSlider, MaterialRadio, MaterialSelect, MaterialCard2,
     MaterialSwitch, MaterialIconButton, MaterialFab, MaterialProgress, MaterialDialog, MaterialChip,
     MaterialList, MaterialTabs, MaterialDrawer, MaterialTopAppBar, MaterialIcon,
@@ -103,7 +103,7 @@ impl WidgetGalleryApp {
     
     fn update_theme_mode(&mut self, ctx: &egui::Context) {
         // Update the global theme context with new theme mode and contrast level
-        if let Ok(mut global_theme) = egui_material::theme::get_global_theme().lock() {
+        if let Ok(mut global_theme) = egui_material3::theme::get_global_theme().lock() {
             global_theme.theme_mode = self.theme_mode;
             global_theme.contrast_level = self.contrast_level;
         }
