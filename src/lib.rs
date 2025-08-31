@@ -1,8 +1,175 @@
-//! Material Design components for egui
+//! # egui-material3
+//! 
+//! A comprehensive Material Design 3 component library for [egui](https://github.com/emilk/egui), 
+//! providing a complete set of Material Design components with advanced theming support.
 //!
-//! This crate provides Material Design 3 components for egui applications,
-//! including buttons, text fields, and other UI elements that follow
-//! Material Design guidelines.
+//! ## Features
+//!
+//! - **Complete Material Design 3 Components**: Buttons, checkboxes, sliders, dialogs, data tables, and more
+//! - **Advanced Theming System**: Support for light/dark modes, contrast levels, and custom Material Design themes
+//! - **Build-time Theme Inclusion**: Automatically include theme JSON files at compile time for optimal performance
+//! - **Runtime Theme Loading**: Load and switch themes dynamically at runtime
+//! - **Material Design Icons**: Full support for Material Symbols with built-in icon font loading
+//! - **Responsive Design**: Components adapt to different screen sizes and orientations
+//!
+//! ## Quick Start
+//!
+//! Add this to your `Cargo.toml`:
+//! ```toml
+//! [dependencies]
+//! egui-material3 = "0.0.1"
+//! eframe = "0.32"
+//! ```
+//!
+//! ### Basic Usage
+//! 
+//! ```rust,no_run
+//! use eframe::egui;
+//! use egui_material3::{
+//!     MaterialButton, MaterialCheckbox, MaterialSlider,
+//!     theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, 
+//!            load_fonts, load_themes, update_window_background}
+//! };
+//!
+//! fn main() -> Result<(), eframe::Error> {
+//!     let options = eframe::NativeOptions {
+//!         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
+//!         ..Default::default()
+//!     };
+//!     
+//!     eframe::run_native(
+//!         "Material Design App",
+//!         options,
+//!         Box::new(|cc| {
+//!             // Setup Material Design fonts and themes
+//!             setup_google_fonts(Some("Roboto"));
+//!             setup_local_fonts(Some("resources/MaterialSymbolsOutlined.ttf"));
+//!             setup_local_theme(None); // Use default theme
+//!             
+//!             // Load fonts and themes
+//!             load_fonts(&cc.egui_ctx);
+//!             load_themes();
+//!             
+//!             // Apply theme background
+//!             update_window_background(&cc.egui_ctx);
+//!             
+//!             Ok(Box::<MyApp>::default())
+//!         }),
+//!     )
+//! }
+//!
+//! #[derive(Default)]
+//! struct MyApp {
+//!     checked: bool,
+//!     slider_value: f32,
+//! }
+//!
+//! impl eframe::App for MyApp {
+//!     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+//!         egui::CentralPanel::default().show(ctx, |ui| {
+//!             ui.heading("Material Design Components");
+//!             
+//!             // Use Material Design components
+//!             ui.add(MaterialButton::new("Click me"));
+//!             ui.add(MaterialCheckbox::new(&mut self.checked, "Check me"));
+//!             ui.add(MaterialSlider::new(&mut self.slider_value, 0.0..=100.0));
+//!         });
+//!     }
+//! }
+//! ```
+//!
+//! ## Theme System
+//!
+//! The theme system supports Material Design 3 with comprehensive theming capabilities:
+//!
+//! ### Build-time Theme Inclusion
+//! 
+//! Themes can be automatically included at build time from JSON files:
+//! 
+//! ```rust,no_run
+//! use egui_material3::theme::{setup_local_theme, load_themes};
+//! 
+//! // Uses themes from resources/ and examples/ directories automatically
+//! setup_local_theme(None); 
+//! load_themes();
+//! ```
+//!
+//! ### Runtime Theme Loading
+//!
+//! Load custom themes dynamically:
+//!
+//! ```rust,no_run
+//! use egui_material3::theme::{setup_local_theme, load_themes};
+//!
+//! // Load specific theme file
+//! setup_local_theme(Some("path/to/my-theme.json"));
+//! load_themes();
+//! ```
+//!
+//! ### Theme Modes and Contrast
+//!
+//! Support for multiple theme modes and contrast levels:
+//!
+//! ```rust,no_run
+//! use egui_material3::theme::{get_global_theme, update_window_background, ThemeMode, ContrastLevel};
+//!
+//! // Change theme mode at runtime
+//! if let Ok(mut theme) = get_global_theme().lock() {
+//!     theme.theme_mode = ThemeMode::Dark;
+//!     theme.contrast_level = ContrastLevel::High;
+//! }
+//! // Apply changes
+//! update_window_background(ctx);
+//! ```
+//!
+//! ## Available Components
+//!
+//! ### Basic Components
+//! - [`MaterialButton`] - Material Design buttons with multiple variants
+//! - [`MaterialCheckbox`] - Checkboxes following Material Design guidelines  
+//! - [`MaterialSlider`] - Sliders with Material Design styling
+//! - [`MaterialSwitch`] - Toggle switches
+//! - [`MaterialRadio`] - Radio button groups
+//! - [`MaterialSelect`] - Dropdown selection components
+//!
+//! ### Advanced Components
+//! - [`MaterialChip`] - Filter and action chips
+//! - [`MaterialCard2`] - Material Design cards
+//! - [`MaterialDialog`] - Modal dialogs and alerts
+//! - [`MaterialFab`] - Floating Action Buttons
+//! - [`MaterialProgress`] - Progress indicators and loading states
+//! - [`MaterialDataTable`] - Data tables with sorting and selection
+//!
+//! ### Navigation Components  
+//! - [`MaterialTabs`] - Tab navigation
+//! - [`MaterialDrawer`] - Navigation drawers
+//! - [`MaterialTopAppBar`] - App bars and toolbars
+//!
+//! ### Icons and Visual Elements
+//! - [`MaterialIcon`] - Material Design icons with font support
+//! - [`MaterialList`] - Lists following Material Design patterns
+//!
+//! ## Examples
+//!
+//! The crate includes comprehensive examples:
+//!
+//! - `widget_gallery_example` - Showcase of all Material components with theme switching
+//! - `flight_departures_example` - Real-world data table implementation
+//!
+//! Run examples with:
+//! ```bash
+//! cargo run --example widget_gallery_example
+//! cargo run --example flight_departures_example  
+//! ```
+//!
+//! ## Material Design Resources
+//!
+//! - [Material Design 3](https://m3.material.io/)
+//! - [Material Theme Builder](https://m3.material.io/theme-builder)
+//! - [Material Design Icons](https://fonts.google.com/icons)
+//!
+//! This crate follows the Material Design 3 specifications and guidelines for consistent,
+//! accessible, and beautiful user interfaces.
 
 pub mod icons;
 pub mod image_utils;
