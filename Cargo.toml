@@ -1,5 +1,5 @@
 [package]
-name = "egui-material"
+name = "egui-material3"
 version = "0.0.1"
 edition = "2021"
 license = "MIT or Apache-2.0"

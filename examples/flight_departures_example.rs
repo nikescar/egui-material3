@@ -1,5 +1,5 @@
 use eframe::egui;
-use egui_material::{
+use egui_material3::{
     MaterialDataTable, MaterialButton,
     theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, load_fonts, load_themes, MaterialThemeFile, MaterialThemeContext, ThemeMode, ContrastLevel, update_global_theme},
 };

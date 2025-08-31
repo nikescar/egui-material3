@@ -1,4 +1,4 @@
-# egui-material
+# egui-material3
 
 A Material Design component library for egui, providing Material Design 3 components with theme support.
 
@@ -12,7 +12,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-egui-material = { path = "." }
+egui-material3 = "0.0.1"
 eframe = "0.29"
 ```
 
@@ -20,7 +20,7 @@ eframe = "0.29"
 
 ```rust
 use eframe::egui;
-use egui_material::{
+use egui_material3::{
     MaterialButton, MaterialCheckbox, MaterialSlider,
     theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, load_fonts, load_themes, update_window_background}
 };
