@@ -49,3 +49,4 @@ serde_json = "1.0"
 # $ cargo doc --no-deps --open
 # $ cargo doc --lib --no-deps
 # $ cargo publish
+# $ cargo publish --dry-run

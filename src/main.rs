@@ -7,6 +7,51 @@ use egui_file_dialog::FileDialog;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+// Import window modules
+mod button_window;
+mod checkbox_window;
+mod chips_window;
+mod dialog_window;
+mod fab_window;
+mod iconbutton_window;
+mod list_window;
+mod menu_window;
+mod progress_window;
+mod radio_window;
+mod select_window;
+mod slider_window;
+mod switch_window;
+mod tabs_window;
+mod datatable_window;
+mod drawer_window;
+mod imagelist_window;
+mod layoutgrid_window;
+mod snackbar_window;
+mod topappbar_window;
+mod card2_window;
+
+use button_window::ButtonWindow;
+use checkbox_window::CheckboxWindow;
+use chips_window::ChipsWindow;
+use dialog_window::DialogWindow;
+use fab_window::FabWindow;
+use iconbutton_window::IconButtonWindow;
+use list_window::ListWindow;
+use menu_window::MenuWindow;
+use progress_window::ProgressWindow;
+use radio_window::RadioWindow;
+use select_window::SelectWindow;
+use slider_window::SliderWindow;
+use switch_window::SwitchWindow;
+use tabs_window::TabsWindow;
+use datatable_window::DataTableWindow;
+use drawer_window::DrawerWindow;
+use imagelist_window::ImageListWindow;
+use layoutgrid_window::LayoutGridWindow;
+use snackbar_window::SnackbarWindow;
+use topappbar_window::TopAppBarWindow;
+use card2_window::Card2Window;
+
 
 
 fn main() -> Result<(), eframe::Error> {
