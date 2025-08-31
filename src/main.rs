@@ -1,3 +1,5 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Color32};
 use egui_material3::*;
 use egui_material3::theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, load_fonts, load_themes};

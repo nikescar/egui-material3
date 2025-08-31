@@ -1,7 +1,10 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window};
 use crate::{MaterialButton, MaterialCheckbox};
 use crate::theme::get_global_color;
 
+#[doc(hidden)]
 pub struct DrawerWindow {
     pub open: bool,
     permanent_drawer_open: bool,
@@ -22,6 +25,7 @@ pub struct DrawerWindow {
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum DrawerType {
     Permanent,
+    #[allow(dead_code)]
     Modal,
     Dismissible,
 }

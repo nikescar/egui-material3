@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{linear_progress, circular_progress, MaterialButton, icon_button_standard};
 
+#[doc(hidden)]
 pub struct ProgressWindow {
     pub open: bool,
     value: f32,

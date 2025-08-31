@@ -1,6 +1,6 @@
 [package]
 name = "egui-material3"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Woojae Park <nikescar@gmail.com>"]
@@ -11,6 +11,7 @@ documentation = "https://docs.rs/egui-material3"
 readme = "README.md"
 keywords = ["egui", "material-design", "gui", "ui", "components"]
 categories = ["gui", "graphics", "visualization"]
+exclude = ["src/*_window.rs", "src/main.rs"]
 
 [dependencies]
 egui = "0.32"
@@ -28,8 +29,8 @@ image = "0.25"
 ureq = { version = "2.9", features = ["json"] }
 
 [[example]]
-name = "flight_departures_example"
-path = "examples/flight_departures_example.rs"
+name = "nobel_prizes_example"
+path = "examples/nobel_prizes_example.rs"
 
 [[example]]
 name = "widget_gallery_example"
@@ -42,3 +43,9 @@ rustdoc-args = ["--cfg", "docsrs"]
 [build-dependencies]
 ureq = { version = "2.9", features = ["json"] }
 serde_json = "1.0"
+
+# $ cargo run --example nobel_prizes_example
+# $ cargo run --example widget_gallery_example
+# $ cargo doc --no-deps --open
+# $ cargo doc --lib --no-deps
+# $ cargo publish

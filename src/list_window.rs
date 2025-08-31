@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{list, list_item};
 
+#[doc(hidden)]
 pub struct ListWindow {
     pub open: bool,
     disabled: bool,

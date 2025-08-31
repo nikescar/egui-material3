@@ -422,21 +422,21 @@ impl Widget for MaterialDrawer<'_> {
 }
 
 /// Convenience function to create a permanent drawer.
-pub fn permanent_drawer(open: &mut bool) -> MaterialDrawer {
+pub fn permanent_drawer(open: &mut bool) -> MaterialDrawer<'_> {
     MaterialDrawer::new(DrawerVariant::Permanent, open)
 }
 
 /// Convenience function to create a dismissible drawer.
-pub fn dismissible_drawer(open: &mut bool) -> MaterialDrawer {
+pub fn dismissible_drawer(open: &mut bool) -> MaterialDrawer<'_> {
     MaterialDrawer::new(DrawerVariant::Dismissible, open)
 }
 
 /// Convenience function to create a modal drawer.
-pub fn modal_drawer(open: &mut bool) -> MaterialDrawer {
+pub fn modal_drawer(open: &mut bool) -> MaterialDrawer<'_> {
     MaterialDrawer::new(DrawerVariant::Modal, open)
 }
 
 // Legacy support - these will be deprecated
-pub fn standard_drawer(open: &mut bool) -> MaterialDrawer {
+pub fn standard_drawer(open: &mut bool) -> MaterialDrawer<'_> {
     permanent_drawer(open)
 }

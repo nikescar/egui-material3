@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window};
 use crate::{MaterialCheckbox, icon_button_standard, icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_toggle};
 
+#[doc(hidden)]
 pub struct IconButtonWindow {
     pub open: bool,
     icon_toggle_1: bool,

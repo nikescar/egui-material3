@@ -10,10 +10,8 @@ A Material Design component library for egui, providing Material Design 3 compon
 
 Add this to your `Cargo.toml`:
 
-```toml
-[dependencies]
-egui-material3 = "0.0.1"
-eframe = "0.29"
+```bash
+$ cargo add egui-material3
 ```
 
 ### Basic Example
@@ -107,4 +105,4 @@ The library supports Material Design 3 themes with:
 Look at the `examples/` folder for complete examples:
 
 - `widget_gallery_example.rs` - Showcase of all Material components
-- `flight_departures_example.rs` - Real-world data table example
+- `nobel_prizes_example.rs` - Real-world data table example

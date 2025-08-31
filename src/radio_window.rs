@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{radio, radio_group};
 
+#[doc(hidden)]
 pub struct RadioWindow {
     pub open: bool,
     disabled: bool,

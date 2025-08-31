@@ -646,7 +646,7 @@ impl<'a> MenuItem<'a> {
 /// let menu = menu("context_menu", &mut menu_open);
 /// # });
 /// ```
-pub fn menu(id: impl Into<egui::Id>, open: &mut bool) -> MaterialMenu {
+pub fn menu(id: impl Into<egui::Id>, open: &mut bool) -> MaterialMenu<'_> {
     MaterialMenu::new(id, open)
 }
 

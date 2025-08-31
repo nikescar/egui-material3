@@ -15,10 +15,8 @@
 //! ## Quick Start
 //!
 //! Add this to your `Cargo.toml`:
-//! ```toml
-//! [dependencies]
-//! egui-material3 = "0.0.1"
-//! eframe = "0.32"
+//! ```bash
+//! $ cargo add egui-material3
 //! ```
 //!
 //! ### Basic Usage
@@ -154,12 +152,12 @@
 //! The crate includes comprehensive examples:
 //!
 //! - `widget_gallery_example` - Showcase of all Material components with theme switching
-//! - `flight_departures_example` - Real-world data table implementation
+//! - `nobel_prizes_example` - Real-world data table implementation
 //!
 //! Run examples with:
 //! ```bash
 //! cargo run --example widget_gallery_example
-//! cargo run --example flight_departures_example  
+//! cargo run --example nobel_prizes_example
 //! ```
 //!
 //! ## Material Design Resources
@@ -174,47 +172,68 @@
 pub mod icons;
 pub mod image_utils;
 pub mod button;
+#[doc(hidden)]
 pub mod button_window;
 pub mod checkbox;
+#[doc(hidden)]
 pub mod checkbox_window;
 pub mod chips;
+#[doc(hidden)]
 pub mod chips_window;
 pub mod dialog;
+#[doc(hidden)]
 pub mod dialog_window;
 pub mod fab;
+#[doc(hidden)]
 pub mod fab_window;
 pub mod icon;
 pub mod iconbutton;
+#[doc(hidden)]
 pub mod iconbutton_window;
 pub mod list;
+#[doc(hidden)]
 pub mod list_window;
 pub mod menu;
+#[doc(hidden)]
 pub mod menu_window;
 pub mod progress;
+#[doc(hidden)]
 pub mod progress_window;
 pub mod radio;
+#[doc(hidden)]
 pub mod radio_window;
 pub mod select;
+#[doc(hidden)]
 pub mod select_window;
 pub mod slider;
+#[doc(hidden)]
 pub mod slider_window;
 pub mod switch;
+#[doc(hidden)]
 pub mod switch_window;
 pub mod tabs;
+#[doc(hidden)]
 pub mod tabs_window;
 pub mod datatable;
+#[doc(hidden)]
 pub mod datatable_window;
 pub mod drawer;
+#[doc(hidden)]
 pub mod drawer_window;
 pub mod imagelist;
+#[doc(hidden)]
 pub mod imagelist_window;
 pub mod layoutgrid;
+#[doc(hidden)]
 pub mod layoutgrid_window;
 pub mod snackbar;
+#[doc(hidden)]
 pub mod snackbar_window;
 pub mod topappbar;
+#[doc(hidden)]
 pub mod topappbar_window;
 pub mod card2;
+#[doc(hidden)]
 pub mod card2_window;
 pub mod theme;
 

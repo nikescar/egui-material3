@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{switch};
 
+#[doc(hidden)]
 pub struct SwitchWindow {
     pub open: bool,
     disabled: bool,

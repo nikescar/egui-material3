@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{assist_chip, filter_chip, input_chip, suggestion_chip, MaterialCheckbox, image_utils};
 
+#[doc(hidden)]
 pub struct ChipsWindow {
     pub open: bool,
     label: String,

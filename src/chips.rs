@@ -293,14 +293,14 @@ impl<'a> Widget for MaterialChip<'a> {
 
         // Material Design colors
         let primary_color = get_global_color("primary");
-        let surface = get_global_color("surface");
+        let _surface = get_global_color("surface");
         let surface_variant = get_global_color("surfaceVariant");
-        let surface_container_low = get_global_color("surfaceContainerLow");
+        let _surface_container_low = get_global_color("surfaceContainerLow");
         let surface_container_high = get_global_color("surfaceContainerHigh");
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
         let outline = get_global_color("outline");
-        let error = get_global_color("error");
+        let _error = get_global_color("error");
 
         let (bg_color, border_color, text_color, state_layer_color) = match self.variant {
             ChipVariant::Assist => {
@@ -662,7 +662,7 @@ pub fn assist_chip(text: impl Into<String>) -> MaterialChip<'static> {
     MaterialChip::assist(text)
 }
 
-pub fn filter_chip(text: impl Into<String>, selected: &mut bool) -> MaterialChip {
+pub fn filter_chip(text: impl Into<String>, selected: &mut bool) -> MaterialChip<'_> {
     MaterialChip::filter(text, selected)
 }
 

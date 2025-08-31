@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{select};
 
+#[doc(hidden)]
 pub struct SelectWindow {
     pub open: bool,
     label: String,

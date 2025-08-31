@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Ui, Window};
 use crate::{MaterialButton, MaterialCard2, MaterialCheckbox, layout_grid};
 
+#[doc(hidden)]
 pub struct LayoutGridWindow {
     pub open: bool,
     columns: usize,

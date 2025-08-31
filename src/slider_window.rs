@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{slider};
 
+#[doc(hidden)]
 pub struct SliderWindow {
     pub open: bool,
     disabled: bool,

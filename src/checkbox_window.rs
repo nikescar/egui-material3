@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{checkbox, MaterialCheckbox};
 
+#[doc(hidden)]
 pub struct CheckboxWindow {
     pub open: bool,
     checked: bool,

@@ -1,6 +1,9 @@
+#![doc(hidden)]
+
 use eframe::egui::{self, Window};
 use crate::{MaterialButton, dialog};
 
+#[doc(hidden)]
 pub struct DialogWindow {
     pub open: bool,
     quick: bool,

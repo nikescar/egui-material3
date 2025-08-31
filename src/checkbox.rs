@@ -219,6 +219,6 @@ impl<'a> Widget for MaterialCheckbox<'a> {
     }
 }
 
-pub fn checkbox(checked: &mut bool, text: impl Into<String>) -> MaterialCheckbox {
+pub fn checkbox(checked: &mut bool, text: impl Into<String>) -> MaterialCheckbox<'_> {
     MaterialCheckbox::new(checked, text)
 }
