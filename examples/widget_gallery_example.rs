@@ -14,7 +14,7 @@ fn main() -> Result<(), eframe::Error> {
     };
     
     eframe::run_native(
-        "Material Widget Gallery Example",
+        "Material Widget Gallery Example 테스트",
         options,
         Box::new(|cc| {
             // Setup Material Design fonts and themes
@@ -119,7 +119,7 @@ impl eframe::App for WidgetGalleryApp {
         update_window_background(ctx);
         
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Material Design Widget Gallery");
+            ui.heading("Material Design Widget Gallery 테스트");
             ui.add_space(10.0);
             
             // Theme controls

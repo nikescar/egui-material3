@@ -61,13 +61,14 @@ fn main() -> Result<(), eframe::Error> {
     };
     
     eframe::run_native(
-        "Material Design Components Demo",
+        "Material Design Components Demo 테스트",
         options,
         Box::new(|cc| {
             // Prepare local fonts including Material Symbols
             setup_local_fonts(Some("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"));
             // Prepare Google Sans Code font for Material Design (default)
             setup_google_fonts(Some("Google Sans Code"));
+            setup_google_fonts(Some("Nanum Gothic"));
             // Prepare themes from build-time constants
             setup_local_theme(None);
             // Load all prepared fonts and themes
@@ -392,7 +393,7 @@ impl eframe::App for MaterialApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             let theme = self.get_theme();
             
-            ui.heading("Material Design Components Demo");
+            ui.heading("Material Design Components Demo 테스트");
             ui.add_space(10.0);
             
             // Material Design 3 Theme Controls

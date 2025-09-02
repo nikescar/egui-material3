@@ -12,7 +12,7 @@ fn main() -> Result<(), eframe::Error> {
     };
     
     eframe::run_native(
-        "Nobel Prizes DataTable",
+        "Nobel Prizes DataTable 테스트",
         options,
         Box::new(|cc| {
             // Setup Material Design fonts and themes
@@ -216,7 +216,7 @@ impl eframe::App for NobelPrizesApp {
         }
         
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Nobel Prizes Database (1901-2024)");
+            ui.heading("Nobel Prizes Database (1901-2024) 테스트");
             
             ui.add_space(10.0);
             
