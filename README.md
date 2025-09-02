@@ -103,6 +103,6 @@ The library supports Material Design 3 themes with:
 ## Examples
 
 Look at the `examples/` folder for complete examples:
-
+- `main` - Main Window for all stories
 - `widget_gallery_example.rs` - Showcase of all Material components
 - `nobel_prizes_example.rs` - Real-world data table example
