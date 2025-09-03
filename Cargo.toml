@@ -40,6 +40,15 @@ path = "examples/nobel_prizes_example.rs"
 name = "widget_gallery_example"
 path = "examples/widget_gallery_example.rs"
 
+[[example]]
+name = "stories"
+path = "examples/stories/main.rs"
+
+# example for examples/package/Cargo.toml
+#[[example]]
+#name = "package"
+#path = "examples/package/src/main.rs"
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

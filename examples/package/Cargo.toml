@@ -1,0 +1,8 @@
+[package]
+name = "package"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+egui-material3 = { path = "../../" }
+eframe = "0.32"

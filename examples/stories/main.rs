@@ -7,7 +7,7 @@ use egui_file_dialog::FileDialog;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-// Import window modules
+// Import window modules from stories subdirectory
 mod button_window;
 mod checkbox_window;
 mod chips_window;
