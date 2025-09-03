@@ -18,8 +18,8 @@ fn main() -> Result<(), eframe::Error> {
         options,
         Box::new(|cc| {
             // Setup Material Design fonts and themes
-            setup_google_fonts(Some("Roboto"));
-            setup_local_fonts(Some("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"));
+            // setup_google_fonts(Some("Roboto"));
+            // setup_local_fonts(Some("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"));
             setup_local_theme(Some("resources/material-theme6.json"));
             
             load_fonts(&cc.egui_ctx);

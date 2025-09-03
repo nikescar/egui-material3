@@ -13,6 +13,10 @@ keywords = ["egui", "material-design", "gui", "ui", "components"]
 categories = ["gui", "graphics", "visualization"]
 exclude = ["resources/*.ttf"]
 
+[features]
+default = []
+ondemand_fonts = ["ureq"]
+
 [dependencies]
 egui = "0.32"
 eframe = "0.32"
@@ -21,7 +25,7 @@ serde_json = "1.0"
 resvg = "0.42"
 image = "0.25"
 lazy_static = "1.4"
-ureq = { version = "2.9", features = ["json"] }
+ureq = { version = "2.9", features = ["json"], optional = true }
 
 [dev-dependencies]
 ureq = { version = "2.9", features = ["json"] }

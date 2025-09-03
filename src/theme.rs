@@ -75,8 +75,10 @@
 use egui::{Color32, FontData, FontDefinitions, FontFamily};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::Read;
 use std::sync::{Arc, Mutex};
+
+#[cfg(feature = "ondemand_fonts")]
+use std::io::Read;
 
 // Runtime font management - no more build-time includes
 
@@ -393,8 +395,16 @@ impl MaterialThemeContext {
             // Use local font file with include_bytes!
             Self::load_local_font(&font_file_path)
         } else {
-            // Download font from Google Fonts at runtime
-            Self::download_google_font(font_name)
+            // Download font from Google Fonts at runtime (only if ondemand_fonts feature is enabled)
+            #[cfg(feature = "ondemand_fonts")]
+            {
+                Self::download_google_font(font_name)
+            }
+            #[cfg(not(feature = "ondemand_fonts"))]
+            {
+                eprintln!("Font '{}' not found locally and ondemand_fonts feature is not enabled", font_name);
+                None
+            }
         };
         
         if let Some(data) = font_data {
@@ -418,6 +428,7 @@ impl MaterialThemeContext {
         std::fs::read(font_path).ok()
     }
     
+    #[cfg(feature = "ondemand_fonts")]
     fn download_google_font(font_name: &str) -> Option<Vec<u8>> {
         // Convert font name to Google Fonts URL format
         let font_url_name = font_name.replace(" ", "+");
@@ -464,6 +475,7 @@ impl MaterialThemeContext {
         }
     }
     
+    #[cfg(feature = "ondemand_fonts")]
     fn extract_font_url_from_css(css_content: &str) -> Option<String> {
         // Look for TTF URLs in the CSS content
         // Google Fonts CSS contains lines like: src: url(https://fonts.gstatic.com/...) format('truetype');
