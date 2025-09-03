@@ -75,9 +75,10 @@
 use egui::{Color32, FontData, FontDefinitions, FontFamily};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::io::Read;
 use std::sync::{Arc, Mutex};
 
-include!(concat!(env!("OUT_DIR"), "/google_fonts.rs"));
+// Runtime font management - no more build-time includes
 
 /// Global collection of prepared fonts before loading to context
 #[derive(Debug, Clone)]
@@ -385,66 +386,125 @@ impl MaterialThemeContext {
     pub fn setup_fonts(font_name: Option<&str>) {
         let font_name = font_name.unwrap_or("Google Sans Code");
         
-        // Get font data from the generated constants
-        let font_data = Self::get_font_data(font_name);
+        // Check if font exists in resources directory first
+        let font_file_path = format!("resources/{}.ttf", font_name.replace(" ", "-").to_lowercase());
+        
+        let font_data = if std::path::Path::new(&font_file_path).exists() {
+            // Use local font file with include_bytes!
+            Self::load_local_font(&font_file_path)
+        } else {
+            // Download font from Google Fonts at runtime
+            Self::download_google_font(font_name)
+        };
         
         if let Some(data) = font_data {
-            if !data.is_empty() {
-                let font_family_name = font_name.replace(" ", "");
+            let font_family_name = font_name.replace(" ", "");
+            
+            let prepared_font = PreparedFont {
+                name: font_family_name.clone(),
+                data: Arc::new(FontData::from_owned(data)),
+                families: vec![FontFamily::Proportional, FontFamily::Monospace],
+            };
+            
+            if let Ok(mut fonts) = PREPARED_FONTS.lock() {
+                // Remove any existing font with the same name
+                fonts.retain(|f| f.name != font_family_name);
+                fonts.push(prepared_font);
+            }
+        }
+    }
+    
+    fn load_local_font(font_path: &str) -> Option<Vec<u8>> {
+        std::fs::read(font_path).ok()
+    }
+    
+    fn download_google_font(font_name: &str) -> Option<Vec<u8>> {
+        // Convert font name to Google Fonts URL format
+        let font_url_name = font_name.replace(" ", "+");
+        
+        // First, get the CSS file to find the actual font URL
+        let css_url = format!("https://fonts.googleapis.com/css2?family={}:wght@400&display=swap", font_url_name);
+        
+        match ureq::get(&css_url)
+            .set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            .call() 
+        {
+            Ok(response) => {
+                let css_content = response.into_string().ok()?;
                 
-                let prepared_font = PreparedFont {
-                    name: font_family_name.clone(),
-                    data: Arc::new(FontData::from_static(data)),
-                    families: vec![FontFamily::Proportional, FontFamily::Monospace],
-                };
+                // Parse CSS to find TTF URL
+                let font_url = Self::extract_font_url_from_css(&css_content)?;
                 
-                if let Ok(mut fonts) = PREPARED_FONTS.lock() {
-                    // Remove any existing font with the same name
-                    fonts.retain(|f| f.name != font_family_name);
-                    fonts.push(prepared_font);
+                // Download the actual font file
+                match ureq::get(&font_url).call() {
+                    Ok(font_response) => {
+                        let mut font_data = Vec::new();
+                        if font_response.into_reader().read_to_end(&mut font_data).is_ok() {
+                            // Save font to resources directory for future use
+                            let target_path = format!("resources/{}.ttf", font_name.replace(" ", "-").to_lowercase());
+                            if let Ok(()) = std::fs::write(&target_path, &font_data) {
+                                eprintln!("Font '{}' downloaded and saved to {}", font_name, target_path);
+                            }
+                            Some(font_data)
+                        } else {
+                            eprintln!("Failed to read font data for '{}'", font_name);
+                            None
+                        }
+                    },
+                    Err(e) => {
+                        eprintln!("Failed to download font '{}': {}", font_name, e);
+                        None
+                    }
+                }
+            },
+            Err(e) => {
+                eprintln!("Failed to fetch CSS for font '{}': {}", font_name, e);
+                None
+            }
+        }
+    }
+    
+    fn extract_font_url_from_css(css_content: &str) -> Option<String> {
+        // Look for TTF URLs in the CSS content
+        // Google Fonts CSS contains lines like: src: url(https://fonts.gstatic.com/...) format('truetype');
+        for line in css_content.lines() {
+            if line.contains("src:") && line.contains("url(") && line.contains("format('truetype')") {
+                if let Some(start) = line.find("url(") {
+                    let start = start + 4; // Skip "url("
+                    if let Some(end) = line[start..].find(")") {
+                        let url = &line[start..start + end];
+                        return Some(url.to_string());
+                    }
                 }
             }
         }
-    }
-    
-    fn get_font_data(font_name: &str) -> Option<&'static [u8]> {
-        match font_name {
-            "Google Sans Code" => Some(GOOGLE_SANS_CODE_REGULAR),
-            _ => {
-                // Try to find the font constant dynamically
-                Self::get_font_data_dynamic(font_name)
-            }
-        }
-    }
-    
-    fn get_font_data_dynamic(font_name: &str) -> Option<&'static [u8]> {
-        // This function will be extended to handle dynamically generated font constants
-        // For now, return None for unknown fonts
-        eprintln!("Warning: Font '{}' not found in generated constants", font_name);
         None
     }
     
     pub fn setup_local_fonts(font_path: Option<&str>) {
+        let default_material_symbols_path = "resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf";
+        
         // Determine which font to use
         let font_data = if let Some(path) = font_path {
             // Try to load custom font from path
-            match std::fs::read(path) {
-                Ok(data) => Some(data),
-                Err(_) => {
-                    // Fall back to default font if custom font fails to load
-                    if !MATERIALSYMBOLSOUTLINED_FILL_GRAD_OPSZ_WGHT_.is_empty() {
-                        Some(MATERIALSYMBOLSOUTLINED_FILL_GRAD_OPSZ_WGHT_.to_vec())
-                    } else {
-                        None
-                    }
+            if std::path::Path::new(path).exists() {
+                std::fs::read(path).ok()
+            } else {
+                // Fall back to default font if custom font doesn't exist
+                if std::path::Path::new(default_material_symbols_path).exists() {
+                    std::fs::read(default_material_symbols_path).ok()
+                } else {
+                    // Use include_bytes! as fallback if file exists in resources
+                    Self::get_embedded_material_symbols()
                 }
             }
         } else {
             // Use default Material Symbols Outlined font
-            if !MATERIALSYMBOLSOUTLINED_FILL_GRAD_OPSZ_WGHT_.is_empty() {
-                Some(MATERIALSYMBOLSOUTLINED_FILL_GRAD_OPSZ_WGHT_.to_vec())
+            if std::path::Path::new(default_material_symbols_path).exists() {
+                std::fs::read(default_material_symbols_path).ok()
             } else {
-                None
+                // Use include_bytes! as fallback
+                Self::get_embedded_material_symbols()
             }
         };
         
@@ -461,6 +521,15 @@ impl MaterialThemeContext {
                 fonts.retain(|f| f.name != "MaterialSymbolsOutlined");
                 fonts.push(prepared_font);
             }
+        }
+    }
+    
+    fn get_embedded_material_symbols() -> Option<Vec<u8>> {
+        // Use include_bytes! to embed the font if it exists
+        if std::path::Path::new("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf").exists() {
+            Some(include_bytes!("../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf").to_vec())
+        } else {
+            None
         }
     }
     
@@ -481,18 +550,17 @@ impl MaterialThemeContext {
     pub fn setup_local_theme(theme_path: Option<&str>) {
         let theme_data = if let Some(path) = theme_path {
             // Try to load custom theme from path
-            match std::fs::read_to_string(path) {
-                Ok(data) => Some(data),
-                Err(_) => {
-                    // Fall back to compiled theme constants
-                    Self::get_theme_data_from_constants().or_else(|| {
-                        Some(serde_json::to_string(&get_default_material_theme()).unwrap_or_default())
-                    })
-                }
+            if std::path::Path::new(path).exists() {
+                std::fs::read_to_string(path).ok()
+            } else {
+                // Fall back to embedded theme files or default theme
+                Self::get_embedded_theme_data(path).or_else(|| {
+                    Some(serde_json::to_string(&get_default_material_theme()).unwrap_or_default())
+                })
             }
         } else {
-            // Use theme data from build-time constants first, then fall back to default
-            Self::get_theme_data_from_constants().or_else(|| {
+            // Use embedded theme data first, then fall back to default
+            Self::get_embedded_theme_data("resources/material-theme1.json").or_else(|| {
                 Some(serde_json::to_string(&get_default_material_theme()).unwrap_or_default())
             })
         };
@@ -518,44 +586,51 @@ impl MaterialThemeContext {
         }
     }
     
-    /// Attempt to retrieve theme data from build-time generated constants
-    /// 
-    /// This function looks for theme JSON data that was included at build-time by
-    /// the build script. The build script scans for theme files and generates
-    /// constants like `THEME_MATERIAL_THEME6` containing the JSON data.
-    /// 
-    /// # Returns
-    /// * `Some(String)` - JSON theme data if a build-time constant was found
-    /// * `None` - If no build-time theme constants are available
-    /// 
-    /// # Implementation Note
-    /// This function currently returns None as a placeholder. In a complete
-    /// implementation, it would use macros or conditional compilation to access
-    /// the generated theme constants from the build script.
-    /// 
-    /// # Future Enhancement
-    /// ```rust,ignore
-    /// // Example of what this function would look like when implemented:
-    /// fn get_theme_data_from_constants() -> Option<String> {
-    ///     #[cfg(feature = "theme_material_theme6")]
-    ///     return Some(THEME_MATERIAL_THEME6.to_string());
-    ///     
-    ///     #[cfg(feature = "theme_material_theme2")]
-    ///     return Some(THEME_MATERIAL_THEME2.to_string());
-    ///     
-    ///     None
-    /// }
-    /// ```
-    fn get_theme_data_from_constants() -> Option<String> {
-        // This function will try to find theme data from generated constants
-        // For now, we'll look for common theme file names that would be generated
-        // by the build script. The actual constants will be available after build.
-        
-        // Try to access generated theme constants (these will be available after build)
-        // For now, return None and let it fall back to default theme
-        // TODO: Add actual constant lookups here once build system generates them
-        None
+    fn get_embedded_theme_data(theme_path: &str) -> Option<String> {
+        // Try to embed theme files using include_str! if they exist
+        match theme_path {
+            "resources/material-theme1.json" => {
+                if std::path::Path::new("resources/material-theme1.json").exists() {
+                    Some(include_str!("../resources/material-theme1.json").to_string())
+                } else { None }
+            },
+            "resources/material-theme2.json" => {
+                if std::path::Path::new("resources/material-theme2.json").exists() {
+                    Some(include_str!("../resources/material-theme2.json").to_string())
+                } else { None }
+            },
+            "resources/material-theme3.json" => {
+                if std::path::Path::new("resources/material-theme3.json").exists() {
+                    Some(include_str!("../resources/material-theme3.json").to_string())
+                } else { None }
+            },
+            "resources/material-theme4.json" => {
+                if std::path::Path::new("resources/material-theme4.json").exists() {
+                    Some(include_str!("../resources/material-theme4.json").to_string())
+                } else { None }
+            },
+            "resources/material-theme5.json" => {
+                if std::path::Path::new("resources/material-theme5.json").exists() {
+                    Some(include_str!("../resources/material-theme5.json").to_string())
+                } else { None }
+            },
+            "resources/material-theme6.json" => {
+                if std::path::Path::new("resources/material-theme6.json").exists() {
+                    Some(include_str!("../resources/material-theme6.json").to_string())
+                } else { None }
+            },
+            "resources/material-theme7.json" => {
+                if std::path::Path::new("resources/material-theme7.json").exists() {
+                    Some(include_str!("../resources/material-theme7.json").to_string())
+                } else { None }
+            },
+            _ => {
+                // For other paths, try to read from file system
+                std::fs::read_to_string(theme_path).ok()
+            }
+        }
     }
+    
 
     /// Internal implementation for loading prepared themes to the global theme context
     /// 

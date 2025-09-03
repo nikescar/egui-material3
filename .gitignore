@@ -18,3 +18,5 @@ tmp/
 examples/flight_departures_example.rs
 .idea/
 .claude/
+
+resources/*.ttf
