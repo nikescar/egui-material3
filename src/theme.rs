@@ -80,7 +80,9 @@ use std::sync::{Arc, Mutex};
 #[cfg(feature = "ondemand_fonts")]
 use std::io::Read;
 
-// Runtime font management - no more build-time includes
+// Font runtime management system - replaced build-time font inclusion with runtime loading for better flexibility
+
+// Runtime font management system with support for both local and on-demand font loading
 
 /// Global collection of prepared fonts before loading to context
 #[derive(Debug, Clone)]
@@ -428,6 +430,7 @@ impl MaterialThemeContext {
         std::fs::read(font_path).ok()
     }
     
+    // On-demand font downloading feature - downloads Google Fonts at runtime when ondemand_fonts feature is enabled
     #[cfg(feature = "ondemand_fonts")]
     fn download_google_font(font_name: &str) -> Option<Vec<u8>> {
         // Convert font name to Google Fonts URL format
@@ -536,6 +539,7 @@ impl MaterialThemeContext {
         }
     }
     
+    // Fallback font embedding system - includes Material Symbols font at build-time if available
     fn get_embedded_material_symbols() -> Option<Vec<u8>> {
         // Use include_bytes! to embed the font if it exists
         if std::path::Path::new("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf").exists() {
@@ -598,6 +602,7 @@ impl MaterialThemeContext {
         }
     }
     
+    // Build-time theme embedding system - includes theme JSON files as string constants for optimal performance
     fn get_embedded_theme_data(theme_path: &str) -> Option<String> {
         // Try to embed theme files using include_str! if they exist
         match theme_path {
