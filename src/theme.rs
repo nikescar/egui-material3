@@ -541,12 +541,9 @@ impl MaterialThemeContext {
     
     // Fallback font embedding system - includes Material Symbols font at build-time if available
     fn get_embedded_material_symbols() -> Option<Vec<u8>> {
-        // Use include_bytes! to embed the font if it exists
-        if std::path::Path::new("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf").exists() {
-            Some(include_bytes!("../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf").to_vec())
-        } else {
-            None
-        }
+        // Font files are excluded from package distribution, so this will always return None in published packages
+        // Users should provide their own font files or use the ondemand_fonts feature
+        None
     }
     
     /// Internal implementation for preparing local themes from JSON files
@@ -604,48 +601,9 @@ impl MaterialThemeContext {
     
     // Build-time theme embedding system - includes theme JSON files as string constants for optimal performance
     fn get_embedded_theme_data(theme_path: &str) -> Option<String> {
-        // Try to embed theme files using include_str! if they exist
-        match theme_path {
-            "resources/material-theme1.json" => {
-                if std::path::Path::new("resources/material-theme1.json").exists() {
-                    Some(include_str!("../resources/material-theme1.json").to_string())
-                } else { None }
-            },
-            "resources/material-theme2.json" => {
-                if std::path::Path::new("resources/material-theme2.json").exists() {
-                    Some(include_str!("../resources/material-theme2.json").to_string())
-                } else { None }
-            },
-            "resources/material-theme3.json" => {
-                if std::path::Path::new("resources/material-theme3.json").exists() {
-                    Some(include_str!("../resources/material-theme3.json").to_string())
-                } else { None }
-            },
-            "resources/material-theme4.json" => {
-                if std::path::Path::new("resources/material-theme4.json").exists() {
-                    Some(include_str!("../resources/material-theme4.json").to_string())
-                } else { None }
-            },
-            "resources/material-theme5.json" => {
-                if std::path::Path::new("resources/material-theme5.json").exists() {
-                    Some(include_str!("../resources/material-theme5.json").to_string())
-                } else { None }
-            },
-            "resources/material-theme6.json" => {
-                if std::path::Path::new("resources/material-theme6.json").exists() {
-                    Some(include_str!("../resources/material-theme6.json").to_string())
-                } else { None }
-            },
-            "resources/material-theme7.json" => {
-                if std::path::Path::new("resources/material-theme7.json").exists() {
-                    Some(include_str!("../resources/material-theme7.json").to_string())
-                } else { None }
-            },
-            _ => {
-                // For other paths, try to read from file system
-                std::fs::read_to_string(theme_path).ok()
-            }
-        }
+        // For published packages, theme files are not included so we fallback to runtime loading
+        // Users should provide their own theme files or use the default programmatic theme
+        std::fs::read_to_string(theme_path).ok()
     }
     
 

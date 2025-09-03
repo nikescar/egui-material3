@@ -152,12 +152,18 @@
 //! The crate includes comprehensive examples:
 //!
 //! - `widget_gallery_example` - Showcase of all Material components with theme switching
-//! - `nobel_prizes_example` - Real-world data table implementation
+//! - `nobel_prizes_example` - Real-world data table implementation  
+//! - `stories` - Individual component showcase windows for detailed exploration
+//! - `package` - Standalone example with bundled resources and themes
 //!
 //! Run examples with:
 //! ```bash
 //! cargo run --example widget_gallery_example
 //! cargo run --example nobel_prizes_example
+//! cargo run --example stories
+//! 
+//! # Package example runs independently with its own Cargo.toml
+//! cd examples/package && cargo run
 //! ```
 //!
 //! ## Material Design Resources
