@@ -71,6 +71,8 @@ fn main() -> Result<(), eframe::Error> {
             setup_google_fonts(Some("Nanum Gothic"));
             // Prepare themes from build-time constants
             setup_local_theme(None);
+            // Install image loaders
+            egui_extras::install_image_loaders(&cc.egui_ctx);
             // Load all prepared fonts and themes
             load_fonts(&cc.egui_ctx);
             load_themes();
@@ -657,5 +659,18 @@ impl eframe::App for MaterialApp {
         self.snackbar_window.show(ctx);
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
+
+        // let image_bytes = include_bytes!("../../resources/imgur_image.png");
+        // egui::Window::new("Test egui::Image")
+        //     .open(&mut true)
+        //     .default_size([640.0, 400.0])
+        //     .show(ctx, |ui| {
+        //         let available_width = ui.available_width();
+        //         let target_height = available_width * 9.0 / 16.0; // Force 16:9 aspect ratio
+        //         let image_widget = egui::Image::from_bytes("bytes://main_panel_image_imgur", image_bytes)
+        //             .fit_to_exact_size(egui::Vec2::new(available_width, target_height));
+        //         let _image_response = ui.add(image_widget);
+        //     });
+
     }
 }

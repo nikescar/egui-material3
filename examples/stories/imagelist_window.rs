@@ -114,15 +114,14 @@ impl ImageListWindow {
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Sunset Beach", "image1.jpg", || println!("Sunset Beach clicked!"))
-            .item_with_callback("Mountain View", "image2.jpg", || println!("Mountain View clicked!"))
-            .item_with_callback("City Lights", "image3.jpg", || println!("City Lights clicked!"))
-            .item_with_callback("Forest Path", "image4.jpg", || println!("Forest Path clicked!"))
-            .item_with_callback("Ocean Waves", "image5.jpg", || println!("Ocean Waves clicked!"))
-            .item_with_callback("Desert Dunes", "image6.jpg", || println!("Desert Dunes clicked!"));
+            .item_with_callback("Architecture", "320x240.png", || println!("Architecture clicked!"))
+            .item_with_callback("Nature", "320x240.png", || println!("Nature clicked!"))
+            .item_with_callback("Abstract Art", "320x240.png", || println!("Abstract Art clicked!"))
+            .item_with_callback("Street Photo", "320x240.png", || println!("Street Photo clicked!"))
+            .item_with_callback("Portrait", "320x240.png", || println!("Portrait clicked!"))
+            .item_with_callback("Landscape", "320x240.png", || println!("Landscape clicked!"));
 
-        // Add supporting text conditionally
-        if self.show_supporting_text {
+            if self.show_supporting_text {
             // Note: This is a simplified example. In a real implementation,
             // you'd need to recreate the list with supporting text items
             ui.label("(Supporting text would be shown here in a full implementation)");
@@ -140,13 +139,13 @@ impl ImageListWindow {
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Architecture", "arch1.jpg", || println!("Architecture clicked!"))
-            .item_with_callback("Nature", "nature1.jpg", || println!("Nature clicked!"))
-            .item_with_callback("Abstract Art", "art1.jpg", || println!("Abstract Art clicked!"))
-            .item_with_callback("Street Photo", "street1.jpg", || println!("Street Photo clicked!"))
-            .item_with_callback("Portrait", "portrait1.jpg", || println!("Portrait clicked!"))
-            .item_with_callback("Landscape", "landscape1.jpg", || println!("Landscape clicked!"));
-        
+            .item_with_callback("Architecture", "320x240.png", || println!("Architecture clicked!"))
+            .item_with_callback("Nature", "320x240.png", || println!("Nature clicked!"))
+            .item_with_callback("Abstract Art", "320x240.png", || println!("Abstract Art clicked!"))
+            .item_with_callback("Street Photo", "320x240.png", || println!("Street Photo clicked!"))
+            .item_with_callback("Portrait", "320x240.png", || println!("Portrait clicked!"))
+            .item_with_callback("Landscape", "320x240.png", || println!("Landscape clicked!"));
+
         ui.add(masonry_list);
 
         ui.add_space(30.0);
@@ -159,12 +158,12 @@ impl ImageListWindow {
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Texture 1", "texture1.jpg", || println!("Texture 1 clicked!"))
-            .item_with_callback("Pattern 2", "pattern2.jpg", || println!("Pattern 2 clicked!"))
-            .item_with_callback("Color 3", "color3.jpg", || println!("Color 3 clicked!"))
-            .item_with_callback("Design 4", "design4.jpg", || println!("Design 4 clicked!"))
-            .item_with_callback("Style 5", "style5.jpg", || println!("Style 5 clicked!"))
-            .item_with_callback("Art 6", "art6.jpg", || println!("Art 6 clicked!"));
+            .item_with_callback("Texture 1", "320x240.png", || println!("Texture 1 clicked!"))
+            .item_with_callback("Pattern 2", "320x240.png", || println!("Pattern 2 clicked!"))
+            .item_with_callback("Color 3", "320x240.png", || println!("Color 3 clicked!"))
+            .item_with_callback("Design 4", "320x240.png", || println!("Design 4 clicked!"))
+            .item_with_callback("Style 5", "320x240.png", || println!("Style 5 clicked!"))
+            .item_with_callback("Art 6", "320x240.png", || println!("Art 6 clicked!"));
         
         ui.add(woven_list);
 

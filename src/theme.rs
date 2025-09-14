@@ -27,11 +27,12 @@
 //! setup_local_fonts(Some("path/to/MaterialSymbols.ttf"));
 //! setup_local_theme(None); // Use build-time included themes
 //!
-//! // Load prepared fonts and themes
-//! load_fonts(&egui_ctx);
+//! // Load prepared fonts and themes (accepts both &egui::Context and egui::Context)
+//! load_fonts(&egui_ctx);  // With reference
+//! load_fonts(egui_ctx);   // With owned context  
 //! load_themes();
 //!
-//! // Apply theme background
+//! // Apply theme background (also flexible with context types)
 //! update_window_background(&egui_ctx);
 //! ```
 //!
@@ -77,7 +78,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-#[cfg(feature = "ondemand_fonts")]
+#[cfg(feature = "ondemand")]
 use std::io::Read;
 
 // Font runtime management system - replaced build-time font inclusion with runtime loading for better flexibility
@@ -397,14 +398,14 @@ impl MaterialThemeContext {
             // Use local font file with include_bytes!
             Self::load_local_font(&font_file_path)
         } else {
-            // Download font from Google Fonts at runtime (only if ondemand_fonts feature is enabled)
-            #[cfg(feature = "ondemand_fonts")]
+            // Download font from Google Fonts at runtime (only if ondemand feature is enabled)
+            #[cfg(feature = "ondemand")]
             {
                 Self::download_google_font(font_name)
             }
-            #[cfg(not(feature = "ondemand_fonts"))]
+            #[cfg(not(feature = "ondemand"))]
             {
-                eprintln!("Font '{}' not found locally and ondemand_fonts feature is not enabled", font_name);
+                eprintln!("Font '{}' not found locally and ondemand feature is not enabled", font_name);
                 None
             }
         };
@@ -430,8 +431,8 @@ impl MaterialThemeContext {
         std::fs::read(font_path).ok()
     }
     
-    // On-demand font downloading feature - downloads Google Fonts at runtime when ondemand_fonts feature is enabled
-    #[cfg(feature = "ondemand_fonts")]
+    // On-demand font downloading feature - downloads Google Fonts at runtime when ondemand feature is enabled
+    #[cfg(feature = "ondemand")]
     fn download_google_font(font_name: &str) -> Option<Vec<u8>> {
         // Convert font name to Google Fonts URL format
         let font_url_name = font_name.replace(" ", "+");
@@ -478,7 +479,7 @@ impl MaterialThemeContext {
         }
     }
     
-    #[cfg(feature = "ondemand_fonts")]
+    #[cfg(feature = "ondemand")]
     fn extract_font_url_from_css(css_content: &str) -> Option<String> {
         // Look for TTF URLs in the CSS content
         // Google Fonts CSS contains lines like: src: url(https://fonts.gstatic.com/...) format('truetype');
@@ -542,7 +543,7 @@ impl MaterialThemeContext {
     // Fallback font embedding system - includes Material Symbols font at build-time if available
     fn get_embedded_material_symbols() -> Option<Vec<u8>> {
         // Font files are excluded from package distribution, so this will always return None in published packages
-        // Users should provide their own font files or use the ondemand_fonts feature
+        // Users should provide their own font files or use the ondemand feature
         None
     }
     
@@ -972,10 +973,27 @@ pub fn load_themes() {
     MaterialThemeContext::load_themes();
 }
 
+/// Trait to provide a unified interface for accessing egui Context
+pub trait ContextRef {
+    fn context_ref(&self) -> &egui::Context;
+}
+
+impl ContextRef for egui::Context {
+    fn context_ref(&self) -> &egui::Context {
+        self
+    }
+}
+
+impl ContextRef for &egui::Context {
+    fn context_ref(&self) -> &egui::Context {
+        self
+    }
+}
+
 /// Load all prepared fonts to the egui context
 /// Call this after all setup_*_fonts functions to actually load the fonts
-pub fn load_fonts(ctx: &egui::Context) {
-    MaterialThemeContext::load_fonts(ctx);
+pub fn load_fonts<C: ContextRef>(ctx: C) {
+    MaterialThemeContext::load_fonts(ctx.context_ref());
 }
 
 /// Update the window/panel background colors based on the current theme
@@ -1026,7 +1044,8 @@ pub fn load_fonts(ctx: &egui::Context) {
 /// - `window_fill` - Background color for floating windows
 /// - `panel_fill` - Background color for side panels and central panel  
 /// - `extreme_bg_color` - Background color for extreme contrast areas
-pub fn update_window_background(ctx: &egui::Context) {
+pub fn update_window_background<C: ContextRef>(ctx: C) {
+    let ctx = ctx.context_ref();
     if let Ok(theme) = GLOBAL_THEME.lock() {
         // Get the appropriate background color from the material theme
         let background_color = match (theme.theme_mode, theme.contrast_level) {
