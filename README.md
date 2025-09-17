@@ -139,7 +139,7 @@ Enable the `ondemand` feature for online image support:
 
 ```toml
 [dependencies]
-egui-material3 = { version = "0.0.4", features = ["ondemand"] }
+egui-material3 = { version = "0.0.5", features = ["ondemand"] }
 ```
 
 Features:
