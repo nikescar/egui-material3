@@ -43,41 +43,43 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Material Design 3 Components 테스트");
             ui.add_space(20.0);
-            
-            // Material Button
-            if ui.add(MaterialButton::filled("Material Button")).clicked() {
-                println!("Button clicked!");
-            }
-            
-            ui.add_space(10.0);
-            
-            // Material Checkbox
-            ui.add(MaterialCheckbox::new(&mut self.checked, "Material Checkbox"));
-            
-            ui.add_space(10.0);
-            
-            // Material Slider
-            ui.label("Material Slider:");
-            ui.add(MaterialSlider::new(&mut self.slider_value, 0.0..=100.0));
-            ui.label(format!("Value: {:.1}", self.slider_value));
-            
-            ui.add_space(10.0);
-            
-            // Material Switch
-            ui.horizontal(|ui| {
-                ui.add(MaterialSwitch::new(&mut self.switch_enabled));
-                ui.label("Material Switch");
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                // Material Button
+                if ui.add(MaterialButton::filled("Material Button")).clicked() {
+                    println!("Button clicked!");
+                }
+                
+                ui.add_space(10.0);
+                
+                // Material Checkbox
+                ui.add(MaterialCheckbox::new(&mut self.checked, "Material Checkbox"));
+                
+                ui.add_space(10.0);
+                
+                // Material Slider
+                ui.label("Material Slider:");
+                ui.add(MaterialSlider::new(&mut self.slider_value, 0.0..=100.0));
+                ui.label(format!("Value: {:.1}", self.slider_value));
+                
+                ui.add_space(10.0);
+                
+                // Material Switch
+                ui.horizontal(|ui| {
+                    ui.add(MaterialSwitch::new(&mut self.switch_enabled));
+                    ui.label("Material Switch");
+                });
+                
+                ui.add_space(20.0);
+                
+                // Status display
+                ui.group(|ui| {
+                    ui.label("Component States:");
+                    ui.label(format!("• Checkbox: {}", if self.checked { "Checked" } else { "Unchecked" }));
+                    ui.label(format!("• Slider: {:.1}", self.slider_value));
+                    ui.label(format!("• Switch: {}", if self.switch_enabled { "On" } else { "Off" }));
+                });
             });
             
-            ui.add_space(20.0);
-            
-            // Status display
-            ui.group(|ui| {
-                ui.label("Component States:");
-                ui.label(format!("• Checkbox: {}", if self.checked { "Checked" } else { "Unchecked" }));
-                ui.label(format!("• Slider: {:.1}", self.slider_value));
-                ui.label(format!("• Switch: {}", if self.switch_enabled { "On" } else { "Off" }));
-            });
         });
     }
 }

@@ -597,14 +597,7 @@ impl Widget for MaterialImageList<'_> {
                         failed = true;
                     }
                 } else {
-                    // Default placeholder when no image source
                     failed = true;
-                    // let img_data = egui::include_image!("../resources/320x240.png");
-                    // let img = egui::Image::new(img_data)
-                    //     .fit_to_exact_size(image_rect.size())
-                    //     .corner_radius(corner_radius);
-
-                    // ui.put(image_rect, img);
                 }
 
                 if failed {

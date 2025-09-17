@@ -30,7 +30,7 @@ impl Default for ImageListWindow {
             dynamic_images.push(DynamicImageItem {
                 _id: i,
                 label: format!("Photo {:03}", i),
-                image_source: format!("photo{}.jpg", i),
+                image_source: "resources/320x240.png".to_string(),
             });
         }
         
@@ -51,7 +51,7 @@ impl ImageListWindow {
         let new_image = DynamicImageItem {
             _id: self.next_image_id,
             label: format!("Photo {:03}", self.next_image_id),
-            image_source: format!("photo{}.jpg", self.next_image_id),
+            image_source: "resources/320x240.png".to_string(),
         };
         self.dynamic_images.push(new_image);
         self.next_image_id += 1;
@@ -114,12 +114,12 @@ impl ImageListWindow {
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Architecture", "320x240.png", || println!("Architecture clicked!"))
-            .item_with_callback("Nature", "320x240.png", || println!("Nature clicked!"))
-            .item_with_callback("Abstract Art", "320x240.png", || println!("Abstract Art clicked!"))
-            .item_with_callback("Street Photo", "320x240.png", || println!("Street Photo clicked!"))
-            .item_with_callback("Portrait", "320x240.png", || println!("Portrait clicked!"))
-            .item_with_callback("Landscape", "320x240.png", || println!("Landscape clicked!"));
+            .item_with_callback("Architecture", "resources/320x240.png", || println!("Architecture clicked!"))
+            .item_with_callback("Nature", "resources/320x240.png", || println!("Nature clicked!"))
+            .item_with_callback("Abstract Art", "resources/320x240.png", || println!("Abstract Art clicked!"))
+            .item_with_callback("Street Photo", "resources/320x240.png", || println!("Street Photo clicked!"))
+            .item_with_callback("Portrait", "resources/320x240.png", || println!("Portrait clicked!"))
+            .item_with_callback("Landscape", "resources/320x240.png", || println!("Landscape clicked!"));
 
             if self.show_supporting_text {
             // Note: This is a simplified example. In a real implementation,
@@ -139,12 +139,12 @@ impl ImageListWindow {
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Architecture", "320x240.png", || println!("Architecture clicked!"))
-            .item_with_callback("Nature", "320x240.png", || println!("Nature clicked!"))
-            .item_with_callback("Abstract Art", "320x240.png", || println!("Abstract Art clicked!"))
-            .item_with_callback("Street Photo", "320x240.png", || println!("Street Photo clicked!"))
-            .item_with_callback("Portrait", "320x240.png", || println!("Portrait clicked!"))
-            .item_with_callback("Landscape", "320x240.png", || println!("Landscape clicked!"));
+            .item_with_callback("Architecture", "https://i.imgur.com/Y5Ozbdm.png", || println!("Architecture clicked!"))
+            .item_with_callback("Nature", "https://i.imgur.com/Y5Ozbdm.png", || println!("Nature clicked!"))
+            .item_with_callback("Abstract Art", "https://i.imgur.com/Y5Ozbdm.png", || println!("Abstract Art clicked!"))
+            .item_with_callback("Street Photo", "https://i.imgur.com/Y5Ozbdm.png", || println!("Street Photo clicked!"))
+            .item_with_callback("Portrait", "https://i.imgur.com/Y5Ozbdm.png", || println!("Portrait clicked!"))
+            .item_with_callback("Landscape", "https://i.imgur.com/Y5Ozbdm.png", || println!("Landscape clicked!"));
 
         ui.add(masonry_list);
 
@@ -158,12 +158,12 @@ impl ImageListWindow {
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Texture 1", "320x240.png", || println!("Texture 1 clicked!"))
-            .item_with_callback("Pattern 2", "320x240.png", || println!("Pattern 2 clicked!"))
-            .item_with_callback("Color 3", "320x240.png", || println!("Color 3 clicked!"))
-            .item_with_callback("Design 4", "320x240.png", || println!("Design 4 clicked!"))
-            .item_with_callback("Style 5", "320x240.png", || println!("Style 5 clicked!"))
-            .item_with_callback("Art 6", "320x240.png", || println!("Art 6 clicked!"));
+            .item_with_callback("Texture 1", "https://i.imgur.com/Y5Ozbdm.png", || println!("Texture 1 clicked!"))
+            .item_with_callback("Pattern 2", "https://i.imgur.com/Y5Ozbdm.png", || println!("Pattern 2 clicked!"))
+            .item_with_callback("Color 3", "https://i.imgur.com/Y5Ozbdm.png", || println!("Color 3 clicked!"))
+            .item_with_callback("Design 4", "https://i.imgur.com/Y5Ozbdm.png", || println!("Design 4 clicked!"))
+            .item_with_callback("Style 5", "https://i.imgur.com/Y5Ozbdm.png", || println!("Style 5 clicked!"))
+            .item_with_callback("Art 6", "https://i.imgur.com/Y5Ozbdm.png", || println!("Art 6 clicked!"));
         
         ui.add(woven_list);
 
