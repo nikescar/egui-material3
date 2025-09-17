@@ -1,0 +1,10 @@
+[package]
+name = "package"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+egui-material3 = { path = "../../" , features = ["ondemand"] }
+eframe = "0.32"
+egui_extras = { version = "0.32", default-features = false, features = ["image", "svg", "svg_text"] }
+glob = "0.3"

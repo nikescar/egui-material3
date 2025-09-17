@@ -99,6 +99,55 @@ The library supports Material Design 3 themes with:
 - MaterialDrawer - Navigation drawers
 - MaterialTopAppBar - App bars
 - MaterialDataTable - Data tables with sorting and selection
+- MaterialImageList - Image lists with online/offline image support and smart caching
+
+### Image Lists with OnDemand Feature
+
+The `MaterialImageList` component supports multiple image sources with smart caching:
+
+```rust
+use egui_material3::image_list;
+
+// Local image files
+ui.add(image_list()
+    .columns(3)
+    .item_spacing(8.0)
+    .items_from_paths(glob::glob("resources/*.png")?));
+
+// Online images (requires 'ondemand' feature)
+ui.add(image_list()
+    .columns(4)
+    .item_spacing(8.0)
+    .items_from_urls(vec![
+        "https://example.com/image1.jpg".to_string(),
+        "https://example.com/image2.png".to_string(),
+    ]));
+
+// Embedded images from byte arrays
+ui.add(image_list()
+    .columns(2)
+    .item_spacing(8.0)
+    .items_from_bytes(vec![
+        include_bytes!("image1.png").to_vec(),
+        include_bytes!("image2.png").to_vec(),
+    ]));
+```
+
+#### OnDemand Feature
+
+Enable the `ondemand` feature for online image support:
+
+```toml
+[dependencies]
+egui-material3 = { version = "0.0.4", features = ["ondemand"] }
+```
+
+Features:
+- **Smart caching**: Downloaded images are cached locally with proper file extensions
+- **Format detection**: Automatically detects PNG, JPEG, GIF, and WebP formats
+- **Efficient loading**: Images are only downloaded once and reused from cache
+- **Performance optimized**: UI repaints only when new images are available
+- **Error handling**: Graceful fallback with visual indicators for failed loads
 
 ## Examples
 
@@ -106,3 +155,4 @@ Look at the `examples/` folder for complete examples:
 - `main` - Main Window for all stories
 - `widget_gallery_example.rs` - Showcase of all Material components
 - `nobel_prizes_example.rs` - Real-world data table example
+- `ondemand` - Image list with online/offline images and caching demo

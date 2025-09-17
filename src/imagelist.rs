@@ -1,9 +1,89 @@
+//! # Material Design Image Lists
+//!
+//! This module provides Material Design 3 image list components with comprehensive
+//! image source support and intelligent caching capabilities.
+//!
+//! ## Features
+//!
+//! - **Multiple image sources**: Local files, online URLs, and embedded byte arrays
+//! - **Smart caching**: Downloaded images are cached with proper file extensions
+//! - **Format detection**: Automatic detection of PNG, JPEG, GIF, and WebP formats
+//! - **Performance optimized**: Efficient loading and UI repainting
+//! - **Error handling**: Graceful fallback with visual indicators
+//!
+//! ## Usage
+//!
+//! ### Local Images
+//! ```rust,no_run
+//! use egui_material3::image_list;
+//!
+//! ui.add(image_list()
+//!     .columns(3)
+//!     .item_spacing(8.0)
+//!     .items_from_paths(glob::glob("resources/*.png")?));
+//! ```
+//!
+//! ### Online Images (OnDemand Feature)
+//!
+//! Enable the `ondemand` feature in your `Cargo.toml`:
+//! ```toml
+//! [dependencies]
+//! egui-material3 = { version = "0.0.4", features = ["ondemand"] }
+//! ```
+//!
+//! ```rust,no_run
+//! use egui_material3::image_list;
+//!
+//! ui.add(image_list()
+//!     .columns(4)
+//!     .item_spacing(8.0)
+//!     .items_from_urls(vec![
+//!         "https://example.com/image1.jpg".to_string(),
+//!         "https://example.com/image2.png".to_string(),
+//!     ]));
+//! ```
+//!
+//! ### Embedded Images
+//! ```rust,no_run
+//! use egui_material3::image_list;
+//!
+//! ui.add(image_list()
+//!     .columns(2)
+//!     .item_spacing(8.0)
+//!     .items_from_bytes(vec![
+//!         include_bytes!("image1.png").to_vec(),
+//!         include_bytes!("image2.png").to_vec(),
+//!     ]));
+//! ```
+//!
+//! ## OnDemand Feature Details
+//!
+//! When the `ondemand` feature is enabled, the image list provides:
+//!
+//! - **Automatic downloading**: Images are downloaded from URLs on first access
+//! - **Smart caching**: Downloaded images are saved to `/tmp/egui_material3_img/` with proper extensions
+//! - **Format detection**: File extensions are determined from content (PNG, JPEG, GIF, WebP)
+//! - **Efficient reuse**: Cached images are reused without re-downloading
+//! - **Performance optimization**: UI only repaints when new images are available
+//! - **Error handling**: Failed downloads show visual indicators instead of crashing
+//!
+//! ### Cache Management
+//!
+//! - Cache directory: `/tmp/egui_material3_img/`
+//! - File naming: `img_{hash}.{extension}` (e.g., `img_abc123.png`)
+//! - Automatic cleanup: Cache persists between runs for efficiency
+//! - Manual cleanup: Remove `/tmp/egui_material3_img/` to clear cache
+
 use crate::theme::get_global_color;
 use egui::{
-    ecolor::Color32, 
+    ecolor::Color32,
     epaint::{Stroke, CornerRadius},
-    Rect, Response, Sense, Ui, Vec2, Widget,
+    Rect, Response, Sense, Ui, Vec2, Widget
 };
+use std::env;
+use std::io::Read;
+use std::hash::{Hash, Hasher};
+use image::GenericImageView;
 
 /// Material Design image list variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -22,9 +102,9 @@ pub enum ImageListVariant {
 /// # egui::__run_test_ui(|ui| {
 /// let image_list = MaterialImageList::standard()
 ///     .columns(3)
-///     .item("Image 1", "path/to/image1.jpg")
-///     .item("Image 2", "path/to/image2.jpg")
-///     .item("Image 3", "path/to/image3.jpg");
+///     .item("Image 1", "320x240.png")
+///     .item("Image 2", "320x240.png")
+///     .item("Image 3", "320x240.png");
 ///
 /// ui.add(image_list);
 /// # });
@@ -38,11 +118,12 @@ pub struct MaterialImageList<'a> {
     text_protected: bool,
     corner_radius: CornerRadius,
     id_salt: Option<String>,
+    tmppath: String,
 }
 
 pub struct ImageListItem<'a> {
     pub label: String,
-    pub image_source: String,
+    pub image_source: Option<String>,
     pub supporting_text: Option<String>,
     pub on_click: Option<Box<dyn Fn() + Send + Sync>>,
     _phantom: std::marker::PhantomData<&'a ()>,
@@ -52,7 +133,7 @@ impl<'a> ImageListItem<'a> {
     pub fn new(label: impl Into<String>, image_source: impl Into<String>) -> Self {
         Self {
             label: label.into(),
-            image_source: image_source.into(),
+            image_source: Some(image_source.into()),
             supporting_text: None,
             on_click: None,
             _phantom: std::marker::PhantomData,
@@ -90,6 +171,10 @@ impl<'a> MaterialImageList<'a> {
     }
 
     fn new(variant: ImageListVariant) -> Self {
+        // create img folder in tmp dir using let dir = env::temp_dir(), save the path to tmppath on MaterialImageList
+        let tmppath = env::temp_dir().join("egui_material3_img");
+        let _ = std::fs::create_dir_all(&tmppath);
+
         Self {
             variant,
             items: Vec::new(),
@@ -98,6 +183,7 @@ impl<'a> MaterialImageList<'a> {
             text_protected: false,
             corner_radius: CornerRadius::from(4.0),
             id_salt: None,
+            tmppath: tmppath.to_string_lossy().to_string(),
         }
     }
 
@@ -154,6 +240,52 @@ impl<'a> MaterialImageList<'a> {
         self
     }
 
+    /// Add items from a collection of file paths.
+    pub fn items_from_paths<I, P>(mut self, paths: I) -> Self
+    where
+        I: IntoIterator<Item = P>,
+        P: AsRef<std::path::Path>,
+    {
+        for (i, path) in paths.into_iter().enumerate() {
+            let path_str = path.as_ref().to_string_lossy().to_string();
+            let filename = if let Some(file_name) = path.as_ref().file_name() {
+                file_name.to_string_lossy().to_string()
+            } else {
+                format!("Image {}", i + 1)
+            };
+            self.items.push(ImageListItem::new(filename, path_str));
+        }
+        self
+    }
+
+    /// Add items from a collection of URLs.
+    pub fn items_from_urls<I, S>(mut self, urls: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        for (i, url) in urls.into_iter().enumerate() {
+            let url_str = url.into();
+            let label = format!("Online {}", i + 1);
+            self.items.push(ImageListItem::new(label, url_str));
+        }
+        self
+    }
+
+    /// Add items from a collection of byte arrays (for embedded images).
+    pub fn items_from_bytes<I>(mut self, bytes_collection: I) -> Self
+    where
+        I: IntoIterator<Item = Vec<u8>>,
+    {
+        for (i, bytes) in bytes_collection.into_iter().enumerate() {
+            let label = format!("Embedded {}", i + 1);
+            // Convert bytes to hex string for the bytes: protocol
+            let hex_string = format!("bytes:{}", hex::encode(bytes));
+            self.items.push(ImageListItem::new(label, hex_string));
+        }
+        self
+    }
+
     fn get_image_list_style(&self) -> Color32 {
         get_global_color("surface")
     }
@@ -168,7 +300,7 @@ impl<'a> Default for MaterialImageList<'a> {
 impl Widget for MaterialImageList<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let background_color = self.get_image_list_style();
-        
+
         let MaterialImageList {
             variant,
             items,
@@ -177,6 +309,7 @@ impl Widget for MaterialImageList<'_> {
             text_protected,
             corner_radius,
             id_salt,
+            tmppath: _,
         } = self;
 
         if items.is_empty() {
@@ -247,10 +380,247 @@ impl Widget for MaterialImageList<'_> {
                 ui.painter().rect_stroke(image_rect, corner_radius, image_border, egui::epaint::StrokeKind::Outside);
 
                 // Draw image icon placeholder (camera icon representation)
-                let icon_center = image_rect.center();
-                let icon_color = get_global_color("onSurfaceVariant");
-                ui.painter().circle_filled(icon_center, 16.0, icon_color);
-                ui.painter().circle_filled(icon_center + Vec2::new(0.0, -4.0), 6.0, Color32::WHITE);
+                // let icon_center = image_rect.center();
+                // let icon_color = get_global_color("onSurfaceVariant");
+                // ui.painter().circle_filled(icon_center, 16.0, icon_color);
+                // ui.painter().circle_filled(icon_center + Vec2::new(0.0, -4.0), 6.0, Color32::WHITE);
+                let mut failed = false;
+                if let Some(ref image_source) = item.image_source {
+                    let img_data = if image_source.starts_with("http://") || image_source.starts_with("https://") {
+                        #[cfg(feature = "ondemand")]
+                        {
+                            // Only print processing message if we're actually going to process
+                            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                            image_source.hash(&mut hasher);
+                            let url_hash = format!("{:x}", hasher.finish());
+                            let filename = format!("img_{}", url_hash);
+                            let filepath = std::path::Path::new(&self.tmppath).join(&filename);
+
+                            // Quick check if file already exists to avoid unnecessary processing messages
+                            let possible_files = [
+                                filepath.with_extension("png"),
+                                filepath.with_extension("jpg"),
+                                filepath.with_extension("gif"),
+                                filepath.with_extension("webp"),
+                                filepath.clone()
+                            ];
+                            let file_exists = possible_files.iter().any(|f| f.exists());
+
+                            if !file_exists {
+                                println!("Processing new HTTP URL: {}", image_source);
+                            } else {
+                                println!("Using cached image for: {}", image_source);
+                            }
+
+                            // Ensure cache directory exists
+                            if let Err(e) = std::fs::create_dir_all(&self.tmppath) {
+                                println!("Failed to create cache directory {}: {}", self.tmppath, e);
+                            } else {
+                                println!("Cache directory: {}", self.tmppath);
+                                println!("Target file path: {}", filepath.display());
+                            }
+
+                            // Check if file already exists with any extension
+                            let possible_files = [
+                                filepath.with_extension("png"),
+                                filepath.with_extension("jpg"),
+                                filepath.with_extension("gif"),
+                                filepath.with_extension("webp"),
+                                filepath.clone() // Original path without extension
+                            ];
+
+                            let existing_file = possible_files.iter().find(|f| f.exists());
+
+                            if existing_file.is_none() {
+                                println!("File does not exist, attempting download: {}", filepath.display());
+                                // Try to download the image with timeout and user agent
+                                let agent = ureq::AgentBuilder::new()
+                                    .timeout_read(std::time::Duration::from_secs(10))
+                                    .timeout_write(std::time::Duration::from_secs(10))
+                                    .user_agent("egui-material3/1.0")
+                                    .build();
+
+                                match agent.get(image_source).call() {
+                                    Ok(response) => {
+                                        let status = response.status();
+                                        println!("Download response status: {}", status);
+                                        if status == 200 {
+                                            let mut bytes = Vec::new();
+                                            match response.into_reader().read_to_end(&mut bytes) {
+                                                Ok(_) => {
+                                                    println!("Downloaded {} bytes", bytes.len());
+                                                    if !bytes.is_empty() {
+                                                        // Detect image format from content and add appropriate extension
+                                                        let extension = if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
+                                                            "png"
+                                                        } else if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+                                                            "jpg"
+                                                        } else if bytes.starts_with(&[0x47, 0x49, 0x46]) {
+                                                            "gif"
+                                                        } else if bytes.starts_with(&[0x52, 0x49, 0x46, 0x46]) && bytes.len() > 12 && &bytes[8..12] == b"WEBP" {
+                                                            "webp"
+                                                        } else {
+                                                            println!("Unknown image format, defaulting to png");
+                                                            "png"
+                                                        };
+
+                                                        let filepath_with_ext = filepath.with_extension(extension);
+                                                        println!("Detected format: {}, saving as: {}", extension, filepath_with_ext.display());
+
+                                                        match std::fs::write(&filepath_with_ext, &bytes) {
+                                                            Ok(_) => {
+                                                                println!("Successfully saved to: {}", filepath_with_ext.display());
+                                                                // Only request repaint after successful download
+                                                                ui.ctx().request_repaint();
+                                                            }
+                                                            Err(e) => {
+                                                                println!("Failed to save file: {}", e);
+                                                            }
+                                                        }
+                                                    } else {
+                                                        println!("Downloaded 0 bytes - empty response");
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    println!("Failed to read response body: {}", e);
+                                                }
+                                            }
+                                        } else {
+                                            println!("HTTP error status: {}", status);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        println!("Download failed: {}", e);
+                                    }
+                                }
+                            } else {
+                                println!("File already exists with extension: {:?}", existing_file.unwrap().display());
+                            }
+
+                            if let Some(existing_filepath) = existing_file {
+                                println!("Loading image from: {}", existing_filepath.display());
+                                match image::open(existing_filepath) {
+                                    Ok(image) => {
+                                        println!("Successfully opened image: {}x{}", image.width(), image.height());
+                                        let original_size = image.dimensions();
+
+                                        // Resize large images to max 512x512 to avoid memory issues
+                                        let resized_image = if original_size.0 > 512 || original_size.1 > 512 {
+                                            image.resize(512, 512, image::imageops::FilterType::Lanczos3)
+                                        } else {
+                                            image
+                                        };
+
+                                        let size = resized_image.dimensions();
+                                        let image_buffer = resized_image.to_rgba8();
+                                        let pixels = image_buffer.into_raw();
+                                        println!("Created ColorImage {}x{} with {} pixels", size.0, size.1, pixels.len());
+                                        // No need to request repaint for existing cached images
+                                        Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels))
+                                    }
+                                    Err(e) => {
+                                        println!("Failed to open image file: {}", e);
+                                        None
+                                    }
+                                }
+                            } else {
+                                println!("Image file does not exist after download attempt: {}", filepath.display());
+                                None
+                            }
+                        }
+                        #[cfg(not(feature = "ondemand"))]
+                        {
+                            println!("ondemand feature NOT enabled - cannot download HTTP URL");
+                            None
+                        }
+                    } else if image_source.starts_with("data:") {
+                        // Handle data URLs (base64 encoded images)
+                        if let Some(comma_pos) = image_source.find(',') {
+                            let data_part = &image_source[comma_pos + 1..];
+                            if let Ok(bytes) = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data_part) {
+                                if let Ok(image) = image::load_from_memory(&bytes) {
+                                    let size = image.dimensions();
+                                    let image_buffer = image.to_rgba8();
+                                    let pixels = image_buffer.into_raw();
+                                    Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels))
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else if image_source.starts_with("bytes:") {
+                        // Handle raw bytes string (hex encoded or similar)
+                        let bytes_str = &image_source[6..]; // Remove "bytes:" prefix
+                        if let Ok(bytes) = hex::decode(bytes_str) {
+                            if let Ok(image) = image::load_from_memory(&bytes) {
+                                let size = image.dimensions();
+                                let image_buffer = image.to_rgba8();
+                                let pixels = image_buffer.into_raw();
+                                Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels))
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else if std::path::Path::new(image_source).exists() {
+                        if let Ok(image) = image::open(image_source) {
+                            let size = image.dimensions();
+                            let image_buffer = image.to_rgba8();
+                            let pixels = image_buffer.into_raw();
+                            Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+                    
+                    if let Some(color_image) = img_data {
+                        let texture_name = format!("image_texture_{}_{}", item_id.value(), item.label);
+                        let texture_id = ui.ctx().load_texture(
+                            texture_name,
+                            color_image,
+                            Default::default()
+                        );
+                        ui.painter().image(
+                            texture_id.id(),
+                            image_rect,
+                            egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
+                    } else {
+                        failed = true;
+                    }
+                } else {
+                    // Default placeholder when no image source
+                    failed = true;
+                    // let img_data = egui::include_image!("../resources/320x240.png");
+                    // let img = egui::Image::new(img_data)
+                    //     .fit_to_exact_size(image_rect.size())
+                    //     .corner_radius(corner_radius);
+
+                    // ui.put(image_rect, img);
+                }
+
+                if failed {
+                    // Debug: Print when showing X marks
+                    println!("SHOWING X MARK for item: {}", item.label);
+                    // Draw a simple "X" to indicate failed image load
+                    let line_color = get_global_color("error");
+                    ui.painter().line_segment(
+                        [image_rect.min, image_rect.max],
+                        Stroke::new(2.0, line_color),
+                    );
+                    ui.painter().line_segment(
+                        [egui::pos2(image_rect.min.x, image_rect.max.y), egui::pos2(image_rect.max.x, image_rect.min.y)],
+                        Stroke::new(2.0, line_color),
+                    );
+                }
 
                 // Draw text overlay or below image
                 let text_color = if text_protected {
@@ -300,6 +670,17 @@ impl Widget for MaterialImageList<'_> {
                         egui::FontId::proportional(12.0),
                         text_color
                     );
+                    // draw image_source if avalilable
+                    if let Some(image_source) = &item.image_source {
+                        let source_pos = egui::pos2(item_rect.min.x + 4.0, text_y + 14.0);
+                        ui.painter().text(
+                            source_pos,
+                            egui::Align2::LEFT_TOP,
+                            image_source,
+                            egui::FontId::proportional(10.0),
+                            get_global_color("onSurfaceVariant")
+                        );
+                    }
                     
                     if let Some(supporting_text) = &item.supporting_text {
                         let support_text_pos = egui::pos2(item_rect.min.x + 4.0, text_y + 14.0);

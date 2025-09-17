@@ -146,22 +146,75 @@
 //! ### Icons and Visual Elements
 //! - [`MaterialIcon`] - Material Design icons with font support
 //! - [`MaterialList`] - Lists following Material Design patterns
+//! - [`MaterialImageList`] - Image lists with online/offline support and smart caching
+//!
+//! ## Image Lists and OnDemand Feature
+//!
+//! The [`MaterialImageList`] component provides comprehensive image display capabilities:
+//!
+//! ```rust,no_run
+//! use egui_material3::image_list;
+//!
+//! // Local image files
+//! ui.add(image_list()
+//!     .columns(3)
+//!     .item_spacing(8.0)
+//!     .items_from_paths(glob::glob("resources/*.png")?));
+//!
+//! // Online images (requires 'ondemand' feature)
+//! ui.add(image_list()
+//!     .columns(4)
+//!     .item_spacing(8.0)
+//!     .items_from_urls(vec![
+//!         "https://example.com/image1.jpg".to_string(),
+//!         "https://example.com/image2.png".to_string(),
+//!     ]));
+//!
+//! // Embedded images from byte arrays
+//! ui.add(image_list()
+//!     .columns(2)
+//!     .item_spacing(8.0)
+//!     .items_from_bytes(vec![
+//!         include_bytes!("image1.png").to_vec(),
+//!         include_bytes!("image2.png").to_vec(),
+//!     ]));
+//! ```
+//!
+//! ### OnDemand Feature
+//!
+//! Enable the `ondemand` feature for online image support:
+//!
+//! ```toml
+//! [dependencies]
+//! egui-material3 = { version = "0.0.4", features = ["ondemand"] }
+//! ```
+//!
+//! Key capabilities:
+//! - **Smart caching**: Downloaded images are cached locally with correct file extensions
+//! - **Format detection**: Automatically detects PNG, JPEG, GIF, and WebP formats
+//! - **Efficient loading**: Images are downloaded once and reused from cache
+//! - **Performance optimized**: UI repaints only when new images are available
+//! - **Error handling**: Graceful fallback with visual indicators for failed loads
 //!
 //! ## Examples
 //!
 //! The crate includes comprehensive examples:
 //!
 //! - `widget_gallery_example` - Showcase of all Material components with theme switching
-//! - `nobel_prizes_example` - Real-world data table implementation  
+//! - `nobel_prizes_example` - Real-world data table implementation
 //! - `stories` - Individual component showcase windows for detailed exploration
 //! - `package` - Standalone example with bundled resources and themes
+//! - `ondemand` - Image list demonstration with online/offline images and smart caching
 //!
 //! Run examples with:
 //! ```bash
 //! cargo run --example widget_gallery_example
 //! cargo run --example nobel_prizes_example
 //! cargo run --example stories
-//! 
+//!
+//! # OnDemand example with online image support
+//! cd examples/ondemand && cargo run
+//!
 //! # Package example runs independently with its own Cargo.toml
 //! cd examples/package && cargo run
 //! ```
