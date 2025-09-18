@@ -61,7 +61,7 @@ fn main() -> Result<(), eframe::Error> {
     };
     
     eframe::run_native(
-        "Material Design Components Demo 테스트",
+        "Material Design Components Demo 고",
         options,
         Box::new(|cc| {
             // Prepare local fonts including Material Symbols

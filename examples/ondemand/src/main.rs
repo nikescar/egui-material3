@@ -2,7 +2,7 @@
 use eframe::egui;
 use egui_material3::{
     MaterialButton, MaterialCheckbox, MaterialSlider, MaterialSwitch,
-    theme::{setup_local_fonts, setup_local_theme, load_fonts, load_themes, update_window_background},
+    theme::{setup_local_fonts, setup_google_fonts, setup_local_theme, load_fonts, load_themes, update_window_background},
     image_list, masonry_image_list, woven_image_list
 };
 
@@ -19,6 +19,8 @@ fn main() -> Result<(), eframe::Error> {
             // Setup Material Design fonts and themes
             setup_local_theme(Some("resources/material-theme.json")); // Use default theme
             egui_extras::install_image_loaders(&cc.egui_ctx);
+
+            setup_google_fonts(Some("Nanum Gothic"));
 
             // Load fonts and themes
             load_fonts(&cc.egui_ctx);
@@ -46,8 +48,8 @@ impl eframe::App for MyApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                
-                ui.heading("Material Design Ondemand Imagelist Example");
+
+                ui.heading("Material Design Ondemand Imagelist Example 고");
                 ui.add_space(10.0);
                 
                 // Display image lists
