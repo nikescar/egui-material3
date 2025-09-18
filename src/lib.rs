@@ -186,7 +186,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! egui-material3 = { version = "0.0.5", features = ["ondemand"] }
+//! egui-material3 = { version = "0.0.6", features = ["ondemand"] }
 //! ```
 //!
 //! Key capabilities:
