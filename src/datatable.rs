@@ -561,7 +561,7 @@ impl<'a> MaterialDataTable<'a> {
                                     ..Default::default()
                                 },
                                 break_on_newline: true,
-                                halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
+                                halign: egui::Align::LEFT,  // Always left-align within galley; positioning handles cell alignment
                                 justify: false,
                                 first_row_min_height: 0.0,
                                 round_output_to_gui: true,
@@ -1009,11 +1009,7 @@ impl<'a> MaterialDataTable<'a> {
                                             ..Default::default()
                                         },
                                         break_on_newline: true,
-                                        halign: match h_align {
-                                            HAlign::Left => egui::Align::LEFT,
-                                            HAlign::Center => egui::Align::Center,
-                                            HAlign::Right => egui::Align::RIGHT,
-                                        },
+                                        halign: egui::Align::LEFT,  // Always left-align within galley; positioning handles cell alignment
                                         justify: false,
                                         first_row_min_height: 0.0,
                                         round_output_to_gui: true,
