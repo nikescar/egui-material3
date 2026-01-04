@@ -11,7 +11,7 @@ use std::collections::{HashMap, HashSet};
 ///
 /// This structure maintains the state of the table including selections,
 /// sorting, and editing state across frames.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct DataTableState {
     /// Selection state for each row (true if selected)
     pub selected_rows: Vec<bool>,
@@ -97,10 +97,38 @@ pub struct MaterialDataTable<'a> {
     sort_direction: SortDirection,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum VAlign {
+    Top,
+    Center,
+    Bottom,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum HAlign {
+    Left,
+    Center,
+    Right,
+}
+
+impl Default for VAlign {
+    fn default() -> Self {
+        VAlign::Center
+    }
+}
+
+impl Default for HAlign {
+    fn default() -> Self {
+        HAlign::Left
+    }
+}
+
+#[derive(Clone)]
 pub struct DataTableColumn {
-    /// Display title for the column header
+    /// Display title for the column header (can be text or widget closure)
     pub title: String,
+    /// Optional widget builder for custom header content
+    pub header_widget: Option<std::sync::Arc<dyn Fn(&mut Ui) + Send + Sync>>,
     /// Fixed width of the column in pixels
     pub width: f32,
     /// Whether the column contains numeric data (affects alignment and sorting)
@@ -109,9 +137,13 @@ pub struct DataTableColumn {
     pub sortable: bool,
     /// Current sort direction for this column (if sorted)
     pub sort_direction: Option<SortDirection>,
+    /// Horizontal alignment for column cells
+    pub h_align: HAlign,
+    /// Vertical alignment for column cells
+    pub v_align: VAlign,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum SortDirection {
     Ascending,
     Descending,
@@ -123,8 +155,50 @@ impl Default for SortDirection {
     }
 }
 
+pub enum CellContent {
+    Text(WidgetText),
+    Widget(std::sync::Arc<dyn Fn(&mut Ui) + Send + Sync>),
+}
+
+pub struct DataTableCell {
+    pub content: CellContent,
+    pub h_align: Option<HAlign>,
+    pub v_align: Option<VAlign>,
+}
+
+impl DataTableCell {
+    pub fn text(text: impl Into<WidgetText>) -> Self {
+        Self {
+            content: CellContent::Text(text.into()),
+            h_align: None,
+            v_align: None,
+        }
+    }
+
+    pub fn widget<F>(f: F) -> Self
+    where
+        F: Fn(&mut Ui) + Send + Sync + 'static,
+    {
+        Self {
+            content: CellContent::Widget(std::sync::Arc::new(f)),
+            h_align: None,
+            v_align: None,
+        }
+    }
+
+    pub fn h_align(mut self, align: HAlign) -> Self {
+        self.h_align = Some(align);
+        self
+    }
+
+    pub fn v_align(mut self, align: VAlign) -> Self {
+        self.v_align = Some(align);
+        self
+    }
+}
+
 pub struct DataTableRow<'a> {
-    cells: Vec<WidgetText>,
+    cells: Vec<DataTableCell>,
     selected: bool,
     readonly: bool,
     id: Option<String>,
@@ -141,22 +215,38 @@ impl<'a> DataTableRow<'a> {
             _phantom: std::marker::PhantomData,
         }
     }
-    
+
+    /// Add a text cell
     pub fn cell(mut self, text: impl Into<WidgetText>) -> Self {
-        self.cells.push(text.into());
+        self.cells.push(DataTableCell::text(text));
         self
     }
-    
+
+    /// Add a custom cell with full control
+    pub fn custom_cell(mut self, cell: DataTableCell) -> Self {
+        self.cells.push(cell);
+        self
+    }
+
+    /// Add a widget cell
+    pub fn widget_cell<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut Ui) + Send + Sync + 'static,
+    {
+        self.cells.push(DataTableCell::widget(f));
+        self
+    }
+
     pub fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
         self
     }
-    
+
     pub fn readonly(mut self, readonly: bool) -> Self {
         self.readonly = readonly;
         self
     }
-    
+
     pub fn id(mut self, id: impl Into<String>) -> Self {
         self.id = Some(id.into());
         self
@@ -195,10 +285,13 @@ impl<'a> MaterialDataTable<'a> {
     pub fn column(mut self, title: impl Into<String>, width: f32, numeric: bool) -> Self {
         self.columns.push(DataTableColumn {
             title: title.into(),
+            header_widget: None,
             width,
             numeric,
             sortable: true, // Make all columns sortable by default
             sort_direction: None,
+            h_align: if numeric { HAlign::Right } else { HAlign::Left },
+            v_align: VAlign::Center,
         });
         self
     }
@@ -207,10 +300,50 @@ impl<'a> MaterialDataTable<'a> {
     pub fn sortable_column(mut self, title: impl Into<String>, width: f32, numeric: bool) -> Self {
         self.columns.push(DataTableColumn {
             title: title.into(),
+            header_widget: None,
             width,
             numeric,
             sortable: true,
             sort_direction: None,
+            h_align: if numeric { HAlign::Right } else { HAlign::Left },
+            v_align: VAlign::Center,
+        });
+        self
+    }
+
+    pub fn sortable_column_with_align(mut self, title: impl Into<String>, width: f32, numeric: bool, h_align: HAlign,
+        v_align: VAlign,) -> Self {
+        self.columns.push(DataTableColumn {
+            title: title.into(),
+            header_widget: None,
+            width,
+            numeric,
+            sortable: true,
+            sort_direction: None,
+            h_align,
+            v_align,
+        });
+        self
+    }
+
+    /// Add a column with custom alignment
+    pub fn column_with_align(
+        mut self,
+        title: impl Into<String>,
+        width: f32,
+        numeric: bool,
+        h_align: HAlign,
+        v_align: VAlign,
+    ) -> Self {
+        self.columns.push(DataTableColumn {
+            title: title.into(),
+            header_widget: None,
+            width,
+            numeric,
+            sortable: true,
+            sort_direction: None,
+            h_align,
+            v_align,
         });
         self
     }
@@ -279,7 +412,10 @@ impl<'a> MaterialDataTable<'a> {
             for (i, row) in self.rows.iter().take(3).enumerate() {
                 i.hash(&mut hasher);
                 for cell in &row.cells {
-                    cell.text().hash(&mut hasher);
+                    match &cell.content {
+                        CellContent::Text(t) => t.text().hash(&mut hasher),
+                        CellContent::Widget(_) => "widget".hash(&mut hasher),
+                    }
                 }
             }
             self.rows.len().hash(&mut hasher);
@@ -307,10 +443,10 @@ impl<'a> MaterialDataTable<'a> {
         if state.selected_rows.len() != self.rows.len() {
             state.selected_rows.resize(self.rows.len(), false);
         }
-        
-        // Initialize selection from rows if this is the first time or rows changed
+
+        // Sync selection state from rows - always update to match external state
         for (i, row) in self.rows.iter().enumerate() {
-            if i < state.selected_rows.len() && row.selected {
+            if i < state.selected_rows.len() {
                 state.selected_rows[i] = row.selected;
             }
         }
@@ -329,19 +465,29 @@ impl<'a> MaterialDataTable<'a> {
         if let Some(sort_col_idx) = state.sorted_column {
             if let Some(sort_column) = columns.get(sort_col_idx) {
                 rows.sort_by(|a, b| {
-                    let cell_a = a.cells.get(sort_col_idx).map(|c| c.text()).unwrap_or("");
-                    let cell_b = b.cells.get(sort_col_idx).map(|c| c.text()).unwrap_or("");
-                    
+                    let cell_a_text = a.cells.get(sort_col_idx)
+                        .and_then(|c| match &c.content {
+                            CellContent::Text(t) => Some(t.text()),
+                            CellContent::Widget(_) => None,
+                        })
+                        .unwrap_or("");
+                    let cell_b_text = b.cells.get(sort_col_idx)
+                        .and_then(|c| match &c.content {
+                            CellContent::Text(t) => Some(t.text()),
+                            CellContent::Widget(_) => None,
+                        })
+                        .unwrap_or("");
+
                     let comparison = if sort_column.numeric {
                         // Try to parse as numbers for numeric columns
-                        let a_num: f64 = cell_a.trim_start_matches('$').parse().unwrap_or(0.0);
-                        let b_num: f64 = cell_b.trim_start_matches('$').parse().unwrap_or(0.0);
+                        let a_num: f64 = cell_a_text.trim_start_matches('$').parse().unwrap_or(0.0);
+                        let b_num: f64 = cell_b_text.trim_start_matches('$').parse().unwrap_or(0.0);
                         a_num.partial_cmp(&b_num).unwrap_or(std::cmp::Ordering::Equal)
                     } else {
                         // Alphabetical comparison for text columns
-                        cell_a.cmp(cell_b)
+                        cell_a_text.cmp(cell_b_text)
                     };
-                    
+
                     match state.sort_direction {
                         SortDirection::Ascending => comparison,
                         SortDirection::Descending => comparison.reverse(),
@@ -392,35 +538,43 @@ impl<'a> MaterialDataTable<'a> {
         let mut row_heights = Vec::new();
         for row in &rows {
             let mut max_height: f32 = min_row_height;
-            for (cell_idx, cell_text) in row.cells.iter().enumerate() {
+            for (cell_idx, cell) in row.cells.iter().enumerate() {
                 if let Some(column) = columns.get(cell_idx) {
-                    let available_width = column.width - 32.0;
-                    let cell_font = FontId::new(14.0, FontFamily::Proportional);
-                    
-                    let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
-                        text: cell_text.text().to_string(),
-                        sections: vec![egui::text::LayoutSection {
-                            leading_space: 0.0,
-                            byte_range: 0..cell_text.text().len(),
-                            format: egui::TextFormat {
-                                font_id: cell_font,
-                                color: get_global_color("onSurface"),
-                                ..Default::default()
-                            },
-                        }],
-                        wrap: egui::text::TextWrapping {
-                            max_width: available_width,
-                            ..Default::default()
+                    match &cell.content {
+                        CellContent::Text(cell_text) => {
+                            let available_width = column.width - 32.0;
+                            let cell_font = FontId::new(14.0, FontFamily::Proportional);
+
+                            let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
+                                text: cell_text.text().to_string(),
+                                sections: vec![egui::text::LayoutSection {
+                                    leading_space: 0.0,
+                                    byte_range: 0..cell_text.text().len(),
+                                    format: egui::TextFormat {
+                                        font_id: cell_font,
+                                        color: get_global_color("onSurface"),
+                                        ..Default::default()
+                                    },
+                                }],
+                                wrap: egui::text::TextWrapping {
+                                    max_width: available_width,
+                                    ..Default::default()
+                                },
+                                break_on_newline: true,
+                                halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
+                                justify: false,
+                                first_row_min_height: 0.0,
+                                round_output_to_gui: true,
+                            }));
+
+                            let content_height: f32 = galley.size().y + 16.0; // Add padding
+                            max_height = max_height.max(content_height);
                         },
-                        break_on_newline: true,
-                        halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
-                        justify: false,
-                        first_row_min_height: 0.0,
-                        round_output_to_gui: true,
-                    }));
-                    
-                    let content_height: f32 = galley.size().y + 16.0; // Add padding
-                    max_height = max_height.max(content_height);
+                        CellContent::Widget(_) => {
+                            // For widgets, use minimum height - they will size themselves
+                            // We could make this configurable in the future
+                        }
+                    }
                 }
             }
             row_heights.push(max_height);
@@ -764,16 +918,16 @@ impl<'a> MaterialDataTable<'a> {
                 let mut row_actions: Vec<RowAction> = Vec::new();
                 
                 // Row cells
-                for (cell_idx, cell_text) in row.cells.iter().enumerate() {
+                for (cell_idx, cell) in row.cells.iter().enumerate() {
                     if let Some(column) = columns.get(cell_idx) {
                         let _cell_rect = Rect::from_min_size(
                             egui::pos2(current_x, current_y),
                             Vec2::new(column.width, row_height)
                         );
-                        
+
                         let is_row_editing = state.editing_rows.contains(&row_idx);
                         let is_actions_column = column.title == "Actions";
-                        
+
                         if is_actions_column {
                             // Render action buttons
                             let button_rect = Rect::from_min_size(
@@ -811,7 +965,10 @@ impl<'a> MaterialDataTable<'a> {
                             let edit_data = state.edit_data
                                 .entry(row_idx)
                                 .or_insert_with(|| {
-                                    row.cells.iter().map(|c| c.text().to_string()).collect()
+                                    row.cells.iter().map(|c| match &c.content {
+                                        CellContent::Text(t) => t.text().to_string(),
+                                        CellContent::Widget(_) => String::new(),
+                                    }).collect()
                                 });
                             
                             // Ensure we have enough entries for this cell
@@ -826,46 +983,102 @@ impl<'a> MaterialDataTable<'a> {
                                     .desired_width(column.width - 16.0));
                             });
                         } else {
-                            // Render normal text
-                            let _text_align = if column.numeric {
-                                egui::Align2::RIGHT_CENTER
-                            } else {
-                                egui::Align2::LEFT_CENTER
-                            };
-                        
-                            // Handle text wrapping for cell content (keeping original logic)
-                            let available_width = column.width - 32.0; // Account for padding
-                            let cell_font = FontId::new(14.0, FontFamily::Proportional);
-                            
-                            let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
-                                text: cell_text.text().to_string(),
-                                sections: vec![egui::text::LayoutSection {
-                                    leading_space: 0.0,
-                                    byte_range: 0..cell_text.text().len(),
-                                    format: egui::TextFormat {
-                                        font_id: cell_font,
-                                        color: get_global_color("onSurface"),
-                                        ..Default::default()
-                                    },
-                                }],
-                                wrap: egui::text::TextWrapping {
-                                    max_width: available_width,
-                                    ..Default::default()
+                            // Determine alignment from cell or column
+                            let h_align = cell.h_align.as_ref().unwrap_or(&column.h_align);
+                            let v_align = cell.v_align.as_ref().unwrap_or(&column.v_align);
+
+                            match &cell.content {
+                                CellContent::Text(cell_text) => {
+                                    // Render normal text with alignment
+                                    let available_width = column.width - 32.0; // Account for padding
+                                    let cell_font = FontId::new(14.0, FontFamily::Proportional);
+
+                                    let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
+                                        text: cell_text.text().to_string(),
+                                        sections: vec![egui::text::LayoutSection {
+                                            leading_space: 0.0,
+                                            byte_range: 0..cell_text.text().len(),
+                                            format: egui::TextFormat {
+                                                font_id: cell_font,
+                                                color: get_global_color("onSurface"),
+                                                ..Default::default()
+                                            },
+                                        }],
+                                        wrap: egui::text::TextWrapping {
+                                            max_width: available_width,
+                                            ..Default::default()
+                                        },
+                                        break_on_newline: true,
+                                        halign: match h_align {
+                                            HAlign::Left => egui::Align::LEFT,
+                                            HAlign::Center => egui::Align::Center,
+                                            HAlign::Right => egui::Align::RIGHT,
+                                        },
+                                        justify: false,
+                                        first_row_min_height: 0.0,
+                                        round_output_to_gui: true,
+                                    }));
+
+                                    // Calculate horizontal position based on alignment
+                                    let text_x = match h_align {
+                                        HAlign::Left => current_x + 16.0,
+                                        HAlign::Center => current_x + (column.width - galley.size().x) / 2.0,
+                                        HAlign::Right => current_x + column.width - 16.0 - galley.size().x,
+                                    };
+
+                                    // Calculate vertical position based on alignment
+                                    let text_y = match v_align {
+                                        VAlign::Top => current_y + 8.0,
+                                        VAlign::Center => current_y + (row_height - galley.size().y) / 2.0,
+                                        VAlign::Bottom => current_y + row_height - galley.size().y - 8.0,
+                                    };
+
+                                    let text_pos = egui::pos2(text_x, text_y);
+                                    ui.painter().galley(text_pos, galley, get_global_color("onSurface"));
                                 },
-                                break_on_newline: true,
-                                halign: if column.numeric { egui::Align::RIGHT } else { egui::Align::LEFT },
-                                justify: false,
-                                first_row_min_height: 0.0,
-                                round_output_to_gui: true,
-                            }));
-                            
-                            let text_pos = if column.numeric {
-                                egui::pos2(current_x + column.width - 16.0 - galley.size().x, current_y + (row_height - galley.size().y) / 2.0)
-                            } else {
-                                egui::pos2(current_x + 16.0, current_y + (row_height - galley.size().y) / 2.0)
-                            };
-                            
-                            ui.painter().galley(text_pos, galley, get_global_color("onSurface"));
+                                CellContent::Widget(widget_fn) => {
+                                    // Render custom widget
+                                    // Calculate widget rect based on alignment
+                                    let padding = 8.0;
+                                    let available_width = column.width - 2.0 * padding;
+                                    let available_height = row_height - 2.0 * padding;
+
+                                    // For now, center the widget area. Alignment can be refined based on widget's actual size
+                                    let widget_rect = match (h_align, v_align) {
+                                        (HAlign::Left, VAlign::Top) => Rect::from_min_size(
+                                            egui::pos2(current_x + padding, current_y + padding),
+                                            Vec2::new(available_width, available_height)
+                                        ),
+                                        (HAlign::Center, VAlign::Center) => Rect::from_min_size(
+                                            egui::pos2(current_x + padding, current_y + padding),
+                                            Vec2::new(available_width, available_height)
+                                        ),
+                                        (HAlign::Right, VAlign::Center) => Rect::from_min_size(
+                                            egui::pos2(current_x + padding, current_y + padding),
+                                            Vec2::new(available_width, available_height)
+                                        ),
+                                        _ => Rect::from_min_size(
+                                            egui::pos2(current_x + padding, current_y + padding),
+                                            Vec2::new(available_width, available_height)
+                                        ),
+                                    };
+
+                                    ui.scope_builder(egui::UiBuilder::new().max_rect(widget_rect), |ui| {
+                                        // Apply alignment to the UI
+                                        match h_align {
+                                            HAlign::Left => ui.with_layout(egui::Layout::left_to_right(egui::Align::Min), |ui| {
+                                                widget_fn(ui);
+                                            }),
+                                            HAlign::Center => ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                                                widget_fn(ui);
+                                            }),
+                                            HAlign::Right => ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+                                                widget_fn(ui);
+                                            }),
+                                        };
+                                    });
+                                }
+                            }
                         }
                         
                         current_x += column.width;

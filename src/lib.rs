@@ -270,7 +270,7 @@ pub use {
     slider::{MaterialSlider, slider},
     switch::{MaterialSwitch, switch},
     tabs::{MaterialTabs, TabVariant, tabs_primary, tabs_secondary},
-    datatable::{MaterialDataTable, DataTableColumn, DataTableRow, SortDirection, data_table},
+    datatable::{MaterialDataTable, DataTableColumn, DataTableRow, DataTableCell, CellContent, SortDirection, VAlign, HAlign, data_table},
     drawer::{MaterialDrawer, DrawerVariant, DrawerItem, permanent_drawer, modal_drawer, dismissible_drawer, standard_drawer},
     imagelist::{MaterialImageList, ImageListVariant, ImageListItem, image_list, masonry_image_list, woven_image_list},
     layoutgrid::{MaterialLayoutGrid, layout_grid, debug_layout_grid},
