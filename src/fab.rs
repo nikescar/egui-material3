@@ -1,6 +1,6 @@
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 use crate::get_global_color;
 use crate::icon::MaterialIcon;
+use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Material Design FAB (Floating Action Button) variants
 #[derive(Clone, Copy, PartialEq)]
@@ -10,7 +10,7 @@ pub enum FabVariant {
     /// Primary FAB - uses primary colors for main actions (most common)
     Primary,
     /// Secondary FAB - uses secondary colors for secondary actions
-    Secondary, 
+    Secondary,
     /// Tertiary FAB - uses tertiary colors for alternative actions
     Tertiary,
     /// Branded FAB - uses custom brand colors
@@ -42,14 +42,14 @@ pub enum FabSize {
 /// ui.add(MaterialFab::primary()
 ///     .icon("add")
 ///     .action(|| println!("Add clicked")));
-/// 
+///
 /// // Extended FAB with text
 /// ui.add(MaterialFab::primary()
 ///     .size(FabSize::Extended)
 ///     .icon("edit")
 ///     .text("Compose")
 ///     .action(|| println!("Compose clicked")));
-/// 
+///
 /// // Large FAB for prominent action
 /// ui.add(MaterialFab::primary()
 ///     .size(FabSize::Large)
@@ -198,17 +198,24 @@ impl<'a> Widget for MaterialFab<'a> {
             FabSize::Extended => {
                 let left_margin = 16.0;
                 let right_margin = 24.0;
-                let icon_width = if self.icon.is_some() || self.svg_icon.is_some() { 24.0 + 12.0 } else { 0.0 };
-                
+                let icon_width = if self.icon.is_some() || self.svg_icon.is_some() {
+                    24.0 + 12.0
+                } else {
+                    0.0
+                };
+
                 let text_width = if let Some(ref text) = self.text {
                     ui.fonts(|fonts| {
                         let font_id = egui::FontId::proportional(14.0);
-                        fonts.layout_no_wrap(text.clone(), font_id, Color32::WHITE).size().x
+                        fonts
+                            .layout_no_wrap(text.clone(), font_id, Color32::WHITE)
+                            .size()
+                            .x
                     })
                 } else {
                     0.0
                 };
-                
+
                 let total_width = left_margin + icon_width + text_width + right_margin;
                 Vec2::new(total_width.max(80.0), 56.0) // Minimum width of 80px
             }
@@ -224,9 +231,9 @@ impl<'a> Widget for MaterialFab<'a> {
         let icon = self.icon;
         let text = self.text;
         let svg_icon = self.svg_icon;
-        
+
         let clicked = response.clicked() && enabled;
-        
+
         if clicked {
             if let Some(action) = action {
                 action();
@@ -250,10 +257,7 @@ impl<'a> Widget for MaterialFab<'a> {
             match variant {
                 FabVariant::Surface => {
                     if response.hovered() {
-                        (
-                            get_global_color("surfaceContainerHigh"),
-                            on_surface,
-                        )
+                        (get_global_color("surfaceContainerHigh"), on_surface)
                     } else {
                         (surface, on_surface)
                     }
@@ -326,16 +330,12 @@ impl<'a> Widget for MaterialFab<'a> {
         // Calculate corner radius for FAB
         let corner_radius = match size_enum {
             FabSize::Small => 12.0,
-            FabSize::Large => 16.0, 
+            FabSize::Large => 16.0,
             _ => 14.0,
         };
 
         // Draw FAB background with less rounded corners
-        ui.painter().rect_filled(
-            rect,
-            corner_radius,
-            bg_color,
-        );
+        ui.painter().rect_filled(rect, corner_radius, bg_color);
 
         // Draw content
         match size_enum {
@@ -345,19 +345,19 @@ impl<'a> Widget for MaterialFab<'a> {
                 let _right_margin = 24.0;
                 let icon_text_gap = 12.0;
                 let mut content_x = rect.min.x + left_margin;
-                
+
                 if let Some(ref icon_name) = icon {
                     let icon_rect = Rect::from_min_size(
                         Pos2::new(content_x, rect.center().y - 12.0),
                         Vec2::splat(24.0),
                     );
-                    
+
                     // Draw material icon
                     let icon = MaterialIcon::new(icon_name).size(24.0).color(icon_color);
                     ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                         ui.add(icon);
                     });
-                    
+
                     content_x += 24.0 + icon_text_gap;
                 } else if let Some(ref _svg_icon) = svg_icon {
                     // Render simplified Google logo for branded FAB
@@ -384,7 +384,7 @@ impl<'a> Widget for MaterialFab<'a> {
                         FabSize::Large => 36.0,
                         _ => 24.0,
                     };
-                    
+
                     // Render simplified Google logo for branded FAB
                     draw_google_logo(ui, rect.center(), icon_size);
                 } else if let Some(ref icon_name) = icon {
@@ -393,9 +393,11 @@ impl<'a> Widget for MaterialFab<'a> {
                         FabSize::Large => 36.0,
                         _ => 24.0,
                     };
-                    
+
                     let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
-                    let icon = MaterialIcon::new(icon_name).size(icon_size).color(icon_color);
+                    let icon = MaterialIcon::new(icon_name)
+                        .size(icon_size)
+                        .color(icon_color);
                     ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                         ui.add(icon);
                     });
@@ -406,7 +408,7 @@ impl<'a> Widget for MaterialFab<'a> {
                         FabSize::Large => 36.0,
                         _ => 24.0,
                     };
-                    
+
                     let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
                     let icon = MaterialIcon::new("add").size(icon_size).color(icon_color);
                     ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
@@ -418,12 +420,13 @@ impl<'a> Widget for MaterialFab<'a> {
 
         // Add ripple effect on click
         if response.hovered() && enabled {
-            let ripple_color = Color32::from_rgba_premultiplied(icon_color.r(), icon_color.g(), icon_color.b(), 30);
-            ui.painter().rect_filled(
-                rect,
-                corner_radius,
-                ripple_color,
+            let ripple_color = Color32::from_rgba_premultiplied(
+                icon_color.r(),
+                icon_color.g(),
+                icon_color.b(),
+                30,
             );
+            ui.painter().rect_filled(rect, corner_radius, ripple_color);
         }
 
         response
@@ -432,49 +435,49 @@ impl<'a> Widget for MaterialFab<'a> {
 
 // Helper function to draw Google logo
 fn draw_google_logo(ui: &mut Ui, center: Pos2, size: f32) {
-        let half_size = size / 2.0;
-        let quarter_size = size / 4.0;
+    let half_size = size / 2.0;
+    let quarter_size = size / 4.0;
 
-        // Google 4-color logo - simplified version
-        // Green (top right)
-        ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(center.x, center.y - half_size),
-                Vec2::new(half_size, quarter_size),
-            ),
-            0.0,
-            Color32::from_rgb(52, 168, 83), // Green #34A853
-        );
+    // Google 4-color logo - simplified version
+    // Green (top right)
+    ui.painter().rect_filled(
+        Rect::from_min_size(
+            Pos2::new(center.x, center.y - half_size),
+            Vec2::new(half_size, quarter_size),
+        ),
+        0.0,
+        Color32::from_rgb(52, 168, 83), // Green #34A853
+    );
 
-        // Blue (right)
-        ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(center.x, center.y - quarter_size),
-                Vec2::new(half_size, half_size),
-            ),
-            0.0,
-            Color32::from_rgb(66, 133, 244), // Blue #4285F4
-        );
+    // Blue (right)
+    ui.painter().rect_filled(
+        Rect::from_min_size(
+            Pos2::new(center.x, center.y - quarter_size),
+            Vec2::new(half_size, half_size),
+        ),
+        0.0,
+        Color32::from_rgb(66, 133, 244), // Blue #4285F4
+    );
 
-        // Yellow (bottom left)
-        ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(center.x - half_size, center.y + quarter_size),
-                Vec2::new(half_size, quarter_size),
-            ),
-            0.0,
-            Color32::from_rgb(251, 188, 5), // Yellow #FBBC05
-        );
+    // Yellow (bottom left)
+    ui.painter().rect_filled(
+        Rect::from_min_size(
+            Pos2::new(center.x - half_size, center.y + quarter_size),
+            Vec2::new(half_size, quarter_size),
+        ),
+        0.0,
+        Color32::from_rgb(251, 188, 5), // Yellow #FBBC05
+    );
 
-        // Red (left)
-        ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(center.x - half_size, center.y - half_size),
-                Vec2::new(quarter_size, size),
-            ),
-            0.0,
-            Color32::from_rgb(234, 67, 53), // Red #EA4335
-        );
+    // Red (left)
+    ui.painter().rect_filled(
+        Rect::from_min_size(
+            Pos2::new(center.x - half_size, center.y - half_size),
+            Vec2::new(quarter_size, size),
+        ),
+        0.0,
+        Color32::from_rgb(234, 67, 53), // Red #EA4335
+    );
 }
 
 pub fn fab_surface() -> MaterialFab<'static> {

@@ -1,7 +1,10 @@
 use eframe::egui;
 use egui_material3::{
-    MaterialDataTable, MaterialButton,
-    theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, load_fonts, load_themes, MaterialThemeFile, MaterialThemeContext, ThemeMode, ContrastLevel, update_global_theme},
+    theme::{
+        load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme,
+        update_global_theme, ContrastLevel, MaterialThemeContext, MaterialThemeFile, ThemeMode,
+    },
+    MaterialButton, MaterialDataTable,
 };
 use serde::Deserialize;
 
@@ -10,7 +13,7 @@ fn main() -> Result<(), eframe::Error> {
         viewport: egui::ViewportBuilder::default().with_inner_size([1400.0, 900.0]),
         ..Default::default()
     };
-    
+
     eframe::run_native(
         "Nobel Prizes DataTable 테스트",
         options,
@@ -22,7 +25,7 @@ fn main() -> Result<(), eframe::Error> {
 
             load_fonts(&cc.egui_ctx);
             load_themes();
-            
+
             Ok(Box::<NobelPrizesApp>::default())
         }),
     )
@@ -79,7 +82,7 @@ enum DataState {
 // Helper function to parse Nobel Prize data and flatten it into table entries
 fn parse_nobel_data(data: &NobelPrizeData) -> Vec<NobelPrizeEntry> {
     let mut entries = Vec::new();
-    
+
     for yearly_prizes in &data.data {
         for category in &yearly_prizes.categories {
             for award in &category.awards {
@@ -94,7 +97,7 @@ fn parse_nobel_data(data: &NobelPrizeData) -> Vec<NobelPrizeEntry> {
             }
         }
     }
-    
+
     entries
 }
 
@@ -111,10 +114,10 @@ impl Default for NobelPrizesApp {
             theme_loaded: false,
             receiver: None,
         };
-        
+
         // Fetch Nobel Prize data on startup
         app.fetch_nobel_data();
-        
+
         app
     }
 }
@@ -139,21 +142,24 @@ impl NobelPrizesApp {
             }
         }
     }
-    
-    fn load_theme_from_file(&self, file_path: &str) -> Result<MaterialThemeFile, Box<dyn std::error::Error>> {
+
+    fn load_theme_from_file(
+        &self,
+        file_path: &str,
+    ) -> Result<MaterialThemeFile, Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(file_path)?;
         let theme: MaterialThemeFile = serde_json::from_str(&content)?;
         Ok(theme)
     }
-    
+
     fn fetch_nobel_data(&mut self) {
         // Spawn async task to fetch Nobel Prize data
         let (tx, rx) = std::sync::mpsc::channel();
         self.receiver = Some(rx);
-        
+
         std::thread::spawn(move || {
             let url = "https://raw.githubusercontent.com/sharmadhiraj/free-json-datasets/refs/heads/master/docs/awards-achievements/nobel_prizes.json";
-            
+
             match ureq::get(url).call() {
                 Ok(response) => {
                     println!("HTTP request successful, parsing JSON...");
@@ -177,7 +183,7 @@ impl NobelPrizesApp {
             }
         });
     }
-    
+
     fn create_nobel_datatable(&self, prizes: &[NobelPrizeEntry]) -> MaterialDataTable<'_> {
         let mut datatable = MaterialDataTable::new()
             .id("nobel_prizes_table")
@@ -188,16 +194,16 @@ impl NobelPrizesApp {
             .allow_selection(true)
             .sticky_header(true)
             .corner_radius(8.0);
-        
+
         for prize in prizes {
             datatable = datatable.row(|row| {
                 row.cell(&prize.year)
-                   .cell(&prize.category)
-                   .cell(&prize.laureate)
-                   .cell(&prize.motivation)
+                    .cell(&prize.category)
+                    .cell(&prize.laureate)
+                    .cell(&prize.motivation)
             });
         }
-        
+
         datatable
     }
 }
@@ -214,33 +220,36 @@ impl eframe::App for NobelPrizesApp {
                 self.receiver = None; // Clear receiver after getting response
             }
         }
-        
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Nobel Prizes Database (1901-2024) 테스트");
-            
+
             ui.add_space(10.0);
-            
+
             // Theme status
             ui.horizontal(|ui| {
                 ui.label("Theme Status:");
                 if self.theme_loaded {
-                    ui.colored_label(egui::Color32::GREEN, "✓ Custom theme loaded (material-theme2.json)");
+                    ui.colored_label(
+                        egui::Color32::GREEN,
+                        "✓ Custom theme loaded (material-theme2.json)",
+                    );
                 } else {
                     ui.colored_label(egui::Color32::RED, "✗ Using default theme");
                 }
             });
-            
+
             ui.add_space(10.0);
-            
+
             // Refresh button
             if ui.add(MaterialButton::new("Refresh Data")).clicked() {
                 self.data_state = DataState::Loading;
                 self.receiver = None; // Clear any existing receiver
                 self.fetch_nobel_data();
             }
-            
+
             ui.add_space(20.0);
-            
+
             // Display data table based on state
             match &self.data_state {
                 DataState::Loading => {
@@ -261,24 +270,24 @@ impl eframe::App for NobelPrizesApp {
                     } else {
                         ui.label(format!("Showing {} Nobel Prize entries:", prizes.len()));
                         ui.add_space(10.0);
-                        
+
                         let datatable = self.create_nobel_datatable(prizes);
                         let response = datatable.show(ui);
-                        
+
                         // Handle any table interactions if needed
                         if !response.row_actions.is_empty() {
                             println!("Table actions: {:?}", response.row_actions);
                         }
-                        
+
                         ui.add_space(10.0);
                         ui.label("Data source: GitHub - Nobel Prizes Dataset (1901-2024)");
                     }
                 }
                 DataState::Error(error) => {
                     ui.colored_label(egui::Color32::RED, format!("Error loading data: {}", error));
-                    
+
                     ui.add_space(10.0);
-                    
+
                     if ui.add(MaterialButton::new("Retry")).clicked() {
                         self.data_state = DataState::Loading;
                         self.receiver = None; // Clear any existing receiver
@@ -287,7 +296,7 @@ impl eframe::App for NobelPrizesApp {
                 }
             }
         });
-        
+
         // Request repaint for loading animation
         if matches!(self.data_state, DataState::Loading) {
             ctx.request_repaint();

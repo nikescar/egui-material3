@@ -1,9 +1,9 @@
+use crate::theme::get_global_color;
 use egui::{
-    ecolor::Color32, 
-    epaint::{Stroke, CornerRadius},
+    ecolor::Color32,
+    epaint::{CornerRadius, Stroke},
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
-use crate::theme::get_global_color;
 
 /// Material Design card component variants (enhanced version).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -89,7 +89,7 @@ impl<'a> MaterialCard2<'a> {
     }
 
     /// Set media area content.
-    pub fn media_area<F>(mut self, content: F) -> Self 
+    pub fn media_area<F>(mut self, content: F) -> Self
     where
         F: FnOnce(&mut Ui) + 'a,
     {
@@ -107,7 +107,7 @@ impl<'a> MaterialCard2<'a> {
     }
 
     /// Set main content for the card.
-    pub fn content<F>(mut self, content: F) -> Self 
+    pub fn content<F>(mut self, content: F) -> Self
     where
         F: FnOnce(&mut Ui) + 'a,
     {
@@ -119,7 +119,7 @@ impl<'a> MaterialCard2<'a> {
     }
 
     /// Set actions area content.
-    pub fn actions<F>(mut self, content: F) -> Self 
+    pub fn actions<F>(mut self, content: F) -> Self
     where
         F: FnOnce(&mut Ui) + 'a,
     {
@@ -158,16 +158,16 @@ impl<'a> MaterialCard2<'a> {
             Card2Variant::Elevated => {
                 // Elevated card: surface color with shadow
                 (md_surface, None, true)
-            },
+            }
             Card2Variant::Filled => {
                 // Filled card: surface-container-highest color
                 (md_surface_container_highest, None, false)
-            },
+            }
             Card2Variant::Outlined => {
                 // Outlined card: surface color with outline
                 let stroke = Some(Stroke::new(1.0, md_outline_variant));
                 (md_surface, stroke, false)
-            },
+            }
         }
     }
 }
@@ -181,7 +181,7 @@ impl<'a> Default for MaterialCard2<'a> {
 impl Widget for MaterialCard2<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let (background_color, stroke, has_shadow) = self.get_card_style();
-        
+
         let MaterialCard2 {
             variant: _,
             header_title,
@@ -203,13 +203,17 @@ impl Widget for MaterialCard2<'_> {
 
         // Calculate total height based on content
         let header_height = if header_title.is_some() { 72.0 } else { 0.0 };
-        let media_height_actual = if media_content.is_some() { media_height } else { 0.0 };
+        let media_height_actual = if media_content.is_some() {
+            media_height
+        } else {
+            0.0
+        };
         let content_height = 80.0; // Default content area height
         let actions_height = if actions_content.is_some() { 52.0 } else { 0.0 };
-        
+
         let total_height = header_height + media_height_actual + content_height + actions_height;
         let card_size = Vec2::new(min_size.x, total_height.max(min_size.y));
-        
+
         let desired_size = ui.available_size().max(card_size);
         let mut response = ui.allocate_response(desired_size, sense);
         let rect = response.rect;
@@ -217,10 +221,7 @@ impl Widget for MaterialCard2<'_> {
         if ui.is_rect_visible(rect) {
             // Draw shadow if present (for elevated cards)
             if has_shadow {
-                let shadow_rect = Rect::from_min_size(
-                    rect.min + Vec2::new(0.0, 2.0),
-                    rect.size(),
-                );
+                let shadow_rect = Rect::from_min_size(rect.min + Vec2::new(0.0, 2.0), rect.size());
                 ui.painter().rect_filled(
                     shadow_rect,
                     corner_radius,
@@ -229,11 +230,17 @@ impl Widget for MaterialCard2<'_> {
             }
 
             // Draw card background
-            ui.painter().rect_filled(rect, corner_radius, background_color);
+            ui.painter()
+                .rect_filled(rect, corner_radius, background_color);
 
             // Draw outline if present (for outlined cards)
             if let Some(stroke) = stroke {
-                ui.painter().rect_stroke(rect, corner_radius, stroke, egui::epaint::StrokeKind::Outside);
+                ui.painter().rect_stroke(
+                    rect,
+                    corner_radius,
+                    stroke,
+                    egui::epaint::StrokeKind::Outside,
+                );
             }
 
             let mut current_y = rect.min.y;
@@ -242,9 +249,9 @@ impl Widget for MaterialCard2<'_> {
             if let Some(title) = &header_title {
                 let _header_rect = Rect::from_min_size(
                     egui::pos2(rect.min.x, current_y),
-                    Vec2::new(rect.width(), header_height)
+                    Vec2::new(rect.width(), header_height),
                 );
-                
+
                 // Title
                 let title_pos = egui::pos2(rect.min.x + 16.0, current_y + 16.0);
                 ui.painter().text(
@@ -252,9 +259,9 @@ impl Widget for MaterialCard2<'_> {
                     egui::Align2::LEFT_TOP,
                     title,
                     egui::FontId::proportional(20.0),
-                    get_global_color("onSurface")
+                    get_global_color("onSurface"),
                 );
-                
+
                 // Subtitle if present
                 if let Some(subtitle) = &header_subtitle {
                     let subtitle_pos = egui::pos2(rect.min.x + 16.0, current_y + 44.0);
@@ -263,10 +270,10 @@ impl Widget for MaterialCard2<'_> {
                         egui::Align2::LEFT_TOP,
                         subtitle,
                         egui::FontId::proportional(14.0),
-                        get_global_color("onSurfaceVariant")
+                        get_global_color("onSurfaceVariant"),
                     );
                 }
-                
+
                 current_y += header_height;
             }
 
@@ -274,24 +281,22 @@ impl Widget for MaterialCard2<'_> {
             if let Some(media_fn) = media_content {
                 let media_rect = Rect::from_min_size(
                     egui::pos2(rect.min.x, current_y),
-                    Vec2::new(rect.width(), media_height)
+                    Vec2::new(rect.width(), media_height),
                 );
-                
+
                 // Clip media content to card bounds
-                let media_response = ui.scope_builder(
-                    egui::UiBuilder::new().max_rect(media_rect),
-                    |ui| {
+                let media_response =
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(media_rect), |ui| {
                         // Draw media background
                         ui.painter().rect_filled(
                             media_rect,
                             CornerRadius::ZERO,
-                            get_global_color("surfaceVariant")
+                            get_global_color("surfaceVariant"),
                         );
-                        
+
                         media_fn(ui)
-                    }
-                );
-                
+                    });
+
                 response = response.union(media_response.response);
                 current_y += media_height;
             }
@@ -300,16 +305,14 @@ impl Widget for MaterialCard2<'_> {
             if let Some(content_fn) = main_content {
                 let content_rect = Rect::from_min_size(
                     egui::pos2(rect.min.x, current_y),
-                    Vec2::new(rect.width(), content_height)
+                    Vec2::new(rect.width(), content_height),
                 );
-                
+
                 let content_response = ui.scope_builder(
                     egui::UiBuilder::new().max_rect(content_rect.shrink(16.0)),
-                    |ui| {
-                        content_fn(ui)
-                    }
+                    |ui| content_fn(ui),
                 );
-                
+
                 response = response.union(content_response.response);
                 current_y += content_height;
             }
@@ -318,18 +321,19 @@ impl Widget for MaterialCard2<'_> {
             if let Some(actions_fn) = actions_content {
                 let actions_rect = Rect::from_min_size(
                     egui::pos2(rect.min.x, current_y),
-                    Vec2::new(rect.width(), actions_height)
+                    Vec2::new(rect.width(), actions_height),
                 );
-                
+
                 let actions_response = ui.scope_builder(
                     egui::UiBuilder::new().max_rect(actions_rect.shrink2(Vec2::new(8.0, 8.0))),
                     |ui| {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             actions_fn(ui)
-                        }).inner
-                    }
+                        })
+                        .inner
+                    },
                 );
-                
+
                 response = response.union(actions_response.response);
             }
         }

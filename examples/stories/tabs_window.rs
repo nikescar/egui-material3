@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Window};
 use crate::{tabs_primary, tabs_secondary};
+use eframe::egui::{self, Window};
 
 #[doc(hidden)]
 pub struct TabsWindow {
@@ -74,15 +74,15 @@ impl TabsWindow {
                     let _ = webbrowser::open("https://material-web.dev/components/tabs/stories/");
                 }
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Active Tab Index:");
                 ui.add(egui::Slider::new(&mut self.active_tab_index, 0..=4));
             });
-            
+
             ui.checkbox(&mut self.auto_activate, "Auto Activate");
             ui.checkbox(&mut self.inline_icon, "Inline Icon");
-            
+
             ui.horizontal(|ui| {
                 ui.label("Content:");
                 egui::ComboBox::from_label("")
@@ -99,21 +99,23 @@ impl TabsWindow {
     fn render_primary_tabs(&mut self, ui: &mut egui::Ui) {
         ui.push_id("primary_tabs_section", |ui| {
             ui.heading("Primary Tabs");
-            
+
             // Music instrument tabs
-            ui.add(tabs_primary(&mut self.music_primary_selected)
-                .id_salt("music_primary")
-                .tab("🎹 Keyboard")
-                .tab("🎸 Guitar")
-                .tab("🥁 Drums")
-                .tab("🎻 Bass")
-                .tab("🎷 Saxophone"));
-            
+            ui.add(
+                tabs_primary(&mut self.music_primary_selected)
+                    .id_salt("music_primary")
+                    .tab("🎹 Keyboard")
+                    .tab("🎸 Guitar")
+                    .tab("🥁 Drums")
+                    .tab("🎻 Bass")
+                    .tab("🎷 Saxophone"),
+            );
+
             // Enhanced content for selected tab
             ui.add_space(10.0);
             ui.separator();
             ui.add_space(10.0);
-            
+
             match self.music_primary_selected {
                 0 => {
                     ui.heading("🎹 Keyboard");
@@ -169,20 +171,22 @@ impl TabsWindow {
 
     fn render_secondary_tabs(&mut self, ui: &mut egui::Ui) {
         ui.heading("Secondary Tabs");
-        
+
         // Travel tabs
-        ui.add(tabs_secondary(&mut self.travel_secondary_selected)
-            .id_salt("travel_secondary")
-            .tab("✈️ Travel")
-            .tab("🏨 Hotel")
-            .tab("🥾 Activities")
-            .tab("🍽️ Food"));
-        
+        ui.add(
+            tabs_secondary(&mut self.travel_secondary_selected)
+                .id_salt("travel_secondary")
+                .tab("✈️ Travel")
+                .tab("🏨 Hotel")
+                .tab("🥾 Activities")
+                .tab("🍽️ Food"),
+        );
+
         // Enhanced content for selected tab
         ui.add_space(10.0);
         ui.separator();
         ui.add_space(10.0);
-        
+
         match self.travel_secondary_selected {
             0 => {
                 ui.heading("✈️ Travel Planning");
@@ -229,29 +233,34 @@ impl TabsWindow {
     fn render_scrolling_tabs(&mut self, ui: &mut egui::Ui) {
         ui.heading("Scrolling Tabs");
         ui.label("(Simulated with many tabs)");
-        
+
         // Create many tabs to demonstrate scrolling
-        ui.add(tabs_primary(&mut self.scrolling_selected)
-            .id_salt("scrolling_primary")
-            .tab("Tab 1")
-            .tab("Tab 2")
-            .tab("Tab 3")
-            .tab("Tab 4")
-            .tab("Tab 5")
-            .tab("Tab 6")
-            .tab("Tab 7")
-            .tab("Tab 8")
-            .tab("Tab 9")
-            .tab("Tab 10"));
-        
+        ui.add(
+            tabs_primary(&mut self.scrolling_selected)
+                .id_salt("scrolling_primary")
+                .tab("Tab 1")
+                .tab("Tab 2")
+                .tab("Tab 3")
+                .tab("Tab 4")
+                .tab("Tab 5")
+                .tab("Tab 6")
+                .tab("Tab 7")
+                .tab("Tab 8")
+                .tab("Tab 9")
+                .tab("Tab 10"),
+        );
+
         ui.add_space(10.0);
         ui.separator();
         ui.add_space(10.0);
-        
+
         ui.heading(format!("Content for Tab {}", self.scrolling_selected + 1));
-        ui.label(format!("You have selected tab number {} out of 10 available tabs.", self.scrolling_selected + 1));
+        ui.label(format!(
+            "You have selected tab number {} out of 10 available tabs.",
+            self.scrolling_selected + 1
+        ));
         ui.add_space(8.0);
-        
+
         match self.scrolling_selected {
             0..=2 => {
                 ui.label("📊 First section - Basic information and getting started guides");
@@ -276,82 +285,139 @@ impl TabsWindow {
 
     fn render_custom_tabs(&mut self, ui: &mut egui::Ui) {
         ui.heading("Custom Styled Tabs");
-        
+
         // Custom themed tabs
-        ui.add(tabs_primary(&mut self.custom_selected)
-            .id_salt("custom_primary")
-            .tab("✈️ Travel")
-            .tab("🏨 Hotel")
-            .tab("🥾 Activities")
-            .tab("🍽️ Food"));
-        
+        ui.add(
+            tabs_primary(&mut self.custom_selected)
+                .id_salt("custom_primary")
+                .tab("✈️ Travel")
+                .tab("🏨 Hotel")
+                .tab("🥾 Activities")
+                .tab("🍽️ Food"),
+        );
+
         // Enhanced content with custom styling
         ui.add_space(10.0);
         ui.separator();
         ui.add_space(10.0);
-        
+
         match self.custom_selected {
             0 => {
-                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "✈️ Custom Travel Experience");
+                ui.colored_label(
+                    egui::Color32::from_rgb(103, 80, 164),
+                    "✈️ Custom Travel Experience",
+                );
                 ui.label("Enhanced travel planning with personalized recommendations:");
                 ui.add_space(8.0);
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• AI-powered destination suggestions");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Real-time weather and travel alerts");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Integrated booking and itinerary management");
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• AI-powered destination suggestions",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Real-time weather and travel alerts",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Integrated booking and itinerary management",
+                );
             }
             1 => {
-                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "🏨 Premium Hotel Search");
+                ui.colored_label(
+                    egui::Color32::from_rgb(103, 80, 164),
+                    "🏨 Premium Hotel Search",
+                );
                 ui.label("Luxury accommodation finder with exclusive benefits:");
                 ui.add_space(8.0);
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• VIP room upgrades and early check-in");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Personalized concierge services");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Loyalty points and exclusive rates");
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• VIP room upgrades and early check-in",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Personalized concierge services",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Loyalty points and exclusive rates",
+                );
             }
             2 => {
-                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "🥾 Curated Activity Hub");
+                ui.colored_label(
+                    egui::Color32::from_rgb(103, 80, 164),
+                    "🥾 Curated Activity Hub",
+                );
                 ui.label("Handpicked experiences tailored to your interests:");
                 ui.add_space(8.0);
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Local expert-guided tours");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Adventure difficulty matching");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Social group activities");
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Local expert-guided tours",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Adventure difficulty matching",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Social group activities",
+                );
             }
             3 => {
-                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "🍽️ Gourmet Dining Network");
+                ui.colored_label(
+                    egui::Color32::from_rgb(103, 80, 164),
+                    "🍽️ Gourmet Dining Network",
+                );
                 ui.label("Exclusive access to world-class culinary experiences:");
                 ui.add_space(8.0);
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Chef's table reservations");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Wine pairing recommendations");
-                ui.colored_label(egui::Color32::from_rgb(156, 39, 176), "• Private cooking masterclasses");
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Chef's table reservations",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Wine pairing recommendations",
+                );
+                ui.colored_label(
+                    egui::Color32::from_rgb(156, 39, 176),
+                    "• Private cooking masterclasses",
+                );
             }
             _ => {
-                ui.colored_label(egui::Color32::from_rgb(103, 80, 164), "Custom premium content");
+                ui.colored_label(
+                    egui::Color32::from_rgb(103, 80, 164),
+                    "Custom premium content",
+                );
             }
         }
     }
 
     fn render_nested_tabs(&mut self, ui: &mut egui::Ui) {
         ui.heading("Primary and Secondary Tabs");
-        
+
         // Primary tabs
-        ui.add(tabs_primary(&mut self.nested_primary_selected)
-            .id_salt("nested_primary")
-            .tab("🎬 Movies")
-            .tab("📸 Photos")
-            .tab("🎵 Music"));
-        
+        ui.add(
+            tabs_primary(&mut self.nested_primary_selected)
+                .id_salt("nested_primary")
+                .tab("🎬 Movies")
+                .tab("📸 Photos")
+                .tab("🎵 Music"),
+        );
+
         ui.add_space(10.0);
-        
+
         // Secondary tabs based on primary selection
         match self.nested_primary_selected {
             0 => {
                 ui.label("Movies - Secondary tabs:");
-                ui.add(tabs_secondary(&mut self.nested_secondary_selected)
-                    .id_salt("nested_movies_secondary")
-                    .tab("Star Wars")
-                    .tab("Avengers")
-                    .tab("Jaws")
-                    .tab("Frozen"));
-                
+                ui.add(
+                    tabs_secondary(&mut self.nested_secondary_selected)
+                        .id_salt("nested_movies_secondary")
+                        .tab("Star Wars")
+                        .tab("Avengers")
+                        .tab("Jaws")
+                        .tab("Frozen"),
+                );
+
                 let movie_content = match self.nested_secondary_selected {
                     0 => "Star Wars - A galaxy far, far away...",
                     1 => "Avengers - Earth's Mightiest Heroes",
@@ -363,13 +429,15 @@ impl TabsWindow {
             }
             1 => {
                 ui.label("Photos - Secondary tabs:");
-                ui.add(tabs_secondary(&mut self.nested_secondary_selected)
-                    .id_salt("nested_photos_secondary")
-                    .tab("Yosemite")
-                    .tab("Mona Lisa")
-                    .tab("Swiss Alps")
-                    .tab("Niagara Falls"));
-                
+                ui.add(
+                    tabs_secondary(&mut self.nested_secondary_selected)
+                        .id_salt("nested_photos_secondary")
+                        .tab("Yosemite")
+                        .tab("Mona Lisa")
+                        .tab("Swiss Alps")
+                        .tab("Niagara Falls"),
+                );
+
                 let photo_content = match self.nested_secondary_selected {
                     0 => "Yosemite - Breathtaking natural landscapes",
                     1 => "Mona Lisa - Leonardo da Vinci's masterpiece",
@@ -381,13 +449,15 @@ impl TabsWindow {
             }
             2 => {
                 ui.label("Music - Secondary tabs:");
-                ui.add(tabs_secondary(&mut self.nested_secondary_selected)
-                    .id_salt("nested_music_secondary")
-                    .tab("Rock")
-                    .tab("Ambient")
-                    .tab("Soundscapes")
-                    .tab("White Noise"));
-                
+                ui.add(
+                    tabs_secondary(&mut self.nested_secondary_selected)
+                        .id_salt("nested_music_secondary")
+                        .tab("Rock")
+                        .tab("Ambient")
+                        .tab("Soundscapes")
+                        .tab("White Noise"),
+                );
+
                 let music_content = match self.nested_secondary_selected {
                     0 => "Rock - High energy guitar-driven music",
                     1 => "Ambient - Atmospheric and atmospheric sounds",
@@ -401,9 +471,9 @@ impl TabsWindow {
                 ui.label("Select a primary tab to see secondary options");
             }
         }
-        
+
         ui.add_space(10.0);
-        
+
         // Dynamic tabs demonstration
         ui.separator();
         ui.label("Dynamic Tab Controls:");
@@ -414,7 +484,7 @@ impl TabsWindow {
                     self.nested_secondary_selected = 0; // Reset secondary
                 }
             }
-            
+
             if ui.button("Next Tab →").clicked() {
                 if self.nested_primary_selected < 2 {
                     self.nested_primary_selected += 1;

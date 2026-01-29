@@ -1,5 +1,5 @@
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::get_global_color;
+use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Material Design radio button component.
 ///
@@ -10,7 +10,7 @@ use crate::get_global_color;
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(0);
-/// 
+///
 /// ui.add(MaterialRadio::new(&mut selected, 0, "Option 1"));
 /// ui.add(MaterialRadio::new(&mut selected, 1, "Option 2"));
 /// ui.add(MaterialRadio::new(&mut selected, 2, "Option 3"));
@@ -108,10 +108,7 @@ impl<'a> MaterialRadio<'a> {
 
 impl<'a> Widget for MaterialRadio<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let desired_size = Vec2::new(
-            ui.available_width().min(300.0),
-            24.0,
-        );
+        let desired_size = Vec2::new(ui.available_width().min(300.0), 24.0);
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
@@ -140,14 +137,24 @@ impl<'a> Widget for MaterialRadio<'a> {
         } else if is_selected {
             (primary_color, Color32::TRANSPARENT, primary_color)
         } else if response.hovered() {
-            (outline, Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20), on_surface_variant)
+            (
+                outline,
+                Color32::from_rgba_premultiplied(
+                    on_surface.r(),
+                    on_surface.g(),
+                    on_surface.b(),
+                    20,
+                ),
+                on_surface_variant,
+            )
         } else {
             (outline, Color32::TRANSPARENT, on_surface_variant)
         };
 
         // Draw hover background
         if fill_color != Color32::TRANSPARENT {
-            ui.painter().circle_filled(radio_rect.center(), radio_size / 2.0 + 8.0, fill_color);
+            ui.painter()
+                .circle_filled(radio_rect.center(), radio_size / 2.0 + 8.0, fill_color);
         }
 
         // Draw radio border
@@ -159,21 +166,17 @@ impl<'a> Widget for MaterialRadio<'a> {
 
         // Draw selected inner circle
         if is_selected {
-            ui.painter().circle_filled(
-                radio_rect.center(),
-                radio_size / 4.0,
-                inner_color,
-            );
+            ui.painter()
+                .circle_filled(radio_rect.center(), radio_size / 4.0, inner_color);
         }
 
         // Draw label text
         if !self.text.is_empty() {
-            let text_pos = Pos2::new(
-                radio_rect.max.x + 8.0,
-                rect.center().y,
-            );
-            
-            let text_color = if self.enabled { on_surface } else {
+            let text_pos = Pos2::new(radio_rect.max.x + 8.0, rect.center().y);
+
+            let text_color = if self.enabled {
+                on_surface
+            } else {
                 get_global_color("onSurfaceVariant").linear_multiply(0.38)
             };
 
@@ -189,16 +192,18 @@ impl<'a> Widget for MaterialRadio<'a> {
         // Add ripple effect on hover
         if response.hovered() && self.enabled {
             let ripple_color = if is_selected {
-                Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 20)
+                Color32::from_rgba_premultiplied(
+                    primary_color.r(),
+                    primary_color.g(),
+                    primary_color.b(),
+                    20,
+                )
             } else {
                 Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20)
             };
-            
-            ui.painter().circle_filled(
-                radio_rect.center(),
-                radio_size / 2.0 + 12.0,
-                ripple_color,
-            );
+
+            ui.painter()
+                .circle_filled(radio_rect.center(), radio_size / 2.0 + 12.0, ripple_color);
         }
 
         response
@@ -272,14 +277,14 @@ impl<'a> MaterialRadioGroup<'a> {
 impl<'a> Widget for MaterialRadioGroup<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let mut group_response = None;
-        
+
         ui.vertical(|ui| {
             for option in self.options {
                 let radio = MaterialRadio::new(self.selected, option.value, option.text)
                     .enabled(self.enabled);
-                
+
                 let response = ui.add(radio);
-                
+
                 if group_response.is_none() {
                     group_response = Some(response);
                 } else if let Some(ref mut group_resp) = group_response {
@@ -312,7 +317,11 @@ impl<'a> Widget for MaterialRadioGroup<'a> {
 /// ui.add(radio(&mut selection, 1, "Second Option"));
 /// # });
 /// ```
-pub fn radio<'a>(selected: &'a mut Option<usize>, value: usize, text: impl Into<String>) -> MaterialRadio<'a> {
+pub fn radio<'a>(
+    selected: &'a mut Option<usize>,
+    value: usize,
+    text: impl Into<String>,
+) -> MaterialRadio<'a> {
     MaterialRadio::new(selected, value, text)
 }
 

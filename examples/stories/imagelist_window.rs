@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
+use crate::{image_list, masonry_image_list, woven_image_list, MaterialButton, MaterialCheckbox};
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialButton, MaterialCheckbox, image_list, masonry_image_list, woven_image_list};
 
 #[doc(hidden)]
 pub struct ImageListWindow {
@@ -33,7 +33,7 @@ impl Default for ImageListWindow {
                 image_source: "resources/320x240.png".to_string(),
             });
         }
-        
+
         Self {
             open: false,
             columns: 3,
@@ -56,13 +56,13 @@ impl ImageListWindow {
         self.dynamic_images.push(new_image);
         self.next_image_id += 1;
     }
-    
+
     fn remove_image(&mut self) {
         if !self.dynamic_images.is_empty() {
             self.dynamic_images.pop();
         }
     }
-    
+
     pub fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         Window::new("Image List Stories")
@@ -84,7 +84,8 @@ impl ImageListWindow {
                 ui.heading("Image List Controls");
 
                 if ui.button("Target").clicked() {
-                    let _ = webbrowser::open("https://material-web.dev/components/image-list/stories/");
+                    let _ =
+                        webbrowser::open("https://material-web.dev/components/image-list/stories/");
                 }
             });
 
@@ -99,8 +100,14 @@ impl ImageListWindow {
             });
 
             ui.horizontal(|ui| {
-                ui.add(MaterialCheckbox::new(&mut self.text_protected, "Text Protected"));
-                ui.add(MaterialCheckbox::new(&mut self.show_supporting_text, "Show Supporting Text"));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.text_protected,
+                    "Text Protected",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.show_supporting_text,
+                    "Show Supporting Text",
+                ));
             });
         });
     }
@@ -108,69 +115,105 @@ impl ImageListWindow {
     fn render_image_list_examples(&mut self, ui: &mut Ui) {
         ui.heading("Standard Image List");
         ui.label("Images displayed in a regular grid with consistent sizing.");
-        
+
         let standard_list = image_list()
             .id_salt("standard_imagelist")
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Architecture", "resources/320x240.png", || println!("Architecture clicked!"))
-            .item_with_callback("Nature", "resources/320x240.png", || println!("Nature clicked!"))
-            .item_with_callback("Abstract Art", "resources/320x240.png", || println!("Abstract Art clicked!"))
-            .item_with_callback("Street Photo", "resources/320x240.png", || println!("Street Photo clicked!"))
-            .item_with_callback("Portrait", "resources/320x240.png", || println!("Portrait clicked!"))
-            .item_with_callback("Landscape", "resources/320x240.png", || println!("Landscape clicked!"));
+            .item_with_callback("Architecture", "resources/320x240.png", || {
+                println!("Architecture clicked!")
+            })
+            .item_with_callback("Nature", "resources/320x240.png", || {
+                println!("Nature clicked!")
+            })
+            .item_with_callback("Abstract Art", "resources/320x240.png", || {
+                println!("Abstract Art clicked!")
+            })
+            .item_with_callback("Street Photo", "resources/320x240.png", || {
+                println!("Street Photo clicked!")
+            })
+            .item_with_callback("Portrait", "resources/320x240.png", || {
+                println!("Portrait clicked!")
+            })
+            .item_with_callback("Landscape", "resources/320x240.png", || {
+                println!("Landscape clicked!")
+            });
 
-            if self.show_supporting_text {
+        if self.show_supporting_text {
             // Note: This is a simplified example. In a real implementation,
             // you'd need to recreate the list with supporting text items
             ui.label("(Supporting text would be shown here in a full implementation)");
         }
-        
+
         ui.add(standard_list);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Masonry Image List");
         ui.label("Images with varying heights creating a masonry layout.");
-        
+
         let masonry_list = masonry_image_list()
             .id_salt("masonry_imagelist")
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Architecture", "https://i.imgur.com/Y5Ozbdm.png", || println!("Architecture clicked!"))
-            .item_with_callback("Nature", "https://i.imgur.com/Y5Ozbdm.png", || println!("Nature clicked!"))
-            .item_with_callback("Abstract Art", "https://i.imgur.com/Y5Ozbdm.png", || println!("Abstract Art clicked!"))
-            .item_with_callback("Street Photo", "https://i.imgur.com/Y5Ozbdm.png", || println!("Street Photo clicked!"))
-            .item_with_callback("Portrait", "https://i.imgur.com/Y5Ozbdm.png", || println!("Portrait clicked!"))
-            .item_with_callback("Landscape", "https://i.imgur.com/Y5Ozbdm.png", || println!("Landscape clicked!"));
+            .item_with_callback("Architecture", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Architecture clicked!")
+            })
+            .item_with_callback("Nature", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Nature clicked!")
+            })
+            .item_with_callback("Abstract Art", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Abstract Art clicked!")
+            })
+            .item_with_callback("Street Photo", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Street Photo clicked!")
+            })
+            .item_with_callback("Portrait", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Portrait clicked!")
+            })
+            .item_with_callback("Landscape", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Landscape clicked!")
+            });
 
         ui.add(masonry_list);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Woven Image List");
         ui.label("Images arranged in a woven pattern with varied sizing.");
-        
+
         let woven_list = woven_image_list()
             .id_salt("woven_imagelist")
             .columns(self.columns)
             .item_spacing(self.item_spacing)
             .text_protected(self.text_protected)
-            .item_with_callback("Texture 1", "https://i.imgur.com/Y5Ozbdm.png", || println!("Texture 1 clicked!"))
-            .item_with_callback("Pattern 2", "https://i.imgur.com/Y5Ozbdm.png", || println!("Pattern 2 clicked!"))
-            .item_with_callback("Color 3", "https://i.imgur.com/Y5Ozbdm.png", || println!("Color 3 clicked!"))
-            .item_with_callback("Design 4", "https://i.imgur.com/Y5Ozbdm.png", || println!("Design 4 clicked!"))
-            .item_with_callback("Style 5", "https://i.imgur.com/Y5Ozbdm.png", || println!("Style 5 clicked!"))
-            .item_with_callback("Art 6", "https://i.imgur.com/Y5Ozbdm.png", || println!("Art 6 clicked!"));
-        
+            .item_with_callback("Texture 1", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Texture 1 clicked!")
+            })
+            .item_with_callback("Pattern 2", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Pattern 2 clicked!")
+            })
+            .item_with_callback("Color 3", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Color 3 clicked!")
+            })
+            .item_with_callback("Design 4", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Design 4 clicked!")
+            })
+            .item_with_callback("Style 5", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Style 5 clicked!")
+            })
+            .item_with_callback("Art 6", "https://i.imgur.com/Y5Ozbdm.png", || {
+                println!("Art 6 clicked!")
+            });
+
         ui.add(woven_list);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Interactive Demo");
-        
+
         ui.horizontal(|ui| {
             if ui.add(MaterialButton::filled("Add Image")).clicked() {
                 self.add_image();
@@ -184,30 +227,29 @@ impl ImageListWindow {
         });
 
         ui.add_space(10.0);
-        
+
         let mut interactive_list = image_list()
             .id_salt("interactive_imagelist")
             .columns(4)
             .item_spacing(self.item_spacing)
             .text_protected(true);
-            
+
         // Add dynamic images from vector
         for image in &self.dynamic_images {
             let label = image.label.clone();
             let image_source = image.image_source.clone();
-            interactive_list = interactive_list.item_with_callback(
-                label.clone(),
-                image_source,
-                move || println!("{} selected!", label)
-            );
+            interactive_list =
+                interactive_list.item_with_callback(label.clone(), image_source, move || {
+                    println!("{} selected!", label)
+                });
         }
-        
+
         ui.add(interactive_list);
 
         ui.add_space(20.0);
-        
+
         ui.heading("Usage Examples");
-        
+
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("Standard:");
@@ -215,14 +257,14 @@ impl ImageListWindow {
                 ui.label("• Product catalogs");
                 ui.label("• Icon collections");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Masonry:");
                 ui.label("• Pinterest-style layouts");
                 ui.label("• Varied content heights");
                 ui.label("• Creative portfolios");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Woven:");
                 ui.label("• Design showcases");

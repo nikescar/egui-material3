@@ -1,7 +1,10 @@
 #![doc(hidden)]
 
+use crate::{
+    center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar, MaterialButton,
+    MaterialCheckbox,
+};
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialButton, MaterialCheckbox, top_app_bar, center_aligned_top_app_bar, medium_top_app_bar, large_top_app_bar};
 
 #[doc(hidden)]
 pub struct TopAppBarWindow {
@@ -76,19 +79,19 @@ impl TopAppBarWindow {
     fn render_top_app_bar_examples(&mut self, ui: &mut Ui) {
         ui.heading("Regular Top App Bar");
         ui.label("Standard app bar with consistent height and surface color.");
-        
+
         let mut regular_bar = top_app_bar(&self.title_text)
             .id_salt("regular_topappbar")
             .scrolled(self.is_scrolled);
-            
+
         if self.use_custom_height {
             regular_bar = regular_bar.height(self.custom_height);
         }
-        
+
         if self.show_navigation {
             regular_bar = regular_bar.navigation_icon("menu", || println!("Navigation clicked!"));
         }
-        
+
         if self.show_actions {
             regular_bar = regular_bar
                 .action_icon("search", || println!("Search clicked!"))
@@ -96,70 +99,70 @@ impl TopAppBarWindow {
                 .action_icon("account_circle", || println!("Account clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
-        
+
         ui.add(regular_bar);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Center Aligned Top App Bar");
         ui.label("App bar with centered title, typically used for simple layouts.");
-        
+
         let mut center_bar = center_aligned_top_app_bar(&self.title_text)
             .id_salt("center_topappbar")
             .scrolled(self.is_scrolled);
-            
+
         if self.use_custom_height {
             center_bar = center_bar.height(self.custom_height);
         }
-        
+
         if self.show_navigation {
             center_bar = center_bar.navigation_icon("arrow_back", || println!("Back clicked!"));
         }
-        
+
         if self.show_actions {
             center_bar = center_bar
                 .action_icon("share", || println!("Share clicked!"))
                 .action_icon("favorite", || println!("Favorite clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
-        
+
         ui.add(center_bar);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Medium Top App Bar");
         ui.label("Taller app bar with title at the bottom, provides more visual weight.");
-        
+
         let mut medium_bar = medium_top_app_bar(&self.title_text)
             .id_salt("medium_topappbar")
             .scrolled(self.is_scrolled);
-            
+
         if self.show_navigation {
             medium_bar = medium_bar.navigation_icon("menu", || println!("Navigation clicked!"));
         }
-        
+
         if self.show_actions {
             medium_bar = medium_bar
                 .action_icon("search", || println!("Search clicked!"))
                 .action_icon("settings", || println!("Settings clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
-        
+
         ui.add(medium_bar);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Large Top App Bar");
         ui.label("Tallest app bar variant, creates strong visual hierarchy.");
-        
+
         let mut large_bar = large_top_app_bar(&self.title_text)
             .id_salt("large_topappbar")
             .scrolled(self.is_scrolled);
-            
+
         if self.show_navigation {
             large_bar = large_bar.navigation_icon("menu", || println!("Navigation clicked!"));
         }
-        
+
         if self.show_actions {
             large_bar = large_bar
                 .action_icon("search", || println!("Search clicked!"))
@@ -167,13 +170,13 @@ impl TopAppBarWindow {
                 .action_icon("share", || println!("Share clicked!"))
                 .action_icon("more_vert", || println!("More clicked!"));
         }
-        
+
         ui.add(large_bar);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Interactive Demo");
-        
+
         ui.horizontal(|ui| {
             if ui.add(MaterialButton::filled("Simulate Scroll")).clicked() {
                 self.is_scrolled = !self.is_scrolled;
@@ -185,9 +188,9 @@ impl TopAppBarWindow {
                 self.title_text = "Very Long Application Title That Might Overflow".to_string();
             }
         });
-        
+
         ui.add_space(10.0);
-        
+
         // Demo with different contexts
         let demo_bar = top_app_bar("Demo App")
             .id_salt("demo_topappbar")
@@ -196,13 +199,13 @@ impl TopAppBarWindow {
             .action_icon("settings", || println!("Demo: Settings clicked!"))
             .action_icon("account_circle", || println!("Demo: Account clicked!"))
             .scrolled(self.is_scrolled);
-        
+
         ui.add(demo_bar);
 
         ui.add_space(30.0);
-        
+
         ui.heading("Usage Guidelines");
-        
+
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("Regular:");
@@ -211,7 +214,7 @@ impl TopAppBarWindow {
                 ui.label("• Good for most apps");
                 ui.label("• Standard 64dp height");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Center Aligned:");
                 ui.label("• Simple layouts");
@@ -219,7 +222,7 @@ impl TopAppBarWindow {
                 ui.label("• Minimal action icons");
                 ui.label("• Clean aesthetic");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Medium/Large:");
                 ui.label("• Landing pages");
@@ -228,9 +231,9 @@ impl TopAppBarWindow {
                 ui.label("• Hero sections");
             });
         });
-        
+
         ui.add_space(20.0);
-        
+
         ui.heading("Best Practices");
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
@@ -240,7 +243,7 @@ impl TopAppBarWindow {
                 ui.label("• Maintain consistent spacing");
                 ui.label("• Consider scroll behavior");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Don't:");
                 ui.label("• Overcrowd with actions");

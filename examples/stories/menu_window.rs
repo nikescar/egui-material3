@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Window, Rect};
-use crate::{MaterialButton, MaterialCheckbox, menu, menu_item};
 use crate::menu::{Corner, FocusState, Positioning};
+use crate::{menu, menu_item, MaterialButton, MaterialCheckbox};
+use eframe::egui::{self, Rect, Window};
 
 #[doc(hidden)]
 pub struct MenuWindow {
@@ -101,8 +101,7 @@ impl MenuWindow {
             self.submenu_open = false;
             self.context_menu_open = false;
         }
-        
-        
+
         // Show menus
         self.show_menus(ctx);
     }
@@ -111,14 +110,14 @@ impl MenuWindow {
         ui.push_id("menu_controls", |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Menu Controls");
-                
+
                 if ui.button("Target").clicked() {
                     let _ = webbrowser::open("https://material-web.dev/components/menu/stories/");
                 }
             });
-            
+
             ui.separator();
-            
+
             // Knobs from TypeScript stories
             ui.horizontal_wrapped(|ui| {
                 ui.group(|ui| {
@@ -126,94 +125,144 @@ impl MenuWindow {
                     ui.horizontal(|ui| {
                         ui.selectable_value(&mut self.anchor_corner, Corner::TopLeft, "Top Left");
                         ui.selectable_value(&mut self.anchor_corner, Corner::TopRight, "Top Right");
-                        ui.selectable_value(&mut self.anchor_corner, Corner::BottomLeft, "Bottom Left");
-                        ui.selectable_value(&mut self.anchor_corner, Corner::BottomRight, "Bottom Right");
+                        ui.selectable_value(
+                            &mut self.anchor_corner,
+                            Corner::BottomLeft,
+                            "Bottom Left",
+                        );
+                        ui.selectable_value(
+                            &mut self.anchor_corner,
+                            Corner::BottomRight,
+                            "Bottom Right",
+                        );
                     });
                 });
-                
+
                 ui.group(|ui| {
                     ui.label("Menu Corner:");
                     ui.horizontal(|ui| {
                         ui.selectable_value(&mut self.menu_corner, Corner::TopLeft, "Top Left");
                         ui.selectable_value(&mut self.menu_corner, Corner::TopRight, "Top Right");
-                        ui.selectable_value(&mut self.menu_corner, Corner::BottomLeft, "Bottom Left");
-                        ui.selectable_value(&mut self.menu_corner, Corner::BottomRight, "Bottom Right");
+                        ui.selectable_value(
+                            &mut self.menu_corner,
+                            Corner::BottomLeft,
+                            "Bottom Left",
+                        );
+                        ui.selectable_value(
+                            &mut self.menu_corner,
+                            Corner::BottomRight,
+                            "Bottom Right",
+                        );
                     });
                 });
             });
-            
+
             ui.horizontal_wrapped(|ui| {
                 ui.group(|ui| {
                     ui.label("Default Focus:");
                     ui.horizontal(|ui| {
                         ui.selectable_value(&mut self.default_focus, FocusState::None, "None");
-                        ui.selectable_value(&mut self.default_focus, FocusState::ListRoot, "List Root");
-                        ui.selectable_value(&mut self.default_focus, FocusState::FirstItem, "First Item");
+                        ui.selectable_value(
+                            &mut self.default_focus,
+                            FocusState::ListRoot,
+                            "List Root",
+                        );
+                        ui.selectable_value(
+                            &mut self.default_focus,
+                            FocusState::FirstItem,
+                            "First Item",
+                        );
                     });
                 });
-                
+
                 ui.group(|ui| {
                     ui.label("Positioning:");
                     ui.horizontal(|ui| {
-                        ui.selectable_value(&mut self.positioning, Positioning::Absolute, "Absolute");
+                        ui.selectable_value(
+                            &mut self.positioning,
+                            Positioning::Absolute,
+                            "Absolute",
+                        );
                         ui.selectable_value(&mut self.positioning, Positioning::Fixed, "Fixed");
-                        ui.selectable_value(&mut self.positioning, Positioning::Document, "Document");
+                        ui.selectable_value(
+                            &mut self.positioning,
+                            Positioning::Document,
+                            "Document",
+                        );
                         ui.selectable_value(&mut self.positioning, Positioning::Popover, "Popover");
                     });
                 });
             });
-            
+
             ui.horizontal_wrapped(|ui| {
                 ui.add(MaterialCheckbox::new(&mut self.quick, "Quick"));
-                ui.add(MaterialCheckbox::new(&mut self.has_overflow, "Has Overflow"));
-                ui.add(MaterialCheckbox::new(&mut self.stay_open_on_outside_click, "Stay Open On Outside Click"));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.has_overflow,
+                    "Has Overflow",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.stay_open_on_outside_click,
+                    "Stay Open On Outside Click",
+                ));
             });
-            
+
             ui.horizontal_wrapped(|ui| {
-                ui.add(MaterialCheckbox::new(&mut self.stay_open_on_focusout, "Stay Open On Focusout"));
-                ui.add(MaterialCheckbox::new(&mut self.skip_restore_focus, "Skip Restore Focus"));
-                ui.add(MaterialCheckbox::new(&mut self.no_horizontal_flip, "No Horizontal Flip"));
-                ui.add(MaterialCheckbox::new(&mut self.no_vertical_flip, "No Vertical Flip"));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.stay_open_on_focusout,
+                    "Stay Open On Focusout",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.skip_restore_focus,
+                    "Skip Restore Focus",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.no_horizontal_flip,
+                    "No Horizontal Flip",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.no_vertical_flip,
+                    "No Vertical Flip",
+                ));
             });
-            
+
             ui.horizontal_wrapped(|ui| {
                 ui.horizontal(|ui| {
                     ui.label("X Offset:");
                     ui.add(egui::Slider::new(&mut self.x_offset, -100.0..=100.0));
                 });
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Y Offset:");
                     ui.add(egui::Slider::new(&mut self.y_offset, -100.0..=100.0));
                 });
             });
-            
+
             ui.horizontal_wrapped(|ui| {
                 ui.horizontal(|ui| {
                     ui.label("Typeahead Delay:");
                     ui.add(egui::Slider::new(&mut self.typeahead_delay, 0.0..=1000.0));
                 });
-                
+
                 ui.horizontal(|ui| {
                     ui.label("List Tab Index:");
                     ui.add(egui::Slider::new(&mut self.list_tab_index, -1..=10));
                 });
             });
-            
+
             ui.separator();
-            
+
             // Original controls
             ui.horizontal_wrapped(|ui| {
                 ui.add(MaterialCheckbox::new(&mut self.keep_open, "Keep Open"));
                 ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
             });
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Link URL:");
             ui.text_edit_singleline(&mut self.href);
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Link Icon:");
             ui.text_edit_singleline(&mut self.link_icon);
@@ -222,7 +271,7 @@ impl MenuWindow {
 
     fn render_menu_triggers(&mut self, ui: &mut egui::Ui) {
         ui.heading("Menu Types");
-        
+
         ui.horizontal_wrapped(|ui| {
             // Menu with Items - opens below button (default positioning)
             let items_button = ui.add(MaterialButton::filled("Menu with Items"));
@@ -238,8 +287,8 @@ impl MenuWindow {
                 }
             }
             ui.add_space(8.0);
-            
-            // Menu with Links - opens below button (default positioning) 
+
+            // Menu with Links - opens below button (default positioning)
             let links_button = ui.add(MaterialButton::filled("Menu with Links"));
             self.links_button_rect = Some(links_button.rect);
             if links_button.clicked() {
@@ -253,8 +302,8 @@ impl MenuWindow {
                 }
             }
             ui.add_space(8.0);
-            
-            // Menu with Sub-menus - opens above button 
+
+            // Menu with Sub-menus - opens above button
             let submenu_button = ui.add(MaterialButton::filled("Menu with Sub-menus"));
             self.submenu_button_rect = Some(submenu_button.rect);
             if submenu_button.clicked() {
@@ -268,7 +317,7 @@ impl MenuWindow {
                 }
             }
             ui.add_space(8.0);
-            
+
             let context_button = ui.add(MaterialButton::filled("Context Menu"));
             self.context_button_rect = Some(context_button.rect);
             if context_button.clicked() {
@@ -294,7 +343,7 @@ impl MenuWindow {
             let green_grapes_item = self.create_menu_item("Green Grapes", "green_grapes");
             let olive_item = self.create_menu_item("Olive", "olive");
             let orange_item = self.create_menu_item("Orange", "orange");
-            
+
             let mut menu_builder = menu("standard_menu", &mut self.standard_menu_open)
                 .item(apple_item)
                 .item(apricot_item)
@@ -318,11 +367,11 @@ impl MenuWindow {
                 .no_vertical_flip(self.no_vertical_flip)
                 .typeahead_delay(self.typeahead_delay)
                 .list_tab_index(self.list_tab_index);
-            
+
             if let Some(rect) = self.items_button_rect {
                 menu_builder = menu_builder.anchor_rect(rect);
             }
-            
+
             menu_builder.show(ctx);
         }
 
@@ -335,7 +384,7 @@ impl MenuWindow {
             let green_grapes_link = self.create_link_item("Green Grapes", "green_grapes");
             let olive_link = self.create_link_item("Olive", "olive");
             let orange_link = self.create_link_item("Orange", "orange");
-            
+
             let mut menu_builder = menu("link_menu", &mut self.link_menu_open)
                 .item(apple_link)
                 .item(apricot_link)
@@ -360,11 +409,11 @@ impl MenuWindow {
                 .no_vertical_flip(self.no_vertical_flip)
                 .typeahead_delay(self.typeahead_delay)
                 .list_tab_index(self.list_tab_index);
-            
+
             if let Some(rect) = self.links_button_rect {
                 menu_builder = menu_builder.anchor_rect(rect);
             }
-            
+
             menu_builder.show(ctx);
         }
 
@@ -373,27 +422,35 @@ impl MenuWindow {
             let apple_sub = self.create_menu_item("Apple", "apple");
             let avocado_sub = self.create_menu_item("Avocado", "avocado");
             let orange_sub = self.create_menu_item("Orange", "orange");
-            
+
             // For sub-menus, we default to TopLeft anchor, BottomLeft menu corner unless overridden
-            let submenu_anchor = if self.anchor_corner == Corner::BottomLeft && self.menu_corner == Corner::TopLeft {
+            let submenu_anchor = if self.anchor_corner == Corner::BottomLeft
+                && self.menu_corner == Corner::TopLeft
+            {
                 Corner::TopLeft
             } else {
                 self.anchor_corner
             };
-            
-            let submenu_menu_corner = if self.anchor_corner == Corner::BottomLeft && self.menu_corner == Corner::TopLeft {
+
+            let submenu_menu_corner = if self.anchor_corner == Corner::BottomLeft
+                && self.menu_corner == Corner::TopLeft
+            {
                 Corner::BottomLeft
             } else {
                 self.menu_corner
             };
-            
+
             let mut menu_builder = menu("submenu", &mut self.submenu_open)
-                .item(menu_item("Fruits")
-                    .leading_icon("expand_more")
-                    .on_click(|| println!("Fruits submenu clicked!")))
-                .item(menu_item("Vegetables")
-                    .leading_icon("expand_more")
-                    .on_click(|| println!("Vegetables submenu clicked!")))
+                .item(
+                    menu_item("Fruits")
+                        .leading_icon("expand_more")
+                        .on_click(|| println!("Fruits submenu clicked!")),
+                )
+                .item(
+                    menu_item("Vegetables")
+                        .leading_icon("expand_more")
+                        .on_click(|| println!("Vegetables submenu clicked!")),
+                )
                 .item(apple_sub)
                 .item(avocado_sub)
                 .item(orange_sub)
@@ -412,30 +469,38 @@ impl MenuWindow {
                 .no_vertical_flip(self.no_vertical_flip)
                 .typeahead_delay(self.typeahead_delay)
                 .list_tab_index(self.list_tab_index);
-            
+
             if let Some(rect) = self.submenu_button_rect {
                 menu_builder = menu_builder.anchor_rect(rect);
             }
-            
+
             menu_builder.show(ctx);
         }
 
         // Context Menu
         if self.context_menu_open {
             menu("context_menu", &mut self.context_menu_open)
-                .item(menu_item("Cut")
-                    .leading_icon("cut")
-                    .on_click(|| println!("Cut clicked!")))
-                .item(menu_item("Copy")
-                    .leading_icon("copy")
-                    .on_click(|| println!("Copy clicked!")))
-                .item(menu_item("Paste")
-                    .leading_icon("paste")
-                    .divider_after(true)
-                    .on_click(|| println!("Paste clicked!")))
-                .item(menu_item("Settings")
-                    .leading_icon("settings")
-                    .on_click(|| println!("Settings clicked!")))
+                .item(
+                    menu_item("Cut")
+                        .leading_icon("cut")
+                        .on_click(|| println!("Cut clicked!")),
+                )
+                .item(
+                    menu_item("Copy")
+                        .leading_icon("copy")
+                        .on_click(|| println!("Copy clicked!")),
+                )
+                .item(
+                    menu_item("Paste")
+                        .leading_icon("paste")
+                        .divider_after(true)
+                        .on_click(|| println!("Paste clicked!")),
+                )
+                .item(
+                    menu_item("Settings")
+                        .leading_icon("settings")
+                        .on_click(|| println!("Settings clicked!")),
+                )
                 .anchor_corner(self.anchor_corner)
                 .menu_corner(self.menu_corner)
                 .default_focus(self.default_focus)
@@ -464,8 +529,7 @@ impl MenuWindow {
     }
 
     fn create_link_item<'a>(&self, text: &'a str, _id: &str) -> crate::MenuItem<'a> {
-        let mut item = menu_item(text)
-            .trailing_icon(&self.link_icon);
+        let mut item = menu_item(text).trailing_icon(&self.link_icon);
         if self.disabled {
             item = item.enabled(false);
         }

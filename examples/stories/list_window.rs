@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Window};
 use crate::{list, list_item};
+use eframe::egui::{self, Window};
 
 #[doc(hidden)]
 pub struct ListWindow {
@@ -53,18 +53,18 @@ impl ListWindow {
                     let _ = webbrowser::open("https://material-web.dev/components/list/stories/");
                 }
             });
-            
+
             ui.checkbox(&mut self.disabled, "Disabled");
             ui.checkbox(&mut self.leading_icon, "Leading Icon");
             ui.checkbox(&mut self.trailing_icon, "Trailing Icon");
         });
-        
+
         ui.push_id("list_text_controls", |ui| {
             ui.horizontal(|ui| {
                 ui.label("Overline:");
                 ui.text_edit_singleline(&mut self.overline);
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Trailing Supporting Text:");
                 ui.text_edit_singleline(&mut self.trailing_supporting_text);
@@ -74,9 +74,9 @@ impl ListWindow {
 
     fn render_standard_list(&mut self, ui: &mut egui::Ui) {
         ui.heading("Standard List");
-        
+
         let mut single_line_list = list();
-        
+
         // Single line item
         let mut single_item = list_item("Single line item");
         if self.disabled {
@@ -94,11 +94,11 @@ impl ListWindow {
         if !self.trailing_supporting_text.is_empty() {
             single_item = single_item.trailing_text(&self.trailing_supporting_text);
         }
-        single_line_list = single_line_list.item(single_item.on_click(|| println!("Single line item clicked!")));
-        
+        single_line_list =
+            single_line_list.item(single_item.on_click(|| println!("Single line item clicked!")));
+
         // Two line item
-        let mut two_line_item = list_item("Two line item")
-            .secondary_text("Supporting text");
+        let mut two_line_item = list_item("Two line item").secondary_text("Supporting text");
         if self.disabled {
             two_line_item = two_line_item.enabled(false);
         }
@@ -114,11 +114,12 @@ impl ListWindow {
         if !self.trailing_supporting_text.is_empty() {
             two_line_item = two_line_item.trailing_text(&self.trailing_supporting_text);
         }
-        single_line_list = single_line_list.item(two_line_item.on_click(|| println!("Two line item clicked!")));
-        
+        single_line_list =
+            single_line_list.item(two_line_item.on_click(|| println!("Two line item clicked!")));
+
         // Three line item
-        let mut three_line_item = list_item("Three line item")
-            .secondary_text("Second line text\nThird line text");
+        let mut three_line_item =
+            list_item("Three line item").secondary_text("Second line text\nThird line text");
         if self.disabled {
             three_line_item = three_line_item.enabled(false);
         }
@@ -134,19 +135,19 @@ impl ListWindow {
         if !self.trailing_supporting_text.is_empty() {
             three_line_item = three_line_item.trailing_text(&self.trailing_supporting_text);
         }
-        single_line_list = single_line_list.item(three_line_item.on_click(|| println!("Three line item clicked!")));
-        
+        single_line_list = single_line_list
+            .item(three_line_item.on_click(|| println!("Three line item clicked!")));
+
         ui.add(single_line_list);
     }
 
     fn render_interactive_list(&mut self, ui: &mut egui::Ui) {
         ui.heading("Interactive List");
-        
+
         let mut interactive_list = list();
-        
+
         // Link item
-        let mut link_item = list_item("Link item")
-            .trailing_icon("link");
+        let mut link_item = list_item("Link item").trailing_icon("link");
         if self.disabled {
             link_item = link_item.enabled(false);
         }
@@ -156,8 +157,9 @@ impl ListWindow {
         if !self.overline.is_empty() {
             link_item = link_item.overline(&self.overline);
         }
-        interactive_list = interactive_list.item(link_item.on_click(|| println!("Link item clicked!")));
-        
+        interactive_list =
+            interactive_list.item(link_item.on_click(|| println!("Link item clicked!")));
+
         // Button item
         let mut button_item = list_item("Button item");
         if self.disabled {
@@ -175,8 +177,9 @@ impl ListWindow {
         if !self.trailing_supporting_text.is_empty() {
             button_item = button_item.trailing_text(&self.trailing_supporting_text);
         }
-        interactive_list = interactive_list.item(button_item.on_click(|| println!("Button item clicked!")));
-        
+        interactive_list =
+            interactive_list.item(button_item.on_click(|| println!("Button item clicked!")));
+
         // Non-interactive item
         let mut non_interactive_item = list_item(&format!(
             "Non-interactive item{}",
@@ -195,10 +198,11 @@ impl ListWindow {
             non_interactive_item = non_interactive_item.overline(&self.overline);
         }
         if !self.trailing_supporting_text.is_empty() {
-            non_interactive_item = non_interactive_item.trailing_text(&self.trailing_supporting_text);
+            non_interactive_item =
+                non_interactive_item.trailing_text(&self.trailing_supporting_text);
         }
         interactive_list = interactive_list.item(non_interactive_item);
-        
+
         ui.add(interactive_list);
     }
 }

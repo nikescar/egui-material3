@@ -1,6 +1,6 @@
+use crate::icons::icon_text;
 use crate::theme::get_global_color;
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
-use crate::icons::icon_text;
 
 /// Material Design list component.
 ///
@@ -259,8 +259,16 @@ impl<'a> ListItem<'a> {
 impl<'a> Widget for MaterialList<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let mut total_height = 0.0;
-        let item_height = if self.items.iter().any(|item| item.secondary_text.is_some() || item.overline_text.is_some()) {
-            if self.items.iter().any(|item| item.overline_text.is_some() && item.secondary_text.is_some()) {
+        let item_height = if self
+            .items
+            .iter()
+            .any(|item| item.secondary_text.is_some() || item.overline_text.is_some())
+        {
+            if self
+                .items
+                .iter()
+                .any(|item| item.overline_text.is_some() && item.secondary_text.is_some())
+            {
                 88.0 // Three-line item height (overline + primary + secondary)
             } else {
                 72.0 // Two-line item height
@@ -273,39 +281,45 @@ impl<'a> Widget for MaterialList<'a> {
         let mut max_content_width = 200.0; // minimum width
         for item in &self.items {
             let mut item_width = 32.0; // base padding
-            
+
             // Add leading icon width
             if item.leading_icon.is_some() {
                 item_width += 40.0;
             }
-            
+
             // Add text width (approximate)
             let primary_text_width = item.primary_text.len() as f32 * 8.0; // rough estimate
-            let secondary_text_width = item.secondary_text.as_ref()
+            let secondary_text_width = item
+                .secondary_text
+                .as_ref()
                 .map_or(0.0, |s| s.len() as f32 * 6.0); // smaller font
-            let overline_text_width = item.overline_text.as_ref()
+            let overline_text_width = item
+                .overline_text
+                .as_ref()
                 .map_or(0.0, |s| s.len() as f32 * 5.5); // smallest font
-            let max_text_width = primary_text_width.max(secondary_text_width).max(overline_text_width);
+            let max_text_width = primary_text_width
+                .max(secondary_text_width)
+                .max(overline_text_width);
             item_width += max_text_width;
-            
+
             // Add trailing text width
             if let Some(ref trailing_text) = item.trailing_text {
                 item_width += trailing_text.len() as f32 * 6.0;
             }
-            
+
             // Add trailing icon width
             if item.trailing_icon.is_some() {
                 item_width += 40.0;
             }
-            
+
             // Add some padding
             item_width += 32.0;
-            
+
             if item_width > max_content_width {
                 max_content_width = item_width;
             }
         }
-        
+
         // Cap the width to available width but allow it to be smaller
         let list_width = max_content_width.min(ui.available_width());
 
@@ -325,7 +339,12 @@ impl<'a> Widget for MaterialList<'a> {
 
         // Draw list background with rounded rectangle border
         ui.painter().rect_filled(rect, 8.0, surface);
-        ui.painter().rect_stroke(rect, 8.0, Stroke::new(1.0, outline_variant), egui::epaint::StrokeKind::Outside);
+        ui.painter().rect_stroke(
+            rect,
+            8.0,
+            Stroke::new(1.0, outline_variant),
+            egui::epaint::StrokeKind::Outside,
+        );
 
         let mut current_y = rect.min.y;
         let mut pending_actions = Vec::new();
@@ -343,7 +362,12 @@ impl<'a> Widget for MaterialList<'a> {
 
             // Draw item background on hover
             if item_response.hovered() && item.enabled {
-                let hover_color = Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20);
+                let hover_color = Color32::from_rgba_premultiplied(
+                    on_surface.r(),
+                    on_surface.g(),
+                    on_surface.b(),
+                    20,
+                );
                 ui.painter().rect_filled(item_rect, 0.0, hover_color);
             }
 
@@ -361,8 +385,10 @@ impl<'a> Widget for MaterialList<'a> {
             // Draw leading icon
             if let Some(icon_name) = &item.leading_icon {
                 let icon_pos = Pos2::new(content_x + 12.0, content_y);
-                
-                let icon_color = if item.enabled { on_surface_variant } else {
+
+                let icon_color = if item.enabled {
+                    on_surface_variant
+                } else {
                     get_global_color("onSurfaceVariant").linear_multiply(0.38)
                 };
 
@@ -378,13 +404,23 @@ impl<'a> Widget for MaterialList<'a> {
             }
 
             // Calculate text area with trailing text support
-            let trailing_icon_width = if item.trailing_icon.is_some() { 40.0 } else { 0.0 };
-            let trailing_text_width = if item.trailing_text.is_some() { 80.0 } else { 0.0 }; // Estimate
+            let trailing_icon_width = if item.trailing_icon.is_some() {
+                40.0
+            } else {
+                0.0
+            };
+            let trailing_text_width = if item.trailing_text.is_some() {
+                80.0
+            } else {
+                0.0
+            }; // Estimate
             let total_trailing_width = trailing_icon_width + trailing_text_width;
             let _text_width = item_rect.max.x - content_x - total_trailing_width - 16.0;
 
             // Draw text content
-            let text_color = if item.enabled { on_surface } else {
+            let text_color = if item.enabled {
+                on_surface
+            } else {
                 get_global_color("onSurfaceVariant").linear_multiply(0.38)
             };
 
@@ -419,7 +455,7 @@ impl<'a> Widget for MaterialList<'a> {
                         egui::FontId::proportional(12.0),
                         on_surface_variant,
                     );
-                },
+                }
                 (Some(overline), None) => {
                     // Two-line layout: overline + primary
                     let overline_pos = Pos2::new(content_x, content_y - 10.0);
@@ -440,7 +476,7 @@ impl<'a> Widget for MaterialList<'a> {
                         egui::FontId::default(),
                         text_color,
                     );
-                },
+                }
                 (None, Some(secondary)) => {
                     // Two-line layout: primary + secondary
                     let primary_pos = Pos2::new(content_x, content_y - 10.0);
@@ -461,7 +497,7 @@ impl<'a> Widget for MaterialList<'a> {
                         egui::FontId::proportional(12.0),
                         on_surface_variant,
                     );
-                },
+                }
                 (None, None) => {
                     // Single-line layout: primary only
                     let text_pos = Pos2::new(content_x, content_y);
@@ -479,9 +515,9 @@ impl<'a> Widget for MaterialList<'a> {
             if let Some(ref trailing_text) = item.trailing_text {
                 let trailing_text_pos = Pos2::new(
                     item_rect.max.x - trailing_icon_width - trailing_text_width + 10.0,
-                    content_y
+                    content_y,
                 );
-                
+
                 ui.painter().text(
                     trailing_text_pos,
                     egui::Align2::LEFT_CENTER,
@@ -494,8 +530,10 @@ impl<'a> Widget for MaterialList<'a> {
             // Draw trailing icon
             if let Some(icon_name) = &item.trailing_icon {
                 let icon_pos = Pos2::new(item_rect.max.x - 28.0, content_y);
-                
-                let icon_color = if item.enabled { on_surface_variant } else {
+
+                let icon_color = if item.enabled {
+                    on_surface_variant
+                } else {
                     get_global_color("onSurfaceVariant").linear_multiply(0.38)
                 };
 
@@ -516,7 +554,7 @@ impl<'a> Widget for MaterialList<'a> {
                 let divider_y = current_y;
                 let divider_start = Pos2::new(rect.min.x + 16.0, divider_y);
                 let divider_end = Pos2::new(rect.max.x - 16.0, divider_y);
-                
+
                 ui.painter().line_segment(
                     [divider_start, divider_end],
                     Stroke::new(1.0, outline_variant),

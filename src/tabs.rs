@@ -1,5 +1,5 @@
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::get_global_color;
+use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Material Design tabs component.
 ///
@@ -10,7 +10,7 @@ use crate::get_global_color;
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected_tab = 0;
-/// 
+///
 /// ui.add(MaterialTabs::primary(&mut selected_tab)
 ///     .tab("Home")
 ///     .tab("Profile")
@@ -202,7 +202,7 @@ impl<'a> Widget for MaterialTabs<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let tab_height = 48.0;
         let tab_width = ui.available_width() / self.tabs.len().max(1) as f32;
-        
+
         let desired_size = Vec2::new(ui.available_width(), tab_height);
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
@@ -214,11 +214,7 @@ impl<'a> Widget for MaterialTabs<'a> {
         let outline_variant = get_global_color("outlineVariant");
 
         // Draw tab bar background
-        ui.painter().rect_filled(
-            rect,
-            0.0,
-            surface,
-        );
+        ui.painter().rect_filled(rect, 0.0, surface);
 
         // Draw tabs
         let mut any_clicked = false;
@@ -234,12 +230,8 @@ impl<'a> Widget for MaterialTabs<'a> {
             } else {
                 egui::Id::new(("tab", index))
             };
-            
-            let tab_response = ui.interact(
-                tab_rect,
-                tab_id,
-                Sense::click(),
-            );
+
+            let tab_response = ui.interact(tab_rect, tab_id, Sense::click());
 
             let is_selected = *self.selected == index;
             let is_hovered = tab_response.hovered();
@@ -269,13 +261,12 @@ impl<'a> Widget for MaterialTabs<'a> {
             // Draw hover background
             if is_hovered && self.enabled {
                 let hover_color = Color32::from_rgba_premultiplied(
-                    text_color.r(), text_color.g(), text_color.b(), 20
+                    text_color.r(),
+                    text_color.g(),
+                    text_color.b(),
+                    20,
                 );
-                ui.painter().rect_filled(
-                    tab_rect,
-                    0.0,
-                    hover_color,
-                );
+                ui.painter().rect_filled(tab_rect, 0.0, hover_color);
             }
 
             // Handle click
@@ -286,15 +277,16 @@ impl<'a> Widget for MaterialTabs<'a> {
 
             // Layout tab content
             let mut content_y = tab_rect.center().y;
-            
+
             // Draw icon if present
             if let Some(_icon) = &tab.icon {
                 let icon_rect = Rect::from_min_size(
                     Pos2::new(tab_rect.center().x - 12.0, content_y - 20.0),
                     Vec2::splat(24.0),
                 );
-                
-                ui.painter().circle_filled(icon_rect.center(), 8.0, text_color);
+
+                ui.painter()
+                    .circle_filled(icon_rect.center(), 8.0, text_color);
                 content_y += 12.0;
             }
 
@@ -322,11 +314,8 @@ impl<'a> Widget for MaterialTabs<'a> {
                             Pos2::new(tab_rect.min.x + 8.0, tab_rect.max.y - 3.0),
                             Vec2::new(tab_width - 16.0, 3.0),
                         );
-                        ui.painter().rect_filled(
-                            indicator_rect,
-                            1.5,
-                            indicator_color,
-                        );
+                        ui.painter()
+                            .rect_filled(indicator_rect, 1.5, indicator_color);
                     }
                 }
                 TabVariant::Secondary => {
@@ -348,11 +337,7 @@ impl<'a> Widget for MaterialTabs<'a> {
                 Pos2::new(rect.min.x, rect.max.y - 1.0),
                 Vec2::new(rect.width(), 1.0),
             );
-            ui.painter().rect_filled(
-                border_rect,
-                0.0,
-                outline_variant,
-            );
+            ui.painter().rect_filled(border_rect, 0.0, outline_variant);
         }
 
         if any_clicked {

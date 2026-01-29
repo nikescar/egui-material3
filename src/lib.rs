@@ -1,6 +1,6 @@
 //! # egui-material3
-//! 
-//! A comprehensive Material Design 3 component library for [egui](https://github.com/emilk/egui), 
+//!
+//! A comprehensive Material Design 3 component library for [egui](https://github.com/emilk/egui),
 //! providing a complete set of Material Design components with advanced theming support.
 //!
 //! ## Features
@@ -20,12 +20,12 @@
 //! ```
 //!
 //! ### Basic Usage
-//! 
+//!
 //! ```rust,no_run
 //! use eframe::egui;
 //! use egui_material3::{
 //!     MaterialButton, MaterialCheckbox, MaterialSlider,
-//!     theme::{setup_google_fonts, setup_local_fonts, setup_local_theme, 
+//!     theme::{setup_google_fonts, setup_local_fonts, setup_local_theme,
 //!            load_fonts, load_themes, update_window_background}
 //! };
 //!
@@ -81,14 +81,14 @@
 //! The theme system supports Material Design 3 with comprehensive theming capabilities:
 //!
 //! ### Build-time Theme Inclusion
-//! 
+//!
 //! Themes can be automatically included at build time from JSON files:
-//! 
+//!
 //! ```rust,no_run
 //! use egui_material3::theme::{setup_local_theme, load_themes};
-//! 
+//!
 //! // Uses themes from resources/ and examples/ directories automatically
-//! setup_local_theme(None); 
+//! setup_local_theme(None);
 //! load_themes();
 //! ```
 //!
@@ -228,55 +228,76 @@
 //! This crate follows the Material Design 3 specifications and guidelines for consistent,
 //! accessible, and beautiful user interfaces.
 
-pub mod icons;
-pub mod image_utils;
 pub mod button;
+pub mod card2;
 pub mod checkbox;
 pub mod chips;
+pub mod datatable;
 pub mod dialog;
+pub mod drawer;
 pub mod fab;
 pub mod icon;
 pub mod iconbutton;
+pub mod icons;
+pub mod image_utils;
+pub mod imagelist;
+pub mod layoutgrid;
 pub mod list;
 pub mod menu;
 pub mod progress;
 pub mod radio;
 pub mod select;
 pub mod slider;
+pub mod snackbar;
 pub mod switch;
 pub mod tabs;
-pub mod datatable;
-pub mod drawer;
-pub mod imagelist;
-pub mod layoutgrid;
-pub mod snackbar;
-pub mod topappbar;
-pub mod card2;
 pub mod theme;
+pub mod topappbar;
 
 pub use {
     button::{MaterialButton, MaterialButtonVariant},
-    checkbox::{MaterialCheckbox, checkbox},
-    chips::{MaterialChip, ChipVariant, assist_chip, filter_chip, input_chip, suggestion_chip},
-    dialog::{MaterialDialog, dialog},
-    fab::{MaterialFab, FabVariant, FabSize, SvgIcon, SvgPath, fab_surface, fab_primary, fab_secondary, fab_tertiary, fab_branded, google_branded_icon},
-    icon::{MaterialIcon, icon},
-    iconbutton::{MaterialIconButton, IconButtonVariant, icon_button_standard, icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_toggle},
-    list::{MaterialList, ListItem, list, list_item},
-    menu::{MaterialMenu, MenuItem, Corner, FocusState, Positioning, menu, menu_item},
-    progress::{MaterialProgress, ProgressVariant, linear_progress, circular_progress},
-    radio::{MaterialRadio, MaterialRadioGroup, radio, radio_group},
-    select::{MaterialSelect, select},
-    slider::{MaterialSlider, slider},
-    switch::{MaterialSwitch, switch},
-    tabs::{MaterialTabs, TabVariant, tabs_primary, tabs_secondary},
-    datatable::{MaterialDataTable, DataTableColumn, DataTableRow, DataTableCell, CellContent, SortDirection, VAlign, HAlign, data_table},
-    drawer::{MaterialDrawer, DrawerVariant, DrawerItem, permanent_drawer, modal_drawer, dismissible_drawer, standard_drawer},
-    imagelist::{MaterialImageList, ImageListVariant, ImageListItem, image_list, masonry_image_list, woven_image_list},
-    layoutgrid::{MaterialLayoutGrid, layout_grid, debug_layout_grid},
-    snackbar::{MaterialSnackbar, SnackbarPosition, snackbar, snackbar_with_action},
-    topappbar::{MaterialTopAppBar, TopAppBarVariant, top_app_bar, center_aligned_top_app_bar, medium_top_app_bar, large_top_app_bar},
-    card2::{MaterialCard2, Card2Variant, elevated_card2, filled_card2, outlined_card2},
-    theme::{get_global_color, get_global_theme, update_global_theme, MaterialThemeContext, ThemeMode, ContrastLevel, MaterialThemeFile},
+    card2::{elevated_card2, filled_card2, outlined_card2, Card2Variant, MaterialCard2},
+    checkbox::{checkbox, MaterialCheckbox},
+    chips::{assist_chip, filter_chip, input_chip, suggestion_chip, ChipVariant, MaterialChip},
+    datatable::{
+        data_table, CellContent, DataTableCell, DataTableColumn, DataTableRow, HAlign,
+        MaterialDataTable, SortDirection, VAlign,
+    },
+    dialog::{dialog, MaterialDialog},
+    drawer::{
+        dismissible_drawer, modal_drawer, permanent_drawer, standard_drawer, DrawerItem,
+        DrawerVariant, MaterialDrawer,
+    },
     egui::TextEdit, // Re-export egui's TextEdit
+    fab::{
+        fab_branded, fab_primary, fab_secondary, fab_surface, fab_tertiary, google_branded_icon,
+        FabSize, FabVariant, MaterialFab, SvgIcon, SvgPath,
+    },
+    icon::{icon, MaterialIcon},
+    iconbutton::{
+        icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
+        icon_button_toggle, IconButtonVariant, MaterialIconButton,
+    },
+    imagelist::{
+        image_list, masonry_image_list, woven_image_list, ImageListItem, ImageListVariant,
+        MaterialImageList,
+    },
+    layoutgrid::{debug_layout_grid, layout_grid, MaterialLayoutGrid},
+    list::{list, list_item, ListItem, MaterialList},
+    menu::{menu, menu_item, Corner, FocusState, MaterialMenu, MenuItem, Positioning},
+    progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},
+    radio::{radio, radio_group, MaterialRadio, MaterialRadioGroup},
+    select::{select, MaterialSelect},
+    slider::{slider, MaterialSlider},
+    snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition},
+    switch::{switch, MaterialSwitch},
+    tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
+    theme::{
+        get_global_color, get_global_theme, update_global_theme, ContrastLevel,
+        MaterialThemeContext, MaterialThemeFile, ThemeMode,
+    },
+    topappbar::{
+        center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar,
+        MaterialTopAppBar, TopAppBarVariant,
+    },
 };

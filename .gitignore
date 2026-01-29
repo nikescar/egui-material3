@@ -21,3 +21,5 @@ examples/flight_departures_example.rs
 
 resources/*.ttf
 examples/ondemand/resources/*.ttf
+
+/reference

@@ -1,5 +1,5 @@
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Context, Id};
 use crate::get_global_color;
+use eframe::egui::{self, Color32, Context, Id, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 /// Corner position for menu positioning.
 #[derive(Clone, Copy, PartialEq)]
@@ -36,7 +36,7 @@ pub enum Positioning {
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
 /// let mut menu_open = false;
-/// 
+///
 /// if ui.button("Open Menu").clicked() {
 ///     menu_open = true;
 /// }
@@ -308,23 +308,27 @@ impl<'a> MaterialMenu<'a> {
 
         // Use a stable ID for the menu
         let stable_id = egui::Id::new(format!("menu_{}", self.id.value()));
-        
+
         // Track if this is the frame when menu was opened
         let was_opened_this_frame = ctx.data_mut(|d| {
-            let last_open_state = d.get_temp::<bool>(stable_id.with("was_open_last_frame")).unwrap_or(false);
+            let last_open_state = d
+                .get_temp::<bool>(stable_id.with("was_open_last_frame"))
+                .unwrap_or(false);
             let just_opened = !last_open_state && *self.open;
             d.insert_temp(stable_id.with("was_open_last_frame"), *self.open);
             just_opened
         });
-        
+
         // Request focus when menu opens
         if was_opened_this_frame && !self.skip_restore_focus {
             ctx.memory_mut(|mem| mem.request_focus(stable_id));
         }
 
         let item_height = 48.0;
-        let total_height = self.items.len() as f32 * item_height + 
-                          self.items.iter().filter(|item| item.divider_after).count() as f32;
+        let vertical_padding = 16.0; // 8.0 top + 8.0 bottom
+        let total_height = self.items.len() as f32 * item_height
+            + self.items.iter().filter(|item| item.divider_after).count() as f32
+            + vertical_padding;
         let menu_width = 280.0;
 
         let menu_size = Vec2::new(menu_width, total_height);
@@ -381,13 +385,13 @@ impl<'a> MaterialMenu<'a> {
             if ctx.input(|i| i.pointer.any_click()) {
                 let pointer_pos = ctx.input(|i| i.pointer.interact_pos()).unwrap_or_default();
                 let menu_rect = Rect::from_min_size(position, menu_size);
-                
+
                 // Include anchor rect in the "inside" area to prevent closing when clicking trigger
                 let mut inside_area = menu_rect;
                 if let Some(anchor) = self.anchor_rect {
                     inside_area = inside_area.union(anchor);
                 }
-                
+
                 // Only close if click was outside both menu and anchor areas
                 if !inside_area.contains(pointer_pos) {
                     *open_ref = false;
@@ -395,10 +399,15 @@ impl<'a> MaterialMenu<'a> {
             }
         }
     }
-
 }
 
-fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, elevation: u8, open_ref: &'a mut bool) -> Response {
+fn render_menu_content<'a>(
+    ui: &mut Ui,
+    size: Vec2,
+    items: Vec<MenuItem<'a>>,
+    elevation: u8,
+    open_ref: &'a mut bool,
+) -> Response {
     let (rect, response) = ui.allocate_exact_size(size, Sense::hover());
 
     // Material Design colors
@@ -446,7 +455,10 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
         // Draw item background on hover
         if item_response.hovered() && item.enabled {
             let hover_color = Color32::from_rgba_premultiplied(
-                on_surface.r(), on_surface.g(), on_surface.b(), 20
+                on_surface.r(),
+                on_surface.g(),
+                on_surface.b(),
+                20,
             );
             ui.painter().rect_filled(item_rect, 4.0, hover_color);
         }
@@ -466,21 +478,24 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
 
         // Draw leading icon
         if let Some(_icon) = &item.leading_icon {
-            let icon_rect = Rect::from_min_size(
-                Pos2::new(content_x, content_y - 12.0),
-                Vec2::splat(24.0),
-            );
-            
-            let icon_color = if item.enabled { on_surface_variant } else {
+            let icon_rect =
+                Rect::from_min_size(Pos2::new(content_x, content_y - 12.0), Vec2::splat(24.0));
+
+            let icon_color = if item.enabled {
+                on_surface_variant
+            } else {
                 get_global_color("outline")
             };
 
-            ui.painter().circle_filled(icon_rect.center(), 8.0, icon_color);
+            ui.painter()
+                .circle_filled(icon_rect.center(), 8.0, icon_color);
             content_x += 36.0;
         }
 
         // Draw text
-        let text_color = if item.enabled { on_surface } else {
+        let text_color = if item.enabled {
+            on_surface
+        } else {
             get_global_color("outline")
         };
 
@@ -499,12 +514,15 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
                 Pos2::new(item_rect.max.x - 36.0, content_y - 12.0),
                 Vec2::splat(24.0),
             );
-            
-            let icon_color = if item.enabled { on_surface_variant } else {
+
+            let icon_color = if item.enabled {
+                on_surface_variant
+            } else {
                 get_global_color("outline")
             };
 
-            ui.painter().circle_filled(icon_rect.center(), 8.0, icon_color);
+            ui.painter()
+                .circle_filled(icon_rect.center(), 8.0, icon_color);
         }
 
         current_y += 48.0;
@@ -514,7 +532,7 @@ fn render_menu_content<'a>(ui: &mut Ui, size: Vec2, items: Vec<MenuItem<'a>>, el
             let divider_y = current_y;
             let divider_start = Pos2::new(rect.min.x + 12.0, divider_y);
             let divider_end = Pos2::new(rect.max.x - 12.0, divider_y);
-            
+
             ui.painter().line_segment(
                 [divider_start, divider_end],
                 Stroke::new(1.0, outline_variant),

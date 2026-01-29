@@ -77,11 +77,11 @@
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,
-    epaint::{Stroke, CornerRadius},
-    Rect, Response, Sense, Ui, Vec2, Widget
+    epaint::{CornerRadius, Stroke},
+    Rect, Response, Sense, Ui, Vec2, Widget,
 };
-use std::env;
 use image::GenericImageView;
+use std::env;
 
 /// Material Design image list variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -139,13 +139,13 @@ impl<'a> ImageListItem<'a> {
             _phantom: std::marker::PhantomData,
         }
     }
-    
+
     pub fn supporting_text(mut self, text: impl Into<String>) -> Self {
         self.supporting_text = Some(text.into());
         self
     }
-    
-    pub fn on_click<F>(mut self, callback: F) -> Self 
+
+    pub fn on_click<F>(mut self, callback: F) -> Self
     where
         F: Fn() + Send + Sync + 'static,
     {
@@ -160,20 +160,23 @@ fn load_image_from_file(file_path: &str) -> Option<egui::ColorImage> {
         match image::open(file_path) {
             Ok(image) => {
                 let original_size = image.dimensions();
-                
+
                 // Resize large images to max 512x512 to avoid memory issues
                 let resized_image = if original_size.0 > 512 || original_size.1 > 512 {
                     image.resize(512, 512, image::imageops::FilterType::Lanczos3)
                 } else {
                     image
                 };
-                
+
                 let size = resized_image.dimensions();
                 let image_buffer = resized_image.to_rgba8();
                 let pixels = image_buffer.into_raw();
-                Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels))
+                Some(egui::ColorImage::from_rgba_unmultiplied(
+                    [size.0 as usize, size.1 as usize],
+                    &pixels,
+                ))
             }
-            Err(_) => None
+            Err(_) => None,
         }
     } else {
         None
@@ -183,9 +186,9 @@ fn load_image_from_file(file_path: &str) -> Option<egui::ColorImage> {
 /// Load image from URL (requires ondemand feature)
 #[cfg(feature = "ondemand")]
 fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
-    use std::io::Read;
     use std::hash::{Hash, Hasher};
-    
+    use std::io::Read;
+
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     url.hash(&mut hasher);
     let url_hash = format!("{:x}", hasher.finish());
@@ -198,7 +201,7 @@ fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
         filepath.with_extension("jpg"),
         filepath.with_extension("gif"),
         filepath.with_extension("webp"),
-        filepath.clone()
+        filepath.clone(),
     ];
 
     let existing_file = possible_files.iter().find(|f| f.exists());
@@ -225,7 +228,10 @@ fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
                                 "jpg"
                             } else if bytes.starts_with(&[0x47, 0x49, 0x46]) {
                                 "gif"
-                            } else if bytes.starts_with(&[0x52, 0x49, 0x46, 0x46]) && bytes.len() > 12 && &bytes[8..12] == b"WEBP" {
+                            } else if bytes.starts_with(&[0x52, 0x49, 0x46, 0x46])
+                                && bytes.len() > 12
+                                && &bytes[8..12] == b"WEBP"
+                            {
                                 "webp"
                             } else {
                                 "png"
@@ -257,9 +263,12 @@ fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
                 let size = resized_image.dimensions();
                 let image_buffer = resized_image.to_rgba8();
                 let pixels = image_buffer.into_raw();
-                Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels))
+                Some(egui::ColorImage::from_rgba_unmultiplied(
+                    [size.0 as usize, size.1 as usize],
+                    &pixels,
+                ))
             }
-            Err(_) => None
+            Err(_) => None,
         }
     } else {
         None
@@ -270,12 +279,17 @@ fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
 fn load_image_from_data_url(data_url: &str) -> Option<egui::ColorImage> {
     if let Some(comma_pos) = data_url.find(',') {
         let data_part = &data_url[comma_pos + 1..];
-        if let Ok(bytes) = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data_part) {
+        if let Ok(bytes) =
+            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data_part)
+        {
             if let Ok(image) = image::load_from_memory(&bytes) {
                 let size = image.dimensions();
                 let image_buffer = image.to_rgba8();
                 let pixels = image_buffer.into_raw();
-                return Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels));
+                return Some(egui::ColorImage::from_rgba_unmultiplied(
+                    [size.0 as usize, size.1 as usize],
+                    &pixels,
+                ));
             }
         }
     }
@@ -289,7 +303,10 @@ fn load_image_from_bytes(bytes_str: &str) -> Option<egui::ColorImage> {
             let size = image.dimensions();
             let image_buffer = image.to_rgba8();
             let pixels = image_buffer.into_raw();
-            return Some(egui::ColorImage::from_rgba_unmultiplied([size.0 as usize, size.1 as usize], &pixels));
+            return Some(egui::ColorImage::from_rgba_unmultiplied(
+                [size.0 as usize, size.1 as usize],
+                &pixels,
+            ));
         }
     }
     None
@@ -342,18 +359,16 @@ impl<'a> MaterialImageList<'a> {
 
     /// Add an image item with callback.
     pub fn item_with_callback<F>(
-        mut self, 
-        label: impl Into<String>, 
+        mut self,
+        label: impl Into<String>,
         image_source: impl Into<String>,
-        callback: F
-    ) -> Self 
+        callback: F,
+    ) -> Self
     where
         F: Fn() + Send + Sync + 'static,
     {
-        self.items.push(
-            ImageListItem::new(label, image_source)
-                .on_click(callback)
-        );
+        self.items
+            .push(ImageListItem::new(label, image_source).on_click(callback));
         self
     }
 
@@ -466,32 +481,30 @@ impl Widget for MaterialImageList<'_> {
             ImageListVariant::Masonry => item_width * 1.2, // Slightly taller
             ImageListVariant::Woven => item_width * 0.8, // Slightly shorter
         };
-        
+
         let rows = (items.len() + columns - 1) / columns;
         let total_height = rows as f32 * (item_height + item_spacing) - item_spacing;
         let total_width = available_width;
 
-        let response = ui.allocate_response(
-            Vec2::new(total_width, total_height), 
-            Sense::hover()
-        );
+        let response = ui.allocate_response(Vec2::new(total_width, total_height), Sense::hover());
         let rect = response.rect;
 
         if ui.is_rect_visible(rect) {
             // Draw background
-            ui.painter().rect_filled(rect, corner_radius, background_color);
+            ui.painter()
+                .rect_filled(rect, corner_radius, background_color);
 
             // Draw items in grid
             for (index, item) in items.iter_mut().enumerate() {
                 let row = index / columns;
                 let col = index % columns;
-                
+
                 let item_x = rect.min.x + col as f32 * (item_width + item_spacing);
                 let item_y = rect.min.y + row as f32 * (item_height + item_spacing);
-                
+
                 let item_rect = Rect::from_min_size(
                     egui::pos2(item_x, item_y),
-                    Vec2::new(item_width, item_height)
+                    Vec2::new(item_width, item_height),
                 );
 
                 // Handle item interaction with unique ID
@@ -500,11 +513,12 @@ impl Widget for MaterialImageList<'_> {
                 } else {
                     egui::Id::new(("image_item", index, &item.label))
                 };
-                
+
                 let item_response = ui.interact(item_rect, item_id, Sense::click());
                 if item_response.hovered() {
                     let hover_color = get_global_color("primary").linear_multiply(0.08);
-                    ui.painter().rect_filled(item_rect, corner_radius, hover_color);
+                    ui.painter()
+                        .rect_filled(item_rect, corner_radius, hover_color);
                 }
 
                 if item_response.clicked() {
@@ -517,14 +531,22 @@ impl Widget for MaterialImageList<'_> {
                 let image_rect = item_rect.shrink(2.0);
                 let image_bg = get_global_color("surfaceVariant");
                 let image_border = Stroke::new(1.0, get_global_color("outline"));
-                
-                ui.painter().rect_filled(image_rect, corner_radius, image_bg);
-                ui.painter().rect_stroke(image_rect, corner_radius, image_border, egui::epaint::StrokeKind::Outside);
+
+                ui.painter()
+                    .rect_filled(image_rect, corner_radius, image_bg);
+                ui.painter().rect_stroke(
+                    image_rect,
+                    corner_radius,
+                    image_border,
+                    egui::epaint::StrokeKind::Outside,
+                );
 
                 // Load and cache image if not already loaded
                 if item.loaded_image.is_none() {
                     if let Some(ref image_source) = item.image_source {
-                        let loaded_image = if image_source.starts_with("http://") || image_source.starts_with("https://") {
+                        let loaded_image = if image_source.starts_with("http://")
+                            || image_source.starts_with("https://")
+                        {
                             #[cfg(feature = "ondemand")]
                             {
                                 load_image_from_url(image_source, &tmppath)
@@ -541,7 +563,7 @@ impl Widget for MaterialImageList<'_> {
                         } else {
                             load_image_from_file(image_source)
                         };
-                        
+
                         // Cache the loaded image (even if None for failed loads)
                         item.loaded_image = loaded_image;
                     }
@@ -554,7 +576,7 @@ impl Widget for MaterialImageList<'_> {
                     let texture_id = ui.ctx().load_texture(
                         texture_name,
                         color_image.clone(),
-                        Default::default()
+                        Default::default(),
                     );
                     ui.painter().image(
                         texture_id.id(),
@@ -576,7 +598,10 @@ impl Widget for MaterialImageList<'_> {
                         Stroke::new(2.0, line_color),
                     );
                     ui.painter().line_segment(
-                        [egui::pos2(image_rect.min.x, image_rect.max.y), egui::pos2(image_rect.max.x, image_rect.min.y)],
+                        [
+                            egui::pos2(image_rect.min.x, image_rect.max.y),
+                            egui::pos2(image_rect.max.x, image_rect.min.y),
+                        ],
                         Stroke::new(2.0, line_color),
                     );
                 }
@@ -592,11 +617,12 @@ impl Widget for MaterialImageList<'_> {
                     // Draw dark overlay for text protection
                     let overlay_rect = Rect::from_min_size(
                         egui::pos2(image_rect.min.x, image_rect.max.y - 40.0),
-                        Vec2::new(image_rect.width(), 40.0)
+                        Vec2::new(image_rect.width(), 40.0),
                     );
                     let overlay_color = Color32::from_rgba_unmultiplied(0, 0, 0, 128);
-                    ui.painter().rect_filled(overlay_rect, CornerRadius::ZERO, overlay_color);
-                    
+                    ui.painter()
+                        .rect_filled(overlay_rect, CornerRadius::ZERO, overlay_color);
+
                     // Draw text on overlay
                     let text_pos = egui::pos2(image_rect.min.x + 8.0, image_rect.max.y - 30.0);
                     ui.painter().text(
@@ -604,30 +630,31 @@ impl Widget for MaterialImageList<'_> {
                         egui::Align2::LEFT_TOP,
                         &item.label,
                         egui::FontId::proportional(12.0),
-                        text_color
+                        text_color,
                     );
-                    
+
                     if let Some(supporting_text) = &item.supporting_text {
-                        let support_text_pos = egui::pos2(image_rect.min.x + 8.0, image_rect.max.y - 16.0);
+                        let support_text_pos =
+                            egui::pos2(image_rect.min.x + 8.0, image_rect.max.y - 16.0);
                         ui.painter().text(
                             support_text_pos,
                             egui::Align2::LEFT_TOP,
                             supporting_text,
                             egui::FontId::proportional(10.0),
-                            get_global_color("onSurfaceVariant")
+                            get_global_color("onSurfaceVariant"),
                         );
                     }
                 } else {
                     // Draw text below image
                     let text_y = item_rect.max.y - 30.0;
                     let text_pos = egui::pos2(item_rect.min.x + 4.0, text_y);
-                    
+
                     ui.painter().text(
                         text_pos,
                         egui::Align2::LEFT_TOP,
                         &item.label,
                         egui::FontId::proportional(12.0),
-                        text_color
+                        text_color,
                     );
                     // draw image_source if avalilable
                     if let Some(image_source) = &item.image_source {
@@ -637,10 +664,10 @@ impl Widget for MaterialImageList<'_> {
                             egui::Align2::LEFT_TOP,
                             image_source,
                             egui::FontId::proportional(10.0),
-                            get_global_color("onSurfaceVariant")
+                            get_global_color("onSurfaceVariant"),
                         );
                     }
-                    
+
                     if let Some(supporting_text) = &item.supporting_text {
                         let support_text_pos = egui::pos2(item_rect.min.x + 4.0, text_y + 14.0);
                         ui.painter().text(
@@ -648,7 +675,7 @@ impl Widget for MaterialImageList<'_> {
                             egui::Align2::LEFT_TOP,
                             supporting_text,
                             egui::FontId::proportional(10.0),
-                            get_global_color("onSurfaceVariant")
+                            get_global_color("onSurfaceVariant"),
                         );
                     }
                 }

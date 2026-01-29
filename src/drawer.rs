@@ -1,15 +1,15 @@
 use crate::theme::get_global_color;
 use egui::{
-    ecolor::Color32, 
-    epaint::{Stroke, CornerRadius, Shadow},
-    Rect, Response, Sense, Ui, Vec2, Widget, Id, Area, SidePanel, Order, pos2,
+    ecolor::Color32,
+    epaint::{CornerRadius, Shadow, Stroke},
+    pos2, Area, Id, Order, Rect, Response, Sense, SidePanel, Ui, Vec2, Widget,
 };
 
 /// Material Design navigation drawer variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DrawerVariant {
     Permanent,
-    Dismissible, 
+    Dismissible,
     Modal,
 }
 
@@ -21,7 +21,7 @@ pub enum DrawerVariant {
 /// ```
 /// # egui::__run_test_ui(|ui| {
 /// let mut drawer_open = true;
-/// 
+///
 /// let drawer = MaterialDrawer::new(DrawerVariant::Permanent, &mut drawer_open)
 ///     .header("Mail", Some("email@material.io"))
 ///     .item("Inbox", Some("inbox"), true)
@@ -59,18 +59,18 @@ impl DrawerItem {
             on_click: None,
         }
     }
-    
+
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
         self.icon = Some(icon.into());
         self
     }
-    
+
     pub fn active(mut self, active: bool) -> Self {
         self.active = active;
         self
     }
-    
-    pub fn on_click<F>(mut self, callback: F) -> Self 
+
+    pub fn on_click<F>(mut self, callback: F) -> Self
     where
         F: Fn() + Send + Sync + 'static,
     {
@@ -125,7 +125,12 @@ impl<'a> MaterialDrawer<'a> {
     }
 
     /// Add a navigation item.
-    pub fn item(mut self, text: impl Into<String>, icon: Option<impl Into<String>>, active: bool) -> Self {
+    pub fn item(
+        mut self,
+        text: impl Into<String>,
+        icon: Option<impl Into<String>>,
+        active: bool,
+    ) -> Self {
         self.items.push(DrawerItem {
             text: text.into(),
             icon: icon.map(|i| i.into()),
@@ -136,7 +141,13 @@ impl<'a> MaterialDrawer<'a> {
     }
 
     /// Add a navigation item with callback.
-    pub fn item_with_callback<F>(mut self, text: impl Into<String>, icon: Option<impl Into<String>>, active: bool, callback: F) -> Self
+    pub fn item_with_callback<F>(
+        mut self,
+        text: impl Into<String>,
+        icon: Option<impl Into<String>>,
+        active: bool,
+        callback: F,
+    ) -> Self
     where
         F: Fn() + Send + Sync + 'static,
     {
@@ -164,20 +175,20 @@ impl<'a> MaterialDrawer<'a> {
     fn get_drawer_style(&self) -> (Color32, Option<Stroke>, bool) {
         let md_surface = get_global_color("surface");
         let md_outline = get_global_color("outline");
-        
+
         match self.variant {
             DrawerVariant::Permanent => {
                 // Permanent drawer: surface with border
                 (md_surface, Some(Stroke::new(1.0, md_outline)), false)
-            },
+            }
             DrawerVariant::Modal => {
                 // Modal drawer: surface with elevation
                 (md_surface, None, true)
-            },
+            }
             DrawerVariant::Dismissible => {
                 // Dismissible drawer: surface with border
                 (md_surface, Some(Stroke::new(1.0, md_outline)), false)
-            },
+            }
         }
     }
 
@@ -194,9 +205,7 @@ impl<'a> MaterialDrawer<'a> {
         SidePanel::left(self.id.with("permanent"))
             .default_width(self.width)
             .resizable(false)
-            .show(ctx, |ui| {
-                self.render_drawer_content(ui)
-            })
+            .show(ctx, |ui| self.render_drawer_content(ui))
             .response
     }
 
@@ -205,17 +214,13 @@ impl<'a> MaterialDrawer<'a> {
             SidePanel::left(self.id.with("dismissible"))
                 .default_width(self.width)
                 .resizable(false)
-                .show(ctx, |ui| {
-                    self.render_drawer_content(ui)
-                })
+                .show(ctx, |ui| self.render_drawer_content(ui))
                 .response
         } else {
             // Return empty response when closed
             Area::new(self.id.with("dismissible_dummy"))
                 .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
-                .show(ctx, |ui| {
-                    ui.allocate_response(Vec2::ZERO, Sense::hover())
-                })
+                .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
                 .response
         }
     }
@@ -233,7 +238,7 @@ impl<'a> MaterialDrawer<'a> {
                         CornerRadius::ZERO,
                         Color32::from_rgba_unmultiplied(0, 0, 0, 128), // Semi-transparent scrim
                     );
-                    
+
                     // Close drawer if scrim is clicked
                     if scrim_response.clicked() {
                         *self.open = false;
@@ -254,38 +259,52 @@ impl<'a> MaterialDrawer<'a> {
             // Return empty response when closed
             Area::new(self.id.with("modal_dummy"))
                 .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
-                .show(ctx, |ui| {
-                    ui.allocate_response(Vec2::ZERO, Sense::hover())
-                })
+                .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
                 .response
         }
     }
 
     fn render_drawer_content(self, ui: &mut Ui) -> Response {
         let (background_color, border_stroke, has_elevation) = self.get_drawer_style();
-        
+
         // Handle ESC key for dismissible and modal drawers
-        if matches!(self.variant, DrawerVariant::Dismissible | DrawerVariant::Modal) {
+        if matches!(
+            self.variant,
+            DrawerVariant::Dismissible | DrawerVariant::Modal
+        ) {
             if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
                 *self.open = false;
             }
         }
 
         // Calculate drawer dimensions
-        let header_height = if self.header_title.is_some() { 64.0 } else { 0.0 };
+        let header_height = if self.header_title.is_some() {
+            64.0
+        } else {
+            0.0
+        };
         let item_height = 48.0;
         let items_height = self.items.len() as f32 * item_height;
         let _total_height = header_height + items_height;
 
         let available_rect = ui.available_rect_before_wrap();
-        let drawer_rect = Rect::from_min_size(available_rect.min, Vec2::new(self.width, available_rect.height()));
+        let drawer_rect = Rect::from_min_size(
+            available_rect.min,
+            Vec2::new(self.width, available_rect.height()),
+        );
 
         // Draw drawer background
-        ui.painter().rect_filled(drawer_rect, self.corner_radius, background_color);
-        
+        ui.painter()
+            .rect_filled(drawer_rect, self.corner_radius, background_color);
+
         // Draw border if present
         if let Some(stroke) = border_stroke {
-            ui.painter().rect_stroke(drawer_rect, self.corner_radius, stroke, egui::epaint::StrokeKind::Outside);
+            ui.painter().rect_stroke(
+                drawer_rect,
+                self.corner_radius,
+                stroke,
+                egui::epaint::StrokeKind::Outside,
+            );
         }
 
         // Draw elevation shadow if needed (simplified approach for egui)
@@ -293,11 +312,12 @@ impl<'a> MaterialDrawer<'a> {
             // Draw a simple drop shadow by drawing darker rectangles behind
             let shadow_offset = Vec2::new(0.0, 4.0);
             let shadow_color = Color32::from_rgba_unmultiplied(0, 0, 0, 20);
-            
+
             // Draw multiple shadow layers for better effect
             for i in 1..=3 {
                 let shadow_rect = drawer_rect.translate(shadow_offset * i as f32 * 0.5);
-                ui.painter().rect_filled(shadow_rect, self.corner_radius, shadow_color);
+                ui.painter()
+                    .rect_filled(shadow_rect, self.corner_radius, shadow_color);
             }
         }
 
@@ -307,37 +327,32 @@ impl<'a> MaterialDrawer<'a> {
         if let Some(title) = &self.header_title {
             let header_rect = Rect::from_min_size(
                 egui::pos2(drawer_rect.min.x, current_y),
-                Vec2::new(self.width, header_height)
+                Vec2::new(self.width, header_height),
             );
 
             // Header background (slightly different color)
             let header_color = background_color.linear_multiply(0.95);
-            ui.painter().rect_filled(header_rect, CornerRadius::ZERO, header_color);
+            ui.painter()
+                .rect_filled(header_rect, CornerRadius::ZERO, header_color);
 
             // Header text
-            let title_pos = egui::pos2(
-                header_rect.min.x + 16.0,
-                header_rect.min.y + 16.0
-            );
+            let title_pos = egui::pos2(header_rect.min.x + 16.0, header_rect.min.y + 16.0);
             ui.painter().text(
                 title_pos,
                 egui::Align2::LEFT_TOP,
                 title,
                 egui::TextStyle::Heading.resolve(ui.style()),
-                get_global_color("onSurface")
+                get_global_color("onSurface"),
             );
 
             if let Some(subtitle) = &self.header_subtitle {
-                let subtitle_pos = egui::pos2(
-                    header_rect.min.x + 16.0,
-                    header_rect.min.y + 36.0
-                );
+                let subtitle_pos = egui::pos2(header_rect.min.x + 16.0, header_rect.min.y + 36.0);
                 ui.painter().text(
                     subtitle_pos,
                     egui::Align2::LEFT_TOP,
                     subtitle,
                     egui::TextStyle::Body.resolve(ui.style()),
-                    get_global_color("onSurfaceVariant")
+                    get_global_color("onSurfaceVariant"),
                 );
             }
 
@@ -350,7 +365,7 @@ impl<'a> MaterialDrawer<'a> {
         for (index, item) in self.items.iter().enumerate() {
             let item_rect = Rect::from_min_size(
                 egui::pos2(drawer_rect.min.x, current_y),
-                Vec2::new(self.width, item_height)
+                Vec2::new(self.width, item_height),
             );
 
             // Create unique ID for each item
@@ -360,10 +375,12 @@ impl<'a> MaterialDrawer<'a> {
             // Draw item background for active state or hover
             if item.active {
                 let active_color = get_global_color("primary").linear_multiply(0.12);
-                ui.painter().rect_filled(item_rect, CornerRadius::ZERO, active_color);
+                ui.painter()
+                    .rect_filled(item_rect, CornerRadius::ZERO, active_color);
             } else if item_response.hovered() {
                 let hover_color = get_global_color("onSurface").linear_multiply(0.08);
-                ui.painter().rect_filled(item_rect, CornerRadius::ZERO, hover_color);
+                ui.painter()
+                    .rect_filled(item_rect, CornerRadius::ZERO, hover_color);
             }
 
             let mut current_x = item_rect.min.x + 16.0;
@@ -377,7 +394,7 @@ impl<'a> MaterialDrawer<'a> {
                 } else {
                     get_global_color("onSurfaceVariant")
                 };
-                
+
                 ui.painter().circle_filled(icon_center, 10.0, icon_color);
                 current_x += 40.0; // Icon width + spacing
             }
@@ -389,13 +406,16 @@ impl<'a> MaterialDrawer<'a> {
                 get_global_color("onSurface")
             };
 
-            let text_pos = egui::pos2(current_x, current_y + (item_height - ui.text_style_height(&egui::TextStyle::Body)) / 2.0);
+            let text_pos = egui::pos2(
+                current_x,
+                current_y + (item_height - ui.text_style_height(&egui::TextStyle::Body)) / 2.0,
+            );
             ui.painter().text(
                 text_pos,
                 egui::Align2::LEFT_TOP,
                 &item.text,
                 egui::TextStyle::Body.resolve(ui.style()),
-                text_color
+                text_color,
             );
 
             // Handle item click

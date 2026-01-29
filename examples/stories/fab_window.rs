@@ -1,7 +1,10 @@
 #![doc(hidden)]
 
+use crate::{
+    fab_branded, fab_primary, fab_secondary, fab_surface, fab_tertiary, google_branded_icon,
+    FabSize,
+};
 use eframe::egui::{self, Window};
-use crate::{fab_surface, fab_primary, fab_secondary, fab_tertiary, fab_branded, FabSize, google_branded_icon};
 
 #[doc(hidden)]
 pub struct FabWindow {
@@ -47,19 +50,19 @@ impl FabWindow {
                 let _ = webbrowser::open("https://material-web.dev/components/fab/stories/");
             }
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Icon:");
             ui.text_edit_singleline(&mut self.icon);
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Label:");
             ui.text_edit_singleline(&mut self.label);
         });
-        
+
         ui.checkbox(&mut self.lowered, "Lowered");
-        
+
         ui.horizontal(|ui| {
             ui.label("Size:");
             egui::ComboBox::from_label("")
@@ -78,99 +81,107 @@ impl FabWindow {
         ui.horizontal_wrapped(|ui| {
             ui.vertical(|ui| {
                 ui.label("Surface");
-                let icon = if self.icon.is_empty() { "add" } else { &self.icon };
-                let mut fab = fab_surface()
-                    .icon(icon)
-                    .size(self.size);
-                
+                let icon = if self.icon.is_empty() {
+                    "add"
+                } else {
+                    &self.icon
+                };
+                let mut fab = fab_surface().icon(icon).size(self.size);
+
                 if !self.label.is_empty() {
                     fab = fab.text(&self.label);
                 }
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Surface FAB clicked!")));
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Primary");
-                let icon = if self.icon.is_empty() { "add" } else { &self.icon };
-                let mut fab = fab_primary()
-                    .icon(icon)
-                    .size(self.size);
-                
+                let icon = if self.icon.is_empty() {
+                    "add"
+                } else {
+                    &self.icon
+                };
+                let mut fab = fab_primary().icon(icon).size(self.size);
+
                 if !self.label.is_empty() {
                     fab = fab.text(&self.label);
                 }
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Primary FAB clicked!")));
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Secondary");
-                let icon = if self.icon.is_empty() { "add" } else { &self.icon };
-                let mut fab = fab_secondary()
-                    .icon(icon)
-                    .size(self.size);
-                
+                let icon = if self.icon.is_empty() {
+                    "add"
+                } else {
+                    &self.icon
+                };
+                let mut fab = fab_secondary().icon(icon).size(self.size);
+
                 if !self.label.is_empty() {
                     fab = fab.text(&self.label);
                 }
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Secondary FAB clicked!")));
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Tertiary");
-                let icon = if self.icon.is_empty() { "add" } else { &self.icon };
-                let mut fab = fab_tertiary()
-                    .icon(icon)
-                    .size(self.size);
-                
+                let icon = if self.icon.is_empty() {
+                    "add"
+                } else {
+                    &self.icon
+                };
+                let mut fab = fab_tertiary().icon(icon).size(self.size);
+
                 if !self.label.is_empty() {
                     fab = fab.text(&self.label);
                 }
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Tertiary FAB clicked!")));
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Branded");
                 let mut fab = fab_branded()
                     .svg_icon(google_branded_icon())
                     .size(self.size);
-                
+
                 if !self.label.is_empty() {
                     fab = fab.text(&self.label);
                 }
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Branded FAB clicked!")));
             });
         });
-        
+
         ui.add_space(20.0);
-        
+
         // Extended FABs with different configurations
         ui.heading("Extended FABs");
-        
+
         ui.horizontal_wrapped(|ui| {
             ui.vertical(|ui| {
                 ui.label("Small Extended");
@@ -178,39 +189,39 @@ impl FabWindow {
                     .icon("create")
                     .text("Create")
                     .size(FabSize::Small);
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Small Extended FAB clicked!")));
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Medium Extended");
                 let mut fab = fab_primary()
                     .icon("edit")
                     .text("Edit Document")
                     .size(FabSize::Regular);
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Medium Extended FAB clicked!")));
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Large Extended");
                 let mut fab = fab_primary()
                     .icon("save")
                     .text("Save Changes")
                     .size(FabSize::Large);
-                
+
                 if self.lowered {
                     fab = fab.lowered(true);
                 }
-                
+
                 ui.add(fab.on_click(|| println!("Large Extended FAB clicked!")));
             });
         });

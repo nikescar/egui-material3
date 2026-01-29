@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Ui, Window, Id};
-use crate::{MaterialButton, MaterialCheckbox, data_table};
-use crate::datatable::{SortDirection as DataTableSortDirection, RowAction};
+use crate::datatable::{RowAction, SortDirection as DataTableSortDirection};
+use crate::{data_table, MaterialButton, MaterialCheckbox};
+use eframe::egui::{self, Id, Ui, Window};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -27,7 +27,6 @@ enum SortDirection {
     Ascending,
     Descending,
 }
-
 
 #[doc(hidden)]
 pub struct DataTableWindow {
@@ -89,7 +88,7 @@ impl Default for DataTableWindow {
             },
         ];
         let interactive_selection = vec![false; interactive_rows.len()];
-        
+
         Self {
             open: false,
             allow_selection: true,
@@ -110,7 +109,7 @@ impl DataTableWindow {
     pub fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         let mut should_close = false;
-        
+
         Window::new("Data Table Stories")
             .open(&mut open)
             .default_size([1000.0, 700.0])
@@ -119,14 +118,14 @@ impl DataTableWindow {
                 if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
                     should_close = true;
                 }
-                
+
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     self.render_data_table_examples(ui);
                 });
             });
-        
+
         if should_close {
             open = false;
         }
@@ -145,13 +144,22 @@ impl DataTableWindow {
 
             ui.horizontal(|ui| {
                 ui.push_id("allow_selection_control", |ui| {
-                    ui.add(MaterialCheckbox::new(&mut self.allow_selection, "Allow Selection"));
+                    ui.add(MaterialCheckbox::new(
+                        &mut self.allow_selection,
+                        "Allow Selection",
+                    ));
                 });
                 ui.push_id("sticky_header_control", |ui| {
-                    ui.add(MaterialCheckbox::new(&mut self.sticky_header, "Sticky Header"));
+                    ui.add(MaterialCheckbox::new(
+                        &mut self.sticky_header,
+                        "Sticky Header",
+                    ));
                 });
                 ui.push_id("show_progress_control", |ui| {
-                    ui.add(MaterialCheckbox::new(&mut self.show_progress, "Show Progress"));
+                    ui.add(MaterialCheckbox::new(
+                        &mut self.show_progress,
+                        "Show Progress",
+                    ));
                 });
             });
         });

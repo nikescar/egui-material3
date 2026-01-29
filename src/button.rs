@@ -1,11 +1,11 @@
-use egui::{
-    emath::NumExt, 
-    ecolor::Color32, 
-    epaint::{Stroke, Shadow, CornerRadius},
-    Align, Image, Rect, Response, Sense, TextStyle,
-    TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetText, WidgetType,
-};
 use crate::get_global_color;
+use egui::{
+    ecolor::Color32,
+    emath::NumExt,
+    epaint::{CornerRadius, Shadow, Stroke},
+    Align, Image, Rect, Response, Sense, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo,
+    WidgetText, WidgetType,
+};
 
 /// Material Design button with support for different variants.
 ///
@@ -16,7 +16,7 @@ use crate::get_global_color;
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
 /// # fn do_stuff() {}
-/// 
+///
 /// // Material Design filled button (default, high emphasis)
 /// if ui.add(MaterialButton::filled("Click me")).clicked() {
 ///     do_stuff();
@@ -31,17 +31,17 @@ use crate::get_global_color;
 /// if ui.add(MaterialButton::text("Text")).clicked() {
 ///     do_stuff();
 /// }
-/// 
+///
 /// // Material Design elevated button (medium emphasis with shadow)
 /// if ui.add(MaterialButton::elevated("Elevated")).clicked() {
 ///     do_stuff();
 /// }
-/// 
+///
 /// // Material Design filled tonal button (medium emphasis, toned down)
 /// if ui.add(MaterialButton::filled_tonal("Tonal")).clicked() {
 ///     do_stuff();
 /// }
-/// 
+///
 /// // Button with custom properties
 /// if ui.add(
 ///     MaterialButton::filled("Custom")
@@ -87,7 +87,7 @@ pub struct MaterialButton<'a> {
     shortcut_text: WidgetText,
     /// Text wrapping behavior for long button text
     wrap_mode: Option<TextWrapMode>,
-    
+
     /// Button variant (filled, outlined, text, elevated, filled tonal)
     variant: MaterialButtonVariant,
     /// Custom background fill color (None uses variant default)
@@ -121,10 +121,10 @@ pub struct MaterialButton<'a> {
 
 impl<'a> MaterialButton<'a> {
     /// Create a filled Material Design button with high emphasis
-    /// 
+    ///
     /// Filled buttons have the most visual impact and should be used for
     /// the primary action in a set of buttons.
-    /// 
+    ///
     /// ## Material Design Spec
     /// - Background: Primary color
     /// - Text: On-primary color  
@@ -133,12 +133,12 @@ impl<'a> MaterialButton<'a> {
     pub fn filled(text: impl Into<WidgetText>) -> Self {
         Self::new_with_variant(MaterialButtonVariant::Filled, text)
     }
-    
+
     /// Create an outlined Material Design button with medium emphasis
-    /// 
+    ///
     /// Outlined buttons are medium-emphasis buttons. They contain actions
     /// that are important but aren't the primary action in an app.
-    /// 
+    ///
     /// ## Material Design Spec  
     /// - Background: Transparent
     /// - Text: Primary color
@@ -147,12 +147,12 @@ impl<'a> MaterialButton<'a> {
     pub fn outlined(text: impl Into<WidgetText>) -> Self {
         Self::new_with_variant(MaterialButtonVariant::Outlined, text)
     }
-    
+
     /// Create a text Material Design button with low emphasis
-    /// 
+    ///
     /// Text buttons are used for the least important actions in a UI.
     /// They're often used for secondary actions.
-    /// 
+    ///
     /// ## Material Design Spec
     /// - Background: Transparent  
     /// - Text: Primary color
@@ -161,32 +161,31 @@ impl<'a> MaterialButton<'a> {
     pub fn text(text: impl Into<WidgetText>) -> Self {
         Self::new_with_variant(MaterialButtonVariant::Text, text)
     }
-    
+
     /// Create an elevated Material Design button with medium emphasis
-    /// 
+    ///
     /// Elevated buttons are essentially filled buttons with a shadow.
     /// Use them to add separation between button and background.
-    /// 
+    ///
     /// ## Material Design Spec
     /// - Background: Surface color
     /// - Text: Primary color
     /// - Elevation: 1dp shadow
     /// - Corner radius: 20dp  
     pub fn elevated(text: impl Into<WidgetText>) -> Self {
-        Self::new_with_variant(MaterialButtonVariant::Elevated, text)
-            .elevation(Shadow {
-                offset: [0, 2],
-                blur: 6,
-                spread: 0,
-                color: Color32::from_rgba_unmultiplied(0, 0, 0, 30),
-            })
+        Self::new_with_variant(MaterialButtonVariant::Elevated, text).elevation(Shadow {
+            offset: [0, 2],
+            blur: 6,
+            spread: 0,
+            color: Color32::from_rgba_unmultiplied(0, 0, 0, 30),
+        })
     }
-    
+
     /// Create a filled tonal Material Design button with medium emphasis
-    /// 
+    ///
     /// Filled tonal buttons are used to convey a secondary action that is
     /// still important, but not the primary action.
-    /// 
+    ///
     /// ## Material Design Spec
     /// - Background: Secondary container color
     /// - Text: On-secondary-container color
@@ -195,12 +194,12 @@ impl<'a> MaterialButton<'a> {
     pub fn filled_tonal(text: impl Into<WidgetText>) -> Self {
         Self::new_with_variant(MaterialButtonVariant::FilledTonal, text)
     }
-    
+
     /// Internal constructor that creates a button with the specified variant and text
     fn new_with_variant(variant: MaterialButtonVariant, text: impl Into<WidgetText>) -> Self {
         Self::opt_image_and_text_with_variant(variant, None, Some(text.into()))
     }
-    
+
     pub fn new(text: impl Into<WidgetText>) -> Self {
         Self::filled(text)
     }
@@ -218,25 +217,29 @@ impl<'a> MaterialButton<'a> {
     }
 
     /// Creates a button with an image. The size of the image as displayed is defined by the provided size.
-    /// 
+    ///
     /// Use this when you need both or either an image and text, or when text might be None.
-    /// 
+    ///
     /// ## Parameters
     /// - `image`: Optional icon/image to display
     /// - `text`: Optional text content
     pub fn opt_image_and_text(image: Option<Image<'a>>, text: Option<WidgetText>) -> Self {
         Self::opt_image_and_text_with_variant(MaterialButtonVariant::Filled, image, text)
     }
-    
+
     /// Create a Material Design button with specific variant and optional image and text
-    /// 
+    ///
     /// This is the most flexible constructor allowing full control over button content.
-    /// 
+    ///
     /// ## Parameters
     /// - `variant`: The Material Design button variant to use
     /// - `image`: Optional icon/image to display  
     /// - `text`: Optional text content
-    pub fn opt_image_and_text_with_variant(variant: MaterialButtonVariant, image: Option<Image<'a>>, text: Option<WidgetText>) -> Self {
+    pub fn opt_image_and_text_with_variant(
+        variant: MaterialButtonVariant,
+        image: Option<Image<'a>>,
+        text: Option<WidgetText>,
+    ) -> Self {
         Self {
             variant,
             text,
@@ -435,38 +438,38 @@ impl Widget for MaterialButton<'_> {
         let _md_on_surface = get_global_color("onSurface"); // Prefix with _ to silence warning
         let md_outline = get_global_color("outline");
         let md_surface_variant = get_global_color("surfaceVariant");
-        
+
         // Material Design button defaults based on variant
         let (default_fill, default_stroke, default_corner_radius, _has_elevation) = match variant {
             MaterialButtonVariant::Filled => (
                 Some(md_primary),
                 Some(Stroke::NONE),
                 CornerRadius::from(20),
-                false
+                false,
             ),
             MaterialButtonVariant::Outlined => (
                 Some(Color32::TRANSPARENT),
                 Some(Stroke::new(1.0, md_outline)),
                 CornerRadius::from(20),
-                false
+                false,
             ),
             MaterialButtonVariant::Text => (
                 Some(Color32::TRANSPARENT),
                 Some(Stroke::NONE),
                 CornerRadius::from(20),
-                false
+                false,
             ),
             MaterialButtonVariant::Elevated => (
                 Some(md_surface),
                 Some(Stroke::NONE),
                 CornerRadius::from(20),
-                true
+                true,
             ),
             MaterialButtonVariant::FilledTonal => (
                 Some(md_surface_variant),
                 Some(Stroke::NONE),
                 CornerRadius::from(20),
-                false
+                false,
             ),
         };
 
@@ -484,7 +487,7 @@ impl Widget for MaterialButton<'_> {
         } else {
             Vec2::ZERO
         };
-        
+
         // Material Design minimum button height
         let min_button_height = if small { 32.0 } else { 40.0 };
 
@@ -584,7 +587,7 @@ impl Widget for MaterialButton<'_> {
             let frame_cr = corner_radius.unwrap_or(default_corner_radius);
             let mut frame_fill = fill.unwrap_or(default_fill.unwrap_or(frame_fill));
             let mut frame_stroke = stroke.unwrap_or(default_stroke.unwrap_or(frame_stroke));
-            
+
             // Apply disabled styling - Material Design spec
             if disabled {
                 // Disabled buttons have 12% opacity on surface color
@@ -592,20 +595,21 @@ impl Widget for MaterialButton<'_> {
                 let _disabled_overlay = get_global_color("onSurface").gamma_multiply(0.12);
                 frame_fill = surface_color; // Use surface as base
                 frame_stroke.color = get_global_color("onSurface").gamma_multiply(0.12);
-                frame_stroke.width = if matches!(variant, MaterialButtonVariant::Outlined) { 1.0 } else { 0.0 };
+                frame_stroke.width = if matches!(variant, MaterialButtonVariant::Outlined) {
+                    1.0
+                } else {
+                    0.0
+                };
             }
-            
+
             // Draw elevation shadow if present
             if let Some(shadow) = elevation {
                 let shadow_offset = Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32);
                 let shadow_rect = rect.expand2(frame_expansion).translate(shadow_offset);
-                ui.painter().rect_filled(
-                    shadow_rect,
-                    frame_cr,
-                    shadow.color,
-                );
+                ui.painter()
+                    .rect_filled(shadow_rect, frame_cr, shadow.color);
             }
-            
+
             ui.painter().rect(
                 rect.expand2(frame_expansion),
                 frame_cr,
@@ -645,7 +649,7 @@ impl Widget for MaterialButton<'_> {
                 if image.is_some() || shortcut_galley.is_some() {
                     text_pos.x = cursor_x;
                 }
-                
+
                 // Material Design text colors based on button variant
                 let text_color = if disabled {
                     // Disabled text has 38% opacity of onSurface
@@ -656,10 +660,12 @@ impl Widget for MaterialButton<'_> {
                         MaterialButtonVariant::Outlined => md_primary,
                         MaterialButtonVariant::Text => md_primary,
                         MaterialButtonVariant::Elevated => md_primary,
-                        MaterialButtonVariant::FilledTonal => get_global_color("onSecondaryContainer"),
+                        MaterialButtonVariant::FilledTonal => {
+                            get_global_color("onSecondaryContainer")
+                        }
                     }
                 };
-                
+
                 ui.painter().galley(text_pos, galley, text_color);
             }
 

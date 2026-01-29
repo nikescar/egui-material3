@@ -1,7 +1,10 @@
 #![doc(hidden)]
 
+use crate::{
+    icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
+    icon_button_toggle, MaterialCheckbox,
+};
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialCheckbox, icon_button_standard, icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_toggle};
 
 #[doc(hidden)]
 pub struct IconButtonWindow {
@@ -59,7 +62,10 @@ impl IconButtonWindow {
         ui.horizontal(|ui| {
             ui.add(MaterialCheckbox::new(&mut self.enabled, "Enabled"));
             ui.separator();
-            ui.add(MaterialCheckbox::new(&mut self.container, "Container Button (Rectangular)"));
+            ui.add(MaterialCheckbox::new(
+                &mut self.container,
+                "Container Button (Rectangular)",
+            ));
         });
 
         ui.horizontal(|ui| {
@@ -76,149 +82,245 @@ impl IconButtonWindow {
 
     fn render_icon_button_examples(&mut self, ui: &mut Ui) {
         ui.heading("Icon Button Variants");
-        
-        ui.label(format!("Standard Icon Buttons {} (using '{}')", if self.container { "(Container)" } else { "(Circular)" }, self.selected_icon));
+
+        ui.label(format!(
+            "Standard Icon Buttons {} (using '{}')",
+            if self.container {
+                "(Container)"
+            } else {
+                "(Circular)"
+            },
+            self.selected_icon
+        ));
         ui.horizontal(|ui| {
-            if ui.add(icon_button_standard(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+            if ui
+                .add(
+                    icon_button_standard(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Standard '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_standard(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_standard(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Standard '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_standard(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_standard(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Standard '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_standard(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_standard(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Standard '{}' button clicked!", self.selected_icon);
             }
         });
 
         ui.add_space(15.0);
-        
-        ui.label(format!("Filled Icon Buttons {} (using '{}')", if self.container { "(Container)" } else { "(Circular)" }, self.selected_icon));
+
+        ui.label(format!(
+            "Filled Icon Buttons {} (using '{}')",
+            if self.container {
+                "(Container)"
+            } else {
+                "(Circular)"
+            },
+            self.selected_icon
+        ));
         ui.horizontal(|ui| {
-            if ui.add(icon_button_filled(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+            if ui
+                .add(
+                    icon_button_filled(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled '{}' button clicked!", self.selected_icon);
             }
         });
 
         ui.add_space(15.0);
-        
-        ui.label(format!("Filled Tonal Icon Buttons {} (using '{}')", if self.container { "(Container)" } else { "(Circular)" }, self.selected_icon));
+
+        ui.label(format!(
+            "Filled Tonal Icon Buttons {} (using '{}')",
+            if self.container {
+                "(Container)"
+            } else {
+                "(Circular)"
+            },
+            self.selected_icon
+        ));
         ui.horizontal(|ui| {
-            if ui.add(icon_button_filled_tonal(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+            if ui
+                .add(
+                    icon_button_filled_tonal(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled tonal '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled_tonal(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled_tonal(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled tonal '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled_tonal(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled_tonal(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled tonal '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled_tonal(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled_tonal(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Filled tonal '{}' button clicked!", self.selected_icon);
             }
         });
 
         ui.add_space(15.0);
-        
-        ui.label(format!("Outlined Icon Buttons {} (using '{}')", if self.container { "(Container)" } else { "(Circular)" }, self.selected_icon));
+
+        ui.label(format!(
+            "Outlined Icon Buttons {} (using '{}')",
+            if self.container {
+                "(Container)"
+            } else {
+                "(Circular)"
+            },
+            self.selected_icon
+        ));
         ui.horizontal(|ui| {
-            if ui.add(icon_button_outlined(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+            if ui
+                .add(
+                    icon_button_outlined(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Outlined '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_outlined(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_outlined(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Outlined '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_outlined(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_outlined(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Outlined '{}' button clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_outlined(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_outlined(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Outlined '{}' button clicked!", self.selected_icon);
             }
         });
@@ -226,42 +328,65 @@ impl IconButtonWindow {
         ui.add_space(20.0);
 
         ui.heading("Toggle Icon Buttons");
-        
-        ui.label(format!("Toggle buttons maintain selected/unselected state (using '{}'):", self.selected_icon));
+
+        ui.label(format!(
+            "Toggle buttons maintain selected/unselected state (using '{}'):",
+            self.selected_icon
+        ));
         ui.horizontal(|ui| {
-            ui.add(icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_1)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
+            ui.add(
+                icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_1)
+                    .size(self.size)
+                    .enabled(self.enabled)
+                    .container(self.container),
             );
-            ui.label(if self.icon_toggle_1 { "✓ Selected" } else { "○ Unselected" });
-            
+            ui.label(if self.icon_toggle_1 {
+                "✓ Selected"
+            } else {
+                "○ Unselected"
+            });
+
             ui.separator();
-            
-            ui.add(icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_2)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
+
+            ui.add(
+                icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_2)
+                    .size(self.size)
+                    .enabled(self.enabled)
+                    .container(self.container),
             );
-            ui.label(if self.icon_toggle_2 { "✓ Selected" } else { "○ Unselected" });
+            ui.label(if self.icon_toggle_2 {
+                "✓ Selected"
+            } else {
+                "○ Unselected"
+            });
         });
 
         ui.horizontal(|ui| {
-            ui.add(icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_3)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
+            ui.add(
+                icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_3)
+                    .size(self.size)
+                    .enabled(self.enabled)
+                    .container(self.container),
             );
-            ui.label(if self.icon_toggle_3 { "✓ Selected" } else { "○ Unselected" });
-            
+            ui.label(if self.icon_toggle_3 {
+                "✓ Selected"
+            } else {
+                "○ Unselected"
+            });
+
             ui.separator();
-            
-            ui.add(icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_4)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
+
+            ui.add(
+                icon_button_toggle(&self.selected_icon, &mut self.icon_toggle_4)
+                    .size(self.size)
+                    .enabled(self.enabled)
+                    .container(self.container),
             );
-            ui.label(if self.icon_toggle_4 { "✓ Selected" } else { "○ Unselected" });
+            ui.label(if self.icon_toggle_4 {
+                "✓ Selected"
+            } else {
+                "○ Unselected"
+            });
         });
 
         ui.add_space(20.0);
@@ -269,35 +394,51 @@ impl IconButtonWindow {
         ui.heading("Custom Icon Demo");
         ui.label("Use your custom icon:");
         ui.horizontal(|ui| {
-            if ui.add(icon_button_standard(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+            if ui
+                .add(
+                    icon_button_standard(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Custom icon '{}' clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Custom filled icon '{}' clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_filled_tonal(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_filled_tonal(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Custom filled tonal icon '{}' clicked!", self.selected_icon);
             }
-            
-            if ui.add(icon_button_outlined(&self.selected_icon)
-                .size(self.size)
-                .enabled(self.enabled)
-                .container(self.container)
-            ).clicked() {
+
+            if ui
+                .add(
+                    icon_button_outlined(&self.selected_icon)
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
                 println!("Custom outlined icon '{}' clicked!", self.selected_icon);
             }
         });
@@ -305,21 +446,28 @@ impl IconButtonWindow {
         ui.add_space(20.0);
 
         ui.heading("Sizes Demo");
-        ui.label(format!("Different sizes using '{}' (24px, 32px, 40px, 48px, 56px):", self.selected_icon));
+        ui.label(format!(
+            "Different sizes using '{}' (24px, 32px, 40px, 48px, 56px):",
+            self.selected_icon
+        ));
         ui.horizontal(|ui| {
             for size in [24.0, 32.0, 40.0, 48.0, 56.0] {
-                if ui.add(icon_button_filled(&self.selected_icon)
-                    .size(size)
-                    .enabled(self.enabled)
-                    .container(self.container)
-                ).clicked() {
+                if ui
+                    .add(
+                        icon_button_filled(&self.selected_icon)
+                            .size(size)
+                            .enabled(self.enabled)
+                            .container(self.container),
+                    )
+                    .clicked()
+                {
                     println!("Size {}px '{}' button clicked!", size, self.selected_icon);
                 }
             }
         });
 
         ui.add_space(20.0);
-        
+
         ui.heading("Usage Guidelines");
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
@@ -329,7 +477,7 @@ impl IconButtonWindow {
                 ui.label("• Filled Tonal: Medium emphasis, tinted background");
                 ui.label("• Outlined: Medium emphasis, with border");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Container Styles:");
                 ui.label("• Circular: Full rounded (traditional)");
@@ -337,7 +485,7 @@ impl IconButtonWindow {
                 ui.label("• Toggle to switch between styles");
                 ui.label("• Container provides different visual weight");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Best Practices:");
                 ui.label("• Use Material Icons for consistency");

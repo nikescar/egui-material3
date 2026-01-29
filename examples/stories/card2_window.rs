@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
+use crate::{elevated_card2, filled_card2, outlined_card2, MaterialButton, MaterialCheckbox};
 use eframe::egui::{self, Ui, Window};
-use crate::{MaterialButton, MaterialCheckbox, elevated_card2, filled_card2, outlined_card2};
 
 #[doc(hidden)]
 pub struct Card2Window {
@@ -70,13 +70,25 @@ impl Card2Window {
 
         ui.horizontal(|ui| {
             ui.add(MaterialCheckbox::new(&mut self.show_header, "Show Header"));
-            ui.add(MaterialCheckbox::new(&mut self.show_subtitle, "Show Subtitle"));
-            ui.add(MaterialCheckbox::new(&mut self.show_media, "Show Media Area"));
+            ui.add(MaterialCheckbox::new(
+                &mut self.show_subtitle,
+                "Show Subtitle",
+            ));
+            ui.add(MaterialCheckbox::new(
+                &mut self.show_media,
+                "Show Media Area",
+            ));
         });
 
         ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.show_actions, "Show Actions"));
-            ui.add(MaterialCheckbox::new(&mut self.clickable_cards, "Clickable Cards"));
+            ui.add(MaterialCheckbox::new(
+                &mut self.show_actions,
+                "Show Actions",
+            ));
+            ui.add(MaterialCheckbox::new(
+                &mut self.clickable_cards,
+                "Clickable Cards",
+            ));
         });
 
         if self.show_media {
@@ -89,20 +101,24 @@ impl Card2Window {
 
     fn render_card2_examples(&mut self, ui: &mut Ui) {
         ui.heading("Enhanced Card Variants");
-        
+
         ui.horizontal_wrapped(|ui| {
             // Elevated Card
             let mut elevated_card = elevated_card2()
                 .clickable(self.clickable_cards)
                 .media_height(self.media_height);
-                
+
             if self.show_header {
                 elevated_card = elevated_card.header(
-                    &self.card_title, 
-                    if self.show_subtitle { Some(&self.card_subtitle) } else { None }
+                    &self.card_title,
+                    if self.show_subtitle {
+                        Some(&self.card_subtitle)
+                    } else {
+                        None
+                    },
                 );
             }
-            
+
             if self.show_media {
                 elevated_card = elevated_card.media_area(|ui| {
                     ui.centered_and_justified(|ui| {
@@ -111,13 +127,13 @@ impl Card2Window {
                     });
                 });
             }
-            
+
             elevated_card = elevated_card.content(|ui| {
                 ui.label("This is an elevated card with enhanced features.");
                 ui.add_space(5.0);
                 ui.label("It supports headers, media areas, content, and actions.");
             });
-            
+
             if self.show_actions {
                 elevated_card = elevated_card.actions(|ui| {
                     if ui.add(MaterialButton::text("Share")).clicked() {
@@ -128,21 +144,25 @@ impl Card2Window {
                     }
                 });
             }
-            
+
             ui.add(elevated_card);
-            
+
             // Filled Card
             let mut filled_card = filled_card2()
                 .clickable(self.clickable_cards)
                 .media_height(self.media_height);
-                
+
             if self.show_header {
                 filled_card = filled_card.header(
-                    "Filled Card", 
-                    if self.show_subtitle { Some("Filled variant") } else { None }
+                    "Filled Card",
+                    if self.show_subtitle {
+                        Some("Filled variant")
+                    } else {
+                        None
+                    },
                 );
             }
-            
+
             if self.show_media {
                 filled_card = filled_card.media_area(|ui| {
                     ui.centered_and_justified(|ui| {
@@ -151,13 +171,13 @@ impl Card2Window {
                     });
                 });
             }
-            
+
             filled_card = filled_card.content(|ui| {
                 ui.label("This is a filled card variant.");
                 ui.add_space(5.0);
                 ui.label("It has a filled background color.");
             });
-            
+
             if self.show_actions {
                 filled_card = filled_card.actions(|ui| {
                     if ui.add(MaterialButton::text("Action")).clicked() {
@@ -165,21 +185,25 @@ impl Card2Window {
                     }
                 });
             }
-            
+
             ui.add(filled_card);
-            
+
             // Outlined Card
             let mut outlined_card = outlined_card2()
                 .clickable(self.clickable_cards)
                 .media_height(self.media_height);
-                
+
             if self.show_header {
                 outlined_card = outlined_card.header(
-                    "Outlined Card", 
-                    if self.show_subtitle { Some("Outlined variant") } else { None }
+                    "Outlined Card",
+                    if self.show_subtitle {
+                        Some("Outlined variant")
+                    } else {
+                        None
+                    },
                 );
             }
-            
+
             if self.show_media {
                 outlined_card = outlined_card.media_area(|ui| {
                     ui.centered_and_justified(|ui| {
@@ -188,13 +212,13 @@ impl Card2Window {
                     });
                 });
             }
-            
+
             outlined_card = outlined_card.content(|ui| {
                 ui.label("This is an outlined card variant.");
                 ui.add_space(5.0);
                 ui.label("It has a visible border outline.");
             });
-            
+
             if self.show_actions {
                 outlined_card = outlined_card.actions(|ui| {
                     if ui.add(MaterialButton::text("View")).clicked() {
@@ -205,98 +229,104 @@ impl Card2Window {
                     }
                 });
             }
-            
+
             ui.add(outlined_card);
         });
 
         ui.add_space(30.0);
-        
+
         ui.heading("Specialized Card Examples");
-        
+
         ui.horizontal_wrapped(|ui| {
             // Product Card
-            ui.add(elevated_card2()
-                .header("Premium Product", Some("Limited Edition"))
-                .media_area(|ui| {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("🛍️ Product Image");
-                        ui.label("High quality product photo");
-                    });
-                })
-                .content(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Price:");
-                        ui.label("$299.99");
-                    });
-                    ui.label("Premium quality product with excellent features.");
-                    ui.label("★★★★★ 4.8/5 stars");
-                })
-                .actions(|ui| {
-                    if ui.add(MaterialButton::text("Buy Now")).clicked() {
-                        println!("Product card: Buy Now clicked!");
-                    }
-                    if ui.add(MaterialButton::text("Add to Cart")).clicked() {
-                        println!("Product card: Add to Cart clicked!");
-                    }
-                }));
-                
+            ui.add(
+                elevated_card2()
+                    .header("Premium Product", Some("Limited Edition"))
+                    .media_area(|ui| {
+                        ui.centered_and_justified(|ui| {
+                            ui.label("🛍️ Product Image");
+                            ui.label("High quality product photo");
+                        });
+                    })
+                    .content(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Price:");
+                            ui.label("$299.99");
+                        });
+                        ui.label("Premium quality product with excellent features.");
+                        ui.label("★★★★★ 4.8/5 stars");
+                    })
+                    .actions(|ui| {
+                        if ui.add(MaterialButton::text("Buy Now")).clicked() {
+                            println!("Product card: Buy Now clicked!");
+                        }
+                        if ui.add(MaterialButton::text("Add to Cart")).clicked() {
+                            println!("Product card: Add to Cart clicked!");
+                        }
+                    }),
+            );
+
             // Article Card
-            ui.add(outlined_card2()
-                .header("Latest News", Some("Tech Update"))
-                .media_area(|ui| {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("📰 Article Image");
-                        ui.label("Featured article image");
-                    });
-                })
-                .content(|ui| {
-                    ui.label("Breaking: New technology breakthrough announced...");
-                    ui.add_space(5.0);
-                    ui.horizontal(|ui| {
-                        ui.label("By Author Name");
-                        ui.label("•");
-                        ui.label("2 hours ago");
-                    });
-                })
-                .actions(|ui| {
-                    if ui.add(MaterialButton::text("Read More")).clicked() {
-                        println!("Article card: Read More clicked!");
-                    }
-                    if ui.add(MaterialButton::text("Share")).clicked() {
-                        println!("Article card: Share clicked!");
-                    }
-                }));
-                
+            ui.add(
+                outlined_card2()
+                    .header("Latest News", Some("Tech Update"))
+                    .media_area(|ui| {
+                        ui.centered_and_justified(|ui| {
+                            ui.label("📰 Article Image");
+                            ui.label("Featured article image");
+                        });
+                    })
+                    .content(|ui| {
+                        ui.label("Breaking: New technology breakthrough announced...");
+                        ui.add_space(5.0);
+                        ui.horizontal(|ui| {
+                            ui.label("By Author Name");
+                            ui.label("•");
+                            ui.label("2 hours ago");
+                        });
+                    })
+                    .actions(|ui| {
+                        if ui.add(MaterialButton::text("Read More")).clicked() {
+                            println!("Article card: Read More clicked!");
+                        }
+                        if ui.add(MaterialButton::text("Share")).clicked() {
+                            println!("Article card: Share clicked!");
+                        }
+                    }),
+            );
+
             // Profile Card
-            ui.add(filled_card2()
-                .header("User Profile", Some("Premium Member"))
-                .media_area(|ui| {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("👤 Profile Picture");
-                        ui.label("User avatar or photo");
-                    });
-                })
-                .content(|ui| {
-                    ui.label("John Doe");
-                    ui.label("Software Developer");
-                    ui.add_space(5.0);
-                    ui.label("📍 San Francisco, CA");
-                    ui.label("🎂 Joined March 2020");
-                })
-                .actions(|ui| {
-                    if ui.add(MaterialButton::text("Follow")).clicked() {
-                        println!("Profile card: Follow clicked!");
-                    }
-                    if ui.add(MaterialButton::text("Message")).clicked() {
-                        println!("Profile card: Message clicked!");
-                    }
-                }));
+            ui.add(
+                filled_card2()
+                    .header("User Profile", Some("Premium Member"))
+                    .media_area(|ui| {
+                        ui.centered_and_justified(|ui| {
+                            ui.label("👤 Profile Picture");
+                            ui.label("User avatar or photo");
+                        });
+                    })
+                    .content(|ui| {
+                        ui.label("John Doe");
+                        ui.label("Software Developer");
+                        ui.add_space(5.0);
+                        ui.label("📍 San Francisco, CA");
+                        ui.label("🎂 Joined March 2020");
+                    })
+                    .actions(|ui| {
+                        if ui.add(MaterialButton::text("Follow")).clicked() {
+                            println!("Profile card: Follow clicked!");
+                        }
+                        if ui.add(MaterialButton::text("Message")).clicked() {
+                            println!("Profile card: Message clicked!");
+                        }
+                    }),
+            );
         });
 
         ui.add_space(30.0);
-        
+
         ui.heading("Interactive Demo");
-        
+
         ui.horizontal(|ui| {
             if ui.add(MaterialButton::filled("Create New Card")).clicked() {
                 println!("Create new card functionality would be implemented here");
@@ -308,34 +338,36 @@ impl Card2Window {
                 println!("Delete card functionality would be implemented here");
             }
         });
-        
+
         ui.add_space(10.0);
-        
+
         // Interactive card with dynamic content
-        ui.add(elevated_card2()
-            .header("Interactive Card", Some("Click actions below"))
-            .content(|ui| {
-                ui.label("This card demonstrates interactive functionality.");
-                ui.add_space(5.0);
-                ui.label("Use the controls above to modify card properties.");
-                ui.label("Try toggling different sections on and off.");
-            })
-            .actions(|ui| {
-                if ui.add(MaterialButton::text("Refresh")).clicked() {
-                    println!("Interactive card: Refresh clicked!");
-                }
-                if ui.add(MaterialButton::text("Settings")).clicked() {
-                    println!("Interactive card: Settings clicked!");
-                }
-                if ui.add(MaterialButton::text("Info")).clicked() {
-                    println!("Interactive card: Info clicked!");
-                }
-            }));
+        ui.add(
+            elevated_card2()
+                .header("Interactive Card", Some("Click actions below"))
+                .content(|ui| {
+                    ui.label("This card demonstrates interactive functionality.");
+                    ui.add_space(5.0);
+                    ui.label("Use the controls above to modify card properties.");
+                    ui.label("Try toggling different sections on and off.");
+                })
+                .actions(|ui| {
+                    if ui.add(MaterialButton::text("Refresh")).clicked() {
+                        println!("Interactive card: Refresh clicked!");
+                    }
+                    if ui.add(MaterialButton::text("Settings")).clicked() {
+                        println!("Interactive card: Settings clicked!");
+                    }
+                    if ui.add(MaterialButton::text("Info")).clicked() {
+                        println!("Interactive card: Info clicked!");
+                    }
+                }),
+        );
 
         ui.add_space(20.0);
-        
+
         ui.heading("Enhanced Card Features");
-        
+
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("Header Section:");
@@ -344,7 +376,7 @@ impl Card2Window {
                 ui.label("• Consistent typography");
                 ui.label("• Proper spacing");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Media Area:");
                 ui.label("• Configurable height");
@@ -352,7 +384,7 @@ impl Card2Window {
                 ui.label("• Responsive design");
                 ui.label("• Clipped to card bounds");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("Actions Area:");
                 ui.label("• Right-aligned buttons");

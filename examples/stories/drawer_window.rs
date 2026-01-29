@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Ui, Window};
-use crate::{MaterialButton, MaterialCheckbox};
 use crate::theme::get_global_color;
+use crate::{MaterialButton, MaterialCheckbox};
+use eframe::egui::{self, Ui, Window};
 
 #[doc(hidden)]
 pub struct DrawerWindow {
@@ -441,7 +441,7 @@ impl DrawerWindow {
     }
 
     fn show_modal_drawer_demo(&mut self, ctx: &egui::Context) {
-        // Show as a separate demo window  
+        // Show as a separate demo window
         let mut demo_open = self.modal_drawer_open;
         Window::new("Modal Drawer Demo")
             .open(&mut demo_open)
@@ -454,27 +454,45 @@ impl DrawerWindow {
                         if ui.button("☰").clicked() {
                             self.is_modal_sidebar_open = !self.is_modal_sidebar_open;
                         }
-                        ui.colored_label(get_global_color("onSurface"), "Top Menu - Modal Drawer Demo");
+                        ui.colored_label(
+                            get_global_color("onSurface"),
+                            "Top Menu - Modal Drawer Demo",
+                        );
                     });
                 });
 
                 // Main content area (always visible)
                 ui.vertical(|ui| {
-                    ui.heading(format!("{} - Modal Drawer Demo", self.modal_selected_menu_item));
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "This drawer overlays the content with a semi-transparent scrim.");
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "Click the hamburger menu (☰) in the top menu to show the modal sidebar.");
-                    
+                    ui.heading(format!(
+                        "{} - Modal Drawer Demo",
+                        self.modal_selected_menu_item
+                    ));
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "This drawer overlays the content with a semi-transparent scrim.",
+                    );
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "Click the hamburger menu (☰) in the top menu to show the modal sidebar.",
+                    );
+
                     ui.add_space(20.0);
-                    ui.label(format!("Modal sidebar is currently: {}", 
-                        if self.is_modal_sidebar_open { "OPEN" } else { "CLOSED" }));
-                    
+                    ui.label(format!(
+                        "Modal sidebar is currently: {}",
+                        if self.is_modal_sidebar_open {
+                            "OPEN"
+                        } else {
+                            "CLOSED"
+                        }
+                    ));
+
                     ui.add_space(10.0);
                     if ui.button("Toggle Modal Drawer").clicked() {
                         // self.is_modal_sidebar_open = !self.is_modal_sidebar_open;
                     }
-                    
+
                     ui.add_space(20.0);
-                    
+
                     // Content changes based on selected menu item
                     match self.modal_selected_menu_item.as_str() {
                         "Home" => {
@@ -485,7 +503,7 @@ impl DrawerWindow {
                             ui.label("• Quick actions");
                             ui.label("• System overview");
                             ui.label("• Navigation shortcuts");
-                        },
+                        }
                         "Profile" => {
                             ui.heading("👤 Profile");
                             ui.label("Manage your profile information and preferences:");
@@ -494,7 +512,7 @@ impl DrawerWindow {
                             ui.label("• Avatar and display name");
                             ui.label("• Contact details");
                             ui.label("• Privacy settings");
-                        },
+                        }
                         "Settings" => {
                             ui.heading("⚙️ Settings");
                             ui.label("Configure application settings:");
@@ -503,7 +521,7 @@ impl DrawerWindow {
                             ui.label("• Notification settings");
                             ui.label("• Security options");
                             ui.label("• Data management");
-                        },
+                        }
                         "Help" => {
                             ui.heading("❓ Help");
                             ui.label("Get assistance and support:");
@@ -512,7 +530,7 @@ impl DrawerWindow {
                             ui.label("• FAQ and tutorials");
                             ui.label("• Contact support");
                             ui.label("• Community forums");
-                        },
+                        }
                         "Dashboard" => {
                             ui.heading("📊 Dashboard");
                             ui.label("Overview of system metrics and key performance indicators:");
@@ -521,7 +539,7 @@ impl DrawerWindow {
                             ui.label("• Total revenue: $45,678");
                             ui.label("• System uptime: 99.9%");
                             ui.label("• Recent activity: 156 actions");
-                        },
+                        }
                         "Analytics" => {
                             ui.heading("📈 Analytics");
                             ui.label("Data analytics and insights for informed decision making:");
@@ -530,7 +548,7 @@ impl DrawerWindow {
                             ui.label("• Bounce rate: 32%");
                             ui.label("• Average session: 4m 23s");
                             ui.label("• Conversion rate: 2.4%");
-                        },
+                        }
                         "Reports" => {
                             ui.heading("📋 Reports");
                             ui.label("Generated reports and documents for analysis:");
@@ -539,7 +557,7 @@ impl DrawerWindow {
                             ui.label("• User engagement analysis");
                             ui.label("• Performance metrics summary");
                             ui.label("• Quality assurance report");
-                        },
+                        }
                         "Users" => {
                             ui.heading("👥 Users");
                             ui.label("User management and account information:");
@@ -548,7 +566,7 @@ impl DrawerWindow {
                             ui.label("• Active today: 234");
                             ui.label("• New registrations: 45");
                             ui.label("• Premium subscribers: 1,234");
-                        },
+                        }
                         "Messages" => {
                             ui.heading("💬 Messages");
                             ui.label("Communication and messaging center:");
@@ -557,7 +575,7 @@ impl DrawerWindow {
                             ui.label("• Sent today: 8");
                             ui.label("• Team conversations: 4");
                             ui.label("• Direct messages: 16");
-                        },
+                        }
                         "Calendar" => {
                             ui.heading("📅 Calendar");
                             ui.label("Schedule and event management:");
@@ -566,7 +584,7 @@ impl DrawerWindow {
                             ui.label("• Today's events: 3");
                             ui.label("• This week: 12 events");
                             ui.label("• Reminders: 8 pending");
-                        },
+                        }
                         "Files" => {
                             ui.heading("📁 Files");
                             ui.label("File storage and document management:");
@@ -575,7 +593,7 @@ impl DrawerWindow {
                             ui.label("• Storage used: 4.2 GB");
                             ui.label("• Recent uploads: 23");
                             ui.label("• Shared folders: 8");
-                        },
+                        }
                         "Tasks" => {
                             ui.heading("✅ Tasks");
                             ui.label("Task management and productivity tracking:");
@@ -584,42 +602,61 @@ impl DrawerWindow {
                             ui.label("• Completed today: 7");
                             ui.label("• Overdue: 2");
                             ui.label("• This week: 23 tasks");
-                        },
+                        }
                         _ => {
                             ui.label("Select a menu item from the modal sidebar");
                         }
                     }
-                    
+
                     ui.add_space(20.0);
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "Modal drawer characteristics:");
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "• Overlays content without changing layout");
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "• Semi-transparent scrim blocks interaction");
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "• Drawer slides in from the side");
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "• Click outside or ESC to close");
-                    ui.colored_label(get_global_color("onSurfaceVariant"), "• Click menu items to change content");
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "Modal drawer characteristics:",
+                    );
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "• Overlays content without changing layout",
+                    );
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "• Semi-transparent scrim blocks interaction",
+                    );
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "• Drawer slides in from the side",
+                    );
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "• Click outside or ESC to close",
+                    );
+                    ui.colored_label(
+                        get_global_color("onSurfaceVariant"),
+                        "• Click menu items to change content",
+                    );
                 });
 
                 // Modal overlay (when open) - appears on top with constrained size
                 if self.is_modal_sidebar_open {
                     // Get the window bounds for constrained overlay
                     let available_rect = ui.max_rect();
-                    
+
                     // Semi-transparent scrim over available window content only
-                    let scrim_response = ui.allocate_response(available_rect.size(), egui::Sense::click());
-                    
+                    let scrim_response =
+                        ui.allocate_response(available_rect.size(), egui::Sense::click());
+
                     ui.painter().rect_filled(
                         available_rect,
                         egui::CornerRadius::ZERO,
                         egui::Color32::from_rgba_unmultiplied(0, 0, 0, 128),
                     );
-                    
+
                     // Left-sided modal drawer panel - constrained to available space
                     let drawer_width = self.drawer_width.min(available_rect.width() * 0.8); // Max 80% of window width
                     let drawer_rect = egui::Rect::from_min_size(
                         available_rect.min,
                         egui::Vec2::new(drawer_width, available_rect.height()),
                     );
-                    
+
                     ui.scope_builder(egui::UiBuilder::new().max_rect(drawer_rect), |ui| {
                         egui::Frame::new()
                             .fill(get_global_color("surface"))
@@ -630,18 +667,22 @@ impl DrawerWindow {
                                     ui.vertical_centered(|ui| {
                                         ui.heading("Menu");
                                         if self.show_header {
-                                            ui.colored_label(get_global_color("onSurfaceVariant"), "Choose an option");
+                                            ui.colored_label(
+                                                get_global_color("onSurfaceVariant"),
+                                                "Choose an option",
+                                            );
                                             ui.add_space(8.0);
                                         }
                                     });
-                                    
+
                                     ui.add_space(16.0);
-                                    
+
                                     // Scrollable content area - constrained to available height
                                     let _header_height = 80.0; // Approximate height of header section
                                     let button_height = 40.0; // Height for close button
-                                    let available_height = ui.available_height() - button_height - 20.0; // Reserve space for button and padding
-                                    
+                                    let available_height =
+                                        ui.available_height() - button_height - 20.0; // Reserve space for button and padding
+
                                     egui::ScrollArea::vertical()
                                         .max_height(available_height)
                                         .show(ui, |ui| {
@@ -662,14 +703,23 @@ impl DrawerWindow {
                                                 ("Files", "📁"),
                                                 ("Tasks", "✅"),
                                             ];
-                                            
+
                                             for (item_name, icon) in &menu_items {
-                                                let is_selected = self.modal_selected_menu_item == *item_name;
-                                                
+                                                let is_selected =
+                                                    self.modal_selected_menu_item == *item_name;
+
                                                 // Create a proper menu item with correct sizing
-                                                let item_rect = ui.allocate_space([ui.available_width(), item_height].into()).1;
-                                                let response = ui.interact(item_rect, egui::Id::new(format!("modal_{}", item_name)), egui::Sense::click());
-                                                
+                                                let item_rect = ui
+                                                    .allocate_space(
+                                                        [ui.available_width(), item_height].into(),
+                                                    )
+                                                    .1;
+                                                let response = ui.interact(
+                                                    item_rect,
+                                                    egui::Id::new(format!("modal_{}", item_name)),
+                                                    egui::Sense::click(),
+                                                );
+
                                                 // Style based on selection and hover state
                                                 if is_selected {
                                                     ui.painter().rect_filled(
@@ -681,20 +731,22 @@ impl DrawerWindow {
                                                     ui.painter().rect_filled(
                                                         item_rect,
                                                         egui::CornerRadius::same(12),
-                                                        get_global_color("surfaceVariant").linear_multiply(0.08),
+                                                        get_global_color("surfaceVariant")
+                                                            .linear_multiply(0.08),
                                                     );
                                                 }
-                                                
+
                                                 // Draw icon and text
                                                 let text_color = if is_selected {
                                                     get_global_color("onPrimaryContainer")
                                                 } else {
                                                     get_global_color("onSurface")
                                                 };
-                                                
-                                                let text_y = item_rect.min.y + (item_height - 20.0) / 2.0;
+
+                                                let text_y =
+                                                    item_rect.min.y + (item_height - 20.0) / 2.0;
                                                 let mut text_x = item_rect.min.x + 16.0;
-                                                
+
                                                 if self.show_icons {
                                                     ui.painter().text(
                                                         egui::pos2(text_x, text_y),
@@ -705,7 +757,7 @@ impl DrawerWindow {
                                                     );
                                                     text_x += 32.0;
                                                 }
-                                                
+
                                                 ui.painter().text(
                                                     egui::pos2(text_x, text_y),
                                                     egui::Align2::LEFT_CENTER,
@@ -713,15 +765,16 @@ impl DrawerWindow {
                                                     egui::FontId::proportional(14.0),
                                                     text_color,
                                                 );
-                                                
+
                                                 if response.clicked() {
-                                                    self.modal_selected_menu_item = item_name.to_string();
+                                                    self.modal_selected_menu_item =
+                                                        item_name.to_string();
                                                 }
                                             }
                                         });
-                                    
+
                                     ui.add_space(20.0);
-                                    
+
                                     // Fixed close button at bottom
                                     if ui.button("Close Modal").clicked() {
                                         self.is_modal_sidebar_open = false;
@@ -729,7 +782,7 @@ impl DrawerWindow {
                                 });
                             });
                     });
-                    
+
                     // Close modal if scrim area (not on the drawer) is clicked
                     if scrim_response.clicked() {
                         if let Some(pointer_pos) = scrim_response.interact_pointer_pos() {
@@ -813,7 +866,7 @@ impl DrawerWindow {
 
     fn render_drawer_examples(&mut self, ui: &mut Ui) {
         ui.heading("Material Design Drawer Types");
-        
+
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("🔒 Permanent Drawer:");
@@ -822,7 +875,7 @@ impl DrawerWindow {
                 ui.label("• Best for desktop/tablet");
                 ui.label("• Wide screens (≥1280px)");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("↔️ Dismissible Drawer:");
                 ui.label("• Can be toggled");
@@ -830,7 +883,7 @@ impl DrawerWindow {
                 ui.label("• Adjusts content layout");
                 ui.label("• Medium screens (≥960px)");
             });
-            
+
             ui.vertical(|ui| {
                 ui.label("📱 Modal Drawer:");
                 ui.label("• Overlays content");
@@ -844,7 +897,7 @@ impl DrawerWindow {
 
         ui.heading("Interactive Demo");
         ui.label("Select a drawer type above to see it in action:");
-        
+
         match self.selected_drawer {
             DrawerType::Permanent => {
                 ui.label("🔒 Permanent Drawer: Always visible, content adjusts around it.");
@@ -890,7 +943,7 @@ impl DrawerWindow {
 
         ui.heading("Usage Guidelines");
         ui.label("Choose the appropriate drawer type based on your layout needs:");
-        
+
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.strong("Use Permanent when:");

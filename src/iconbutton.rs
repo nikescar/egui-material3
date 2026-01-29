@@ -1,5 +1,5 @@
-use eframe::egui::{Color32, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use crate::get_global_color;
+use eframe::egui::{Color32, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Visual variants for the icon button component.
 #[derive(Clone, Copy, PartialEq)]
@@ -267,17 +267,30 @@ impl<'a> Widget for MaterialIconButton<'a> {
                         (Color32::TRANSPARENT, primary_color, Color32::TRANSPARENT)
                     } else if response.hovered() {
                         (
-                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20),
+                            Color32::from_rgba_premultiplied(
+                                on_surface.r(),
+                                on_surface.g(),
+                                on_surface.b(),
+                                20,
+                            ),
                             on_surface,
                             Color32::TRANSPARENT,
                         )
                     } else {
-                        (Color32::TRANSPARENT, on_surface_variant, Color32::TRANSPARENT)
+                        (
+                            Color32::TRANSPARENT,
+                            on_surface_variant,
+                            Color32::TRANSPARENT,
+                        )
                     }
                 }
                 IconButtonVariant::Filled => {
                     if is_selected {
-                        (primary_color, get_global_color("onPrimary"), Color32::TRANSPARENT)
+                        (
+                            primary_color,
+                            get_global_color("onPrimary"),
+                            Color32::TRANSPARENT,
+                        )
                     } else if response.hovered() {
                         (
                             Color32::from_rgba_premultiplied(
@@ -295,7 +308,11 @@ impl<'a> Widget for MaterialIconButton<'a> {
                 }
                 IconButtonVariant::FilledTonal => {
                     if is_selected {
-                        (secondary_container, on_secondary_container, Color32::TRANSPARENT)
+                        (
+                            secondary_container,
+                            on_secondary_container,
+                            Color32::TRANSPARENT,
+                        )
                     } else if response.hovered() {
                         (
                             Color32::from_rgba_premultiplied(
@@ -308,19 +325,33 @@ impl<'a> Widget for MaterialIconButton<'a> {
                             Color32::TRANSPARENT,
                         )
                     } else {
-                        (secondary_container, on_secondary_container, Color32::TRANSPARENT)
+                        (
+                            secondary_container,
+                            on_secondary_container,
+                            Color32::TRANSPARENT,
+                        )
                     }
                 }
                 IconButtonVariant::Outlined => {
                     if is_selected {
                         (
-                            Color32::from_rgba_premultiplied(primary_color.r(), primary_color.g(), primary_color.b(), 24),
+                            Color32::from_rgba_premultiplied(
+                                primary_color.r(),
+                                primary_color.g(),
+                                primary_color.b(),
+                                24,
+                            ),
                             primary_color,
                             primary_color,
                         )
                     } else if response.hovered() {
                         (
-                            Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20),
+                            Color32::from_rgba_premultiplied(
+                                on_surface.r(),
+                                on_surface.g(),
+                                on_surface.b(),
+                                20,
+                            ),
                             on_surface_variant,
                             outline,
                         )
@@ -342,11 +373,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
 
         // Draw background
         if bg_color != Color32::TRANSPARENT {
-            ui.painter().rect_filled(
-                rect,
-                corner_radius,
-                bg_color,
-            );
+            ui.painter().rect_filled(rect, corner_radius, bg_color);
         }
 
         // Draw border for outlined variant
@@ -362,23 +389,24 @@ impl<'a> Widget for MaterialIconButton<'a> {
         // Draw icon using our icon system
         let icon_size = self.size * 0.6;
         let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
-        
+
         let icon_widget = crate::icon::MaterialIcon::new(&self.icon)
             .size(icon_size)
             .color(icon_color);
-        
+
         ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
             ui.add(icon_widget);
         });
 
         // Add ripple effect on hover
         if response.hovered() && self.enabled {
-            let ripple_color = Color32::from_rgba_premultiplied(icon_color.r(), icon_color.g(), icon_color.b(), 30);
-            ui.painter().rect_filled(
-                rect,
-                corner_radius,
-                ripple_color,
+            let ripple_color = Color32::from_rgba_premultiplied(
+                icon_color.r(),
+                icon_color.g(),
+                icon_color.b(),
+                30,
             );
+            ui.painter().rect_filled(rect, corner_radius, ripple_color);
         }
 
         response

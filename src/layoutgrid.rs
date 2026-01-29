@@ -1,8 +1,5 @@
 use crate::theme::get_global_color;
-use egui::{
-    epaint::CornerRadius,
-    Rect, Response, Sense, Ui, Vec2, Widget,
-};
+use egui::{epaint::CornerRadius, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Material Design layout grid component.
 ///
@@ -43,7 +40,7 @@ impl<'a> MaterialLayoutGrid<'a> {
     pub fn new() -> Self {
         Self {
             cells: Vec::new(),
-            columns: 12, // Standard 12-column grid
+            columns: 12,  // Standard 12-column grid
             gutter: 16.0, // Standard gutter size
             margin: 24.0, // Standard margin
             max_width: None,
@@ -82,7 +79,7 @@ impl<'a> MaterialLayoutGrid<'a> {
     }
 
     /// Add a cell that spans the specified number of columns.
-    pub fn cell<F>(mut self, span: usize, content: F) -> Self 
+    pub fn cell<F>(mut self, span: usize, content: F) -> Self
     where
         F: FnOnce(&mut Ui) + 'a,
     {
@@ -98,7 +95,7 @@ impl<'a> MaterialLayoutGrid<'a> {
     }
 
     /// Add a cell with an offset (empty columns before this cell).
-    pub fn cell_with_offset<F>(mut self, span: usize, offset: usize, content: F) -> Self 
+    pub fn cell_with_offset<F>(mut self, span: usize, offset: usize, content: F) -> Self
     where
         F: FnOnce(&mut Ui) + 'a,
     {
@@ -129,7 +126,7 @@ impl<'a> MaterialLayoutGrid<'a> {
         } else {
             available_width
         };
-        
+
         let total_gutter_width = (self.columns - 1) as f32 * self.gutter;
         let content_width = effective_width - 2.0 * self.margin - total_gutter_width;
         content_width / self.columns as f32
@@ -146,7 +143,7 @@ impl Widget for MaterialLayoutGrid<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let available_width = ui.available_width();
         let column_width = self.calculate_column_width(available_width);
-        
+
         let MaterialLayoutGrid {
             cells,
             columns,
@@ -165,14 +162,14 @@ impl Widget for MaterialLayoutGrid<'_> {
         } else {
             available_width
         };
-        
+
         // Start layout
         let start_pos = ui.next_widget_position();
         let mut current_row_y = start_pos.y + margin;
         let mut current_column = 0;
         let mut row_height: f32 = 0.0;
         let mut max_y = current_row_y;
-        
+
         let mut responses = Vec::new();
 
         // Process each cell
@@ -181,53 +178,48 @@ impl Widget for MaterialLayoutGrid<'_> {
             if let Some(offset) = cell.offset {
                 current_column += offset;
             }
-            
+
             // Check if we need to wrap to next row
             if current_column + cell.span > columns {
                 current_row_y = max_y + gutter;
                 current_column = 0;
                 row_height = 0.0;
             }
-            
+
             // Calculate cell position and size
             let cell_x = start_pos.x + margin + current_column as f32 * (column_width + gutter);
             let cell_width = cell.span as f32 * column_width + (cell.span - 1) as f32 * gutter;
-            
+
             // Create a constrained UI for this cell
             let cell_rect = Rect::from_min_size(
                 egui::pos2(cell_x, current_row_y),
-                Vec2::new(cell_width, ui.available_height())
+                Vec2::new(cell_width, ui.available_height()),
             );
-            
-            let cell_response = ui.scope_builder(
-                egui::UiBuilder::new().max_rect(cell_rect),
-                |ui| {
+
+            let cell_response =
+                ui.scope_builder(egui::UiBuilder::new().max_rect(cell_rect), |ui| {
                     // Debug visualization
                     if debug_mode {
                         let debug_color = get_global_color("primary").linear_multiply(0.12);
-                        ui.painter().rect_filled(
-                            cell_rect,
-                            CornerRadius::from(2.0),
-                            debug_color
-                        );
+                        ui.painter()
+                            .rect_filled(cell_rect, CornerRadius::from(2.0), debug_color);
                     }
-                    
+
                     (cell.content)(ui)
-                }
-            );
-            
+                });
+
             let cell_height = cell_response.response.rect.height();
             row_height = row_height.max(cell_height);
             max_y = max_y.max(current_row_y + row_height);
-            
+
             responses.push(cell_response.response);
             current_column += cell.span;
         }
-        
+
         // Calculate total grid size
         let total_height = max_y - start_pos.y + margin;
         let grid_rect = Rect::from_min_size(start_pos, Vec2::new(effective_width, total_height));
-        
+
         // Debug: Draw grid outline
         if debug_mode {
             let outline_color = get_global_color("primary");
@@ -235,35 +227,30 @@ impl Widget for MaterialLayoutGrid<'_> {
                 grid_rect,
                 CornerRadius::from(4.0),
                 egui::epaint::Stroke::new(1.0, outline_color),
-                egui::epaint::StrokeKind::Outside
+                egui::epaint::StrokeKind::Outside,
             );
-            
+
             // Draw column guides
             for i in 0..=columns {
                 let x = start_pos.x + margin + i as f32 * (column_width + gutter) - gutter / 2.0;
                 if i > 0 && i < columns {
                     ui.painter().line_segment(
-                        [
-                            egui::pos2(x, start_pos.y + margin),
-                            egui::pos2(x, max_y)
-                        ],
-                        egui::epaint::Stroke::new(0.5, get_global_color("outlineVariant"))
+                        [egui::pos2(x, start_pos.y + margin), egui::pos2(x, max_y)],
+                        egui::epaint::Stroke::new(0.5, get_global_color("outlineVariant")),
                     );
                 }
             }
         }
-        
+
         // Allocate the full grid space
-        let (_grid_response_rect, mut grid_response) = ui.allocate_at_least(
-            Vec2::new(effective_width, total_height),
-            Sense::hover()
-        );
-        
+        let (_grid_response_rect, mut grid_response) =
+            ui.allocate_at_least(Vec2::new(effective_width, total_height), Sense::hover());
+
         // Union all cell responses
         for response in responses {
             grid_response = grid_response.union(response);
         }
-        
+
         grid_response
     }
 }

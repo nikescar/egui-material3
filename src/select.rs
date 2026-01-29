@@ -1,5 +1,7 @@
 use crate::theme::get_global_color;
-use eframe::egui::{self, Color32, FontFamily, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use eframe::egui::{
+    self, Color32, FontFamily, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
+};
 
 /// Material Design select/dropdown component.
 ///
@@ -11,7 +13,7 @@ use eframe::egui::{self, Color32, FontFamily, FontId, Pos2, Rect, Response, Sens
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(1);
-/// 
+///
 /// ui.add(MaterialSelect::new(&mut selected)
 ///     .placeholder("Choose an option")
 ///     .option(0, "Option 1")
@@ -258,12 +260,18 @@ impl<'a> Widget for MaterialSelect<'a> {
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
         // Use persistent state for dropdown open/close with global coordination
-        let select_id = egui::Id::new(("select_widget", rect.min.x as i32, rect.min.y as i32, self.placeholder.clone()));
+        let select_id = egui::Id::new((
+            "select_widget",
+            rect.min.x as i32,
+            rect.min.y as i32,
+            self.placeholder.clone(),
+        ));
         let mut open = ui.memory(|mem| mem.data.get_temp::<bool>(select_id).unwrap_or(false));
 
         // Global state to close other select menus
         let global_open_select_id = egui::Id::new("global_open_select");
-        let current_open_select = ui.memory(|mem| mem.data.get_temp::<egui::Id>(global_open_select_id));
+        let current_open_select =
+            ui.memory(|mem| mem.data.get_temp::<egui::Id>(global_open_select_id));
 
         if response.clicked() && self.enabled {
             if open {
@@ -303,11 +311,7 @@ impl<'a> Widget for MaterialSelect<'a> {
         };
 
         // Draw select field background
-        ui.painter().rect_filled(
-            rect,
-            4.0,
-            bg_color,
-        );
+        ui.painter().rect_filled(rect, 4.0, bg_color);
 
         // Draw border
         ui.painter().rect_stroke(
@@ -319,7 +323,8 @@ impl<'a> Widget for MaterialSelect<'a> {
 
         // Draw selected text or placeholder
         let display_text = if let Some(selected_value) = *self.selected {
-            self.options.iter()
+            self.options
+                .iter()
                 .find(|option| option.value == selected_value)
                 .map(|option| option.text.as_str())
                 .unwrap_or(&self.placeholder)
@@ -341,27 +346,51 @@ impl<'a> Widget for MaterialSelect<'a> {
         // Draw dropdown arrow
         let arrow_center = Pos2::new(rect.max.x - 24.0, rect.center().y);
         let arrow_size = 8.0;
-        
+
         if open {
             // Up arrow
-            ui.painter().line_segment([
-                Pos2::new(arrow_center.x - arrow_size / 2.0, arrow_center.y + arrow_size / 4.0),
-                Pos2::new(arrow_center.x, arrow_center.y - arrow_size / 4.0),
-            ], Stroke::new(2.0, text_color));
-            ui.painter().line_segment([
-                Pos2::new(arrow_center.x, arrow_center.y - arrow_size / 4.0),
-                Pos2::new(arrow_center.x + arrow_size / 2.0, arrow_center.y + arrow_size / 4.0),
-            ], Stroke::new(2.0, text_color));
+            ui.painter().line_segment(
+                [
+                    Pos2::new(
+                        arrow_center.x - arrow_size / 2.0,
+                        arrow_center.y + arrow_size / 4.0,
+                    ),
+                    Pos2::new(arrow_center.x, arrow_center.y - arrow_size / 4.0),
+                ],
+                Stroke::new(2.0, text_color),
+            );
+            ui.painter().line_segment(
+                [
+                    Pos2::new(arrow_center.x, arrow_center.y - arrow_size / 4.0),
+                    Pos2::new(
+                        arrow_center.x + arrow_size / 2.0,
+                        arrow_center.y + arrow_size / 4.0,
+                    ),
+                ],
+                Stroke::new(2.0, text_color),
+            );
         } else {
             // Down arrow
-            ui.painter().line_segment([
-                Pos2::new(arrow_center.x - arrow_size / 2.0, arrow_center.y - arrow_size / 4.0),
-                Pos2::new(arrow_center.x, arrow_center.y + arrow_size / 4.0),
-            ], Stroke::new(2.0, text_color));
-            ui.painter().line_segment([
-                Pos2::new(arrow_center.x, arrow_center.y + arrow_size / 4.0),
-                Pos2::new(arrow_center.x + arrow_size / 2.0, arrow_center.y - arrow_size / 4.0),
-            ], Stroke::new(2.0, text_color));
+            ui.painter().line_segment(
+                [
+                    Pos2::new(
+                        arrow_center.x - arrow_size / 2.0,
+                        arrow_center.y - arrow_size / 4.0,
+                    ),
+                    Pos2::new(arrow_center.x, arrow_center.y + arrow_size / 4.0),
+                ],
+                Stroke::new(2.0, text_color),
+            );
+            ui.painter().line_segment(
+                [
+                    Pos2::new(arrow_center.x, arrow_center.y + arrow_size / 4.0),
+                    Pos2::new(
+                        arrow_center.x + arrow_size / 2.0,
+                        arrow_center.y - arrow_size / 4.0,
+                    ),
+                ],
+                Stroke::new(2.0, text_color),
+            );
         }
 
         // Show dropdown if open
@@ -369,20 +398,28 @@ impl<'a> Widget for MaterialSelect<'a> {
             // Calculate available space below and above
             let available_space_below = ui.max_rect().max.y - rect.max.y - 4.0;
             let available_space_above = rect.min.y - ui.max_rect().min.y - 4.0;
-            
+
             let item_height = 48.0;
             let dropdown_padding = 16.0;
-            let max_items_below = ((available_space_below - dropdown_padding) / item_height).floor() as usize;
-            let max_items_above = ((available_space_above - dropdown_padding) / item_height).floor() as usize;
-            
+            let max_items_below =
+                ((available_space_below - dropdown_padding) / item_height).floor() as usize;
+            let max_items_above =
+                ((available_space_above - dropdown_padding) / item_height).floor() as usize;
+
             // Determine dropdown position and size
-            let (dropdown_y, visible_items, scroll_needed) = if max_items_below >= self.options.len() {
+            let (dropdown_y, visible_items, scroll_needed) = if max_items_below
+                >= self.options.len()
+            {
                 // Fit below
                 (rect.max.y + 4.0, self.options.len(), false)
             } else if max_items_above >= self.options.len() {
                 // Fit above
                 let dropdown_height = self.options.len() as f32 * item_height + dropdown_padding;
-                (rect.min.y - 4.0 - dropdown_height, self.options.len(), false)
+                (
+                    rect.min.y - 4.0 - dropdown_height,
+                    self.options.len(),
+                    false,
+                )
             } else if max_items_below >= max_items_above {
                 // Partial fit below with scroll
                 (rect.max.y + 4.0, max_items_below.max(3), true)
@@ -403,11 +440,8 @@ impl<'a> Widget for MaterialSelect<'a> {
             let dropdown_bg_color = ui.visuals().window_fill;
 
             // Draw dropdown background with proper elevation
-            ui.painter().rect_filled(
-                dropdown_rect,
-                8.0,
-                dropdown_bg_color,
-            );
+            ui.painter()
+                .rect_filled(dropdown_rect, 8.0, dropdown_bg_color);
 
             // Draw dropdown border with elevation shadow
             ui.painter().rect_stroke(
@@ -432,30 +466,38 @@ impl<'a> Widget for MaterialSelect<'a> {
                     Pos2::new(dropdown_rect.min.x + 8.0, dropdown_rect.min.y + 8.0),
                     Vec2::new(width - 16.0, dropdown_height - 16.0),
                 );
-                
+
                 ui.scope_builder(egui::UiBuilder::new().max_rect(scroll_area_rect), |ui| {
                     egui::ScrollArea::vertical()
                         .max_height(dropdown_height - 16.0)
-                        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded)
+                        .scroll_bar_visibility(
+                            egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded,
+                        )
                         .auto_shrink([false; 2])
                         .show(ui, |ui| {
                             for option in &self.options {
                                 // Create custom option layout with proper text styling
                                 let option_height = 48.0;
                                 let (option_rect, option_response) = ui.allocate_exact_size(
-                                    Vec2::new(ui.available_width(), option_height), 
-                                    Sense::click()
+                                    Vec2::new(ui.available_width(), option_height),
+                                    Sense::click(),
                                 );
 
                                 // Match select field styling
                                 let is_selected = *self.selected == Some(option.value);
                                 let option_bg_color = if is_selected {
                                     Color32::from_rgba_premultiplied(
-                                        on_surface.r(), on_surface.g(), on_surface.b(), 30
+                                        on_surface.r(),
+                                        on_surface.g(),
+                                        on_surface.b(),
+                                        30,
                                     )
                                 } else if option_response.hovered() {
                                     Color32::from_rgba_premultiplied(
-                                        on_surface.r(), on_surface.g(), on_surface.b(), 20
+                                        on_surface.r(),
+                                        on_surface.g(),
+                                        on_surface.b(),
+                                        20,
                                     )
                                 } else {
                                     Color32::TRANSPARENT
@@ -466,37 +508,40 @@ impl<'a> Widget for MaterialSelect<'a> {
                                 }
 
                                 // Use same font as select field with text wrapping
-                                let text_pos = Pos2::new(option_rect.min.x + 16.0, option_rect.center().y);
-                                let text_color = if is_selected { 
-                                    get_global_color("primary") 
-                                } else { 
-                                    on_surface 
+                                let text_pos =
+                                    Pos2::new(option_rect.min.x + 16.0, option_rect.center().y);
+                                let text_color = if is_selected {
+                                    get_global_color("primary")
+                                } else {
+                                    on_surface
                                 };
-                                
+
                                 // Handle text wrapping for long content
                                 let available_width = option_rect.width() - 32.0; // Account for padding
-                                let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
-                                    text: option.text.clone(),
-                                    sections: vec![egui::text::LayoutSection {
-                                        leading_space: 0.0,
-                                        byte_range: 0..option.text.len(),
-                                        format: egui::TextFormat {
-                                            font_id: select_font.clone(),
-                                            color: text_color,
+                                let galley = ui.fonts(|f| {
+                                    f.layout_job(egui::text::LayoutJob {
+                                        text: option.text.clone(),
+                                        sections: vec![egui::text::LayoutSection {
+                                            leading_space: 0.0,
+                                            byte_range: 0..option.text.len(),
+                                            format: egui::TextFormat {
+                                                font_id: select_font.clone(),
+                                                color: text_color,
+                                                ..Default::default()
+                                            },
+                                        }],
+                                        wrap: egui::text::TextWrapping {
+                                            max_width: available_width,
                                             ..Default::default()
                                         },
-                                    }],
-                                    wrap: egui::text::TextWrapping {
-                                        max_width: available_width,
-                                        ..Default::default()
-                                    },
-                                    break_on_newline: true,
-                                    halign: egui::Align::LEFT,
-                                    justify: false,
-                                    first_row_min_height: 0.0,
-                                    round_output_to_gui: true,
-                                }));
-                                
+                                        break_on_newline: true,
+                                        halign: egui::Align::LEFT,
+                                        justify: false,
+                                        first_row_min_height: 0.0,
+                                        round_output_to_gui: true,
+                                    })
+                                });
+
                                 ui.painter().galley(text_pos, galley, text_color);
 
                                 if option_response.clicked() {
@@ -517,7 +562,7 @@ impl<'a> Widget for MaterialSelect<'a> {
                 // Draw options normally without scrolling
                 let mut current_y = dropdown_rect.min.y + 8.0;
                 let items_to_show = visible_items.min(self.options.len());
-                
+
                 for option in self.options.iter().take(items_to_show) {
                     let option_rect = Rect::from_min_size(
                         Pos2::new(dropdown_rect.min.x + 8.0, current_y),
@@ -534,11 +579,17 @@ impl<'a> Widget for MaterialSelect<'a> {
                     let is_selected = *self.selected == Some(option.value);
                     let option_bg_color = if is_selected {
                         Color32::from_rgba_premultiplied(
-                            on_surface.r(), on_surface.g(), on_surface.b(), 30
+                            on_surface.r(),
+                            on_surface.g(),
+                            on_surface.b(),
+                            30,
                         )
                     } else if option_response.hovered() {
                         Color32::from_rgba_premultiplied(
-                            on_surface.r(), on_surface.g(), on_surface.b(), 20
+                            on_surface.r(),
+                            on_surface.g(),
+                            on_surface.b(),
+                            20,
                         )
                     } else {
                         Color32::TRANSPARENT
@@ -561,36 +612,38 @@ impl<'a> Widget for MaterialSelect<'a> {
                     }
 
                     let text_pos = Pos2::new(option_rect.min.x + 16.0, option_rect.center().y);
-                    let text_color = if is_selected { 
-                        get_global_color("primary") 
-                    } else { 
-                        on_surface 
+                    let text_color = if is_selected {
+                        get_global_color("primary")
+                    } else {
+                        on_surface
                     };
-                    
+
                     // Handle text wrapping for long content
                     let available_width = option_rect.width() - 32.0; // Account for padding
-                    let galley = ui.fonts(|f| f.layout_job(egui::text::LayoutJob {
-                        text: option.text.clone(),
-                        sections: vec![egui::text::LayoutSection {
-                            leading_space: 0.0,
-                            byte_range: 0..option.text.len(),
-                            format: egui::TextFormat {
-                                font_id: select_font.clone(),
-                                color: text_color,
+                    let galley = ui.fonts(|f| {
+                        f.layout_job(egui::text::LayoutJob {
+                            text: option.text.clone(),
+                            sections: vec![egui::text::LayoutSection {
+                                leading_space: 0.0,
+                                byte_range: 0..option.text.len(),
+                                format: egui::TextFormat {
+                                    font_id: select_font.clone(),
+                                    color: text_color,
+                                    ..Default::default()
+                                },
+                            }],
+                            wrap: egui::text::TextWrapping {
+                                max_width: available_width,
                                 ..Default::default()
                             },
-                        }],
-                        wrap: egui::text::TextWrapping {
-                            max_width: available_width,
-                            ..Default::default()
-                        },
-                        break_on_newline: true,
-                        halign: egui::Align::LEFT,
-                        justify: false,
-                        first_row_min_height: 0.0,
-                        round_output_to_gui: true,
-                    }));
-                    
+                            break_on_newline: true,
+                            halign: egui::Align::LEFT,
+                            justify: false,
+                            first_row_min_height: 0.0,
+                            round_output_to_gui: true,
+                        })
+                    });
+
                     ui.painter().galley(text_pos, galley, text_color);
 
                     current_y += item_height;

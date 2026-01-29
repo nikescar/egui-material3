@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
+use crate::{dialog, MaterialButton};
 use eframe::egui::{self, Window};
-use crate::{MaterialButton, dialog};
 
 #[doc(hidden)]
 pub struct DialogWindow {
@@ -81,20 +81,20 @@ impl DialogWindow {
                 let _ = webbrowser::open("https://material-web.dev/components/dialog/stories/");
             }
         });
-        
+
         ui.checkbox(&mut self.quick, "Quick (no animation)");
         ui.checkbox(&mut self.no_focus_trap, "No focus trap");
-        
+
         ui.horizontal(|ui| {
             ui.label("Icon:");
             ui.text_edit_singleline(&mut self.icon);
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Headline:");
             ui.text_edit_singleline(&mut self.headline);
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Supporting text:");
             ui.text_edit_singleline(&mut self.supporting_text);
@@ -103,28 +103,28 @@ impl DialogWindow {
 
     fn render_dialog_triggers(&mut self, ui: &mut egui::Ui) {
         ui.heading("Dialog Types");
-        
+
         ui.horizontal_wrapped(|ui| {
             if ui.add(MaterialButton::filled("Standard Dialog")).clicked() {
                 self.standard_dialog_open = true;
             }
-            
+
             if ui.add(MaterialButton::filled("Alert Dialog")).clicked() {
                 self.alert_dialog_open = true;
             }
-            
+
             if ui.add(MaterialButton::filled("Confirm Dialog")).clicked() {
                 self.confirm_dialog_open = true;
             }
-            
+
             if ui.add(MaterialButton::filled("Choice Dialog")).clicked() {
                 self.choice_dialog_open = true;
             }
-            
+
             if ui.add(MaterialButton::filled("Form Dialog")).clicked() {
                 self.form_dialog_open = true;
             }
-            
+
             if ui.add(MaterialButton::filled("Floating Sheet")).clicked() {
                 self.floating_sheet_open = true;
             }
@@ -134,18 +134,22 @@ impl DialogWindow {
     fn show_dialogs(&mut self, ctx: &egui::Context) {
         // Standard Dialog
         if self.standard_dialog_open {
-            dialog("standard_dialog", &self.headline, &mut self.standard_dialog_open)
-                .icon(&self.icon)
-                .content(|ui| {
-                    ui.label(&self.supporting_text);
-                })
-                .primary_action("OK", || {
-                    println!("Standard dialog OK clicked!");
-                })
-                .action("Close", || {
-                    println!("Standard dialog Close clicked!");
-                })
-                .show(ctx);
+            dialog(
+                "standard_dialog",
+                &self.headline,
+                &mut self.standard_dialog_open,
+            )
+            .icon(&self.icon)
+            .content(|ui| {
+                ui.label(&self.supporting_text);
+            })
+            .primary_action("OK", || {
+                println!("Standard dialog OK clicked!");
+            })
+            .action("Close", || {
+                println!("Standard dialog Close clicked!");
+            })
+            .show(ctx);
         }
 
         // Alert Dialog
@@ -162,75 +166,89 @@ impl DialogWindow {
 
         // Confirm Dialog
         if self.confirm_dialog_open {
-            dialog("confirm_dialog", "Permanently delete?", &mut self.confirm_dialog_open)
-                .icon("delete_outline")
-                .content(|ui| {
-                    ui.label("Deleting the selected photos will also remove them from all synced devices.");
-                })
-                .action("Delete", || {
-                    println!("Confirm dialog Delete clicked!");
-                })
-                .primary_action("Cancel", || {
-                    println!("Confirm dialog Cancel clicked!");
-                })
-                .show(ctx);
+            dialog(
+                "confirm_dialog",
+                "Permanently delete?",
+                &mut self.confirm_dialog_open,
+            )
+            .icon("delete_outline")
+            .content(|ui| {
+                ui.label(
+                    "Deleting the selected photos will also remove them from all synced devices.",
+                );
+            })
+            .action("Delete", || {
+                println!("Confirm dialog Delete clicked!");
+            })
+            .primary_action("Cancel", || {
+                println!("Confirm dialog Cancel clicked!");
+            })
+            .show(ctx);
         }
 
         // Choice Dialog
         if self.choice_dialog_open {
-            dialog("choice_dialog", "Choose your favorite pet", &mut self.choice_dialog_open)
-                .content(|ui| {
-                    ui.label("Choose your favorite pet:");
-                    ui.radio_value(&mut self.pet_choice, Some(0), "Cats");
-                    ui.radio_value(&mut self.pet_choice, Some(1), "Dogs");
-                    ui.radio_value(&mut self.pet_choice, Some(2), "Birds");
-                })
-                .action("Cancel", || {
-                    println!("Choice dialog Cancel clicked!");
-                })
-                .primary_action("OK", || {
-                    println!("Choice dialog OK clicked!");
-                })
-                .show(ctx);
+            dialog(
+                "choice_dialog",
+                "Choose your favorite pet",
+                &mut self.choice_dialog_open,
+            )
+            .content(|ui| {
+                ui.label("Choose your favorite pet:");
+                ui.radio_value(&mut self.pet_choice, Some(0), "Cats");
+                ui.radio_value(&mut self.pet_choice, Some(1), "Dogs");
+                ui.radio_value(&mut self.pet_choice, Some(2), "Birds");
+            })
+            .action("Cancel", || {
+                println!("Choice dialog Cancel clicked!");
+            })
+            .primary_action("OK", || {
+                println!("Choice dialog OK clicked!");
+            })
+            .show(ctx);
         }
 
         // Form Dialog
         if self.form_dialog_open {
-            dialog("form_dialog", "Create new contact", &mut self.form_dialog_open)
-                .content(|ui| {
-                    ui.vertical(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("First Name:");
-                            ui.text_edit_singleline(&mut self.first_name);
-                            ui.label("Last Name:");
-                            ui.text_edit_singleline(&mut self.last_name);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Company:");
-                            ui.text_edit_singleline(&mut self.company);
-                            ui.label("Job Title:");
-                            ui.text_edit_singleline(&mut self.job_title);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Email:");
-                            ui.text_edit_singleline(&mut self.email);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Phone:");
-                            ui.text_edit_singleline(&mut self.phone);
-                        });
+            dialog(
+                "form_dialog",
+                "Create new contact",
+                &mut self.form_dialog_open,
+            )
+            .content(|ui| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("First Name:");
+                        ui.text_edit_singleline(&mut self.first_name);
+                        ui.label("Last Name:");
+                        ui.text_edit_singleline(&mut self.last_name);
                     });
-                })
-                .action("Reset", || {
-                    println!("Form dialog Reset clicked!");
-                })
-                .action("Cancel", || {
-                    println!("Form dialog Cancel clicked!");
-                })
-                .primary_action("Save", || {
-                    println!("Form dialog Save clicked!");
-                })
-                .show(ctx);
+                    ui.horizontal(|ui| {
+                        ui.label("Company:");
+                        ui.text_edit_singleline(&mut self.company);
+                        ui.label("Job Title:");
+                        ui.text_edit_singleline(&mut self.job_title);
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Email:");
+                        ui.text_edit_singleline(&mut self.email);
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Phone:");
+                        ui.text_edit_singleline(&mut self.phone);
+                    });
+                });
+            })
+            .action("Reset", || {
+                println!("Form dialog Reset clicked!");
+            })
+            .action("Cancel", || {
+                println!("Form dialog Cancel clicked!");
+            })
+            .primary_action("Save", || {
+                println!("Form dialog Save clicked!");
+            })
+            .show(ctx);
         }
 
         // Floating Sheet

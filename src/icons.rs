@@ -55,7 +55,7 @@ pub const ICON_EVENT: char = '\u{e878}';
 lazy_static::lazy_static! {
     static ref ICON_MAP: HashMap<&'static str, char> = {
         let mut m = HashMap::new();
-        
+
         // Common icons mapping
         m.insert("upload", ICON_UPLOAD);
         m.insert("open_in_new", ICON_OPEN_IN_NEW);
@@ -108,13 +108,13 @@ lazy_static::lazy_static! {
         m.insert("music_note", ICON_MUSIC_NOTE);
         m.insert("event", ICON_EVENT);
         m.insert("star", ICON_STAR);
-        
+
         m
     };
 }
 
 /// Get Material Symbol icon character by name
-/// 
+///
 /// # Examples
 /// ```
 /// let upload_icon = get_icon("upload"); // Returns '\u{f09b}'
@@ -125,7 +125,7 @@ pub fn get_icon(name: &str) -> Option<char> {
 }
 
 /// Get Material Symbol icon character by name, with fallback
-/// 
+///
 /// # Examples
 /// ```
 /// let icon = get_icon_or_default("upload", '?'); // Returns upload icon or '?' if not found
@@ -135,7 +135,7 @@ pub fn get_icon_or_default(name: &str, default: char) -> char {
 }
 
 /// Get Material Symbol icon as a string for UI display
-/// 
+///
 /// # Examples
 /// ```
 /// let upload_text = icon_text("upload"); // Returns string containing upload icon
@@ -147,7 +147,7 @@ pub fn icon_text(name: &str) -> String {
 }
 
 /// Get Material Symbol icon as a string with fallback
-/// 
+///
 /// # Examples
 /// ```
 /// let icon_str = icon_text_or_default("upload", "↑"); // Returns upload icon or "↑" if not found
