@@ -1,3 +1,5 @@
+[workspace]
+
 [package]
 name = "ondemand"
 version = "0.0.1"

@@ -15,6 +15,7 @@ Cargo.lock
 /target
 tmp/
 
+examples/ondemand/target/
 examples/flight_departures_example.rs
 .idea/
 .claude/

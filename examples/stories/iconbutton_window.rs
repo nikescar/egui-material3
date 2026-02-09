@@ -2,7 +2,7 @@
 
 use crate::{
     icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
-    icon_button_toggle, MaterialCheckbox,
+    icon_button_toggle, noto_emoji, MaterialCheckbox,
 };
 use eframe::egui::{self, Ui, Window};
 
@@ -30,7 +30,7 @@ impl Default for IconButtonWindow {
             enabled: true,
             size: 40.0,
             container: false, // circular by default
-            selected_icon: "favorite".to_string(),
+            selected_icon: noto_emoji::HEAVY_BLACK_HEART.to_string(),
         }
     }
 }

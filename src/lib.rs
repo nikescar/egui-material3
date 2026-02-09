@@ -239,6 +239,7 @@ pub mod fab;
 pub mod icon;
 pub mod iconbutton;
 pub mod icons;
+pub mod noto_emoji;
 pub mod image_utils;
 pub mod imagelist;
 pub mod layoutgrid;
