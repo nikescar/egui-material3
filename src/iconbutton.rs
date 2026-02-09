@@ -1,13 +1,21 @@
 use crate::get_global_color;
 use eframe::egui::{
-    Align2, Color32, ColorImage, FontId, Rect, Response, Sense, Stroke, TextureOptions, Ui, Vec2,
+    Align2, Color32, ColorImage, FontId, Rect, Response, Sense, Stroke, TextureHandle, TextureOptions, Ui, Vec2,
     Widget,
 };
 use std::path::Path;
 use std::fs;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 use resvg::usvg::{Options, Tree};
 use resvg::tiny_skia::{Pixmap, Transform};
 use resvg::render;
+
+lazy_static::lazy_static! {
+    /// Cache to store pre-rendered SVG textures (ColorImage)
+    static ref SVG_IMAGE_CACHE: Mutex<HashMap<String, Arc<ColorImage>>> = Mutex::new(HashMap::new());
+}
 
 /// Visual variants for the icon button component.
 #[derive(Clone, Copy, PartialEq)]
@@ -58,6 +66,8 @@ pub struct MaterialIconButton<'a> {
     container: bool,
     /// Optional SVG file path to render as the icon
     svg_path: Option<String>,
+    /// Optional SVG content string to render as the icon
+    svg_data: Option<String>,
     /// Optional callback to execute when clicked
     action: Option<Box<dyn Fn() + 'a>>,
 }
@@ -84,6 +94,7 @@ impl<'a> MaterialIconButton<'a> {
             size: 40.0,
             container: false, // circular by default
             svg_path: None,
+            svg_data: None,
             action: None,
         }
     }
@@ -223,6 +234,12 @@ impl<'a> MaterialIconButton<'a> {
         self
     }
 
+    /// Use inline SVG content as the icon. The content will be rasterized directly.
+    pub fn svg_data(mut self, svg_content: impl Into<String>) -> Self {
+        self.svg_data = Some(svg_content.into());
+        self
+    }
+
     /// Set the click action for the icon button.
     ///
     /// # Arguments
@@ -311,16 +328,16 @@ impl<'a> Widget for MaterialIconButton<'a> {
                     } else if response.hovered() {
                         (
                             Color32::from_rgba_premultiplied(
-                                primary_color.r().saturating_add(20),
-                                primary_color.g().saturating_add(20),
-                                primary_color.b().saturating_add(20),
+                                primary_color.r().saturating_add(10),
+                                primary_color.g().saturating_add(10),
+                                primary_color.b().saturating_add(10),
                                 255,
                             ),
                             get_global_color("onPrimary"),
                             Color32::TRANSPARENT,
                         )
                     } else {
-                        (primary_color, Color32::WHITE, Color32::TRANSPARENT)
+                        (primary_color, get_global_color("onPrimary"), Color32::TRANSPARENT)
                     }
                 }
                 IconButtonVariant::FilledTonal => {
@@ -407,14 +424,24 @@ impl<'a> Widget for MaterialIconButton<'a> {
         let icon_size = self.size * 0.6;
         let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
 
-        if let Some(path) = &self.svg_path {
-            // Try to load and rasterize SVG into an egui texture.
-            if Path::new(path).exists() {
-                if let Ok(bytes) = fs::read(path) {
+        // Helper function to render SVG from bytes with caching
+        let render_svg = |ui: &mut Ui, bytes: &[u8], cache_key: &str, icon_rect: Rect, icon_size: f32| {
+            let size_px = (icon_size.max(1.0).ceil() as u32).max(1);
+            let texture_id = format!("svg_icon:{}:{}", cache_key, size_px);
+            
+            // Try to get cached ColorImage, or create it if not exists
+            let color_image = {
+                let mut cache = SVG_IMAGE_CACHE.lock().unwrap();
+                
+                if let Some(cached_image) = cache.get(&texture_id) {
+                    // Image already rendered, use cached version
+                    Some(cached_image.clone())
+                } else {
+                    // Need to parse and render SVG (expensive operation - only happens once!)
                     let mut opt = Options::default();
                     opt.fontdb_mut().load_system_fonts();
-                    if let Ok(tree) = Tree::from_data(&bytes, &opt) {
-                        let size_px = (icon_size.max(1.0).ceil() as u32).max(1);
+                    
+                    if let Ok(tree) = Tree::from_data(bytes, &opt) {
                         if let Some(mut pixmap) = Pixmap::new(size_px, size_px) {
                             let tree_size = tree.size();
                             let scale_x = size_px as f32 / tree_size.width();
@@ -423,21 +450,59 @@ impl<'a> Widget for MaterialIconButton<'a> {
                             let transform = Transform::from_scale(scale, scale);
                             render(&tree, transform, &mut pixmap.as_mut());
                             let data = pixmap.data();
-                            // Convert premultiplied bytes to plain RGBA u8 vector expected by egui
+                            
+                            // Convert premultiplied bytes to plain RGBA
                             let mut rgba: Vec<u8> = Vec::with_capacity((size_px * size_px * 4) as usize);
                             rgba.extend_from_slice(data);
-
-                            let color_image = ColorImage::from_rgba_unmultiplied([size_px as usize, size_px as usize], &rgba);
-                            let tex = ui.ctx().load_texture(
-                                format!("svg_icon:{}:{}", path, size_px),
-                                color_image,
-                                TextureOptions::LINEAR,
-                            );
-                            ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-                                ui.image(&tex);
-                            });
+                            
+                            let img = Arc::new(ColorImage::from_rgba_unmultiplied(
+                                [size_px as usize, size_px as usize],
+                                &rgba
+                            ));
+                            
+                            // Store in cache for future use
+                            cache.insert(texture_id.clone(), img.clone());
+                            Some(img)
+                        } else {
+                            None
                         }
+                    } else {
+                        None
                     }
+                }
+            };
+            
+            // Display the image if we have it
+            if let Some(img) = color_image {
+                let tex: TextureHandle = ui.ctx().load_texture(
+                    texture_id,
+                    (*img).clone(),
+                    TextureOptions::LINEAR,
+                );
+                
+                ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
+                    ui.image(&tex);
+                });
+            }
+        };
+
+        if let Some(svg_content) = &self.svg_data {
+            // Render inline SVG content
+            // Create a hash-like cache key from first and last bytes
+            let bytes = svg_content.as_bytes();
+            let len = bytes.len();
+            let cache_key = if len > 16 {
+                format!("inline_{}_{}_{}_{}", 
+                    bytes[0], bytes[1], bytes[len-2], bytes[len-1])
+            } else {
+                format!("inline_{}", len)
+            };
+            render_svg(ui, bytes, &cache_key, icon_rect, icon_size);
+        } else if let Some(path) = &self.svg_path {
+            // Try to load and rasterize SVG from file
+            if Path::new(path).exists() {
+                if let Ok(bytes) = fs::read(path) {
+                    render_svg(ui, &bytes, path, icon_rect, icon_size);
                 }
             }
         } else {
