@@ -94,6 +94,7 @@ pub struct MaterialDataTable<'a> {
     corner_radius: CornerRadius,
     sorted_column: Option<usize>,
     sort_direction: SortDirection,
+    default_row_height: f32,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -265,6 +266,7 @@ impl<'a> MaterialDataTable<'a> {
             corner_radius: CornerRadius::from(4.0),
             sorted_column: None,
             sort_direction: SortDirection::Ascending,
+            default_row_height: 52.0,
         }
     }
 
@@ -393,6 +395,12 @@ impl<'a> MaterialDataTable<'a> {
         self
     }
 
+    /// Set default row height in pixels.
+    pub fn default_row_height(mut self, height: f32) -> Self {
+        self.default_row_height = height;
+        self
+    }
+
     fn get_table_style(&self) -> (Color32, Stroke) {
         let md_surface = get_global_color("surface");
         let md_outline = get_global_color("outline");
@@ -467,6 +475,7 @@ impl<'a> MaterialDataTable<'a> {
             sticky_header: _,
             progress_visible,
             corner_radius,
+            default_row_height,
             ..
         } = self;
 
@@ -514,7 +523,7 @@ impl<'a> MaterialDataTable<'a> {
         // Calculate table dimensions with dynamic row heights
         let checkbox_width = if allow_selection { 48.0 } else { 0.0 };
         let total_width = checkbox_width + columns.iter().map(|col| col.width).sum::<f32>();
-        let min_row_height = 52.0;
+        let min_row_height = default_row_height;
         let min_header_height = 56.0;
 
         // Calculate header height with text wrapping
