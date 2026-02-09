@@ -604,6 +604,32 @@ impl<'a> MaterialDataTable<'a> {
         // Collect all row actions from this frame
         let mut all_row_actions: Vec<RowAction> = Vec::new();
 
+        // Apply Material theme styling
+        let surface = get_global_color("surface");
+        let on_surface = get_global_color("onSurface");
+        let primary = get_global_color("primary");
+
+        let mut style = (*ui.ctx().style()).clone();
+        style.visuals.widgets.noninteractive.bg_fill = surface;
+        style.visuals.widgets.inactive.bg_fill = surface;
+        style.visuals.widgets.hovered.bg_fill =
+            egui::Color32::from_rgba_premultiplied(primary.r(), primary.g(), primary.b(), 20);
+        style.visuals.widgets.active.bg_fill =
+            egui::Color32::from_rgba_premultiplied(primary.r(), primary.g(), primary.b(), 40);
+        style.visuals.selection.bg_fill = primary;
+        style.visuals.widgets.noninteractive.fg_stroke.color = on_surface;
+        style.visuals.widgets.inactive.fg_stroke.color = on_surface;
+        style.visuals.widgets.hovered.fg_stroke.color = on_surface;
+        style.visuals.widgets.active.fg_stroke.color = on_surface;
+        style.visuals.striped = true;
+        style.visuals.faint_bg_color = egui::Color32::from_rgba_premultiplied(
+            on_surface.r(),
+            on_surface.g(),
+            on_surface.b(),
+            10,
+        );
+        ui.ctx().set_style(style);
+
         let desired_size = Vec2::new(total_width, total_height);
         let response = ui.allocate_response(desired_size, Sense::click());
         let rect = response.rect;
