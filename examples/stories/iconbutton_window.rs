@@ -445,6 +445,123 @@ impl IconButtonWindow {
 
         ui.add_space(20.0);
 
+        ui.heading("SVG Icon Demo");
+        ui.label("Icon buttons with SVG images:");
+        
+        ui.label("Google Logo (resources/google_logo.svg):");
+        ui.horizontal(|ui| {
+            if ui
+                .add(
+                    icon_button_standard("")
+                        .svg("resources/google_logo.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Google logo standard button clicked!");
+            }
+
+            if ui
+                .add(
+                    icon_button_filled("")
+                        .svg("resources/google_logo.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Google logo filled button clicked!");
+            }
+
+            if ui
+                .add(
+                    icon_button_filled_tonal("")
+                        .svg("resources/google_logo.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Google logo filled tonal button clicked!");
+            }
+
+            if ui
+                .add(
+                    icon_button_outlined("")
+                        .svg("resources/google_logo.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Google logo outlined button clicked!");
+            }
+        });
+
+        ui.add_space(10.0);
+
+        ui.label("Avatar (resources/avatar.svg):");
+        ui.horizontal(|ui| {
+            if ui
+                .add(
+                    icon_button_standard("")
+                        .svg("resources/avatar.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Avatar standard button clicked!");
+            }
+
+            if ui
+                .add(
+                    icon_button_filled("")
+                        .svg("resources/avatar.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Avatar filled button clicked!");
+            }
+
+            if ui
+                .add(
+                    icon_button_filled_tonal("")
+                        .svg("resources/avatar.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Avatar filled tonal button clicked!");
+            }
+
+            if ui
+                .add(
+                    icon_button_outlined("")
+                        .svg("resources/avatar.svg")
+                        .size(self.size)
+                        .enabled(self.enabled)
+                        .container(self.container),
+                )
+                .clicked()
+            {
+                println!("Avatar outlined button clicked!");
+            }
+        });
+
+        ui.add_space(20.0);
+
         ui.heading("Sizes Demo");
         ui.label(format!(
             "Different sizes using '{}' (24px, 32px, 40px, 48px, 56px):",

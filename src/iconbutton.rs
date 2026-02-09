@@ -1,5 +1,13 @@
 use crate::get_global_color;
-use eframe::egui::{Color32, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use eframe::egui::{
+    Align2, Color32, ColorImage, FontId, Rect, Response, Sense, Stroke, TextureOptions, Ui, Vec2,
+    Widget,
+};
+use std::path::Path;
+use std::fs;
+use resvg::usvg::{Options, Tree};
+use resvg::tiny_skia::{Pixmap, Transform};
+use resvg::render;
 
 /// Visual variants for the icon button component.
 #[derive(Clone, Copy, PartialEq)]
@@ -48,6 +56,8 @@ pub struct MaterialIconButton<'a> {
     size: f32,
     /// Whether to use rectangular container (true) or circular (false)
     container: bool,
+    /// Optional SVG file path to render as the icon
+    svg_path: Option<String>,
     /// Optional callback to execute when clicked
     action: Option<Box<dyn Fn() + 'a>>,
 }
@@ -73,6 +83,7 @@ impl<'a> MaterialIconButton<'a> {
             enabled: true,
             size: 40.0,
             container: false, // circular by default
+            svg_path: None,
             action: None,
         }
     }
@@ -203,6 +214,12 @@ impl<'a> MaterialIconButton<'a> {
     /// ```
     pub fn container(mut self, container: bool) -> Self {
         self.container = container;
+        self
+    }
+
+    /// Use an SVG file as the icon. The path will be loaded and rasterized.
+    pub fn svg(mut self, path: impl Into<String>) -> Self {
+        self.svg_path = Some(path.into());
         self
     }
 
@@ -386,17 +403,49 @@ impl<'a> Widget for MaterialIconButton<'a> {
             );
         }
 
-        // Draw icon using our icon system
+        // Draw icon: SVG (if provided) or emoji/text fallback
         let icon_size = self.size * 0.6;
         let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
 
-        let icon_widget = crate::icon::MaterialIcon::new(&self.icon)
-            .size(icon_size)
-            .color(icon_color);
+        if let Some(path) = &self.svg_path {
+            // Try to load and rasterize SVG into an egui texture.
+            if Path::new(path).exists() {
+                if let Ok(bytes) = fs::read(path) {
+                    let mut opt = Options::default();
+                    opt.fontdb_mut().load_system_fonts();
+                    if let Ok(tree) = Tree::from_data(&bytes, &opt) {
+                        let size_px = (icon_size.max(1.0).ceil() as u32).max(1);
+                        if let Some(mut pixmap) = Pixmap::new(size_px, size_px) {
+                            let tree_size = tree.size();
+                            let scale_x = size_px as f32 / tree_size.width();
+                            let scale_y = size_px as f32 / tree_size.height();
+                            let scale = scale_x.min(scale_y);
+                            let transform = Transform::from_scale(scale, scale);
+                            render(&tree, transform, &mut pixmap.as_mut());
+                            let data = pixmap.data();
+                            // Convert premultiplied bytes to plain RGBA u8 vector expected by egui
+                            let mut rgba: Vec<u8> = Vec::with_capacity((size_px * size_px * 4) as usize);
+                            rgba.extend_from_slice(data);
 
-        ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-            ui.add(icon_widget);
-        });
+                            let color_image = ColorImage::from_rgba_unmultiplied([size_px as usize, size_px as usize], &rgba);
+                            let tex = ui.ctx().load_texture(
+                                format!("svg_icon:{}:{}", path, size_px),
+                                color_image,
+                                TextureOptions::LINEAR,
+                            );
+                            ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
+                                ui.image(&tex);
+                            });
+                        }
+                    }
+                }
+            }
+        } else {
+            // Fallback: draw provided icon string (emoji constants from `noto_emoji` or raw text)
+            let text = &self.icon;
+            let font = FontId::proportional(icon_size);
+            ui.painter().text(icon_rect.center(), Align2::CENTER_CENTER, text, font, icon_color);
+        }
 
         // Add ripple effect on hover
         if response.hovered() && self.enabled {
