@@ -1,3 +1,5 @@
+[workspace]
+
 [package]
 name = "egui-material3"
 version = "0.0.6"

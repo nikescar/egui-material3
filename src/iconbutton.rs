@@ -325,12 +325,14 @@ impl<'a> Widget for MaterialIconButton<'a> {
                             get_global_color("onPrimary"),
                             Color32::TRANSPARENT,
                         )
-                    } else if response.hovered() {
+                    } else if response.hovered() || response.is_pointer_button_down_on() {
+                        // Lighten background by blending with white
+                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
                         (
                             Color32::from_rgba_premultiplied(
-                                primary_color.r().saturating_add(10),
-                                primary_color.g().saturating_add(10),
-                                primary_color.b().saturating_add(10),
+                                primary_color.r().saturating_add(lighten_amount),
+                                primary_color.g().saturating_add(lighten_amount),
+                                primary_color.b().saturating_add(lighten_amount),
                                 255,
                             ),
                             get_global_color("onPrimary"),
@@ -512,8 +514,8 @@ impl<'a> Widget for MaterialIconButton<'a> {
             ui.painter().text(icon_rect.center(), Align2::CENTER_CENTER, text, font, icon_color);
         }
 
-        // Add ripple effect on hover
-        if response.hovered() && self.enabled {
+        // Add ripple effect on hover (skip for Filled variant as it already has state changes)
+        if response.hovered() && self.enabled && self.variant != IconButtonVariant::Filled {
             let ripple_color = Color32::from_rgba_premultiplied(
                 icon_color.r(),
                 icon_color.g(),
