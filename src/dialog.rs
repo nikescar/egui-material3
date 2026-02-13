@@ -366,14 +366,11 @@ impl<'a> MaterialDialog<'a> {
 
                 ui.add_space(16.0);
 
-                // Content area with proper padding
-                ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                    ui.add_space(24.0);
-                    ui.vertical(|ui| {
-                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
-                        (self.content)(ui);
-                    });
-                    ui.add_space(24.0);
+                // Content area (full width, no padding)
+                ui.vertical(|ui| {
+                    ui.set_width(ui.available_width());
+                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                    (self.content)(ui);
                 });
 
                 ui.add_space(24.0);

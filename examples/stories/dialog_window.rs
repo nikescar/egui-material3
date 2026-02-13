@@ -18,6 +18,7 @@ pub struct DialogWindow {
     choice_dialog_open: bool,
     form_dialog_open: bool,
     floating_sheet_open: bool,
+    settings_dialog_open: bool,
     // Form data
     pet_choice: Option<usize>,
     first_name: String,
@@ -43,6 +44,7 @@ impl Default for DialogWindow {
             choice_dialog_open: false,
             form_dialog_open: false,
             floating_sheet_open: false,
+            settings_dialog_open: false,
             pet_choice: Some(0),
             first_name: String::new(),
             last_name: String::new(),
@@ -127,6 +129,10 @@ impl DialogWindow {
 
             if ui.add(MaterialButton::filled("Floating Sheet")).clicked() {
                 self.floating_sheet_open = true;
+            }
+
+            if ui.add(MaterialButton::filled("Contents Width")).clicked() {
+                self.settings_dialog_open = true;
             }
         });
     }
@@ -259,5 +265,40 @@ impl DialogWindow {
                 })
                 .show(ctx);
         }
+
+        // Scroll Area Test
+        dialog(
+                "settings_dialog",
+                "Settings",
+                &mut self.settings_dialog_open,
+            )
+            .content(|ui| {
+                let screen_width = ui.ctx().screen_rect().width();
+                let dialog_width = screen_width - 100.0;
+                let dialog_width = 400.0;
+                ui.set_width(dialog_width);
+                let screen_height = ui.ctx().screen_rect().height();
+                let dialog_height = screen_height - 200.0;
+                ui.set_height(dialog_height);
+
+                ui.add_space(8.0);
+                
+                egui::ScrollArea::both()
+                    .id_salt("settings_dialog_scroll")
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.set_width(1024.0);
+                        for i in 0..50 {
+                            ui.horizontal(|ui| {
+                                ui.label(format!("Setting Option {}", i + 1));
+                                ui.text_edit_singleline(&mut format!("Value {}", i + 1));
+                            });
+                        }
+                    });
+            })
+            .action("Close", || {
+                println!("Settings dialog Close clicked!");
+            })
+            .show(ctx);
     }
 }
