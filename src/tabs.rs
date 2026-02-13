@@ -29,6 +29,8 @@ pub struct MaterialTabs<'a> {
     variant: TabVariant,
     /// Optional salt for generating unique IDs
     id_salt: Option<String>,
+    /// Optional custom height for the tab bar
+    height: Option<f32>,
 }
 
 /// Individual tab item data.
@@ -69,6 +71,7 @@ impl<'a> MaterialTabs<'a> {
             enabled: true,
             variant,
             id_salt: None,
+            height: None,
         }
     }
 
@@ -196,11 +199,19 @@ impl<'a> MaterialTabs<'a> {
         self.id_salt = Some(salt.into());
         self
     }
+
+    /// Set a custom height for the tab bar.
+    ///
+    /// Default is 48.0 pixels if not specified.
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = Some(height);
+        self
+    }
 }
 
 impl<'a> Widget for MaterialTabs<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let tab_height = 48.0;
+        let tab_height = self.height.unwrap_or(48.0);
         let tab_width = ui.available_width() / self.tabs.len().max(1) as f32;
 
         let desired_size = Vec2::new(ui.available_width(), tab_height);
