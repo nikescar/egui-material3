@@ -68,6 +68,8 @@ pub struct MaterialIconButton<'a> {
     svg_path: Option<String>,
     /// Optional SVG content string to render as the icon
     svg_data: Option<String>,
+    /// Optional override for the icon color
+    icon_color_override: Option<Color32>,
     /// Optional callback to execute when clicked
     action: Option<Box<dyn Fn() + 'a>>,
 }
@@ -95,6 +97,7 @@ impl<'a> MaterialIconButton<'a> {
             container: false, // circular by default
             svg_path: None,
             svg_data: None,
+            icon_color_override: None,
             action: None,
         }
     }
@@ -237,6 +240,12 @@ impl<'a> MaterialIconButton<'a> {
     /// Use inline SVG content as the icon. The content will be rasterized directly.
     pub fn svg_data(mut self, svg_content: impl Into<String>) -> Self {
         self.svg_data = Some(svg_content.into());
+        self
+    }
+
+    /// Override the icon color.
+    pub fn icon_color(mut self, color: Color32) -> Self {
+        self.icon_color_override = Some(color);
         self
     }
 
@@ -511,7 +520,8 @@ impl<'a> Widget for MaterialIconButton<'a> {
             // Fallback: draw provided icon string (emoji constants from `noto_emoji` or raw text)
             let text = &self.icon;
             let font = FontId::proportional(icon_size);
-            ui.painter().text(icon_rect.center(), Align2::CENTER_CENTER, text, font, icon_color);
+            let final_icon_color = self.icon_color_override.unwrap_or(icon_color);
+            ui.painter().text(icon_rect.center(), Align2::CENTER_CENTER, text, font, final_icon_color);
         }
 
         // Add ripple effect on hover (skip for Filled variant as it already has state changes)
