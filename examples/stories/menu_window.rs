@@ -773,6 +773,9 @@ impl MenuWindow {
                 .typeahead_delay(self.typeahead_delay)
                 .list_tab_index(self.list_tab_index);
 
+            if let Some(rect) = self.context_button_rect {
+                builder = builder.anchor_rect(rect);
+            }
             if let Some(style) = &custom_style {
                 builder = builder.style(style.clone());
             }

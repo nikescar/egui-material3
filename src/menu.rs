@@ -545,18 +545,30 @@ impl<'a> MaterialMenu<'a> {
         // Use a stable ID for the menu
         let stable_id = egui::Id::new(format!("menu_{}", self.id.value()));
 
-        // Track if this is the frame when menu was opened
-        let was_opened_this_frame = ctx.data_mut(|d| {
+        // Track how many frames the menu has been open. A mouse click can span
+        // two frames (press on frame N, release on frame N+1), so we need to
+        // suppress outside-click detection for at least 2 frames after opening.
+        let frames_since_opened = ctx.data_mut(|d| {
             let last_open_state = d
                 .get_temp::<bool>(stable_id.with("was_open_last_frame"))
                 .unwrap_or(false);
             let just_opened = !last_open_state && *self.open;
             d.insert_temp(stable_id.with("was_open_last_frame"), *self.open);
-            just_opened
+
+            let frame_count: u32 = if just_opened {
+                0
+            } else {
+                d.get_temp::<u32>(stable_id.with("open_frame_count"))
+                    .unwrap_or(0)
+                    .saturating_add(1)
+            };
+            d.insert_temp(stable_id.with("open_frame_count"), frame_count);
+            frame_count
         });
+        let was_recently_opened = frames_since_opened < 2;
 
         // Request focus when menu opens
-        if was_opened_this_frame && !self.skip_restore_focus {
+        if frames_since_opened == 0 && !self.skip_restore_focus {
             ctx.memory_mut(|mem| mem.request_focus(stable_id));
         }
 
@@ -622,7 +634,7 @@ impl<'a> MaterialMenu<'a> {
         // Handle closing behavior based on settings
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             *open_ref = false;
-        } else if !stay_open_on_outside_click && !was_opened_this_frame {
+        } else if !stay_open_on_outside_click && !was_recently_opened {
             // Only handle outside clicks if not staying open and not just opened
             if ctx.input(|i| i.pointer.any_click()) {
                 let pointer_pos = ctx.input(|i| i.pointer.interact_pos()).unwrap_or_default();
