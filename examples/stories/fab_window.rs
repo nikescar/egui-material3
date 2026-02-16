@@ -186,7 +186,7 @@ impl FabWindow {
             ui.vertical(|ui| {
                 ui.label("Small Extended");
                 let mut fab = fab_primary()
-                    .icon("create")
+                    .icon("edit")
                     .text("Create")
                     .size(FabSize::Small);
 
