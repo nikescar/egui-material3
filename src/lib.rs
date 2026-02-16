@@ -261,8 +261,9 @@ pub use {
     checkbox::{checkbox, MaterialCheckbox},
     chips::{assist_chip, filter_chip, input_chip, suggestion_chip, ChipVariant, MaterialChip},
     datatable::{
-        data_table, CellContent, DataTableCell, DataTableColumn, DataTableRow, HAlign,
-        MaterialDataTable, SortDirection, VAlign,
+        data_table, CellContent, ColumnWidth, DataTableCell, DataTableColumn, DataTableRow,
+        DataTableSource, DataTableState, DataTableTheme, HAlign, MaterialDataTable, RowAction,
+        SortDirection, VAlign,
     },
     dialog::{dialog, MaterialDialog},
     drawer::{

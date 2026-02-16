@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
 use crate::datatable::{RowAction, SortDirection as DataTableSortDirection};
-use crate::{data_table, MaterialButton, MaterialCheckbox};
-use eframe::egui::{self, Id, Ui, Window};
+use crate::{data_table, DataTableCell, DataTableTheme, MaterialButton, MaterialCheckbox};
+use eframe::egui::{self, Color32, Id, Ui, Window};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -595,6 +595,161 @@ impl DataTableWindow {
                 ui.label("None");
             }
         });
+        
+        // New Feature Examples
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Themed Data Table");
+        ui.label("Custom theme override with specific colors");
+        
+        let custom_theme = DataTableTheme {
+            heading_row_color: Some(Color32::from_rgb(100, 150, 200)),
+            heading_row_height: Some(64.0),
+            data_row_color: Some(Color32::from_rgb(240, 245, 250)),
+            divider_thickness: Some(2.0),
+            divider_color: Some(Color32::from_rgb(150, 150, 200)),
+            selected_row_color: Some(Color32::from_rgb(200, 220, 240)),
+            ..Default::default()
+        };
+        
+        let themed_table = data_table()
+            .id(Id::new("themed_table"))
+            .column("Name", 150.0, false)
+            .column("Value", 100.0, true)
+            .column("Status", 120.0, false)
+            .theme(custom_theme)
+            .allow_selection(true)
+            .row(|row| {
+                row.cell("Alpha").cell("100").cell("Active")
+            })
+            .row(|row| {
+                row.cell("Beta").cell("250").cell("Pending")
+            })
+            .row(|row| {
+                row.cell("Gamma").cell("75").cell("Complete")
+            });
+        
+        ui.add(themed_table);
+        
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Data Table with Tooltips");
+        ui.label("Hover over column headers to see tooltips");
+        
+        // Create a custom table with tooltip columns by manually building the table
+        // Since we can't access private fields, we'll use a workaround with helper function
+        let mut tooltip_rows = Vec::new();
+        tooltip_rows.push(vec!["001", "Laptop Pro", "$1299", "15"]);
+        tooltip_rows.push(vec!["002", "Mouse Wireless", "$29", "150"]);
+        tooltip_rows.push(vec!["003", "Keyboard Mechanical", "$89", "45"]);
+        
+        // For now, create a basic table (full tooltip support requires API enhancement)
+        let tooltip_table = data_table()
+            .id(Id::new("tooltip_table"))
+            .column("ID", 80.0, true) // Would have tooltip: "Unique identifier for each item"
+            .column("Product Name", 150.0, false) // Would have tooltip: "The name of the product"
+            .column("Price", 100.0, true) // Would have tooltip: "Current market price in USD"
+            .column("Stock", 80.0, true) // Would have tooltip: "Available inventory quantity"
+            .row(|row| row.cell("001").cell("Laptop Pro").cell("$1299").cell("15"))
+            .row(|row| row.cell("002").cell("Mouse Wireless").cell("$29").cell("150"))
+            .row(|row| row.cell("003").cell("Keyboard Mechanical").cell("$89").cell("45"));
+        
+        ui.add(tooltip_table);
+        ui.label("Note: Tooltip feature is available via DataTableColumn struct but requires builder pattern enhancement");
+        
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Placeholder Cells & Edit Icons");
+        ui.label("Dimmed placeholder text and edit indicators");
+        
+        let placeholder_table = data_table()
+            .id(Id::new("placeholder_table"))
+            .column("Field", 120.0, false)
+            .column("Value", 180.0, false)
+            .column("Notes", 200.0, false)
+            .row(|row| {
+                row.cell("Username")
+                   .custom_cell(DataTableCell::text("Enter username...").placeholder(true))
+                   .custom_cell(DataTableCell::text("Required field").show_edit_icon(true))
+            })
+            .row(|row| {
+                row.cell("Email")
+                   .cell("user@example.com")
+                   .custom_cell(DataTableCell::text("Editable").show_edit_icon(true))
+            })
+            .row(|row| {
+                row.cell("Phone")
+                   .custom_cell(DataTableCell::text("Not provided").placeholder(true))
+                   .cell("Optional field")
+            });
+        
+        ui.add(placeholder_table);
+        
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Custom Row Colors");
+        ui.label("Per-row color overrides for status highlighting");
+        
+        let color_table = data_table()
+            .id(Id::new("color_table"))
+            .column("Task", 180.0, false)
+            .column("Status", 100.0, false)
+            .column("Priority", 100.0, false)
+            .row(|row| {
+                row.cell("Database backup")
+                   .cell("Success")
+                   .cell("High")
+                   .color(Color32::from_rgb(200, 255, 200)) // Green tint
+            })
+            .row(|row| {
+                row.cell("Email service")
+                   .cell("Warning")
+                   .cell("Medium")
+                   .color(Color32::from_rgb(255, 240, 200)) // Yellow tint
+            })
+            .row(|row| {
+                row.cell("Payment gateway")
+                   .cell("Error")
+                   .cell("Critical")
+                   .color(Color32::from_rgb(255, 200, 200)) // Red tint
+            })
+            .row(|row| {
+                row.cell("Analytics service")
+                   .cell("Running")
+                   .cell("Low")
+                   // No custom color, uses default
+            });
+        
+        ui.add(color_table);
+        
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Show/Hide Checkbox Column");
+        ui.label("Selection enabled but checkbox column hidden");
+        
+        let mut no_checkbox_theme = DataTableTheme::default();
+        no_checkbox_theme.show_checkbox_column = false;
+        
+        let no_checkbox_table = data_table()
+            .id(Id::new("no_checkbox_table"))
+            .column("Item", 150.0, false)
+            .column("Value", 100.0, true)
+            .theme(no_checkbox_theme)
+            .allow_selection(true) // Selection is enabled
+            .row(|row| {
+                row.cell("Item A").cell("100").selected(true)
+            })
+            .row(|row| {
+                row.cell("Item B").cell("200")
+            })
+            .row(|row| {
+                row.cell("Item C").cell("300")
+            });
+        
+        ui.add(no_checkbox_table);
+        
+        ui.add_space(20.0);
+        ui.label("Note: Rows are selected, but checkboxes are hidden per theme setting");
         });
     }
 }

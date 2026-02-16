@@ -6,6 +6,69 @@ use egui::{
 };
 use std::collections::{HashMap, HashSet};
 
+/// Theme/styling configuration for MaterialDataTable
+#[derive(Clone, Debug)]
+pub struct DataTableTheme {
+    pub decoration: Option<Color32>,
+    pub heading_row_color: Option<Color32>,
+    pub heading_row_height: Option<f32>,
+    pub heading_text_style: Option<(FontId, Color32)>,
+    pub data_row_color: Option<Color32>,
+    pub data_row_min_height: Option<f32>,
+    pub data_row_max_height: Option<f32>,
+    pub data_text_style: Option<(FontId, Color32)>,
+    pub horizontal_margin: Option<f32>,
+    pub column_spacing: Option<f32>,
+    pub divider_thickness: Option<f32>,
+    pub divider_color: Option<Color32>,
+    pub checkbox_horizontal_margin: Option<f32>,
+    pub border_stroke: Option<Stroke>,
+    pub sort_active_color: Option<Color32>,
+    pub sort_inactive_color: Option<Color32>,
+    pub selected_row_color: Option<Color32>,
+    pub show_bottom_border: bool,
+    pub show_checkbox_column: bool,
+}
+
+impl Default for DataTableTheme {
+    fn default() -> Self {
+        Self {
+            decoration: None,
+            heading_row_color: None,
+            heading_row_height: Some(56.0),
+            heading_text_style: None,
+            data_row_color: None,
+            data_row_min_height: Some(52.0),
+            data_row_max_height: None,
+            data_text_style: None,
+            horizontal_margin: Some(24.0),
+            column_spacing: Some(56.0),
+            divider_thickness: Some(1.0),
+            divider_color: None,
+            checkbox_horizontal_margin: Some(16.0),
+            border_stroke: None,
+            sort_active_color: None,
+            sort_inactive_color: None,
+            selected_row_color: None,
+            show_bottom_border: true,
+            show_checkbox_column: true,
+        }
+    }
+}
+
+/// Column width specification
+#[derive(Clone, Debug, PartialEq)]
+pub enum ColumnWidth {
+    Fixed(f32),
+    Flex(f32),
+}
+
+impl Default for ColumnWidth {
+    fn default() -> Self {
+        ColumnWidth::Fixed(100.0)
+    }
+}
+
 /// Persistent state for a Material Design data table.
 ///
 /// This structure maintains the state of the table including selections,
@@ -61,6 +124,18 @@ pub enum RowAction {
     Cancel(usize),
 }
 
+/// Trait for providing data to a table lazily
+pub trait DataTableSource {
+    fn row_count(&self) -> usize;
+    fn get_row(&self, index: usize) -> Option<DataTableRow<'_>>;
+    fn is_row_count_approximate(&self) -> bool {
+        false
+    }
+    fn selected_row_count(&self) -> usize {
+        0
+    }
+}
+
 /// Material Design data table component.
 ///
 /// Data tables display sets of data across rows and columns.
@@ -95,6 +170,8 @@ pub struct MaterialDataTable<'a> {
     sorted_column: Option<usize>,
     sort_direction: SortDirection,
     default_row_height: f32,
+    theme: DataTableTheme,
+    row_hover_states: HashMap<usize, bool>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -141,6 +218,12 @@ pub struct DataTableColumn {
     pub h_align: HAlign,
     /// Vertical alignment for column cells
     pub v_align: VAlign,
+    /// Tooltip text for column header
+    pub tooltip: Option<String>,
+    /// Heading text alignment (separate from cell alignment)
+    pub heading_alignment: Option<HAlign>,
+    /// Column width specification
+    pub column_width: ColumnWidth,
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -164,6 +247,8 @@ pub struct DataTableCell {
     pub content: CellContent,
     pub h_align: Option<HAlign>,
     pub v_align: Option<VAlign>,
+    pub placeholder: bool,
+    pub show_edit_icon: bool,
 }
 
 impl DataTableCell {
@@ -172,6 +257,8 @@ impl DataTableCell {
             content: CellContent::Text(text.into()),
             h_align: None,
             v_align: None,
+            placeholder: false,
+            show_edit_icon: false,
         }
     }
 
@@ -183,6 +270,8 @@ impl DataTableCell {
             content: CellContent::Widget(std::sync::Arc::new(f)),
             h_align: None,
             v_align: None,
+            placeholder: false,
+            show_edit_icon: false,
         }
     }
 
@@ -195,6 +284,16 @@ impl DataTableCell {
         self.v_align = Some(align);
         self
     }
+
+    pub fn placeholder(mut self, is_placeholder: bool) -> Self {
+        self.placeholder = is_placeholder;
+        self
+    }
+
+    pub fn show_edit_icon(mut self, show: bool) -> Self {
+        self.show_edit_icon = show;
+        self
+    }
 }
 
 pub struct DataTableRow<'a> {
@@ -202,6 +301,8 @@ pub struct DataTableRow<'a> {
     selected: bool,
     readonly: bool,
     id: Option<String>,
+    color: Option<Color32>,
+    on_hover: bool,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 
@@ -212,6 +313,8 @@ impl<'a> DataTableRow<'a> {
             selected: false,
             readonly: false,
             id: None,
+            color: None,
+            on_hover: true,
             _phantom: std::marker::PhantomData,
         }
     }
@@ -251,6 +354,16 @@ impl<'a> DataTableRow<'a> {
         self.id = Some(id.into());
         self
     }
+
+    pub fn color(mut self, color: Color32) -> Self {
+        self.color = Some(color);
+        self
+    }
+
+    pub fn on_hover(mut self, hover: bool) -> Self {
+        self.on_hover = hover;
+        self
+    }
 }
 
 impl<'a> MaterialDataTable<'a> {
@@ -267,6 +380,8 @@ impl<'a> MaterialDataTable<'a> {
             sorted_column: None,
             sort_direction: SortDirection::Ascending,
             default_row_height: 52.0,
+            theme: DataTableTheme::default(),
+            row_hover_states: HashMap::new(),
         }
     }
 
@@ -293,6 +408,9 @@ impl<'a> MaterialDataTable<'a> {
             sort_direction: None,
             h_align: if numeric { HAlign::Right } else { HAlign::Left },
             v_align: VAlign::Center,
+            tooltip: None,
+            heading_alignment: None,
+            column_width: ColumnWidth::Fixed(width),
         });
         self
     }
@@ -308,6 +426,9 @@ impl<'a> MaterialDataTable<'a> {
             sort_direction: None,
             h_align: if numeric { HAlign::Right } else { HAlign::Left },
             v_align: VAlign::Center,
+            tooltip: None,
+            heading_alignment: None,
+            column_width: ColumnWidth::Fixed(width),
         });
         self
     }
@@ -329,6 +450,9 @@ impl<'a> MaterialDataTable<'a> {
             sort_direction: None,
             h_align,
             v_align,
+            tooltip: None,
+            heading_alignment: None,
+            column_width: ColumnWidth::Fixed(width),
         });
         self
     }
@@ -351,6 +475,9 @@ impl<'a> MaterialDataTable<'a> {
             sort_direction: None,
             h_align,
             v_align,
+            tooltip: None,
+            heading_alignment: None,
+            column_width: ColumnWidth::Fixed(width),
         });
         self
     }
@@ -401,10 +528,17 @@ impl<'a> MaterialDataTable<'a> {
         self
     }
 
+    /// Set custom theme for this table.
+    pub fn theme(mut self, theme: DataTableTheme) -> Self {
+        self.theme = theme;
+        self
+    }
+
     fn get_table_style(&self) -> (Color32, Stroke) {
-        let md_surface = get_global_color("surface");
+        let md_surface = self.theme.decoration.unwrap_or_else(|| get_global_color("surface"));
         let md_outline = get_global_color("outline");
-        (md_surface, Stroke::new(1.0, md_outline))
+        let border_stroke = self.theme.border_stroke.unwrap_or_else(|| Stroke::new(1.0, md_outline));
+        (md_surface, border_stroke)
     }
 
     /// Show the data table and return both UI response and selection state
@@ -476,6 +610,7 @@ impl<'a> MaterialDataTable<'a> {
             progress_visible,
             corner_radius,
             default_row_height,
+            theme,
             ..
         } = self;
 
@@ -521,10 +656,10 @@ impl<'a> MaterialDataTable<'a> {
         }
 
         // Calculate table dimensions with dynamic row heights
-        let checkbox_width = if allow_selection { 48.0 } else { 0.0 };
+        let checkbox_width = if allow_selection && theme.show_checkbox_column { 48.0 } else { 0.0 };
         let total_width = checkbox_width + columns.iter().map(|col| col.width).sum::<f32>();
-        let min_row_height = default_row_height;
-        let min_header_height = 56.0;
+        let min_row_height = theme.data_row_min_height.unwrap_or(default_row_height);
+        let min_header_height = theme.heading_row_height.unwrap_or(56.0);
 
         // Calculate header height with text wrapping
         let mut header_height: f32 = min_header_height;
@@ -658,14 +793,14 @@ impl<'a> MaterialDataTable<'a> {
 
             // Draw header
             let header_rect = Rect::from_min_size(rect.min, Vec2::new(total_width, header_height));
-            let header_bg = get_global_color("surfaceVariant");
+            let header_bg = theme.heading_row_color.unwrap_or_else(|| get_global_color("surfaceVariant"));
             ui.painter()
                 .rect_filled(header_rect, CornerRadius::ZERO, header_bg);
 
             let mut current_x = rect.min.x;
 
             // Header checkbox
-            if allow_selection {
+            if allow_selection && theme.show_checkbox_column {
                 let checkbox_rect = Rect::from_min_size(
                     egui::pos2(current_x, current_y),
                     Vec2::new(checkbox_width, header_height),
@@ -775,7 +910,13 @@ impl<'a> MaterialDataTable<'a> {
                 // Handle column header clicks for sorting
                 if column.sortable {
                     let header_click_id = table_id.with(format!("column_header_{}", col_idx));
-                    let header_response = ui.interact(col_rect, header_click_id, Sense::click());
+                    let mut header_response = ui.interact(col_rect, header_click_id, Sense::click());
+                    
+                    // Show tooltip if available
+                    if let Some(ref tooltip) = column.tooltip {
+                        header_response = header_response.on_hover_text(tooltip);
+                    }
+                    
                     if header_response.clicked() {
                         // Handle sorting logic
                         if state.sorted_column == Some(col_idx) {
@@ -811,9 +952,9 @@ impl<'a> MaterialDataTable<'a> {
 
                     // Draw sort arrow with enhanced visual feedback
                     let arrow_color = if is_sorted {
-                        get_global_color("primary") // Highlight active sort column
+                        theme.sort_active_color.unwrap_or_else(|| get_global_color("primary")) // Highlight active sort column
                     } else {
-                        get_global_color("onSurfaceVariant")
+                        theme.sort_inactive_color.unwrap_or_else(|| get_global_color("onSurfaceVariant"))
                     };
 
                     let center = icon_rect.center();
@@ -918,8 +1059,12 @@ impl<'a> MaterialDataTable<'a> {
                 );
 
                 let row_selected = state.selected_rows.get(row_idx).copied().unwrap_or(false);
-                let row_bg = if row_selected {
-                    get_global_color("primaryContainer")
+                
+                // Determine row background color with priority: custom color > selected > readonly > alternating
+                let row_bg = if let Some(custom_color) = row.color {
+                    custom_color
+                } else if row_selected {
+                    theme.selected_row_color.unwrap_or_else(|| get_global_color("primaryContainer"))
                 } else if row.readonly {
                     // Subtle background for readonly rows
                     let surface_variant = get_global_color("surfaceVariant");
@@ -930,18 +1075,32 @@ impl<'a> MaterialDataTable<'a> {
                         (surface_variant.a() as f32 * 0.3) as u8,
                     )
                 } else if row_idx % 2 == 1 {
-                    get_global_color("surfaceVariant")
+                    theme.data_row_color.unwrap_or_else(|| get_global_color("surfaceVariant"))
                 } else {
                     background_color
                 };
 
                 ui.painter()
                     .rect_filled(row_rect, CornerRadius::ZERO, row_bg);
+                    
+                // Draw divider below row
+                if row_idx < rows.len() - 1 || theme.show_bottom_border {
+                    let divider_y = current_y + row_height;
+                    let divider_thickness = theme.divider_thickness.unwrap_or(1.0);
+                    let divider_color = theme.divider_color.unwrap_or_else(|| get_global_color("outlineVariant"));
+                    ui.painter().line_segment(
+                        [
+                            egui::pos2(rect.min.x, divider_y),
+                            egui::pos2(rect.min.x + total_width, divider_y),
+                        ],
+                        Stroke::new(divider_thickness, divider_color),
+                    );
+                }
 
                 current_x = rect.min.x;
 
                 // Row checkbox
-                if allow_selection {
+                if allow_selection && theme.show_checkbox_column {
                     let checkbox_rect = Rect::from_min_size(
                         egui::pos2(current_x, current_y),
                         Vec2::new(checkbox_width, row_height),
@@ -1107,7 +1266,25 @@ impl<'a> MaterialDataTable<'a> {
                                 CellContent::Text(cell_text) => {
                                     // Render normal text with alignment
                                     let available_width = column.width - 32.0; // Account for padding
-                                    let cell_font = FontId::new(14.0, FontFamily::Proportional);
+                                    let cell_font = if let Some((ref font_id, _)) = theme.data_text_style {
+                                        font_id.clone()
+                                    } else {
+                                        FontId::new(14.0, FontFamily::Proportional)
+                                    };
+                                    
+                                    let text_color = if cell.placeholder {
+                                        let base_color = get_global_color("onSurface");
+                                        Color32::from_rgba_premultiplied(
+                                            base_color.r(),
+                                            base_color.g(),
+                                            base_color.b(),
+                                            (base_color.a() as f32 * 0.6) as u8,
+                                        )
+                                    } else if let Some((_, ref color)) = theme.data_text_style {
+                                        *color
+                                    } else {
+                                        get_global_color("onSurface")
+                                    };
 
                                     let galley = ui.fonts(|f| {
                                         f.layout_job(egui::text::LayoutJob {
@@ -1117,7 +1294,7 @@ impl<'a> MaterialDataTable<'a> {
                                                 byte_range: 0..cell_text.text().len(),
                                                 format: egui::TextFormat {
                                                     font_id: cell_font,
-                                                    color: get_global_color("onSurface"),
+                                                    color: text_color,
                                                     ..Default::default()
                                                 },
                                             }],
@@ -1159,8 +1336,35 @@ impl<'a> MaterialDataTable<'a> {
                                     ui.painter().galley(
                                         text_pos,
                                         galley,
-                                        get_global_color("onSurface"),
+                                        text_color,
                                     );
+                                    
+                                    // Draw edit icon if requested
+                                    if cell.show_edit_icon {
+                                        let icon_size = 16.0;
+                                        let icon_x = current_x + column.width - icon_size - 8.0;
+                                        let icon_y = current_y + (row_height - icon_size) / 2.0;
+                                        let icon_rect = Rect::from_min_size(
+                                            egui::pos2(icon_x, icon_y),
+                                            Vec2::splat(icon_size),
+                                        );
+                                        // Draw simple pencil icon
+                                        let icon_color = get_global_color("onSurfaceVariant");
+                                        ui.painter().line_segment(
+                                            [
+                                                icon_rect.left_top() + Vec2::new(4.0, 10.0),
+                                                icon_rect.left_top() + Vec2::new(10.0, 4.0),
+                                            ],
+                                            Stroke::new(1.5, icon_color),
+                                        );
+                                        ui.painter().line_segment(
+                                            [
+                                                icon_rect.left_top() + Vec2::new(2.0, 12.0),
+                                                icon_rect.left_top() + Vec2::new(4.0, 10.0),
+                                            ],
+                                            Stroke::new(1.5, icon_color),
+                                        );
+                                    }
                                 }
                                 CellContent::Widget(widget_fn) => {
                                     // Render custom widget
