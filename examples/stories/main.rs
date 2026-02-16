@@ -3,7 +3,7 @@
 use eframe::egui::{self, Color32};
 use egui_file_dialog::FileDialog;
 use egui_material3::theme::{
-    load_fonts, load_themes, setup_google_fonts, setup_local_fonts,
+    load_fonts, load_themes, setup_google_fonts,
     setup_local_fonts_from_bytes, setup_local_theme,
 };
 use egui_material3::*;
