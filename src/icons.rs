@@ -23,6 +23,7 @@ pub const ICON_EXPAND_MORE: char = '\u{e5cf}';
 pub const ICON_EXPAND_LESS: char = '\u{e5ce}';
 pub const ICON_EDIT: char = '\u{e3c9}';
 pub const ICON_DELETE: char = '\u{e872}';
+pub const ICON_DELETE_OUTLINE: char = '\u{e92e}';
 pub const ICON_SAVE: char = '\u{e161}';
 pub const ICON_CANCEL: char = '\u{e5c9}';
 pub const ICON_VISIBILITY: char = '\u{e8f4}';
@@ -79,6 +80,7 @@ lazy_static::lazy_static! {
         m.insert("expand_less", ICON_EXPAND_LESS);
         m.insert("edit", ICON_EDIT);
         m.insert("delete", ICON_DELETE);
+        m.insert("delete_outline", ICON_DELETE_OUTLINE);
         m.insert("save", ICON_SAVE);
         m.insert("cancel", ICON_CANCEL);
         m.insert("visibility", ICON_VISIBILITY);

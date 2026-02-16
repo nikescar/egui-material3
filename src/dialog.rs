@@ -67,6 +67,22 @@ pub struct MaterialDialog<'a> {
     no_focus_trap: bool,
     /// Maximum width constraint for the dialog
     max_width: Option<f32>,
+    /// Minimum width constraint for the dialog (default: 280dp)
+    min_width: Option<f32>,
+    /// Maximum height constraint for the dialog
+    max_height: Option<f32>,
+    /// Padding around the title (default: 24dp horizontal, varies vertical)
+    title_padding: Option<[f32; 4]>,
+    /// Padding around the content (default: 24dp horizontal, 16dp top, 24dp bottom)
+    content_padding: Option<[f32; 4]>,
+    /// Padding around the actions area (default: 24dp all sides)
+    actions_padding: Option<[f32; 4]>,
+    /// Padding around individual action buttons
+    button_padding: Option<[f32; 2]>,
+    /// Whether content should be scrollable
+    scrollable: bool,
+    /// Spacing between action buttons (default: 8dp)
+    actions_spacing: f32,
 }
 
 /// Represents an action button in a Material Design dialog
@@ -114,6 +130,14 @@ impl<'a> MaterialDialog<'a> {
             quick: false,
             no_focus_trap: false,
             max_width: None,
+            min_width: Some(280.0),
+            max_height: None,
+            title_padding: None,
+            content_padding: None,
+            actions_padding: None,
+            button_padding: None,
+            scrollable: false,
+            actions_spacing: 8.0,
         }
     }
 
@@ -189,6 +213,102 @@ impl<'a> MaterialDialog<'a> {
     /// Self for method chaining
     pub fn max_width(mut self, width: f32) -> Self {
         self.max_width = Some(width);
+        self
+    }
+
+    /// Set the minimum width constraint for the dialog
+    ///
+    /// ## Parameters
+    /// - `width`: The minimum width in pixels (default: 280.0)
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn min_width(mut self, width: f32) -> Self {
+        self.min_width = Some(width);
+        self
+    }
+
+    /// Set the maximum height constraint for the dialog
+    ///
+    /// ## Parameters
+    /// - `height`: The maximum height in pixels
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn max_height(mut self, height: f32) -> Self {
+        self.max_height = Some(height);
+        self
+    }
+
+    /// Set custom padding for the title area
+    ///
+    /// ## Parameters
+    /// - `padding`: [left, right, top, bottom] padding in pixels
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn title_padding(mut self, padding: [f32; 4]) -> Self {
+        self.title_padding = Some(padding);
+        self
+    }
+
+    /// Set custom padding for the content area
+    ///
+    /// ## Parameters
+    /// - `padding`: [left, right, top, bottom] padding in pixels
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn content_padding(mut self, padding: [f32; 4]) -> Self {
+        self.content_padding = Some(padding);
+        self
+    }
+
+    /// Set custom padding for the actions area
+    ///
+    /// ## Parameters
+    /// - `padding`: [left, right, top, bottom] padding in pixels
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn actions_padding(mut self, padding: [f32; 4]) -> Self {
+        self.actions_padding = Some(padding);
+        self
+    }
+
+    /// Set custom padding for individual action buttons
+    ///
+    /// ## Parameters
+    /// - `padding`: [horizontal, vertical] padding in pixels
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn button_padding(mut self, padding: [f32; 2]) -> Self {
+        self.button_padding = Some(padding);
+        self
+    }
+
+    /// Set whether the content should be scrollable
+    ///
+    /// ## Parameters
+    /// - `scrollable`: If true, content will be placed in a ScrollArea
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn scrollable(mut self, scrollable: bool) -> Self {
+        self.scrollable = scrollable;
+        self
+    }
+
+    /// Set the spacing between action buttons
+    ///
+    /// ## Parameters
+    /// - `spacing`: Spacing in pixels (default: 8.0)
+    ///
+    /// ## Returns
+    /// Self for method chaining
+    pub fn actions_spacing(mut self, spacing: f32) -> Self {
+        self.actions_spacing = spacing;
         self
     }
 
@@ -308,22 +428,49 @@ impl<'a> MaterialDialog<'a> {
         let mut pending_actions = Vec::new();
 
         // Extract values we need before moving into closure
-        let dialog_width = self.max_width.unwrap_or(match self.dialog_type {
+        let default_width: f32 = match self.dialog_type {
             DialogType::Alert => 280.0,
             DialogType::Confirm => 320.0,
-            DialogType::Form => 800.0,
+            DialogType::Form => 560.0,
             DialogType::Standard => 400.0,
-        });
+        };
+        
+        let dialog_min_width = self.min_width.unwrap_or(280.0);
+        let dialog_max_width = self.max_width.unwrap_or(default_width.max(560.0));
+        let dialog_max_height = self.max_height;
+        
+        // Calculate reasonable max height based on screen size if not specified
+        let screen_height = ctx.screen_rect().height();
+        let effective_max_height = dialog_max_height.unwrap_or((screen_height * 0.9).min(800.0));
 
         let title = self.title.clone();
         let icon = self.icon.clone();
         let actions = std::mem::take(&mut self.actions);
         let open_ref = self.open as *mut bool;
+        
+        let title_padding = self.title_padding;
+        let content_padding = self.content_padding;
+        let actions_padding = self.actions_padding;
+        let button_padding = self.button_padding;
+        let scrollable = self.scrollable;
+        let actions_spacing = self.actions_spacing;
 
-        let modal = Modal::new(self.id).show(ctx, |ui| {
-            // ui.set_width(dialog_width);
-            ui.set_min_width(dialog_width);
-            ui.set_height(200.0);
+        // Configure Modal frame with top/bottom margin for proper padding
+        let modal_frame = egui::Frame::default()
+            .inner_margin(egui::vec2(0.0, 24.0))
+            .fill(get_global_color("surfaceContainerHigh"))
+            .rounding(egui::Rounding::same(28))
+            .stroke(Stroke::NONE);
+        
+        let modal = Modal::new(self.id)
+            .frame(modal_frame)
+            .show(ctx, |ui| {
+            ui.set_min_width(dialog_min_width);
+            ui.set_max_width(dialog_max_width);
+            // Only set max_height for scrollable dialogs to avoid empty space at bottom
+            if scrollable {
+                ui.set_max_height(effective_max_height);
+            }
 
             // Material Design colors
             let surface_container_high = get_global_color("surfaceContainerHigh");
@@ -334,66 +481,139 @@ impl<'a> MaterialDialog<'a> {
             ui.style_mut().visuals.window_fill = surface_container_high;
             ui.style_mut().visuals.panel_fill = surface_container_high;
             ui.style_mut().visuals.window_stroke = Stroke::NONE;
-
+            
+            // Remove all automatic spacing and margins  
+            // ui.spacing_mut().item_spacing.y = 0.0;
+            // ui.spacing_mut().window_margin = egui::Margin::ZERO;
+            
             ui.vertical(|ui| {
-                ui.add_space(24.0);
+                // ui.spacing_mut().item_spacing.y = 0.0;
+                // Top padding now handled by Modal frame margin
 
-                // Icon (if present) - positioned above headline
+                // Icon (if present) - positioned above headline, centered
                 if let Some(ref icon) = icon {
                     ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                         ui.add_space(0.0);
-                        // Material icon placeholder
-                        ui.label(
-                            egui::RichText::new(icon)
-                                .size(24.0)
-                                .color(on_surface_variant),
-                        );
+                        // Material icon - centered above title
+                        // Use MaterialIcon for proper icon rendering
+                        let icon_widget = crate::icon::MaterialIcon::new(crate::icons::icon_text(icon))
+                            .size(24.0)
+                            .color(on_surface_variant);
+                        ui.add(icon_widget);
                         ui.add_space(16.0);
                     });
                 }
 
-                // Headline
-                ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                    ui.add_space(24.0);
-                    ui.label(
-                        egui::RichText::new(&title)
-                            .size(24.0)
-                            .color(on_surface)
-                            .family(egui::FontFamily::Proportional),
-                    );
-                    ui.add_space(24.0);
+                // Headline with custom padding support
+                let [title_left, title_right, title_top, title_bottom] = 
+                    title_padding.unwrap_or([24.0, 24.0, 0.0, 0.0]);
+                
+                ui.horizontal(|ui| {
+                    ui.add_space(title_left);
+                    // Center title if there's an icon
+                    let layout = if icon.is_some() {
+                        egui::Layout::centered_and_justified(egui::Direction::LeftToRight)
+                    } else {
+                        egui::Layout::left_to_right(egui::Align::TOP)
+                    };
+                    ui.with_layout(layout, |ui| {
+                        ui.label(
+                            egui::RichText::new(&title)
+                                .size(24.0)
+                                .color(on_surface)
+                                .family(egui::FontFamily::Proportional),
+                        );
+                    });
+                    ui.add_space(title_right);
                 });
 
-                ui.add_space(16.0);
+                ui.add_space(if title_bottom > 0.0 { title_bottom } else { 16.0 });
 
-                // Content area (full width, no padding)
-                ui.vertical(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
-                    (self.content)(ui);
-                });
+                // Content area with optional scrolling and custom padding
+                let [content_left, content_right, content_top, content_bottom] = 
+                    content_padding.unwrap_or([24.0, 24.0, 0.0, 24.0]);
+                
+                if scrollable {
+                    // Scrollable content - use fixed width area
+                    let scroll_width = ui.available_width() - content_left - content_right;
+                    let scroll_height = ui.available_height() - content_bottom;
+                    
+                    ui.horizontal(|ui| {
+                        ui.add_space(content_left);
+                        
+                        // Allocate fixed space for scroll area
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(scroll_width, scroll_height),
+                            egui::Layout::top_down(egui::Align::LEFT),
+                            |ui| {
+                                egui::ScrollArea::vertical()
+                                    .id_salt("dialog_content_scroll")
+                                    .auto_shrink([false, false])
+                                    .show(ui, |ui| {
+                                        ui.set_width(scroll_width - 20.0); // Account for scrollbar
+                                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                                        if content_top > 0.0 {
+                                            ui.add_space(content_top);
+                                        }
+                                        (self.content)(ui);
+                                    });
+                            },
+                        );
+                        
+                        ui.add_space(content_right);
+                    });
+                } else {
+                    // Non-scrollable content - render directly with width constraint
+                    let content_width = ui.available_width() - content_left - content_right;
+                    ui.horizontal(|ui| {
+                        ui.add_space(content_left);
+                        ui.vertical(|ui| {
+                            ui.set_max_width(content_width);
+                            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                            if content_top > 0.0 {
+                                ui.add_space(content_top);
+                            }
+                            (self.content)(ui);
+                            // Don't consume remaining vertical space - let content size naturally
+                        });
+                        ui.add_space(content_right);
+                    });
+                }
 
-                ui.add_space(24.0);
-
-                // Actions area
+                // Actions area with custom padding and spacing
                 if !actions.is_empty() {
+                    let [actions_left, actions_right, actions_top, actions_bottom] = 
+                        actions_padding.unwrap_or([24.0, 24.0, 0.0, 0.0]);
+                    
+                    // Add spacing between content and actions
+                    // Use actions_top if specified, otherwise use smaller default spacing
+                    let spacing_before_actions = if actions_top > 0.0 { 
+                        actions_top 
+                    } else if content_bottom > 0.0 { 
+                        content_bottom.min(16.0) 
+                    } else { 
+                        16.0 
+                    };
+                    ui.add_space(spacing_before_actions);
+                    
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.add_space(24.0);
+                        ui.add_space(actions_right);
 
                         for (index, action) in actions.into_iter().enumerate().rev() {
-                            let button_response = Self::draw_action_button_static(ui, &action);
+                            let button_response = Self::draw_action_button_static(ui, &action, button_padding);
 
                             if button_response.clicked() {
                                 pending_actions.push((index, action.action));
                             }
 
-                            ui.add_space(8.0);
+                            if index > 0 {
+                                ui.add_space(actions_spacing);
+                            }
                         }
 
-                        ui.add_space(16.0); // Extra space from right edge
+                        ui.add_space(actions_left);
                     });
-
-                    ui.add_space(24.0);
+                    // Bottom padding now handled by Modal frame margin
                 }
             });
         });
@@ -412,13 +632,15 @@ impl<'a> MaterialDialog<'a> {
         }
     }
 
-    fn draw_action_button_static(ui: &mut Ui, action: &DialogAction) -> Response {
+    fn draw_action_button_static(ui: &mut Ui, action: &DialogAction, button_padding: Option<[f32; 2]>) -> Response {
         let primary = get_global_color("primary");
         let on_primary = get_global_color("onPrimary");
         let secondary_container = get_global_color("secondaryContainer");
         let on_secondary_container = get_global_color("onSecondaryContainer");
         let _on_surface_variant = get_global_color("onSurfaceVariant");
 
+        let [btn_h_padding, btn_v_padding] = button_padding.unwrap_or([12.0, 8.0]);
+        
         let text_width = ui.fonts(|fonts| {
             fonts
                 .layout_no_wrap(action.text.clone(), egui::FontId::default(), Color32::WHITE)
@@ -426,8 +648,8 @@ impl<'a> MaterialDialog<'a> {
                 .width()
         });
 
-        let button_width = (text_width + 24.0).max(64.0);
-        let button_height = 40.0;
+        let button_width = (text_width + btn_h_padding * 2.0).max(64.0);
+        let button_height = (20.0 + btn_v_padding * 2.0).max(40.0);
         let desired_size = Vec2::new(button_width, button_height);
 
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
@@ -498,7 +720,7 @@ impl<'a> MaterialDialog<'a> {
     }
 
     fn _draw_action_button(&self, ui: &mut Ui, action: &DialogAction) -> Response {
-        Self::draw_action_button_static(ui, action)
+        Self::draw_action_button_static(ui, action, self.button_padding)
     }
 }
 
