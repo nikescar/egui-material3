@@ -11,9 +11,10 @@ pub struct ChipsWindow {
     disabled: bool,
     // Chip states
     filter_selected: bool,
-    filter_with_icon_selected: bool,
-    removable_filter_selected: bool,
-    soft_disabled_filter_selected: bool,
+    filter_disabled_selected: bool,
+    filter_icon_selected: bool,
+    filter_removable_selected: bool,
+    filter_elevated_selected: bool,
 }
 
 impl Default for ChipsWindow {
@@ -23,10 +24,11 @@ impl Default for ChipsWindow {
             label: String::new(),
             elevated: false,
             disabled: false,
-            filter_selected: false,
-            filter_with_icon_selected: false,
-            removable_filter_selected: false,
-            soft_disabled_filter_selected: false,
+            filter_selected: true,
+            filter_disabled_selected: true,
+            filter_icon_selected: false,
+            filter_removable_selected: true,
+            filter_elevated_selected: false,
         }
     }
 }
@@ -40,6 +42,8 @@ impl ChipsWindow {
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_controls(ui);
+                    ui.add_space(20.0);
+                    self.render_chips(ui);
                     ui.add_space(20.0);
                     self.render_assist_chips(ui);
                     ui.add_space(20.0);
@@ -71,311 +75,262 @@ impl ChipsWindow {
         ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
     }
 
-    fn render_assist_chips(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Assist Chips");
+    fn render_chips(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Chips");
 
+        let label = self.label.clone();
+        let elevated = self.elevated;
+        let disabled = self.disabled;
+
+        let l = |default: &str| -> String {
+            if label.is_empty() {
+                default.to_string()
+            } else {
+                label.clone()
+            }
+        };
+
+        // Row 1: Enabled chips (matches Flutter component_screen.dart)
         ui.horizontal_wrapped(|ui| {
-            self.render_assist_chips_content(ui);
+            let mut chip = assist_chip(l("Assist"))
+                .leading_icon(image_utils::material_icons::EVENT);
+            if elevated {
+                chip = chip.elevated(true);
+            }
+            if disabled {
+                chip = chip.enabled(false);
+            }
+            ui.add(chip.on_click(|| println!("Assist chip clicked!")));
+            ui.add_space(8.0);
+
+            let mut chip = filter_chip(l("Filter"), &mut self.filter_selected);
+            if elevated {
+                chip = chip.elevated(true);
+            }
+            if disabled {
+                chip = chip.enabled(false);
+            }
+            ui.add(chip);
+            ui.add_space(8.0);
+
+            let mut chip = input_chip(l("Input")).removable(true);
+            if elevated {
+                chip = chip.elevated(true);
+            }
+            if disabled {
+                chip = chip.enabled(false);
+            }
+            ui.add(chip.on_click(|| println!("Input chip clicked!")));
+            ui.add_space(8.0);
+
+            let mut chip = suggestion_chip(l("Suggestion"));
+            if elevated {
+                chip = chip.elevated(true);
+            }
+            if disabled {
+                chip = chip.enabled(false);
+            }
+            ui.add(chip.on_click(|| println!("Suggestion chip clicked!")));
+        });
+
+        ui.add_space(12.0);
+
+        // Row 2: Disabled chips
+        ui.horizontal_wrapped(|ui| {
+            let mut chip = assist_chip(l("Assist"))
+                .leading_icon(image_utils::material_icons::EVENT)
+                .enabled(false);
+            if elevated {
+                chip = chip.elevated(true);
+            }
+            ui.add(chip);
+            ui.add_space(8.0);
+
+            let mut chip =
+                filter_chip(l("Filter"), &mut self.filter_disabled_selected).enabled(false);
+            if elevated {
+                chip = chip.elevated(true);
+            }
+            ui.add(chip);
+            ui.add_space(8.0);
+
+            let mut chip = input_chip(l("Input")).removable(true).enabled(false);
+            if elevated {
+                chip = chip.elevated(true);
+            }
+            ui.add(chip);
+            ui.add_space(8.0);
+
+            let chip = suggestion_chip(l("Suggestion")).enabled(false);
+            ui.add(chip);
         });
     }
 
-    fn render_assist_chips_content(&mut self, ui: &mut egui::Ui) {
-        // Basic assist chip
-        let label = if self.label.is_empty() {
-            "Assist chip"
-        } else {
-            &self.label
-        };
-        let mut chip = assist_chip(label);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Assist chip clicked!")));
-        ui.add_space(8.0);
+    fn render_assist_chips(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Assist Chips");
 
-        // Assist chip with material icon
-        let label = if self.label.is_empty() {
-            "Assist chip with icon"
-        } else {
-            &self.label
+        let label = self.label.clone();
+        let l = |default: &str| -> String {
+            if label.is_empty() {
+                default.to_string()
+            } else {
+                label.clone()
+            }
         };
-        let mut chip =
-            assist_chip(label).leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Assist chip with icon clicked!")));
-        ui.add_space(8.0);
 
-        // Force new line for problematic chip
-        ui.end_row();
+        ui.horizontal_wrapped(|ui| {
+            // Plain assist chip
+            ui.add(assist_chip(l("Assist chip")));
+            ui.add_space(8.0);
 
-        // Assist link chip with Google SVG logo (never disabled)
-        let label = if self.label.is_empty() {
-            "Assist link chip"
-        } else {
-            &self.label
-        };
-        let mut chip = assist_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
-        // Link chips are never disabled
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Assist link chip clicked!")));
-        ui.add_space(12.0);
+            // With material icon
+            ui.add(
+                assist_chip(l("With icon"))
+                    .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE),
+            );
+            ui.add_space(8.0);
 
-        // Soft-disabled assist chip
-        let label = if self.label.is_empty() {
-            "Soft-disabled assist chip (focusable)"
-        } else {
-            &self.label
-        };
-        let mut chip = assist_chip(label).soft_disabled(true);
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Soft-disabled assist chip clicked!")));
+            // With SVG icon (Google logo)
+            ui.add(
+                assist_chip(l("Assist link"))
+                    .leading_icon_svg(image_utils::GOOGLE_LOGO_SVG),
+            );
+            ui.add_space(8.0);
+
+            // Elevated
+            ui.add(assist_chip(l("Elevated")).elevated(true));
+            ui.add_space(8.0);
+
+            // Soft-disabled
+            ui.add(assist_chip(l("Soft-disabled")).soft_disabled(true));
+        });
     }
 
     fn render_filter_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Filter Chips");
 
+        let label = self.label.clone();
+        let l = |default: &str| -> String {
+            if label.is_empty() {
+                default.to_string()
+            } else {
+                label.clone()
+            }
+        };
+
         ui.horizontal_wrapped(|ui| {
-            self.render_filter_chips_content(ui);
+            // Basic filter chip
+            ui.add(filter_chip(l("Filter chip"), &mut self.filter_icon_selected));
+            ui.add_space(8.0);
+
+            // With leading icon
+            ui.add(
+                filter_chip(l("With icon"), &mut self.filter_elevated_selected)
+                    .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE),
+            );
+            ui.add_space(8.0);
+
+            // Removable filter chip
+            ui.add(
+                filter_chip(l("Removable"), &mut self.filter_removable_selected).removable(true),
+            );
+            ui.add_space(8.0);
+
+            // Elevated filter chip
+            let mut elevated_selected = false;
+            ui.add(filter_chip(l("Elevated"), &mut elevated_selected).elevated(true));
+            ui.add_space(8.0);
+
+            // Soft-disabled filter chip
+            let mut soft_selected = true;
+            ui.add(filter_chip(l("Soft-disabled"), &mut soft_selected).soft_disabled(true));
         });
-    }
-
-    fn render_filter_chips_content(&mut self, ui: &mut egui::Ui) {
-        // Basic filter chip
-        let label = if self.label.is_empty() {
-            "Filter chip"
-        } else {
-            &self.label
-        };
-        let mut chip = filter_chip(label, &mut self.filter_selected);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip);
-        ui.add_space(8.0);
-
-        // Filter chip with material icon
-        let label = if self.label.is_empty() {
-            "Filter chip with icon"
-        } else {
-            &self.label
-        };
-        let mut chip = filter_chip(label, &mut self.filter_with_icon_selected)
-            .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip);
-        ui.add_space(8.0);
-
-        // Force new line for problematic chip
-        ui.end_row();
-
-        // Removable filter chip
-        let label = if self.label.is_empty() {
-            "Removable filter chip"
-        } else {
-            &self.label
-        };
-        let mut chip = filter_chip(label, &mut self.removable_filter_selected).removable(true);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip);
-        ui.add_space(12.0);
-
-        // Soft-disabled filter chip
-        let label = if self.label.is_empty() {
-            "Soft-disabled filter chip (focusable)"
-        } else {
-            &self.label
-        };
-        let mut chip = filter_chip(label, &mut self.soft_disabled_filter_selected)
-            .soft_disabled(true)
-            .removable(true);
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip);
     }
 
     fn render_input_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Input Chips");
 
+        let label = self.label.clone();
+        let l = |default: &str| -> String {
+            if label.is_empty() {
+                default.to_string()
+            } else {
+                label.clone()
+            }
+        };
+
         ui.horizontal_wrapped(|ui| {
-            self.render_input_chips_content(ui);
+            // Plain input chip
+            ui.add(input_chip(l("Input chip")));
+            ui.add_space(8.0);
+
+            // With material icon
+            ui.add(
+                input_chip(l("With icon"))
+                    .leading_icon(image_utils::material_icons::ACCOUNT_CIRCLE),
+            );
+            ui.add_space(8.0);
+
+            // With avatar (SVG) - uses avatar styling
+            ui.add(
+                input_chip(l("With avatar"))
+                    .leading_icon_svg(image_utils::AVATAR_SVG)
+                    .avatar(true),
+            );
+            ui.add_space(8.0);
+
+            // With Google logo link
+            ui.add(
+                input_chip(l("Input link")).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG),
+            );
+            ui.add_space(8.0);
+
+            // Removable
+            ui.add(input_chip(l("Removable")).removable(true));
+            ui.add_space(8.0);
+
+            // Soft-disabled
+            ui.add(input_chip(l("Soft-disabled")).soft_disabled(true));
         });
-    }
-
-    fn render_input_chips_content(&mut self, ui: &mut egui::Ui) {
-        // Basic input chip
-        let label = if self.label.is_empty() {
-            "Input chip"
-        } else {
-            &self.label
-        };
-        let mut chip = input_chip(label);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        ui.add(chip.on_click(|| println!("Input chip clicked!")));
-        ui.add_space(8.0);
-
-        // Input chip with material icon
-        let label = if self.label.is_empty() {
-            "Input chip with icon"
-        } else {
-            &self.label
-        };
-        let mut chip =
-            input_chip(label).leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        ui.add(chip.on_click(|| println!("Input chip with icon clicked!")));
-        ui.add_space(8.0);
-
-        // Force new line for problematic chip
-        ui.end_row();
-
-        // Input chip with avatar (using SVG) - keep roundy for avatar
-        let label = if self.label.is_empty() {
-            "Input chip with avatar"
-        } else {
-            &self.label
-        };
-        let mut chip = input_chip(label)
-            .leading_icon_svg(image_utils::AVATAR_SVG)
-            .avatar(true);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        ui.add(chip.on_click(|| println!("Input chip with avatar clicked!")));
-        ui.add_space(12.0);
-
-        // Input link chip with Google logo (never disabled)
-        let label = if self.label.is_empty() {
-            "Input link chip"
-        } else {
-            &self.label
-        };
-        let chip = input_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
-        // Link chips are never disabled
-        ui.add(chip.on_click(|| println!("Input link chip clicked!")));
-        ui.add_space(8.0);
-
-        // Remove-only input chip
-        let label = if self.label.is_empty() {
-            "Remove-only input chip"
-        } else {
-            &self.label
-        };
-        let mut chip = input_chip(label).removable(true);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        ui.add(chip.on_click(|| println!("Remove-only input chip clicked!")));
-        ui.add_space(8.0);
-
-        // Soft-disabled input chip
-        let label = if self.label.is_empty() {
-            "Soft-disabled input chip (focusable)"
-        } else {
-            &self.label
-        };
-        let chip = input_chip(label).soft_disabled(true);
-        ui.add(chip.on_click(|| println!("Soft-disabled input chip clicked!")));
     }
 
     fn render_suggestion_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Suggestion Chips");
 
+        let label = self.label.clone();
+        let l = |default: &str| -> String {
+            if label.is_empty() {
+                default.to_string()
+            } else {
+                label.clone()
+            }
+        };
+
         ui.horizontal_wrapped(|ui| {
-            self.render_suggestion_chips_content(ui);
+            // Plain suggestion chip
+            ui.add(suggestion_chip(l("Suggestion chip")));
+            ui.add_space(8.0);
+
+            // With icon
+            ui.add(
+                suggestion_chip(l("With icon"))
+                    .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE),
+            );
+            ui.add_space(8.0);
+
+            // With SVG icon
+            ui.add(
+                suggestion_chip(l("Suggestion link"))
+                    .leading_icon_svg(image_utils::GOOGLE_LOGO_SVG),
+            );
+            ui.add_space(8.0);
+
+            // Elevated
+            ui.add(suggestion_chip(l("Elevated")).elevated(true));
+            ui.add_space(8.0);
+
+            // Soft-disabled
+            ui.add(suggestion_chip(l("Soft-disabled")).soft_disabled(true));
         });
-    }
-
-    fn render_suggestion_chips_content(&mut self, ui: &mut egui::Ui) {
-        // Basic suggestion chip
-        let label = if self.label.is_empty() {
-            "Suggestion chip"
-        } else {
-            &self.label
-        };
-        let mut chip = suggestion_chip(label);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Suggestion chip clicked!")));
-        ui.add_space(8.0);
-
-        // Suggestion chip with material icon
-        let label = if self.label.is_empty() {
-            "Suggestion chip with icon"
-        } else {
-            &self.label
-        };
-        let mut chip =
-            suggestion_chip(label).leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE);
-        if self.disabled {
-            chip = chip.enabled(false);
-        }
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Suggestion chip with icon clicked!")));
-        ui.add_space(8.0);
-
-        // Force new line for problematic chip
-        ui.end_row();
-
-        // Suggestion link chip with Google logo (never disabled)
-        let label = if self.label.is_empty() {
-            "Suggestion link chip"
-        } else {
-            &self.label
-        };
-        let mut chip = suggestion_chip(label).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG);
-        // Link chips are never disabled
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Suggestion link chip clicked!")));
-        ui.add_space(12.0);
-
-        // Soft-disabled suggestion chip
-        let label = if self.label.is_empty() {
-            "Soft-disabled suggestion chip (focusable)"
-        } else {
-            &self.label
-        };
-        let mut chip = suggestion_chip(label).soft_disabled(true);
-        if self.elevated {
-            chip = chip.elevated(true);
-        }
-        ui.add(chip.on_click(|| println!("Soft-disabled suggestion chip clicked!")));
     }
 }

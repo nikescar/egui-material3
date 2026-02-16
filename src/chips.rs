@@ -57,8 +57,8 @@ pub enum IconType {
 /// ```
 ///
 /// ## Material Design Spec
-/// - Height: 32dp (standard) or 24dp (small)
-/// - Corner radius: 8dp (filter/input) or 16dp (assist/suggestion)
+/// - Height: 32dp
+/// - Corner radius: 8dp
 /// - Text: Label Large (14sp/500 weight)
 /// - Touch target: Minimum 48x48dp
 pub struct MaterialChip<'a> {
@@ -263,8 +263,108 @@ impl<'a> MaterialChip<'a> {
     }
 }
 
+/// Resolved chip colors for rendering
+struct ChipColors {
+    bg: Color32,
+    border: Color32,
+    text: Color32,
+    icon: Color32,
+    delete_icon: Color32,
+    state_layer: Color32,
+}
+
+/// Resolve chip colors per Material Design 3 spec (_ChipDefaultsM3)
+fn resolve_chip_colors(
+    variant: ChipVariant,
+    is_selected: bool,
+    enabled: bool,
+    soft_disabled: bool,
+    elevated: bool,
+    is_hovered: bool,
+    is_pressed: bool,
+) -> ChipColors {
+    let on_surface = get_global_color("onSurface");
+    let on_surface_variant = get_global_color("onSurfaceVariant");
+    let outline_variant = get_global_color("outlineVariant");
+    let surface_container_low = get_global_color("surfaceContainerLow");
+    let secondary_container = get_global_color("secondaryContainer");
+    let on_secondary_container = get_global_color("onSecondaryContainer");
+    let primary = get_global_color("primary");
+
+    // Disabled states (shared across all variants per M3 spec)
+    if !enabled {
+        let (bg, border, text) = if soft_disabled {
+            (
+                on_surface.gamma_multiply(0.12),
+                Color32::TRANSPARENT,
+                on_surface.gamma_multiply(0.60),
+            )
+        } else {
+            (
+                on_surface.gamma_multiply(0.12),
+                on_surface.gamma_multiply(0.12),
+                on_surface.gamma_multiply(0.38),
+            )
+        };
+        return ChipColors {
+            bg,
+            border,
+            text,
+            icon: text,
+            delete_icon: text,
+            state_layer: Color32::TRANSPARENT,
+        };
+    }
+
+    // State layer (shared logic for all enabled variants)
+    let state_layer_base = if is_selected { on_secondary_container } else { on_surface_variant };
+    let state_layer = if is_pressed {
+        state_layer_base.gamma_multiply(0.12)
+    } else if is_hovered {
+        state_layer_base.gamma_multiply(0.08)
+    } else {
+        Color32::TRANSPARENT
+    };
+
+    // Selected filter chip
+    if variant == ChipVariant::Filter && is_selected {
+        return ChipColors {
+            bg: secondary_container,
+            border: Color32::TRANSPARENT,
+            text: on_secondary_container,
+            icon: primary,
+            delete_icon: on_secondary_container,
+            state_layer,
+        };
+    }
+
+    // Elevated (unselected)
+    if elevated {
+        return ChipColors {
+            bg: surface_container_low,
+            border: Color32::TRANSPARENT,
+            text: on_surface_variant,
+            icon: primary,
+            delete_icon: on_surface_variant,
+            state_layer,
+        };
+    }
+
+    // Default (flat, unselected)
+    ChipColors {
+        bg: Color32::TRANSPARENT,
+        border: outline_variant,
+        text: on_surface_variant,
+        icon: primary,
+        delete_icon: on_surface_variant,
+        state_layer,
+    }
+}
+
 impl<'a> Widget for MaterialChip<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
+        let is_selected = self.selected.as_ref().map_or(false, |s| **s);
+
         let text_width = ui.fonts(|fonts| {
             fonts
                 .layout_no_wrap(
@@ -276,15 +376,9 @@ impl<'a> Widget for MaterialChip<'a> {
                 .width()
         });
 
-        let icon_width = if self.leading_icon.is_some()
-            || (self.variant == ChipVariant::Filter
-                && self.selected.as_ref().map_or(false, |s| **s))
-        {
-            24.0
-        } else {
-            0.0
-        };
-
+        let has_leading = self.leading_icon.is_some()
+            || (self.variant == ChipVariant::Filter && is_selected);
+        let icon_width = if has_leading { 24.0 } else { 0.0 };
         let remove_width = if self.removable { 24.0 } else { 0.0 };
         let padding = 16.0;
 
@@ -295,429 +389,47 @@ impl<'a> Widget for MaterialChip<'a> {
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
-        // Track interaction states for state layers
         let is_pressed = response.is_pointer_button_down_on();
         let is_hovered = response.hovered();
 
-        // Material Design colors
-        let primary_color = get_global_color("primary");
-        let _surface = get_global_color("surface");
-        let surface_variant = get_global_color("surfaceVariant");
-        let _surface_container_low = get_global_color("surfaceContainerLow");
-        let surface_container_high = get_global_color("surfaceContainerHigh");
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline = get_global_color("outline");
-        let _error = get_global_color("error");
+        let colors = resolve_chip_colors(
+            self.variant,
+            is_selected,
+            self.enabled,
+            self.soft_disabled,
+            self.elevated,
+            is_hovered,
+            is_pressed,
+        );
 
-        let (bg_color, border_color, text_color, state_layer_color) = match self.variant {
-            ChipVariant::Assist => {
-                if !self.enabled {
-                    if self.soft_disabled {
-                        // Soft-disabled: lighter opacity, different from hard disabled
-                        (
-                            Color32::from_rgba_premultiplied(
-                                on_surface_variant.r(),
-                                on_surface_variant.g(),
-                                on_surface_variant.b(),
-                                50,
-                            ), // 20% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface_variant.r(),
-                                on_surface_variant.g(),
-                                on_surface_variant.b(),
-                                153,
-                            ), // 60% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    } else {
-                        // Hard disabled state: on-surface with 12% opacity for container, 38% for text
-                        (
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                31,
-                            ), // 12% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                97,
-                            ), // 38% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    }
-                } else if self.elevated {
-                    // Elevated: surface-container-high background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (
-                        surface_container_high,
-                        Color32::TRANSPARENT,
-                        on_surface_variant,
-                        state_layer,
-                    )
-                } else {
-                    // Default: surface-variant background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (surface_variant, outline, on_surface_variant, state_layer)
-                }
-            }
-            ChipVariant::Filter => {
-                let is_selected = self.selected.as_ref().map_or(false, |s| **s);
-                if !self.enabled {
-                    if self.soft_disabled {
-                        // Soft-disabled: lighter opacity, different from hard disabled
-                        (
-                            Color32::from_rgba_premultiplied(
-                                on_surface_variant.r(),
-                                on_surface_variant.g(),
-                                on_surface_variant.b(),
-                                50,
-                            ), // 20% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface_variant.r(),
-                                on_surface_variant.g(),
-                                on_surface_variant.b(),
-                                153,
-                            ), // 60% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    } else {
-                        // Hard disabled state: on-surface with 12% opacity for container, 38% for text
-                        (
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                31,
-                            ), // 12% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                97,
-                            ), // 38% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    }
-                } else if is_selected {
-                    // Selected: secondary container background with primary border
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            24,
-                        ), // Light primary background
-                        primary_color,
-                        on_surface,
-                        state_layer,
-                    )
-                } else if self.elevated {
-                    // Elevated: surface-container-high background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (
-                        surface_container_high,
-                        Color32::TRANSPARENT,
-                        on_surface_variant,
-                        state_layer,
-                    )
-                } else {
-                    // Default: surface-variant background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (surface_variant, outline, on_surface_variant, state_layer)
-                }
-            }
-            ChipVariant::Input => {
-                if !self.enabled {
-                    if self.soft_disabled {
-                        // Soft-disabled Input chips: different opacity from other chips
-                        (
-                            Color32::from_rgba_premultiplied(
-                                surface_variant.r(),
-                                surface_variant.g(),
-                                surface_variant.b(),
-                                80,
-                            ), // 30% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface_variant.r(),
-                                on_surface_variant.g(),
-                                on_surface_variant.b(),
-                                180,
-                            ), // 70% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    } else {
-                        // Hard disabled Input chips: slightly different from other chips
-                        (
-                            Color32::from_rgba_premultiplied(
-                                surface_variant.r(),
-                                surface_variant.g(),
-                                surface_variant.b(),
-                                40,
-                            ), // 15% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                120,
-                            ), // 47% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    }
-                } else if self.elevated {
-                    // Elevated: surface-container-high background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (
-                        surface_container_high,
-                        Color32::TRANSPARENT,
-                        on_surface_variant,
-                        state_layer,
-                    )
-                } else {
-                    // Default: surface-variant background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (surface_variant, outline, on_surface_variant, state_layer)
-                }
-            }
-            ChipVariant::Suggestion => {
-                if !self.enabled {
-                    if self.soft_disabled {
-                        // Soft-disabled: lighter opacity, different from hard disabled
-                        (
-                            Color32::from_rgba_premultiplied(
-                                on_surface_variant.r(),
-                                on_surface_variant.g(),
-                                on_surface_variant.b(),
-                                50,
-                            ), // 20% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface_variant.r(),
-                                on_surface_variant.g(),
-                                on_surface_variant.b(),
-                                153,
-                            ), // 60% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    } else {
-                        // Hard disabled state: on-surface with 12% opacity for container, 38% for text
-                        (
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                31,
-                            ), // 12% opacity
-                            Color32::TRANSPARENT,
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                97,
-                            ), // 38% opacity
-                            Color32::TRANSPARENT, // No state layer for disabled
-                        )
-                    }
-                } else if self.elevated {
-                    // Elevated: surface-container-high background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (
-                        surface_container_high,
-                        Color32::TRANSPARENT,
-                        on_surface_variant,
-                        state_layer,
-                    )
-                } else {
-                    // Default: surface-variant background
-                    let state_layer = if is_pressed {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            31,
-                        ) // 12% opacity for pressed
-                    } else if is_hovered {
-                        Color32::from_rgba_premultiplied(
-                            primary_color.r(),
-                            primary_color.g(),
-                            primary_color.b(),
-                            20,
-                        ) // 8% opacity for hover
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-                    (surface_variant, outline, on_surface_variant, state_layer)
-                }
-            }
-        };
+        let corner_radius = 8.0;
 
-        // Calculate corner radius - avatar chips are more rounded, regular chips are more rectangular
-        let corner_radius = if self.avatar { 16.0 } else { 8.0 };
-
-        // Draw chip background
-        ui.painter().rect_filled(rect, corner_radius, bg_color);
-
-        // Draw state layer (hover/pressed overlay)
-        if state_layer_color != Color32::TRANSPARENT {
-            ui.painter()
-                .rect_filled(rect, corner_radius, state_layer_color);
-        }
-
-        // Draw chip border (if not transparent)
-        if border_color != Color32::TRANSPARENT {
-            ui.painter().rect_stroke(
-                rect,
-                corner_radius,
-                Stroke::new(1.0, border_color),
-                egui::epaint::StrokeKind::Outside,
-            );
-        }
-
-        // Draw elevation shadow for elevated chips (before background) - but not for disabled chips
+        // Draw elevation shadow (before background)
         if self.elevated && self.enabled {
-            let shadow_offset = Vec2::new(0.0, 2.0);
-            let shadow_rect = rect.translate(shadow_offset);
+            let shadow_rect = rect.translate(Vec2::new(0.0, 2.0));
             ui.painter().rect_filled(
                 shadow_rect,
                 corner_radius,
                 Color32::from_rgba_unmultiplied(0, 0, 0, 30),
+            );
+        }
+
+        // Draw chip background
+        ui.painter().rect_filled(rect, corner_radius, colors.bg);
+
+        // Draw state layer (hover/pressed overlay)
+        if colors.state_layer != Color32::TRANSPARENT {
+            ui.painter()
+                .rect_filled(rect, corner_radius, colors.state_layer);
+        }
+
+        // Draw chip border
+        if colors.border != Color32::TRANSPARENT {
+            ui.painter().rect_stroke(
+                rect,
+                corner_radius,
+                Stroke::new(1.0, colors.border),
+                egui::epaint::StrokeKind::Outside,
             );
         }
 
@@ -733,16 +445,15 @@ impl<'a> Widget for MaterialChip<'a> {
 
             match icon {
                 IconType::MaterialIcon(icon_str) => {
-                    // Draw material icon using proper icon system
-                    let icon = crate::icon::MaterialIcon::new(icon_str)
-                        .size(16.0)
-                        .color(text_color);
-                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-                        ui.add(icon);
-                    });
+                    ui.painter().text(
+                        icon_rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        icon_str,
+                        egui::FontId::proportional(16.0),
+                        colors.icon,
+                    );
                 }
                 IconType::SvgData(svg_data) => {
-                    // Convert SVG to texture and draw
                     if let Ok(texture) = image_utils::create_texture_from_svg(
                         ui.ctx(),
                         svg_data,
@@ -757,7 +468,6 @@ impl<'a> Widget for MaterialChip<'a> {
                     }
                 }
                 IconType::PngBytes(png_bytes) => {
-                    // Convert PNG bytes to texture and draw
                     if let Ok(texture) = image_utils::create_texture_from_png_bytes(
                         ui.ctx(),
                         png_bytes,
@@ -772,7 +482,6 @@ impl<'a> Widget for MaterialChip<'a> {
                     }
                 }
                 IconType::Texture(texture) => {
-                    // Draw pre-loaded texture
                     ui.painter().image(
                         texture.id(),
                         icon_rect,
@@ -782,9 +491,7 @@ impl<'a> Widget for MaterialChip<'a> {
                 }
             }
             content_x += 24.0;
-        } else if self.variant == ChipVariant::Filter
-            && self.selected.as_ref().map_or(false, |s| **s)
-        {
+        } else if self.variant == ChipVariant::Filter && is_selected {
             // Draw checkmark for selected filter chips
             let icon_rect = Rect::from_min_size(
                 Pos2::new(content_x, rect.center().y - 10.0),
@@ -805,9 +512,9 @@ impl<'a> Widget for MaterialChip<'a> {
             );
 
             ui.painter()
-                .line_segment([start, middle], Stroke::new(2.0, text_color));
+                .line_segment([start, middle], Stroke::new(2.0, colors.icon));
             ui.painter()
-                .line_segment([middle, end], Stroke::new(2.0, text_color));
+                .line_segment([middle, end], Stroke::new(2.0, colors.icon));
             content_x += 24.0;
         }
 
@@ -818,7 +525,7 @@ impl<'a> Widget for MaterialChip<'a> {
             egui::Align2::LEFT_CENTER,
             &self.text,
             egui::FontId::default(),
-            text_color,
+            colors.text,
         );
 
         // Draw remove button for removable chips
@@ -828,7 +535,6 @@ impl<'a> Widget for MaterialChip<'a> {
                 Vec2::splat(20.0),
             );
 
-            // Draw X
             let center = remove_rect.center();
             let cross_size = 8.0;
             ui.painter().line_segment(
@@ -836,14 +542,14 @@ impl<'a> Widget for MaterialChip<'a> {
                     Pos2::new(center.x - cross_size / 2.0, center.y - cross_size / 2.0),
                     Pos2::new(center.x + cross_size / 2.0, center.y + cross_size / 2.0),
                 ],
-                Stroke::new(1.5, text_color),
+                Stroke::new(1.5, colors.delete_icon),
             );
             ui.painter().line_segment(
                 [
                     Pos2::new(center.x + cross_size / 2.0, center.y - cross_size / 2.0),
                     Pos2::new(center.x - cross_size / 2.0, center.y + cross_size / 2.0),
                 ],
-                Stroke::new(1.5, text_color),
+                Stroke::new(1.5, colors.delete_icon),
             );
         }
 

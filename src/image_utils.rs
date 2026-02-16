@@ -114,6 +114,7 @@ pub mod material_icons {
     pub const ACCOUNT_CIRCLE: &str = "\u{e853}";
     pub const LINK: &str = "\u{e157}";
     pub const GOOGLE: &str = "\u{ea88}";
+    pub const EVENT: &str = "\u{e878}";
 }
 
 // Include static assets
