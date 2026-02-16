@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
 use crate::theme::get_global_color;
-use crate::{MaterialButton, MaterialCheckbox};
+use crate::{MaterialButton, MaterialCheckbox, DrawerItem};
 use eframe::egui::{self, Ui, Window};
 
 #[doc(hidden)]
@@ -12,9 +12,15 @@ pub struct DrawerWindow {
     dismissible_drawer_open: bool,
     show_header: bool,
     show_icons: bool,
+    show_badges: bool,
+    show_sections: bool,
     drawer_width: f32,
+    drawer_elevation: f32,
+    scrim_opacity: f32,
+    corner_radius: f32,
     selected_drawer: DrawerType,
-    // New state variables for drawer demos
+    use_material3: bool,
+    // State for different drawer demos
     is_dismissible_sidebar_open: bool,
     is_modal_sidebar_open: bool,
     selected_menu_item: String,
@@ -25,7 +31,6 @@ pub struct DrawerWindow {
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum DrawerType {
     Permanent,
-    #[allow(dead_code)]
     Modal,
     Dismissible,
 }
@@ -34,14 +39,19 @@ impl Default for DrawerWindow {
     fn default() -> Self {
         Self {
             open: false,
-            permanent_drawer_open: false, // Changed from true to false
+            permanent_drawer_open: false,
             modal_drawer_open: false,
             dismissible_drawer_open: false,
             show_header: true,
             show_icons: true,
-            drawer_width: 256.0,
+            show_badges: false,
+            show_sections: true,
+            drawer_width: 360.0,
+            drawer_elevation: 1.0,
+            scrim_opacity: 0.54,
+            corner_radius: 16.0,
             selected_drawer: DrawerType::Permanent,
-            // Initialize new state variables
+            use_material3: true,
             is_dismissible_sidebar_open: false,
             is_modal_sidebar_open: false,
             selected_menu_item: "Inbox".to_string(),
@@ -102,161 +112,278 @@ impl DrawerWindow {
     }
 
     fn show_permanent_drawer_demo(&mut self, ctx: &egui::Context) {
-        // Show as a separate demo window
         let mut demo_open = self.permanent_drawer_open;
-        Window::new("Permanent Drawer Demo")
+        Window::new("🔒 Permanent Drawer Demo")
             .open(&mut demo_open)
-            .default_size([800.0, 600.0])
+            .default_size([1000.0, 800.0])
             .resizable(true)
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
+                let available_width = ui.available_width();
+                let available_height = ui.available_height();
+                let drawer_width = self.drawer_width.min(available_width * 0.4); // Max 40% of window
+                
+                // Allocate full height for the horizontal layout
+                ui.allocate_ui_with_layout(
+                    egui::vec2(available_width, available_height),
+                    egui::Layout::left_to_right(egui::Align::Min),
+                    |ui| {
                     // Left side drawer - fixed width
-                    ui.vertical(|ui| {
-                        ui.set_width(self.drawer_width);
-                        ui.set_min_width(self.drawer_width);
-                        ui.set_max_width(self.drawer_width);
-                        
-                        // Header
-                        ui.vertical_centered(|ui| {
-                            ui.heading("Mail");
-                            if self.show_header {
-                                ui.colored_label(get_global_color("onSurfaceVariant"), "email@material.io");
-                                ui.add_space(8.0);
-                            }
-                        });
-                        
-                        ui.add_space(16.0);
-                        
-                        // Menu items with proper Material Design styling
-                        let item_height = 48.0;
-                        let menu_items = [
-                            ("Inbox", "📥"),
-                            ("Sent", "📤"), 
-                            ("Drafts", "📄"),
-                            ("Trash", "🗑"),
-                        ];
-                        
-                        for (item_name, icon) in &menu_items {
-                            let is_selected = self.selected_menu_item == *item_name;
+                    ui.allocate_ui_with_layout(
+                        egui::vec2(drawer_width, ui.available_height()),
+                        egui::Layout::top_down(egui::Align::Min),
+                        |ui| {
+                            ui.set_width(drawer_width);
                             
-                            // Create a proper menu item with correct sizing
-                            let item_rect = ui.allocate_space([ui.available_width(), item_height].into()).1;
-                            let response = ui.interact(item_rect, egui::Id::new(*item_name), egui::Sense::click());
-                            
-                            // Style based on selection and hover state
-                            if is_selected {
-                                ui.painter().rect_filled(
-                                    item_rect,
-                                    egui::CornerRadius::same(12),
-                                    get_global_color("primaryContainer"),
-                                );
-                            } else if response.hovered() {
-                                ui.painter().rect_filled(
-                                    item_rect,
-                                    egui::CornerRadius::same(12),
-                                    get_global_color("surfaceVariant").linear_multiply(0.08),
-                                );
-                            }
-                            
-                            // Draw icon and text
-                            let text_color = if is_selected {
-                                get_global_color("onPrimaryContainer")
-                            } else {
-                                get_global_color("onSurface")
-                            };
-                            
-                            let text_y = item_rect.min.y + (item_height - 20.0) / 2.0;
-                            let mut text_x = item_rect.min.x + 16.0;
-                            
-                            if self.show_icons {
-                                ui.painter().text(
-                                    egui::pos2(text_x, text_y),
-                                    egui::Align2::LEFT_CENTER,
-                                    icon,
-                                    egui::FontId::proportional(16.0),
-                                    text_color,
-                                );
-                                text_x += 32.0;
-                            }
-                            
-                            ui.painter().text(
-                                egui::pos2(text_x, text_y),
-                                egui::Align2::LEFT_CENTER,
-                                item_name,
-                                egui::FontId::proportional(14.0),
-                                text_color,
-                            );
-                            
-                            if response.clicked() {
-                                self.selected_menu_item = item_name.to_string();
-                            }
-                        }
-                        
-                        // Fill remaining vertical space
-                        ui.allocate_space([ui.available_width(), ui.available_height()].into());
-                    });
+                            egui::ScrollArea::vertical()
+                                .id_source("permanent_drawer_scroll")
+                                .show(ui, |ui| {
+                                // Header
+                                if self.show_header {
+                                    ui.vertical_centered(|ui| {
+                                        ui.add_space(16.0);
+                                        ui.heading("Mail");
+                                        ui.colored_label(get_global_color("onSurfaceVariant"), "email@material.io");
+                                        ui.add_space(16.0);
+                                    });
+                                }
+                                
+                                // Multi-section navigation demonstration
+                                if self.show_sections {
+                                    // Mail section
+                                    ui.add_space(8.0);
+                                    ui.horizontal(|ui| {
+                                        ui.add_space(28.0);
+                                        ui.colored_label(
+                                            get_global_color("onSurfaceVariant"),
+                                            "Mail"
+                                        );
+                                    });
+                                    ui.add_space(8.0);
+
+                                    self.render_navigation_items(ui, &self.create_mail_items());
+
+                                    // Divider
+                                    ui.add_space(8.0);
+                                    ui.separator();
+                                    ui.add_space(8.0);
+
+                                    // Labels section
+                                    ui.horizontal(|ui| {
+                                        ui.add_space(28.0);
+                                        ui.colored_label(
+                                            get_global_color("onSurfaceVariant"),
+                                            "Labels"
+                                        );
+                                    });
+                                    ui.add_space(8.0);
+
+                                    self.render_navigation_items(ui, &self.create_label_items());
+                                } else {
+                                    // Simple flat list
+                                    ui.add_space(16.0);
+                                    self.render_navigation_items(ui, &self.create_mail_items());
+                                }
+                            });
+                        },
+                    );
                     
                     ui.separator();
                     
-                    // Right side - main content area
-                    ui.vertical(|ui| {
-                        ui.heading(format!("{} - Permanent Drawer Demo", self.selected_menu_item));
-                        ui.colored_label(get_global_color("onSurfaceVariant"), "This drawer is always visible and adjusts the content layout.");
-                        
-                        ui.add_space(20.0);
-                        
-                        // Content changes based on selected menu item
-                        match self.selected_menu_item.as_str() {
-                            "Inbox" => {
-                                ui.heading("📥 Inbox");
-                                ui.label("Welcome to your inbox! Here you'll find all your incoming messages.");
+                    // Right side - main content area (takes remaining space)
+                    ui.allocate_ui_with_layout(
+                        egui::vec2(ui.available_width(), ui.available_height()),
+                        egui::Layout::top_down(egui::Align::Min),
+                        |ui| {
+                            egui::ScrollArea::vertical()
+                                .id_source("permanent_drawer_content_scroll")
+                                .show(ui, |ui| {
+                                ui.add_space(20.0);
+                                ui.heading(format!("{} - Content Area", self.selected_menu_item));
+                                ui.colored_label(
+                                    get_global_color("onSurfaceVariant"),
+                                    "The permanent drawer is always visible and adjusts the content layout."
+                                );
+                                
+                                ui.add_space(20.0);
+                                
+                                // Dynamic content based on selection
+                                self.render_content_for_selection(&self.selected_menu_item, ui);
+                                
+                                ui.add_space(20.0);
+                                ui.separator();
                                 ui.add_space(10.0);
-                                ui.label("• New message from John Doe");
-                                ui.label("• Meeting invitation from Sarah");
-                                ui.label("• Newsletter from Tech Blog");
-                                ui.label("• System notification");
-                            },
-                            "Sent" => {
-                                ui.heading("📤 Sent Messages");
-                                ui.label("Here are the messages you've sent recently:");
-                                ui.add_space(10.0);
-                                ui.label("• Reply to project update");
-                                ui.label("• Meeting confirmation");
-                                ui.label("• Weekly report submission");
-                                ui.label("• Thank you note to team");
-                            },
-                            "Drafts" => {
-                                ui.heading("📄 Draft Messages");
-                                ui.label("Your unsent draft messages:");
-                                ui.add_space(10.0);
-                                ui.label("• Incomplete email to client");
-                                ui.label("• Follow-up message draft");
-                                ui.label("• Proposal outline");
-                                ui.label("• Feedback notes");
-                            },
-                            "Trash" => {
-                                ui.heading("🗑 Deleted Messages");
-                                ui.label("Recently deleted messages (can be restored):");
-                                ui.add_space(10.0);
-                                ui.label("• Old newsletter");
-                                ui.label("• Spam message");
-                                ui.label("• Outdated meeting invite");
-                                ui.label("• Duplicate notification");
-                            },
-                            _ => {
-                                ui.label("Select a menu item from the sidebar");
-                            }
-                        }
-                        
-                        ui.add_space(20.0);
-                        ui.colored_label(get_global_color("onSurfaceVariant"), "Features:");
-                        ui.colored_label(get_global_color("onSurfaceVariant"), "• Click different items in the sidebar to see content change");
-                        ui.colored_label(get_global_color("onSurfaceVariant"), "• Drawer remains fixed and always visible");
-                        ui.colored_label(get_global_color("onSurfaceVariant"), "• Content area scales with available space");
+                                
+                                ui.colored_label(get_global_color("onSurfaceVariant"), "✨ Features:");
+                                ui.label("• Click different items in the sidebar to see content change");
+                                ui.label("• Drawer remains fixed and always visible");
+                                ui.label("• Content area scales with available space");
+                                ui.label("• Hover states and active indicators");
+                                ui.label("• Section-based organization (Mail / Labels)");
+                                ui.label("• Badge support for notifications");
+                            });
+                        },
+                    );
                     });
-                });
             });
         self.permanent_drawer_open = demo_open;
+    }
+
+    /// Renders navigation items with Material 3 styling
+    fn render_navigation_items(&mut self, ui: &mut Ui, items: &[DrawerItem]) {
+        for item in items {
+            let is_selected = item.active;
+            let item_height = 56.0;
+            let horizontal_padding = 12.0;
+
+            let (rect, response) = ui.allocate_exact_size(
+                egui::vec2(ui.available_width(), item_height),
+                egui::Sense::click(),
+            );
+
+            // Background for active/hover states
+            if is_selected {
+                let container_rect = rect.shrink2(egui::vec2(horizontal_padding, 12.0));
+                ui.painter().rect_filled(
+                    container_rect,
+                    self.corner_radius.min(28.0),
+                    get_global_color("secondaryContainer"),
+                );
+            } else if response.hovered() {
+                let container_rect = rect.shrink2(egui::vec2(horizontal_padding, 12.0));
+                ui.painter().rect_filled(
+                    container_rect,
+                    self.corner_radius.min(28.0),
+                    get_global_color("onSurface").linear_multiply(0.08),
+                );
+            }
+
+            // Content layout
+            let mut cursor_x = rect.min.x + horizontal_padding + 16.0;
+
+            // Icon
+            if let Some(icon) = &item.icon {
+                let icon_center = egui::pos2(cursor_x + 12.0, rect.center().y);
+                let text_color = if is_selected {
+                    get_global_color("onSecondaryContainer")
+                } else {
+                    get_global_color("onSurfaceVariant")
+                };
+
+                ui.painter().text(
+                    icon_center,
+                    egui::Align2::CENTER_CENTER,
+                    icon,
+                    egui::FontId::proportional(20.0),
+                    text_color,
+                );
+                cursor_x += 40.0;
+            }
+
+            // Label
+            let text_color = if is_selected {
+                get_global_color("onSecondaryContainer")
+            } else {
+                get_global_color("onSurfaceVariant")
+            };
+
+            ui.painter().text(
+                egui::pos2(cursor_x, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                &item.text,
+                egui::FontId::proportional(14.0),
+                text_color,
+            );
+
+            // Badge
+            if let Some(badge) = &item.badge {
+                let badge_x = rect.max.x - horizontal_padding - 30.0;
+                let badge_center = egui::pos2(badge_x, rect.center().y);
+                
+                ui.painter().circle_filled(
+                    badge_center,
+                    12.0,
+                    get_global_color("error"),
+                );
+                
+                ui.painter().text(
+                    badge_center,
+                    egui::Align2::CENTER_CENTER,
+                    badge,
+                    egui::FontId::proportional(11.0),
+                    get_global_color("onError"),
+                );
+            }
+
+            // Handle click
+            if response.clicked() {
+                self.selected_menu_item = item.text.clone();
+            }
+        }
+    }
+
+    /// Renders content for a selection
+    fn render_content_for_selection(&self, selection: &str, ui: &mut Ui) {
+        match selection {
+            "Inbox" => {
+                ui.heading("📥 Inbox");
+                ui.label("Welcome to your inbox! Here you'll find all your incoming messages.");
+                ui.add_space(10.0);
+                ui.group(|ui| {
+                    ui.label("📧 New message from John Doe");
+                    ui.label("💼 Meeting invitation from Sarah");
+                    ui.label("📰 Newsletter from Tech Blog");
+                    ui.label("⚙️ System notification");
+                    ui.label("🎉 Congratulations on your achievement!");
+                });
+            },
+            "Outbox" => {
+                ui.heading("📤 Outbox");
+                ui.label("Messages you've sent recently:");
+                ui.add_space(10.0);
+                ui.group(|ui| {
+                    ui.label("✅ Reply to project update");
+                    ui.label("🤝 Meeting confirmation");
+                    ui.label("📊 Weekly report submission");
+                    ui.label("💌 Thank you note to team");
+                });
+            },
+            "Favorites" => {
+                ui.heading("⭐ Favorites");
+                ui.label("Your starred and important messages:");
+                ui.add_space(10.0);
+                ui.group(|ui| {
+                    ui.label("🌟 Important client communication");
+                    ui.label("📌 Pinned project details");
+                    ui.label("🎯 Key milestones and deadlines");
+                    ui.label("💡 Saved ideas and inspiration");
+                });
+            },
+            "Trash" => {
+                ui.heading("🗑️ Trash");
+                ui.label("Recently deleted messages (can be restored):");
+                ui.add_space(10.0);
+                ui.group(|ui| {
+                    ui.label("📧 Old newsletter");
+                    ui.label("⚠️ Spam message");
+                    ui.label("📅 Outdated meeting invite");
+                    ui.label("🔄 Duplicate notification");
+                });
+            },
+            "Family" | "School" | "Work" => {
+                ui.heading(format!("🔖 {}", selection));
+                ui.label(format!("Messages labeled as '{}'", selection));
+                ui.add_space(10.0);
+                ui.group(|ui| {
+                    ui.label(format!("📝 {} related conversations", selection));
+                    ui.label(format!("📎 {} documents and files", selection));
+                    ui.label(format!("👥 {} group messages", selection));
+                    ui.label(format!("📅 {} calendar events", selection));
+                });
+            },
+            _ => {
+                ui.label("Select a menu item from the navigation drawer");
+            }
+        }
     }
 
     fn show_dismissible_drawer_demo(&mut self, ctx: &egui::Context) {
@@ -802,172 +929,153 @@ impl DrawerWindow {
             ui.horizontal(|ui| {
                 ui.heading("Drawer Controls");
 
-                if ui.button("Target").clicked() {
-                    let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/drawer");
+                if ui.button("📖 Material Design Spec").clicked() {
+                    let _ = webbrowser::open("https://m3.material.io/components/navigation-drawer/overview");
                 }
             });
 
-            ui.horizontal(|ui| {
+            ui.separator();
+
+            // Visual Options
+            ui.heading("Visual Options");
+            ui.horizontal_wrapped(|ui| {
                 ui.add(MaterialCheckbox::new(&mut self.show_header, "Show Header"));
                 ui.add(MaterialCheckbox::new(&mut self.show_icons, "Show Icons"));
+                ui.add(MaterialCheckbox::new(&mut self.show_badges, "Show Badges"));
+                ui.add(MaterialCheckbox::new(&mut self.show_sections, "Show Sections"));
+                ui.add(MaterialCheckbox::new(&mut self.use_material3, "Material 3 Theme"));
             });
 
+            ui.add_space(8.0);
+
+            // Dimension Controls
             ui.horizontal(|ui| {
                 ui.label("Drawer Width:");
-                ui.add(egui::Slider::new(&mut self.drawer_width, 200.0..=400.0).suffix("px"));
+                ui.add(egui::Slider::new(&mut self.drawer_width, 200.0..=500.0).suffix("px"));
             });
 
             ui.horizontal(|ui| {
-                ui.label("Demo Type:");
-                
-                if ui.selectable_label(matches!(self.selected_drawer, DrawerType::Permanent), "Permanent").clicked() {
+                ui.label("Elevation:");
+                ui.add(egui::Slider::new(&mut self.drawer_elevation, 0.0..=24.0).suffix("dp"));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Corner Radius:");
+                ui.add(egui::Slider::new(&mut self.corner_radius, 0.0..=28.0).suffix("px"));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Scrim Opacity:");
+                ui.add(egui::Slider::new(&mut self.scrim_opacity, 0.0..=1.0));
+            });
+
+            ui.add_space(8.0);
+            ui.separator();
+
+            // Drawer Type Selection
+            ui.heading("Drawer Type");
+            ui.horizontal(|ui| {
+                if ui.selectable_label(matches!(self.selected_drawer, DrawerType::Permanent), "🔒 Permanent").clicked() {
                     self.selected_drawer = DrawerType::Permanent;
                     self.permanent_drawer_open = true;
                     self.modal_drawer_open = false;
                     self.dismissible_drawer_open = false;
                 }
                 
-                if ui.selectable_label(matches!(self.selected_drawer, DrawerType::Dismissible), "Dismissible").clicked() {
+                if ui.selectable_label(matches!(self.selected_drawer, DrawerType::Dismissible), "↔️ Dismissible").clicked() {
                     self.selected_drawer = DrawerType::Dismissible;
                     self.permanent_drawer_open = false;
                     self.modal_drawer_open = false;
                     self.dismissible_drawer_open = true;
                 }
                 
-                // if ui.selectable_label(matches!(self.selected_drawer, DrawerType::Modal), "Modal").clicked() {
-                //     self.selected_drawer = DrawerType::Modal;
-                //     self.permanent_drawer_open = false;
-                //     self.modal_drawer_open = true;
-                //     self.dismissible_drawer_open = false;
-                // }
+                if ui.selectable_label(matches!(self.selected_drawer, DrawerType::Modal), "📱 Modal").clicked() {
+                    self.selected_drawer = DrawerType::Modal;
+                    self.permanent_drawer_open = false;
+                    self.modal_drawer_open = true;
+                    self.dismissible_drawer_open = false;
+                }
             });
 
+            ui.add_space(8.0);
+
+            // Toggle Buttons
             ui.horizontal(|ui| {
                 match self.selected_drawer {
                     DrawerType::Permanent => {
-                        if ui.add(MaterialButton::filled("Toggle Permanent")).clicked() {
+                        if ui.add(MaterialButton::filled("Toggle Permanent Demo")).clicked() {
                             self.permanent_drawer_open = !self.permanent_drawer_open;
                         }
                     }
                     DrawerType::Dismissible => {
-                        if ui.add(MaterialButton::filled("Toggle Dismissible")).clicked() {
+                        if ui.add(MaterialButton::filled("Toggle Dismissible Demo")).clicked() {
                             self.dismissible_drawer_open = !self.dismissible_drawer_open;
                         }
                     }
                     DrawerType::Modal => {
-                        //if ui.add(MaterialButton::filled("Toggle Modal")).clicked() {
-                            // self.modal_drawer_open = !self.modal_drawer_open;
-                        //}
+                        if ui.add(MaterialButton::filled("Toggle Modal Demo")).clicked() {
+                            self.modal_drawer_open = !self.modal_drawer_open;
+                        }
                     }
+                }
+
+                if ui.add(MaterialButton::text("Reset Settings")).clicked() {
+                    *self = Self { open: self.open, ..Default::default() };
                 }
             });
         });
     }
 
     fn render_drawer_examples(&mut self, ui: &mut Ui) {
-        ui.heading("Material Design Drawer Types");
+        
+    }
 
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("🔒 Permanent Drawer:");
-                ui.label("• Always visible");
-                ui.label("• Content alongside");
-                ui.label("• Best for desktop/tablet");
-                ui.label("• Wide screens (≥1280px)");
-            });
+    /// Helper to create navigation items based on current settings
+    fn create_mail_items(&self) -> Vec<DrawerItem> {
+        let items_data = [
+            ("Inbox", "📥", 5),
+            ("Outbox", "📤", 0),
+            ("Favorites", "⭐", 2),
+            ("Trash", "🗑️", 0),
+        ];
 
-            ui.vertical(|ui| {
-                ui.label("↔️ Dismissible Drawer:");
-                ui.label("• Can be toggled");
-                ui.label("• Slides in/out");
-                ui.label("• Adjusts content layout");
-                ui.label("• Medium screens (≥960px)");
-            });
+        items_data.iter().map(|(name, icon, badge_count)| {
+            let mut item = DrawerItem::new(*name)
+                .active(self.selected_menu_item == *name);
 
-            ui.vertical(|ui| {
-                ui.label("📱 Modal Drawer:");
-                ui.label("• Overlays content");
-                ui.label("• Semi-transparent scrim");
-                ui.label("• Blocks interaction");
-                ui.label("• Small screens (<960px)");
-            });
-        });
-
-        ui.add_space(20.0);
-
-        ui.heading("Interactive Demo");
-        ui.label("Select a drawer type above to see it in action:");
-
-        match self.selected_drawer {
-            DrawerType::Permanent => {
-                ui.label("🔒 Permanent Drawer: Always visible, content adjusts around it.");
+            if self.show_icons {
+                item = item.icon(*icon);
             }
-            DrawerType::Dismissible => {
-                ui.label("↔️ Dismissible Drawer: Toggle to slide in/out, content adjusts.");
+
+            if self.show_badges && *badge_count > 0 {
+                item = item.badge(badge_count.to_string());
             }
-            DrawerType::Modal => {
-                ui.label("📱 Modal Drawer: Overlays content with scrim, click outside to close.");
+
+            item
+        }).collect()
+    }
+
+    /// Helper to create label section items
+    fn create_label_items(&self) -> Vec<DrawerItem> {
+        let items_data = [
+            ("Family", "🔖", 0),
+            ("School", "🔖", 1),
+            ("Work", "🔖", 3),
+        ];
+
+        items_data.iter().map(|(name, icon, badge_count)| {
+            let mut item = DrawerItem::new(*name)
+                .active(self.selected_menu_item == *name);
+
+            if self.show_icons {
+                item = item.icon(*icon);
             }
-        }
 
-        ui.add_space(20.0);
+            if self.show_badges && *badge_count > 0 {
+                item = item.badge(badge_count.to_string());
+            }
 
-        ui.heading("Material Design Specifications");
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("📏 Dimensions:");
-                ui.label("• Standard width: 256dp");
-                ui.label("• Rail width: 72dp");
-                ui.label("• Header height: 64dp");
-                ui.label("• Item height: 48dp");
-            });
-
-            ui.vertical(|ui| {
-                ui.label("🎨 Styling:");
-                ui.label("• Surface color background");
-                ui.label("• Primary color for active items");
-                ui.label("• Material icons (24dp)");
-                ui.label("• 16dp horizontal padding");
-            });
-
-            ui.vertical(|ui| {
-                ui.label("⚡ Behavior:");
-                ui.label("• Smooth slide animations");
-                ui.label("• ESC key support");
-                ui.label("• Focus management");
-                ui.label("• Accessibility support");
-            });
-        });
-
-        ui.add_space(20.0);
-
-        ui.heading("Usage Guidelines");
-        ui.label("Choose the appropriate drawer type based on your layout needs:");
-
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.strong("Use Permanent when:");
-                ui.label("• Wide desktop layouts");
-                ui.label("• Navigation is primary");
-                ui.label("• Content benefits from the space");
-                ui.label("• Users frequently navigate");
-            });
-
-            ui.vertical(|ui| {
-                ui.strong("Use Dismissible when:");
-                ui.label("• Medium-width layouts");
-                ui.label("• Optional navigation");
-                ui.label("• Content needs full width");
-                ui.label("• Responsive design needed");
-            });
-
-            ui.vertical(|ui| {
-                ui.strong("Use Modal when:");
-                ui.label("• Mobile/narrow layouts");
-                ui.label("• Temporary navigation");
-                ui.label("• Focus on main content");
-                ui.label("• Simple app structure");
-            });
-        });
+            item
+        }).collect()
     }
 }

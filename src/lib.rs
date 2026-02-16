@@ -267,8 +267,8 @@ pub use {
     },
     dialog::{dialog, MaterialDialog},
     drawer::{
-        dismissible_drawer, modal_drawer, permanent_drawer, standard_drawer, DrawerItem,
-        DrawerVariant, MaterialDrawer,
+        dismissible_drawer, modal_drawer, permanent_drawer, standard_drawer, DrawerAlignment,
+        DrawerHeader, DrawerItem, DrawerSection, DrawerThemeData, DrawerVariant, MaterialDrawer,
     },
     egui::TextEdit, // Re-export egui's TextEdit
     fab::{
