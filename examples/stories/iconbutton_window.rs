@@ -583,33 +583,5 @@ impl IconButtonWindow {
             }
         });
 
-        ui.add_space(20.0);
-
-        ui.heading("Usage Guidelines");
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("Icon Button Types:");
-                ui.label("• Standard: Most common, minimal background");
-                ui.label("• Filled: High emphasis, solid background");
-                ui.label("• Filled Tonal: Medium emphasis, tinted background");
-                ui.label("• Outlined: Medium emphasis, with border");
-            });
-
-            ui.vertical(|ui| {
-                ui.label("Container Styles:");
-                ui.label("• Circular: Full rounded (traditional)");
-                ui.label("• Container: Rectangular with rounded corners");
-                ui.label("• Toggle to switch between styles");
-                ui.label("• Container provides different visual weight");
-            });
-
-            ui.vertical(|ui| {
-                ui.label("Best Practices:");
-                ui.label("• Use Material Icons for consistency");
-                ui.label("• Standard size is 40px");
-                ui.label("• Toggle buttons show selection state");
-                ui.label("• Choose container style for visual hierarchy");
-            });
-        });
     }
 }
