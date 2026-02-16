@@ -27,6 +27,217 @@ pub enum Positioning {
     Popover,
 }
 
+/// The visual properties that menus have in common.
+///
+/// Based on Flutter's `MenuStyle`. Controls the appearance of menus
+/// created by `MaterialMenu`. Properties that are `None` use Material
+/// Design 3 defaults.
+///
+/// # M3 Defaults
+/// - `background_color`: `surfaceContainer`
+/// - `shadow_color`: `shadow`
+/// - `elevation`: `3.0`
+/// - `padding`: `8.0` (vertical)
+/// - `corner_radius`: `4.0`
+/// - `min_width`: `112.0`
+/// - `max_width`: `280.0`
+#[derive(Clone, Debug)]
+pub struct MenuStyle {
+    /// The menu's background fill color.
+    pub background_color: Option<Color32>,
+    /// The shadow color of the menu's surface.
+    pub shadow_color: Option<Color32>,
+    /// The surface tint color of the menu.
+    pub surface_tint_color: Option<Color32>,
+    /// The elevation of the menu (affects shadow size).
+    pub elevation: Option<f32>,
+    /// The vertical padding inside the menu.
+    pub padding: Option<f32>,
+    /// The minimum width of the menu.
+    pub min_width: Option<f32>,
+    /// The maximum width of the menu.
+    pub max_width: Option<f32>,
+    /// The corner radius of the menu shape.
+    pub corner_radius: Option<f32>,
+}
+
+impl Default for MenuStyle {
+    fn default() -> Self {
+        Self {
+            background_color: None,
+            shadow_color: None,
+            surface_tint_color: None,
+            elevation: None,
+            padding: None,
+            min_width: None,
+            max_width: None,
+            corner_radius: None,
+        }
+    }
+}
+
+impl MenuStyle {
+    /// Returns a copy of this `MenuStyle` where `None` fields are
+    /// filled in from `other`.
+    pub fn merge(&self, other: &MenuStyle) -> MenuStyle {
+        MenuStyle {
+            background_color: self.background_color.or(other.background_color),
+            shadow_color: self.shadow_color.or(other.shadow_color),
+            surface_tint_color: self.surface_tint_color.or(other.surface_tint_color),
+            elevation: self.elevation.or(other.elevation),
+            padding: self.padding.or(other.padding),
+            min_width: self.min_width.or(other.min_width),
+            max_width: self.max_width.or(other.max_width),
+            corner_radius: self.corner_radius.or(other.corner_radius),
+        }
+    }
+
+    /// Resolve all style values, applying M3 defaults for `None` fields.
+    fn resolve(&self) -> ResolvedMenuStyle {
+        ResolvedMenuStyle {
+            background_color: self
+                .background_color
+                .unwrap_or_else(|| get_global_color("surfaceContainer")),
+            shadow_color: self
+                .shadow_color
+                .unwrap_or_else(|| get_global_color("shadow")),
+            elevation: self.elevation.unwrap_or(3.0),
+            padding: self.padding.unwrap_or(8.0),
+            _min_width: self.min_width.unwrap_or(112.0),
+            max_width: self.max_width.unwrap_or(280.0),
+            corner_radius: self.corner_radius.unwrap_or(4.0),
+        }
+    }
+}
+
+/// Fully resolved menu style with no optional values.
+struct ResolvedMenuStyle {
+    background_color: Color32,
+    shadow_color: Color32,
+    elevation: f32,
+    padding: f32,
+    _min_width: f32,
+    max_width: f32,
+    corner_radius: f32,
+}
+
+/// Theme data for menus created by `MaterialMenu`.
+///
+/// Based on Flutter's `MenuThemeData`. Typically specified as part of
+/// an overall theme. All properties are optional and default to `None`.
+#[derive(Clone, Debug, Default)]
+pub struct MenuThemeData {
+    /// The `MenuStyle` for submenus.
+    pub style: Option<MenuStyle>,
+}
+
+/// Theme data for menu bars.
+///
+/// Based on Flutter's `MenuBarThemeData`. Defines the visual properties
+/// of menu bar widgets themselves, but not their submenus.
+#[derive(Clone, Debug, Default)]
+pub struct MenuBarThemeData {
+    /// The `MenuStyle` for the menu bar.
+    pub style: Option<MenuStyle>,
+}
+
+/// Theme data for menu buttons (menu items).
+///
+/// Based on Flutter's `MenuButtonThemeData` and `_MenuButtonDefaultsM3`.
+/// Controls the appearance of individual menu items.
+///
+/// # M3 Defaults
+/// - `foreground_color`: `onSurface`
+/// - `icon_color`: `onSurfaceVariant`
+/// - `disabled_foreground_color`: `onSurface` at 38% opacity
+/// - `disabled_icon_color`: `onSurface` at 38% opacity
+/// - `hover_overlay_opacity`: `0.08`
+/// - `pressed_overlay_opacity`: `0.10`
+/// - `min_height`: `48.0`
+/// - `icon_size`: `24.0`
+/// - `padding_horizontal`: `12.0`
+#[derive(Clone, Debug)]
+pub struct MenuButtonThemeData {
+    /// Text/foreground color for enabled menu items.
+    pub foreground_color: Option<Color32>,
+    /// Icon color for enabled menu items.
+    pub icon_color: Option<Color32>,
+    /// Text/foreground color for disabled menu items.
+    pub disabled_foreground_color: Option<Color32>,
+    /// Icon color for disabled menu items.
+    pub disabled_icon_color: Option<Color32>,
+    /// Opacity of hover overlay (0.0 to 1.0).
+    pub hover_overlay_opacity: Option<f32>,
+    /// Opacity of pressed overlay (0.0 to 1.0).
+    pub pressed_overlay_opacity: Option<f32>,
+    /// Font for menu item text.
+    pub text_font: Option<egui::FontId>,
+    /// Minimum height of a menu item.
+    pub min_height: Option<f32>,
+    /// Size of leading/trailing icons.
+    pub icon_size: Option<f32>,
+    /// Horizontal padding inside each menu item.
+    pub padding_horizontal: Option<f32>,
+}
+
+impl Default for MenuButtonThemeData {
+    fn default() -> Self {
+        Self {
+            foreground_color: None,
+            icon_color: None,
+            disabled_foreground_color: None,
+            disabled_icon_color: None,
+            hover_overlay_opacity: None,
+            pressed_overlay_opacity: None,
+            text_font: None,
+            min_height: None,
+            icon_size: None,
+            padding_horizontal: None,
+        }
+    }
+}
+
+impl MenuButtonThemeData {
+    /// Resolve all button theme values, applying M3 defaults for `None` fields.
+    fn resolve(&self) -> ResolvedMenuButtonTheme {
+        let on_surface = get_global_color("onSurface");
+        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let disabled_color = Color32::from_rgba_premultiplied(
+            on_surface.r(),
+            on_surface.g(),
+            on_surface.b(),
+            97, // ~38% of 255
+        );
+
+        ResolvedMenuButtonTheme {
+            foreground_color: self.foreground_color.unwrap_or(on_surface),
+            icon_color: self.icon_color.unwrap_or(on_surface_variant),
+            disabled_foreground_color: self.disabled_foreground_color.unwrap_or(disabled_color),
+            disabled_icon_color: self.disabled_icon_color.unwrap_or(disabled_color),
+            hover_overlay_opacity: self.hover_overlay_opacity.unwrap_or(0.08),
+            pressed_overlay_opacity: self.pressed_overlay_opacity.unwrap_or(0.10),
+            text_font: self.text_font.clone().unwrap_or_default(),
+            min_height: self.min_height.unwrap_or(48.0),
+            icon_size: self.icon_size.unwrap_or(24.0),
+            padding_horizontal: self.padding_horizontal.unwrap_or(12.0),
+        }
+    }
+}
+
+/// Fully resolved menu button theme with no optional values.
+struct ResolvedMenuButtonTheme {
+    foreground_color: Color32,
+    icon_color: Color32,
+    disabled_foreground_color: Color32,
+    disabled_icon_color: Color32,
+    hover_overlay_opacity: f32,
+    pressed_overlay_opacity: f32,
+    text_font: egui::FontId,
+    min_height: f32,
+    icon_size: f32,
+    padding_horizontal: f32,
+}
+
 /// Material Design menu component.
 ///
 /// Menus display a list of choices on a temporary surface.
@@ -61,8 +272,6 @@ pub struct MaterialMenu<'a> {
     anchor_rect: Option<Rect>,
     /// List of menu items
     items: Vec<MenuItem<'a>>,
-    /// Material Design elevation level (0-24)
-    elevation: u8,
     /// Corner of the anchor element to align to
     anchor_corner: Corner,
     /// Corner of the menu to align with the anchor
@@ -93,6 +302,10 @@ pub struct MaterialMenu<'a> {
     typeahead_delay: f32,
     /// Tab index for keyboard navigation
     list_tab_index: i32,
+    /// Optional menu style override
+    menu_style: Option<MenuStyle>,
+    /// Optional menu button theme override
+    button_theme: Option<MenuButtonThemeData>,
 }
 
 /// Individual menu item data.
@@ -131,7 +344,6 @@ impl<'a> MaterialMenu<'a> {
             open,
             anchor_rect: None,
             items: Vec::new(),
-            elevation: 3,
             // Default values matching Material Web behavior
             anchor_corner: Corner::BottomLeft,
             menu_corner: Corner::TopLeft,
@@ -148,6 +360,8 @@ impl<'a> MaterialMenu<'a> {
             no_vertical_flip: false,
             typeahead_delay: 200.0,
             list_tab_index: -1,
+            menu_style: None,
+            button_theme: None,
         }
     }
 
@@ -190,23 +404,34 @@ impl<'a> MaterialMenu<'a> {
         self
     }
 
-    /// Set the elevation (shadow) of the menu.
-    ///
-    /// Material Design defines elevation levels from 0 to 24.
-    /// Higher values create more prominent shadows.
+    /// Set the menu style, overriding Material Design 3 defaults.
     ///
     /// # Arguments
-    /// * `elevation` - Elevation level (0-24)
+    /// * `style` - The `MenuStyle` to apply
+    pub fn style(mut self, style: MenuStyle) -> Self {
+        self.menu_style = Some(style);
+        self
+    }
+
+    /// Set the button theme, overriding Material Design 3 defaults.
     ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut menu_open = false;
-    /// let menu = MaterialMenu::new("menu", &mut menu_open).elevation(8);
-    /// # });
-    /// ```
-    pub fn elevation(mut self, elevation: u8) -> Self {
-        self.elevation = elevation;
+    /// # Arguments
+    /// * `theme` - The `MenuButtonThemeData` to apply
+    pub fn button_theme(mut self, theme: MenuButtonThemeData) -> Self {
+        self.button_theme = Some(theme);
+        self
+    }
+
+    /// Set the elevation (shadow) of the menu.
+    ///
+    /// This is a shorthand for setting `MenuStyle.elevation`.
+    /// Material Design defines typical elevation levels from 0 to 12.
+    ///
+    /// # Arguments
+    /// * `elevation` - Elevation level
+    pub fn elevation(mut self, elevation: f32) -> Self {
+        let style = self.menu_style.get_or_insert_with(MenuStyle::default);
+        style.elevation = Some(elevation);
         self
     }
 
@@ -306,6 +531,17 @@ impl<'a> MaterialMenu<'a> {
             return;
         }
 
+        let resolved_style = self
+            .menu_style
+            .as_ref()
+            .unwrap_or(&MenuStyle::default())
+            .resolve();
+        let resolved_button = self
+            .button_theme
+            .as_ref()
+            .unwrap_or(&MenuButtonThemeData::default())
+            .resolve();
+
         // Use a stable ID for the menu
         let stable_id = egui::Id::new(format!("menu_{}", self.id.value()));
 
@@ -324,12 +560,12 @@ impl<'a> MaterialMenu<'a> {
             ctx.memory_mut(|mem| mem.request_focus(stable_id));
         }
 
-        let item_height = 48.0;
-        let vertical_padding = 16.0; // 8.0 top + 8.0 bottom
+        let item_height = resolved_button.min_height;
+        let vertical_padding = resolved_style.padding * 2.0;
         let total_height = self.items.len() as f32 * item_height
             + self.items.iter().filter(|item| item.divider_after).count() as f32
             + vertical_padding;
-        let menu_width = 280.0;
+        let menu_width = resolved_style.max_width;
 
         let menu_size = Vec2::new(menu_width, total_height);
 
@@ -364,7 +600,6 @@ impl<'a> MaterialMenu<'a> {
         let open_ref = self.open;
         let _id = self.id;
         let items = self.items;
-        let elevation = self.elevation;
         let stay_open_on_outside_click = self.stay_open_on_outside_click;
         let _stay_open_on_focusout = self.stay_open_on_focusout;
 
@@ -374,7 +609,14 @@ impl<'a> MaterialMenu<'a> {
             .order(egui::Order::Foreground)
             .interactable(true)
             .show(ctx, |ui| {
-                render_menu_content(ui, menu_size, items, elevation, open_ref)
+                render_menu_content(
+                    ui,
+                    menu_size,
+                    items,
+                    &resolved_style,
+                    &resolved_button,
+                    open_ref,
+                )
             });
 
         // Handle closing behavior based on settings
@@ -405,45 +647,49 @@ fn render_menu_content<'a>(
     ui: &mut Ui,
     size: Vec2,
     items: Vec<MenuItem<'a>>,
-    elevation: u8,
+    style: &ResolvedMenuStyle,
+    button_theme: &ResolvedMenuButtonTheme,
     open_ref: &'a mut bool,
 ) -> Response {
     let (rect, response) = ui.allocate_exact_size(size, Sense::hover());
 
-    // Material Design colors
-    let surface_container = get_global_color("surfaceContainer");
-    let on_surface = get_global_color("onSurface");
-    let on_surface_variant = get_global_color("onSurfaceVariant");
     let outline_variant = get_global_color("outlineVariant");
 
     // Draw shadow for elevation
-    let shadow_offset = elevation as f32 * 2.0;
+    let shadow_offset = style.elevation * 2.0;
     let shadow_rect = rect.expand(shadow_offset);
+    let shadow_alpha = ((style.elevation * 10.0) as u8).min(80);
     ui.painter().rect_filled(
         shadow_rect,
-        8.0,
-        Color32::from_black_alpha((elevation * 10).min(80)),
+        style.corner_radius,
+        Color32::from_rgba_premultiplied(
+            style.shadow_color.r(),
+            style.shadow_color.g(),
+            style.shadow_color.b(),
+            shadow_alpha,
+        ),
     );
 
     // Draw menu background
-    ui.painter().rect_filled(rect, 8.0, surface_container);
+    ui.painter()
+        .rect_filled(rect, style.corner_radius, style.background_color);
 
     // Draw menu border
     ui.painter().rect_stroke(
         rect,
-        8.0,
+        style.corner_radius,
         Stroke::new(1.0, outline_variant),
         egui::epaint::StrokeKind::Outside,
     );
 
-    let mut current_y = rect.min.y + 8.0;
+    let mut current_y = rect.min.y + style.padding;
     let mut pending_actions = Vec::new();
     let mut should_close = false;
 
     for (index, item) in items.into_iter().enumerate() {
         let item_rect = Rect::from_min_size(
             Pos2::new(rect.min.x + 8.0, current_y),
-            Vec2::new(rect.width() - 16.0, 48.0),
+            Vec2::new(rect.width() - 16.0, button_theme.min_height),
         );
 
         let item_response = ui.interact(
@@ -452,51 +698,65 @@ fn render_menu_content<'a>(
             Sense::click(),
         );
 
-        // Draw item background on hover
-        if item_response.hovered() && item.enabled {
-            let hover_color = Color32::from_rgba_premultiplied(
-                on_surface.r(),
-                on_surface.g(),
-                on_surface.b(),
-                20,
-            );
-            ui.painter().rect_filled(item_rect, 4.0, hover_color);
+        // Draw item background on hover/press
+        if item.enabled {
+            let overlay_opacity = if item_response.is_pointer_button_down_on() {
+                button_theme.pressed_overlay_opacity
+            } else if item_response.hovered() {
+                button_theme.hover_overlay_opacity
+            } else {
+                0.0
+            };
+
+            if overlay_opacity > 0.0 {
+                let on_surface = button_theme.foreground_color;
+                let overlay_alpha = (overlay_opacity * 255.0) as u8;
+                let hover_color = Color32::from_rgba_premultiplied(
+                    on_surface.r(),
+                    on_surface.g(),
+                    on_surface.b(),
+                    overlay_alpha,
+                );
+                ui.painter().rect_filled(item_rect, 4.0, hover_color);
+            }
         }
 
         // Handle click
         if item_response.clicked() && item.enabled {
             if let Some(action) = item.action {
                 pending_actions.push(action);
-                // Only close menu after item click
                 should_close = true;
             }
         }
 
         // Layout item content
-        let mut content_x = item_rect.min.x + 12.0;
+        let mut content_x = item_rect.min.x + button_theme.padding_horizontal;
         let content_y = item_rect.center().y;
 
         // Draw leading icon
         if let Some(_icon) = &item.leading_icon {
-            let icon_rect =
-                Rect::from_min_size(Pos2::new(content_x, content_y - 12.0), Vec2::splat(24.0));
+            let half_icon = button_theme.icon_size / 2.0;
+            let icon_rect = Rect::from_min_size(
+                Pos2::new(content_x, content_y - half_icon),
+                Vec2::splat(button_theme.icon_size),
+            );
 
             let icon_color = if item.enabled {
-                on_surface_variant
+                button_theme.icon_color
             } else {
-                get_global_color("outline")
+                button_theme.disabled_icon_color
             };
 
             ui.painter()
-                .circle_filled(icon_rect.center(), 8.0, icon_color);
-            content_x += 36.0;
+                .circle_filled(icon_rect.center(), half_icon / 3.0 * 2.0, icon_color);
+            content_x += button_theme.icon_size + button_theme.padding_horizontal;
         }
 
         // Draw text
         let text_color = if item.enabled {
-            on_surface
+            button_theme.foreground_color
         } else {
-            get_global_color("outline")
+            button_theme.disabled_foreground_color
         };
 
         let text_pos = Pos2::new(content_x, content_y);
@@ -504,28 +764,32 @@ fn render_menu_content<'a>(
             text_pos,
             egui::Align2::LEFT_CENTER,
             &item.text,
-            egui::FontId::default(),
+            button_theme.text_font.clone(),
             text_color,
         );
 
         // Draw trailing icon
         if let Some(_icon) = &item.trailing_icon {
+            let half_icon = button_theme.icon_size / 2.0;
             let icon_rect = Rect::from_min_size(
-                Pos2::new(item_rect.max.x - 36.0, content_y - 12.0),
-                Vec2::splat(24.0),
+                Pos2::new(
+                    item_rect.max.x - button_theme.padding_horizontal - button_theme.icon_size,
+                    content_y - half_icon,
+                ),
+                Vec2::splat(button_theme.icon_size),
             );
 
             let icon_color = if item.enabled {
-                on_surface_variant
+                button_theme.icon_color
             } else {
-                get_global_color("outline")
+                button_theme.disabled_icon_color
             };
 
             ui.painter()
-                .circle_filled(icon_rect.center(), 8.0, icon_color);
+                .circle_filled(icon_rect.center(), half_icon / 3.0 * 2.0, icon_color);
         }
 
-        current_y += 48.0;
+        current_y += button_theme.min_height;
 
         // Draw divider
         if item.divider_after {

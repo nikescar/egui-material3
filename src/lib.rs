@@ -286,7 +286,10 @@ pub use {
     },
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, VisualDensity},
-    menu::{menu, menu_item, Corner, FocusState, MaterialMenu, MenuItem, Positioning},
+    menu::{
+        menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData,
+        MenuButtonThemeData, MenuItem, MenuStyle, MenuThemeData, Positioning,
+    },
     progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},
     radio::{radio, radio_group, MaterialRadio, MaterialRadioGroup},
     select::{select, MaterialSelect},

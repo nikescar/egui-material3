@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
-use crate::menu::{Corner, FocusState, Positioning};
+use crate::menu::{Corner, FocusState, MenuButtonThemeData, MenuStyle, Positioning};
 use crate::{menu, menu_item, MaterialButton, MaterialCheckbox};
-use eframe::egui::{self, Rect, Window};
+use eframe::egui::{self, Color32, Rect, Window};
 
 #[doc(hidden)]
 pub struct MenuWindow {
@@ -38,6 +38,22 @@ pub struct MenuWindow {
     links_button_rect: Option<Rect>,
     submenu_button_rect: Option<Rect>,
     context_button_rect: Option<Rect>,
+    // Component screen examples (ButtonAnchor / IconButtonAnchor)
+    button_anchor_open: bool,
+    button_anchor_rect: Option<Rect>,
+    icon_anchor_open: bool,
+    icon_anchor_rect: Option<Rect>,
+    // MenuStyle customization
+    custom_style_enabled: bool,
+    custom_bg_color: [f32; 3],
+    custom_elevation: f32,
+    custom_corner_radius: f32,
+    custom_padding: f32,
+    // MenuButtonThemeData customization
+    custom_button_theme_enabled: bool,
+    custom_item_height: f32,
+    custom_icon_size: f32,
+    custom_padding_horizontal: f32,
 }
 
 impl Default for MenuWindow {
@@ -75,6 +91,22 @@ impl Default for MenuWindow {
             links_button_rect: None,
             submenu_button_rect: None,
             context_button_rect: None,
+            // Component screen examples
+            button_anchor_open: false,
+            button_anchor_rect: None,
+            icon_anchor_open: false,
+            icon_anchor_rect: None,
+            // MenuStyle customization
+            custom_style_enabled: false,
+            custom_bg_color: [0.2, 0.2, 0.3],
+            custom_elevation: 3.0,
+            custom_corner_radius: 4.0,
+            custom_padding: 8.0,
+            // MenuButtonThemeData customization
+            custom_button_theme_enabled: false,
+            custom_item_height: 48.0,
+            custom_icon_size: 24.0,
+            custom_padding_horizontal: 12.0,
         }
     }
 }
@@ -87,6 +119,11 @@ impl MenuWindow {
             .default_size([700.0, 600.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
+                    self.render_component_examples(ui);
+                    ui.add_space(20.0);
+                    ui.separator();
+                    self.render_style_controls(ui);
+                    ui.add_space(10.0);
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     self.render_menu_triggers(ui);
@@ -100,10 +137,208 @@ impl MenuWindow {
             self.link_menu_open = false;
             self.submenu_open = false;
             self.context_menu_open = false;
+            self.button_anchor_open = false;
+            self.icon_anchor_open = false;
         }
 
         // Show menus
         self.show_menus(ctx);
+        self.show_component_menus(ctx);
+    }
+
+    /// Render component_screen.dart style examples: ButtonAnchor and IconButtonAnchor.
+    fn render_component_examples(&mut self, ui: &mut egui::Ui) {
+        ui.push_id("component_examples", |ui| {
+            ui.heading("Menus");
+            ui.label("Use MenuAnchor with MaterialMenu");
+            ui.add_space(8.0);
+
+            ui.horizontal(|ui| {
+                // ButtonAnchorExample: tonal button that opens a menu with leading icons
+                let show_menu_button = ui.add(MaterialButton::filled_tonal("Show menu"));
+                self.button_anchor_rect = Some(show_menu_button.rect);
+                if show_menu_button.clicked() {
+                    self.button_anchor_open = !self.button_anchor_open;
+                    if self.button_anchor_open {
+                        self.icon_anchor_open = false;
+                    }
+                }
+
+                ui.add_space(16.0);
+
+                // IconButtonAnchorExample: icon button (more_vert) that opens a menu
+                let icon_button = ui.button("\u{22EE}"); // vertical ellipsis
+                self.icon_anchor_rect = Some(icon_button.rect);
+                if icon_button.clicked() {
+                    self.icon_anchor_open = !self.icon_anchor_open;
+                    if self.icon_anchor_open {
+                        self.button_anchor_open = false;
+                    }
+                }
+            });
+        });
+    }
+
+    /// Show menus from the component examples.
+    fn show_component_menus(&mut self, ctx: &egui::Context) {
+        let custom_style = self.build_custom_style();
+        let custom_button_theme = self.build_custom_button_theme();
+
+        // ButtonAnchorExample menu
+        if self.button_anchor_open {
+            let mut builder = menu("button_anchor_menu", &mut self.button_anchor_open)
+                .item(
+                    menu_item("Item 1")
+                        .leading_icon("people")
+                        .on_click(|| println!("Item 1 clicked!")),
+                )
+                .item(
+                    menu_item("Item 2")
+                        .leading_icon("eye")
+                        .on_click(|| println!("Item 2 clicked!")),
+                )
+                .item(
+                    menu_item("Item 3")
+                        .leading_icon("refresh")
+                        .on_click(|| println!("Item 3 clicked!")),
+                );
+
+            if let Some(rect) = self.button_anchor_rect {
+                builder = builder.anchor_rect(rect);
+            }
+            if let Some(style) = &custom_style {
+                builder = builder.style(style.clone());
+            }
+            if let Some(theme) = &custom_button_theme {
+                builder = builder.button_theme(theme.clone());
+            }
+
+            builder.show(ctx);
+        }
+
+        // IconButtonAnchorExample menu
+        if self.icon_anchor_open {
+            let mut builder = menu("icon_anchor_menu", &mut self.icon_anchor_open)
+                .item(menu_item("Menu 1").on_click(|| println!("Menu 1 clicked!")))
+                .item(menu_item("Menu 2").on_click(|| println!("Menu 2 clicked!")))
+                .item(
+                    menu_item("Menu 3.1")
+                        .on_click(|| println!("Menu 3.1 clicked!")),
+                )
+                .item(
+                    menu_item("Menu 3.2")
+                        .on_click(|| println!("Menu 3.2 clicked!")),
+                )
+                .item(
+                    menu_item("Menu 3.3")
+                        .on_click(|| println!("Menu 3.3 clicked!")),
+                );
+
+            if let Some(rect) = self.icon_anchor_rect {
+                builder = builder.anchor_rect(rect);
+            }
+            if let Some(style) = &custom_style {
+                builder = builder.style(style.clone());
+            }
+            if let Some(theme) = &custom_button_theme {
+                builder = builder.button_theme(theme.clone());
+            }
+
+            builder.show(ctx);
+        }
+    }
+
+    /// Render MenuStyle and MenuButtonThemeData controls.
+    fn render_style_controls(&mut self, ui: &mut egui::Ui) {
+        ui.push_id("style_controls", |ui| {
+            ui.heading("Style Customization");
+
+            ui.horizontal_wrapped(|ui| {
+                ui.add(MaterialCheckbox::new(
+                    &mut self.custom_style_enabled,
+                    "Custom MenuStyle",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.custom_button_theme_enabled,
+                    "Custom MenuButtonThemeData",
+                ));
+            });
+
+            if self.custom_style_enabled {
+                ui.group(|ui| {
+                    ui.label("MenuStyle");
+                    ui.horizontal(|ui| {
+                        ui.label("Background:");
+                        ui.color_edit_button_rgb(&mut self.custom_bg_color);
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Elevation:");
+                        ui.add(egui::Slider::new(&mut self.custom_elevation, 0.0..=12.0));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Corner Radius:");
+                        ui.add(egui::Slider::new(
+                            &mut self.custom_corner_radius,
+                            0.0..=24.0,
+                        ));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Vertical Padding:");
+                        ui.add(egui::Slider::new(&mut self.custom_padding, 0.0..=24.0));
+                    });
+                });
+            }
+
+            if self.custom_button_theme_enabled {
+                ui.group(|ui| {
+                    ui.label("MenuButtonThemeData");
+                    ui.horizontal(|ui| {
+                        ui.label("Item Height:");
+                        ui.add(egui::Slider::new(&mut self.custom_item_height, 32.0..=72.0));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Icon Size:");
+                        ui.add(egui::Slider::new(&mut self.custom_icon_size, 16.0..=48.0));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Horizontal Padding:");
+                        ui.add(egui::Slider::new(
+                            &mut self.custom_padding_horizontal,
+                            4.0..=32.0,
+                        ));
+                    });
+                });
+            }
+        });
+    }
+
+    fn build_custom_style(&self) -> Option<MenuStyle> {
+        if !self.custom_style_enabled {
+            return None;
+        }
+        Some(MenuStyle {
+            background_color: Some(Color32::from_rgb(
+                (self.custom_bg_color[0] * 255.0) as u8,
+                (self.custom_bg_color[1] * 255.0) as u8,
+                (self.custom_bg_color[2] * 255.0) as u8,
+            )),
+            elevation: Some(self.custom_elevation),
+            corner_radius: Some(self.custom_corner_radius),
+            padding: Some(self.custom_padding),
+            ..MenuStyle::default()
+        })
+    }
+
+    fn build_custom_button_theme(&self) -> Option<MenuButtonThemeData> {
+        if !self.custom_button_theme_enabled {
+            return None;
+        }
+        Some(MenuButtonThemeData {
+            min_height: Some(self.custom_item_height),
+            icon_size: Some(self.custom_icon_size),
+            padding_horizontal: Some(self.custom_padding_horizontal),
+            ..MenuButtonThemeData::default()
+        })
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
@@ -334,6 +569,9 @@ impl MenuWindow {
     }
 
     fn show_menus(&mut self, ctx: &egui::Context) {
+        let custom_style = self.build_custom_style();
+        let custom_button_theme = self.build_custom_button_theme();
+
         // Standard Menu with Items - opens below button (default positioning)
         if self.standard_menu_open {
             let apple_item = self.create_menu_item("Apple", "apple");
@@ -370,6 +608,12 @@ impl MenuWindow {
 
             if let Some(rect) = self.items_button_rect {
                 menu_builder = menu_builder.anchor_rect(rect);
+            }
+            if let Some(style) = &custom_style {
+                menu_builder = menu_builder.style(style.clone());
+            }
+            if let Some(theme) = &custom_button_theme {
+                menu_builder = menu_builder.button_theme(theme.clone());
             }
 
             menu_builder.show(ctx);
@@ -412,6 +656,12 @@ impl MenuWindow {
 
             if let Some(rect) = self.links_button_rect {
                 menu_builder = menu_builder.anchor_rect(rect);
+            }
+            if let Some(style) = &custom_style {
+                menu_builder = menu_builder.style(style.clone());
+            }
+            if let Some(theme) = &custom_button_theme {
+                menu_builder = menu_builder.button_theme(theme.clone());
             }
 
             menu_builder.show(ctx);
@@ -473,13 +723,19 @@ impl MenuWindow {
             if let Some(rect) = self.submenu_button_rect {
                 menu_builder = menu_builder.anchor_rect(rect);
             }
+            if let Some(style) = &custom_style {
+                menu_builder = menu_builder.style(style.clone());
+            }
+            if let Some(theme) = &custom_button_theme {
+                menu_builder = menu_builder.button_theme(theme.clone());
+            }
 
             menu_builder.show(ctx);
         }
 
         // Context Menu
         if self.context_menu_open {
-            menu("context_menu", &mut self.context_menu_open)
+            let mut builder = menu("context_menu", &mut self.context_menu_open)
                 .item(
                     menu_item("Cut")
                         .leading_icon("cut")
@@ -515,8 +771,16 @@ impl MenuWindow {
                 .no_horizontal_flip(self.no_horizontal_flip)
                 .no_vertical_flip(self.no_vertical_flip)
                 .typeahead_delay(self.typeahead_delay)
-                .list_tab_index(self.list_tab_index)
-                .show(ctx);
+                .list_tab_index(self.list_tab_index);
+
+            if let Some(style) = &custom_style {
+                builder = builder.style(style.clone());
+            }
+            if let Some(theme) = &custom_button_theme {
+                builder = builder.button_theme(theme.clone());
+            }
+
+            builder.show(ctx);
         }
     }
 
