@@ -48,6 +48,12 @@ pub struct MaterialCard2<'a> {
     corner_radius: CornerRadius,
     clickable: bool,
     media_height: f32,
+    elevation: Option<f32>,
+    surface_tint_color: Option<Color32>,
+    shadow_color: Option<Color32>,
+    margin: f32,
+    clip_behavior: bool,
+    border_on_foreground: bool,
 }
 
 impl<'a> MaterialCard2<'a> {
@@ -78,6 +84,12 @@ impl<'a> MaterialCard2<'a> {
             corner_radius: CornerRadius::from(12.0),
             clickable: false,
             media_height: 160.0,
+            elevation: None,
+            surface_tint_color: None,
+            shadow_color: None,
+            margin: 4.0,
+            clip_behavior: false,
+            border_on_foreground: true,
         }
     }
 
@@ -148,27 +160,101 @@ impl<'a> MaterialCard2<'a> {
         self
     }
 
-    fn get_card_style(&self) -> (Color32, Option<Stroke>, bool) {
-        // Material Design theme colors
+    /// Set the elevation of the card.
+    /// For Material 3: Elevated = 1.0, Filled = 0.0, Outlined = 0.0
+    pub fn elevation(mut self, elevation: f32) -> Self {
+        self.elevation = Some(elevation.max(0.0));
+        self
+    }
+
+    /// Set the surface tint color for elevation overlay.
+    /// In Material 3, this color is overlaid on the surface to indicate elevation.
+    pub fn surface_tint_color(mut self, color: Color32) -> Self {
+        self.surface_tint_color = Some(color);
+        self
+    }
+
+    /// Set the shadow color.
+    pub fn shadow_color(mut self, color: Color32) -> Self {
+        self.shadow_color = Some(color);
+        self
+    }
+
+    /// Set the margin around the card.
+    pub fn margin(mut self, margin: f32) -> Self {
+        self.margin = margin;
+        self
+    }
+
+    /// Set whether to clip the card content.
+    pub fn clip_behavior(mut self, clip: bool) -> Self {
+        self.clip_behavior = clip;
+        self
+    }
+
+    /// Set whether the border should be painted on foreground.
+    pub fn border_on_foreground(mut self, on_foreground: bool) -> Self {
+        self.border_on_foreground = on_foreground;
+        self
+    }
+
+    fn get_card_style(&self) -> (Color32, Option<Stroke>, f32) {
+        // Material Design 3 theme colors and elevation defaults
         let md_surface = get_global_color("surface");
+        let md_surface_container_low = get_global_color("surfaceContainerLow");
         let md_surface_container_highest = get_global_color("surfaceContainerHighest");
         let md_outline_variant = get_global_color("outlineVariant");
 
         match self.variant {
             Card2Variant::Elevated => {
-                // Elevated card: surface color with shadow
-                (md_surface, None, true)
+                // Elevated card: surfaceContainerLow with 1.0 elevation
+                let default_elevation = self.elevation.unwrap_or(1.0);
+                (md_surface_container_low, None, default_elevation)
             }
             Card2Variant::Filled => {
-                // Filled card: surface-container-highest color
-                (md_surface_container_highest, None, false)
+                // Filled card: surfaceContainerHighest with 0.0 elevation
+                let default_elevation = self.elevation.unwrap_or(0.0);
+                (md_surface_container_highest, None, default_elevation)
             }
             Card2Variant::Outlined => {
-                // Outlined card: surface color with outline
+                // Outlined card: surface with outline and 0.0 elevation
                 let stroke = Some(Stroke::new(1.0, md_outline_variant));
-                (md_surface, stroke, false)
+                let default_elevation = self.elevation.unwrap_or(0.0);
+                (md_surface, stroke, default_elevation)
             }
         }
+    }
+
+    /// Calculate surface tint overlay based on elevation level.
+    /// Material 3 uses elevation levels: 0 (0%), 1 (5%), 2 (8%), 3 (11%), 4 (12%), 5 (14%)
+    fn calculate_tint_overlay(&self, elevation: f32) -> f32 {
+        let opacity = match elevation as i32 {
+            0 => 0.0,
+            1 => 0.05,
+            2..=3 => 0.08,
+            4..=6 => 0.11,
+            7..=8 => 0.12,
+            _ => 0.14,
+        };
+        opacity
+    }
+
+    /// Blend surface tint color with base color based on elevation.
+    fn apply_surface_tint(&self, base_color: Color32, elevation: f32) -> Color32 {
+        if elevation <= 0.0 {
+            return base_color;
+        }
+
+        let tint_color = self.surface_tint_color.unwrap_or_else(|| get_global_color("primary"));
+        let tint_opacity = self.calculate_tint_overlay(elevation);
+
+        // Blend tint color over base color
+        Color32::from_rgba_premultiplied(
+            (base_color.r() as f32 * (1.0 - tint_opacity) + tint_color.r() as f32 * tint_opacity) as u8,
+            (base_color.g() as f32 * (1.0 - tint_opacity) + tint_color.g() as f32 * tint_opacity) as u8,
+            (base_color.b() as f32 * (1.0 - tint_opacity) + tint_color.b() as f32 * tint_opacity) as u8,
+            255,
+        )
     }
 }
 
@@ -180,7 +266,11 @@ impl<'a> Default for MaterialCard2<'a> {
 
 impl Widget for MaterialCard2<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let (background_color, stroke, has_shadow) = self.get_card_style();
+        let (base_color, stroke, elevation) = self.get_card_style();
+        let shadow_color = self.shadow_color.unwrap_or_else(|| get_global_color("shadow"));
+        
+        // Apply surface tint overlay based on elevation
+        let background_color = self.apply_surface_tint(base_color, elevation);
 
         let MaterialCard2 {
             variant: _,
@@ -193,6 +283,12 @@ impl Widget for MaterialCard2<'_> {
             corner_radius,
             clickable,
             media_height,
+            elevation: _,
+            surface_tint_color: _,
+            shadow_color: _,
+            margin,
+            clip_behavior,
+            border_on_foreground,
         } = self;
 
         let sense = if clickable {
@@ -214,34 +310,62 @@ impl Widget for MaterialCard2<'_> {
         let total_height = header_height + media_height_actual + content_height + actions_height;
         let card_size = Vec2::new(min_size.x, total_height.max(min_size.y));
 
-        let desired_size = ui.available_size().max(card_size);
-        let mut response = ui.allocate_response(desired_size, sense);
-        let rect = response.rect;
+        // Apply margin to available space
+        let available_with_margin = ui.available_size() - Vec2::new(
+            margin * 2.0,
+            margin * 2.0,
+        );
+        let desired_size = available_with_margin.max(card_size);
+        
+        let (margin_rect, mut response) = ui.allocate_exact_size(desired_size + Vec2::new(
+            margin * 2.0,
+            margin * 2.0,
+        ), sense);
+        
+        // Apply margin inset
+        let rect = Rect::from_min_size(
+            margin_rect.min + Vec2::new(margin, margin),
+            desired_size,
+        );
 
         if ui.is_rect_visible(rect) {
-            // Draw shadow if present (for elevated cards)
-            if has_shadow {
-                let shadow_rect = Rect::from_min_size(rect.min + Vec2::new(0.0, 2.0), rect.size());
+            // Draw shadow based on elevation
+            if elevation > 0.0 {
+                let shadow_offset = (elevation * 0.5).min(4.0);
+                let shadow_blur = elevation * 0.5;
+                let shadow_alpha = (elevation * 3.0).min(30.0) as u8;
+                
+                let shadow_rect = Rect::from_min_size(
+                    rect.min + Vec2::new(0.0, shadow_offset),
+                    rect.size(),
+                );
                 ui.painter().rect_filled(
                     shadow_rect,
                     corner_radius,
-                    Color32::from_rgba_unmultiplied(0, 0, 0, 20),
+                    Color32::from_rgba_unmultiplied(
+                        shadow_color.r(),
+                        shadow_color.g(),
+                        shadow_color.b(),
+                        shadow_alpha,
+                    ),
                 );
+            }
+
+            // Draw border behind if needed
+            if !border_on_foreground {
+                if let Some(stroke) = &stroke {
+                    ui.painter().rect_stroke(
+                        rect,
+                        corner_radius,
+                        *stroke,
+                        egui::epaint::StrokeKind::Outside,
+                    );
+                }
             }
 
             // Draw card background
             ui.painter()
                 .rect_filled(rect, corner_radius, background_color);
-
-            // Draw outline if present (for outlined cards)
-            if let Some(stroke) = stroke {
-                ui.painter().rect_stroke(
-                    rect,
-                    corner_radius,
-                    stroke,
-                    egui::epaint::StrokeKind::Outside,
-                );
-            }
 
             let mut current_y = rect.min.y;
 
@@ -285,17 +409,22 @@ impl Widget for MaterialCard2<'_> {
                 );
 
                 // Clip media content to card bounds
-                let media_response =
-                    ui.scope_builder(egui::UiBuilder::new().max_rect(media_rect), |ui| {
-                        // Draw media background
-                        ui.painter().rect_filled(
-                            media_rect,
-                            CornerRadius::ZERO,
-                            get_global_color("surfaceVariant"),
-                        );
+                let mut media_ui_builder = egui::UiBuilder::new().max_rect(media_rect);
+                if clip_behavior {
+                    // Enable clipping for media area
+                    media_ui_builder = media_ui_builder.sense(Sense::hover());
+                }
+                
+                let media_response = ui.scope_builder(media_ui_builder, |ui| {
+                    // Draw media background
+                    ui.painter().rect_filled(
+                        media_rect,
+                        CornerRadius::ZERO,
+                        get_global_color("surfaceVariant"),
+                    );
 
-                        media_fn(ui)
-                    });
+                    media_fn(ui)
+                });
 
                 response = response.union(media_response.response);
                 current_y += media_height;
@@ -335,6 +464,18 @@ impl Widget for MaterialCard2<'_> {
                 );
 
                 response = response.union(actions_response.response);
+            }
+
+            // Draw border on foreground if needed
+            if border_on_foreground {
+                if let Some(stroke) = stroke {
+                    ui.painter().rect_stroke(
+                        rect,
+                        corner_radius,
+                        stroke,
+                        egui::epaint::StrokeKind::Outside,
+                    );
+                }
             }
         }
 
