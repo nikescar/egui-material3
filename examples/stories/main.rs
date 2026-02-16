@@ -31,6 +31,7 @@ mod slider_window;
 mod snackbar_window;
 mod switch_window;
 mod tabs_window;
+mod material_symbol_icons;
 mod topappbar_window;
 
 use button_window::ButtonWindow;
