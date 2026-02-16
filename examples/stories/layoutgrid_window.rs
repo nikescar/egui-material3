@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
-use crate::{layout_grid, MaterialButton, MaterialCard2, MaterialCheckbox};
-use eframe::egui::{self, Ui, Window};
+use crate::{layout_grid, GridTile, GridTileBar, MaterialButton, MaterialCard2, MaterialCheckbox};
+use eframe::egui::{self, Color32, Ui, Window};
 
 #[doc(hidden)]
 pub struct LayoutGridWindow {
@@ -12,6 +12,9 @@ pub struct LayoutGridWindow {
     debug_mode: bool,
     max_width: Option<f32>,
     use_max_width: bool,
+    show_grid_tiles: bool,
+    show_elevation_demo: bool,
+    interactive_card_count: usize,
 }
 
 impl Default for LayoutGridWindow {
@@ -24,6 +27,9 @@ impl Default for LayoutGridWindow {
             debug_mode: true,
             max_width: Some(1200.0),
             use_max_width: false,
+            show_grid_tiles: true,
+            show_elevation_demo: true,
+            interactive_card_count: 6,
         }
     }
 }
@@ -39,6 +45,20 @@ impl LayoutGridWindow {
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     self.render_layout_grid_examples(ui);
+                    
+                    if self.show_grid_tiles {
+                        ui.add_space(40.0);
+                        ui.separator();
+                        ui.add_space(20.0);
+                        self.render_grid_tile_gallery(ui);
+                    }
+                    
+                    if self.show_elevation_demo {
+                        ui.add_space(40.0);
+                        ui.separator();
+                        ui.add_space(20.0);
+                        self.render_elevation_demo(ui);
+                    }
                 });
             });
         self.open = open;
@@ -74,6 +94,11 @@ impl LayoutGridWindow {
                 &mut self.use_max_width,
                 "Use Max Width",
             ));
+        });
+
+        ui.horizontal(|ui| {
+            ui.add(MaterialCheckbox::new(&mut self.show_grid_tiles, "Show Grid Tiles"));
+            ui.add(MaterialCheckbox::new(&mut self.show_elevation_demo, "Show Elevation Demo"));
         });
 
         if self.use_max_width {
@@ -249,54 +274,35 @@ impl LayoutGridWindow {
         ui.heading("Interactive Grid Demo");
 
         ui.horizontal(|ui| {
-            if ui.add(MaterialButton::filled("Add Column")).clicked() {
-                println!("Add column functionality would be implemented here");
+            if ui.add(MaterialButton::filled("Add Card")).clicked() {
+                self.interactive_card_count += 1;
             }
-            if ui.add(MaterialButton::outlined("Remove Column")).clicked() {
-                println!("Remove column functionality would be implemented here");
+            if ui.add(MaterialButton::outlined("Remove Card")).clicked() {
+                if self.interactive_card_count > 0 {
+                    self.interactive_card_count -= 1;
+                }
             }
             if ui.add(MaterialButton::text("Reset Layout")).clicked() {
-                println!("Reset layout functionality would be implemented here");
+                self.interactive_card_count = 6;
             }
+            ui.label(format!("Cards: {}", self.interactive_card_count));
         });
 
         ui.add_space(10.0);
 
-        let interactive_grid = layout_grid()
+        let mut interactive_grid = layout_grid()
             .columns(self.columns)
             .gutter(self.gutter)
             .margin(self.margin)
-            .debug_mode(self.debug_mode)
-            .cell(2, |ui| {
-                ui.add(MaterialCard2::filled().content(|ui| {
-                    ui.label("Card 1");
-                }));
-            })
-            .cell(2, |ui| {
-                ui.add(MaterialCard2::filled().content(|ui| {
-                    ui.label("Card 2");
-                }));
-            })
-            .cell(2, |ui| {
-                ui.add(MaterialCard2::filled().content(|ui| {
-                    ui.label("Card 3");
-                }));
-            })
-            .cell(2, |ui| {
-                ui.add(MaterialCard2::filled().content(|ui| {
-                    ui.label("Card 4");
-                }));
-            })
-            .cell(2, |ui| {
-                ui.add(MaterialCard2::filled().content(|ui| {
-                    ui.label("Card 5");
-                }));
-            })
-            .cell(2, |ui| {
-                ui.add(MaterialCard2::filled().content(|ui| {
-                    ui.label("Card 6");
+            .debug_mode(self.debug_mode);
+
+        for i in 1..=self.interactive_card_count {
+            interactive_grid = interactive_grid.cell(2, move |ui| {
+                ui.add(MaterialCard2::filled().content(move |ui| {
+                    ui.label(format!("Card {}", i));
                 }));
             });
+        }
 
         ui.add(interactive_grid);
 
@@ -320,5 +326,342 @@ impl LayoutGridWindow {
                 ui.label("• Flexible layouts");
             });
         });
+    }
+
+    fn render_grid_tile_gallery(&mut self, ui: &mut Ui) {
+        ui.heading("Grid Tile Gallery");
+        ui.label("GridTile components with headers and footers for image galleries and card grids.");
+        ui.add_space(20.0);
+
+        ui.heading("Basic Grid Tiles with Footers");
+        
+        let tile_grid = layout_grid()
+            .columns(self.columns)
+            .gutter(self.gutter)
+            .margin(self.margin)
+            .debug_mode(self.debug_mode)
+            .cell(4, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::filled().min_size(egui::Vec2::new(0.0, 200.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(80.0);
+                            ui.heading("🖼️");
+                            ui.label("Image 1");
+                        });
+                    }));
+                }).footer(
+                    GridTileBar::new()
+                        .title("Mountain View")
+                        .subtitle("Location: Alps")
+                        .background_color(Color32::from_black_alpha(180))
+                ));
+            })
+            .cell(4, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::filled().min_size(egui::Vec2::new(0.0, 200.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(80.0);
+                            ui.heading("🌅");
+                            ui.label("Image 2");
+                        });
+                    }));
+                }).footer(
+                    GridTileBar::new()
+                        .title("Sunset Beach")
+                        .subtitle("Location: California")
+                        .background_color(Color32::from_black_alpha(180))
+                ));
+            })
+            .cell(4, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::filled().min_size(egui::Vec2::new(0.0, 200.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(80.0);
+                            ui.heading("🏙️");
+                            ui.label("Image 3");
+                        });
+                    }));
+                }).footer(
+                    GridTileBar::new()
+                        .title("City Lights")
+                        .subtitle("Location: Tokyo")
+                        .background_color(Color32::from_black_alpha(180))
+                ));
+            });
+
+        ui.add(tile_grid);
+        ui.add_space(30.0);
+
+        ui.heading("Grid Tiles with Headers and Actions");
+
+        let action_grid = layout_grid()
+            .columns(self.columns)
+            .gutter(self.gutter)
+            .margin(self.margin)
+            .debug_mode(self.debug_mode)
+            .cell(6, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::elevated().min_size(egui::Vec2::new(0.0, 250.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(100.0);
+                            ui.heading("📱");
+                            ui.label("Product Image");
+                        });
+                    }));
+                })
+                .header(
+                    GridTileBar::new()
+                        .title("Featured Product")
+                        .background_color(Color32::from_black_alpha(150))
+                        .trailing(|ui| {
+                            ui.label("⭐");
+                        })
+                )
+                .footer(
+                    GridTileBar::new()
+                        .title("Smartphone XYZ")
+                        .subtitle("$999.99")
+                        .background_color(Color32::from_black_alpha(180))
+                        .leading(|ui| {
+                            ui.label("🛒");
+                        })
+                ));
+            })
+            .cell(6, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::elevated().min_size(egui::Vec2::new(0.0, 250.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(100.0);
+                            ui.heading("💻");
+                            ui.label("Product Image");
+                        });
+                    }));
+                })
+                .header(
+                    GridTileBar::new()
+                        .title("New Arrival")
+                        .background_color(Color32::from_black_alpha(150))
+                        .trailing(|ui| {
+                            ui.label("🆕");
+                        })
+                )
+                .footer(
+                    GridTileBar::new()
+                        .title("Laptop Pro")
+                        .subtitle("$1,499.99")
+                        .background_color(Color32::from_black_alpha(180))
+                        .leading(|ui| {
+                            ui.label("🛒");
+                        })
+                ));
+            });
+
+        ui.add(action_grid);
+        ui.add_space(30.0);
+
+        ui.heading("Photo Gallery Grid");
+
+        let photo_grid = layout_grid()
+            .columns(self.columns)
+            .gutter(self.gutter)
+            .margin(self.margin)
+            .debug_mode(self.debug_mode)
+            .cell(3, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::outlined().min_size(egui::Vec2::new(0.0, 180.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(70.0);
+                            ui.heading("🎨");
+                        });
+                    }));
+                }).footer(
+                    GridTileBar::new()
+                        .title("Art 1")
+                        .background_color(Color32::from_black_alpha(160))
+                ));
+            })
+            .cell(3, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::outlined().min_size(egui::Vec2::new(0.0, 180.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(70.0);
+                            ui.heading("🎭");
+                        });
+                    }));
+                }).footer(
+                    GridTileBar::new()
+                        .title("Art 2")
+                        .background_color(Color32::from_black_alpha(160))
+                ));
+            })
+            .cell(3, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::outlined().min_size(egui::Vec2::new(0.0, 180.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(70.0);
+                            ui.heading("🎪");
+                        });
+                    }));
+                }).footer(
+                    GridTileBar::new()
+                        .title("Art 3")
+                        .background_color(Color32::from_black_alpha(160))
+                ));
+            })
+            .cell(3, |ui| {
+                ui.add(GridTile::new(|ui| {
+                    ui.add(MaterialCard2::outlined().min_size(egui::Vec2::new(0.0, 180.0)).content(|ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(70.0);
+                            ui.heading("🎬");
+                        });
+                    }));
+                }).footer(
+                    GridTileBar::new()
+                        .title("Art 4")
+                        .background_color(Color32::from_black_alpha(160))
+                ));
+            });
+
+        ui.add(photo_grid);
+    }
+
+    fn render_elevation_demo(&mut self, ui: &mut Ui) {
+        ui.heading("Elevation Grid Demo");
+        ui.label("Demonstrating Material Design elevation levels with surface tint and shadow effects.");
+        ui.add_space(20.0);
+
+        // Elevation data
+        let elevations = [
+            (0, 0.0, 0),
+            (1, 1.0, 5),
+            (2, 3.0, 8),
+            (3, 6.0, 11),
+            (4, 8.0, 12),
+            (5, 12.0, 14),
+        ];
+
+        ui.heading("Surface Tint Color Only");
+        ui.add_space(10.0);
+
+        let tint_grid = layout_grid()
+            .columns(self.columns)
+            .gutter(self.gutter)
+            .margin(self.margin)
+            .debug_mode(false);
+
+        let tint_grid = elevations.iter().fold(tint_grid, |grid, (level, elevation, percent)| {
+            let level = *level;
+            let elevation = *elevation;
+            let percent = *percent;
+            grid.cell(2, move |ui| {
+                ui.add(MaterialCard2::elevated()
+                    .elevation(elevation as f32)
+                    .min_size(egui::Vec2::new(0.0, 120.0))
+                    .content(move |ui| {
+                        ui.vertical(|ui| {
+                            ui.label(format!("Level {}", level));
+                            ui.label(format!("{} dp", elevation));
+                            ui.add_space(10.0);
+                            ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
+                                ui.label(egui::RichText::new(format!("{}%", percent))
+                                    .small()
+                                    .color(ui.style().visuals.weak_text_color()));
+                            });
+                        });
+                    }));
+            })
+        });
+
+        ui.add(tint_grid);
+        ui.add_space(30.0);
+
+        ui.heading("Surface Tint Color and Shadow Color");
+        ui.add_space(10.0);
+
+        let shadow_grid = layout_grid()
+            .columns(self.columns)
+            .gutter(self.gutter)
+            .margin(self.margin)
+            .debug_mode(false);
+
+        let shadow_grid = elevations.iter().fold(shadow_grid, |grid, (level, elevation, percent)| {
+            let level = *level;
+            let elevation = *elevation;
+            let percent = *percent;
+            grid.cell(2, move |ui| {
+                ui.add(MaterialCard2::elevated()
+                    .elevation(elevation as f32)
+                    .min_size(egui::Vec2::new(0.0, 120.0))
+                    .content(move |ui| {
+                        ui.vertical(|ui| {
+                            ui.label(format!("Level {}", level));
+                            ui.label(format!("{} dp", elevation));
+                            ui.add_space(10.0);
+                            ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
+                                ui.label(egui::RichText::new(format!("{}%", percent))
+                                    .small()
+                                    .color(ui.style().visuals.weak_text_color()));
+                            });
+                        });
+                    }));
+            })
+        });
+
+        ui.add(shadow_grid);
+        ui.add_space(30.0);
+
+        ui.heading("Elevation Comparison");
+        ui.label("Side-by-side comparison of different elevation levels:");
+
+        let comparison_grid = layout_grid()
+            .columns(self.columns)
+            .gutter(self.gutter)
+            .margin(self.margin)
+            .debug_mode(self.debug_mode)
+            .cell(4, |ui| {
+                ui.vertical(|ui| {
+                    ui.label("Low Elevation (Level 1)");
+                    ui.add(MaterialCard2::elevated()
+                        .elevation(1.0)
+                        .min_size(egui::Vec2::new(0.0, 100.0))
+                        .content(|ui| {
+                            ui.vertical_centered(|ui| {
+                                ui.add_space(30.0);
+                                ui.label("Subtle depth");
+                            });
+                        }));
+                });
+            })
+            .cell(4, |ui| {
+                ui.vertical(|ui| {
+                    ui.label("Medium Elevation (Level 3)");
+                    ui.add(MaterialCard2::elevated()
+                        .elevation(6.0)
+                        .min_size(egui::Vec2::new(0.0, 100.0))
+                        .content(|ui| {
+                            ui.vertical_centered(|ui| {
+                                ui.add_space(30.0);
+                                ui.label("Moderate depth");
+                            });
+                        }));
+                });
+            })
+            .cell(4, |ui| {
+                ui.vertical(|ui| {
+                    ui.label("High Elevation (Level 5)");
+                    ui.add(MaterialCard2::elevated()
+                        .elevation(12.0)
+                        .min_size(egui::Vec2::new(0.0, 100.0))
+                        .content(|ui| {
+                            ui.vertical_centered(|ui| {
+                                ui.add_space(30.0);
+                                ui.label("Strong depth");
+                            });
+                        }));
+                });
+            });
+
+        ui.add(comparison_grid);
     }
 }

@@ -284,7 +284,7 @@ pub use {
         image_list, masonry_image_list, woven_image_list, ImageListItem, ImageListVariant,
         MaterialImageList,
     },
-    layoutgrid::{debug_layout_grid, layout_grid, MaterialLayoutGrid},
+    layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{list, list_item, ListItem, MaterialList},
     menu::{menu, menu_item, Corner, FocusState, MaterialMenu, MenuItem, Positioning},
     progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},

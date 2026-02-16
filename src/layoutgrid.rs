@@ -1,5 +1,5 @@
 use crate::theme::get_global_color;
-use egui::{epaint::CornerRadius, Rect, Response, Sense, Ui, Vec2, Widget};
+use egui::{epaint::CornerRadius, Color32, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Material Design layout grid component.
 ///
@@ -263,4 +263,273 @@ pub fn layout_grid() -> MaterialLayoutGrid<'static> {
 /// Convenience function to create a layout grid with debug mode enabled.
 pub fn debug_layout_grid() -> MaterialLayoutGrid<'static> {
     MaterialLayoutGrid::new().debug_mode(true)
+}
+
+/// Material Design grid tile bar.
+///
+/// A header or footer bar typically used with [GridTile].
+/// Contains optional leading/trailing icons and title/subtitle text.
+///
+/// ```
+/// # egui::__run_test_ui(|ui| {
+/// let tile_bar = GridTileBar::new()
+///     .title("Image Title")
+///     .subtitle("Subtitle text")
+///     .background_color(egui::Color32::from_black_alpha(128));
+///
+/// ui.add(tile_bar);
+/// # });
+/// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
+pub struct GridTileBar<'a> {
+    background_color: Option<Color32>,
+    leading: Option<Box<dyn FnOnce(&mut Ui) + 'a>>,
+    title: Option<String>,
+    subtitle: Option<String>,
+    trailing: Option<Box<dyn FnOnce(&mut Ui) + 'a>>,
+}
+
+impl<'a> GridTileBar<'a> {
+    /// Create a new grid tile bar.
+    pub fn new() -> Self {
+        Self {
+            background_color: None,
+            leading: None,
+            title: None,
+            subtitle: None,
+            trailing: None,
+        }
+    }
+
+    /// Set the background color.
+    pub fn background_color(mut self, color: Color32) -> Self {
+        self.background_color = Some(color);
+        self
+    }
+
+    /// Set a leading widget (left side icon/widget).
+    pub fn leading<F>(mut self, content: F) -> Self
+    where
+        F: FnOnce(&mut Ui) + 'a,
+    {
+        self.leading = Some(Box::new(content));
+        self
+    }
+
+    /// Set the title text.
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    /// Set the subtitle text.
+    pub fn subtitle(mut self, subtitle: impl Into<String>) -> Self {
+        self.subtitle = Some(subtitle.into());
+        self
+    }
+
+    /// Set a trailing widget (right side icon/widget).
+    pub fn trailing<F>(mut self, content: F) -> Self
+    where
+        F: FnOnce(&mut Ui) + 'a,
+    {
+        self.trailing = Some(Box::new(content));
+        self
+    }
+}
+
+impl<'a> Default for GridTileBar<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Widget for GridTileBar<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        let GridTileBar {
+            background_color,
+            leading,
+            title,
+            subtitle,
+            trailing,
+        } = self;
+
+        // Calculate height based on content
+        let height = if title.is_some() && subtitle.is_some() {
+            68.0
+        } else {
+            48.0
+        };
+
+        // Calculate padding
+        let padding_start = if leading.is_some() { 8.0 } else { 16.0 };
+        let padding_end = if trailing.is_some() { 8.0 } else { 16.0 };
+
+        let available_width = ui.available_width();
+        let start_pos = ui.next_widget_position();
+
+        // Draw background if specified
+        if let Some(bg_color) = background_color {
+            let bg_rect = Rect::from_min_size(start_pos, Vec2::new(available_width, height));
+            ui.painter().rect_filled(bg_rect, CornerRadius::ZERO, bg_color);
+        }
+
+        let _response = ui.horizontal(|ui| {
+            ui.add_space(padding_start);
+
+            // Leading widget
+            if let Some(leading_fn) = leading {
+                leading_fn(ui);
+                ui.add_space(8.0);
+            }
+
+            // Title and subtitle
+            if title.is_some() || subtitle.is_some() {
+                ui.vertical(|ui| {
+                    ui.set_min_height(height);
+                    ui.add_space((height - if subtitle.is_some() { 40.0 } else { 20.0 }) / 2.0);
+
+                    if let Some(title_text) = &title {
+                        ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
+                        ui.label(egui::RichText::new(title_text).color(Color32::WHITE));
+                    }
+
+                    if let Some(subtitle_text) = &subtitle {
+                        ui.style_mut().override_text_style = Some(egui::TextStyle::Small);
+                        ui.label(egui::RichText::new(subtitle_text).color(Color32::WHITE));
+                    }
+                });
+            }
+
+            // Trailing widget
+            if let Some(trailing_fn) = trailing {
+                ui.add_space(8.0);
+                trailing_fn(ui);
+            }
+
+            ui.add_space(padding_end);
+        });
+
+        ui.allocate_rect(
+            Rect::from_min_size(start_pos, Vec2::new(available_width, height)),
+            Sense::hover(),
+        )
+    }
+}
+
+/// Material Design grid tile.
+///
+/// A tile in a grid list with optional header and footer overlays.
+/// Based on Flutter's GridTile component.
+///
+/// ```
+/// # egui::__run_test_ui(|ui| {
+/// let tile = GridTile::new(|ui| {
+///     ui.label("Tile content");
+/// })
+/// .footer(
+///     GridTileBar::new()
+///         .title("Image Title")
+///         .background_color(egui::Color32::from_black_alpha(128))
+/// );
+///
+/// ui.add(tile);
+/// # });
+/// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
+pub struct GridTile<'a> {
+    header: Option<GridTileBar<'a>>,
+    footer: Option<GridTileBar<'a>>,
+    child: Box<dyn FnOnce(&mut Ui) + 'a>,
+    min_height: f32,
+}
+
+impl<'a> GridTile<'a> {
+    /// Create a new grid tile with the given content.
+    pub fn new<F>(content: F) -> Self
+    where
+        F: FnOnce(&mut Ui) + 'a,
+    {
+        Self {
+            header: None,
+            footer: None,
+            child: Box::new(content),
+            min_height: 100.0,
+        }
+    }
+
+    /// Set the header bar (shown at the top).
+    pub fn header(mut self, header: GridTileBar<'a>) -> Self {
+        self.header = Some(header);
+        self
+    }
+
+    /// Set the footer bar (shown at the bottom).
+    pub fn footer(mut self, footer: GridTileBar<'a>) -> Self {
+        self.footer = Some(footer);
+        self
+    }
+
+    /// Set the minimum height of the tile.
+    pub fn min_height(mut self, height: f32) -> Self {
+        self.min_height = height;
+        self
+    }
+}
+
+impl Widget for GridTile<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        let GridTile {
+            header,
+            footer,
+            child,
+            min_height,
+        } = self;
+
+        if header.is_none() && footer.is_none() {
+            // Simple case: no overlays
+            let response = ui.vertical(|ui| {
+                ui.set_min_height(min_height);
+                child(ui);
+            });
+            return response.response;
+        }
+
+        // Complex case: with header/footer overlays
+        let available_width = ui.available_width();
+        let start_pos = ui.next_widget_position();
+
+        // First, render the child to get the content height
+        let child_response = ui.vertical(|ui| {
+            ui.set_min_height(min_height);
+            child(ui);
+        });
+
+        let content_height = child_response.response.rect.height().max(min_height);
+        let tile_rect = Rect::from_min_size(start_pos, Vec2::new(available_width, content_height));
+
+        // Draw header overlay if present
+        if let Some(header_bar) = header {
+            let header_ui = &mut ui.new_child(
+                egui::UiBuilder::new()
+                    .max_rect(Rect::from_min_size(start_pos, Vec2::new(available_width, 68.0)))
+                    .layout(egui::Layout::top_down(egui::Align::LEFT)),
+            );
+            header_ui.add(header_bar);
+        }
+
+        // Draw footer overlay if present
+        if let Some(footer_bar) = footer {
+            let footer_height = 68.0; // Will be adjusted by the GridTileBar itself
+            let footer_pos = egui::pos2(start_pos.x, start_pos.y + content_height - footer_height);
+            let footer_ui = &mut ui.new_child(
+                egui::UiBuilder::new()
+                    .max_rect(Rect::from_min_size(footer_pos, Vec2::new(available_width, footer_height)))
+                    .layout(egui::Layout::top_down(egui::Align::LEFT)),
+            );
+            footer_ui.add(footer_bar);
+        }
+
+        ui.allocate_rect(tile_rect, Sense::hover())
+    }
 }
