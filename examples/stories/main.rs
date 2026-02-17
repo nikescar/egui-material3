@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 // Import window modules - reorganized from src/ to examples/stories/ directory structure
+mod bottomappbar_window;
 mod button_window;
 mod card2_window;
 mod carousel_window;
@@ -35,6 +36,7 @@ mod symbol_window;
 mod tabs_window;
 mod topappbar_window;
 
+use bottomappbar_window::BottomAppBarWindow;
 use button_window::ButtonWindow;
 use card2_window::Card2Window;
 use carousel_window::CarouselWindow;
@@ -113,6 +115,7 @@ struct MaterialApp {
     selected_file_path: Option<PathBuf>,
     color_pickers_open: HashMap<String, bool>,
     // Demo windows
+    bottomappbar_window: BottomAppBarWindow,
     button_window: ButtonWindow,
     checkbox_window: CheckboxWindow,
     chips_window: ChipsWindow,
@@ -157,6 +160,7 @@ impl Default for MaterialApp {
             file_dialog: FileDialog::new(),
             selected_file_path: None,
             color_pickers_open: HashMap::new(),
+            bottomappbar_window: BottomAppBarWindow::default(),
             button_window: ButtonWindow::default(),
             checkbox_window: CheckboxWindow::default(),
             chips_window: ChipsWindow::default(),
@@ -360,6 +364,7 @@ impl MaterialApp {
 
     /// Close all open demo windows
     fn close_all_windows(&mut self) {
+        self.bottomappbar_window.open = false;
         self.button_window.open = false;
         self.checkbox_window.open = false;
         self.chips_window.open = false;
@@ -620,6 +625,13 @@ impl eframe::App for MaterialApp {
             ui.add_space(15.0);
             ui.label("Demo Windows:");
             ui.horizontal_wrapped(|ui| {
+                if ui
+                    .add(MaterialButton::filled("Bottom App Bar Stories"))
+                    .clicked()
+                {
+                    self.bottomappbar_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("Button Stories")).clicked() {
                     self.button_window.open = true;
                 }
@@ -735,6 +747,7 @@ impl eframe::App for MaterialApp {
         });
 
         // Show demo windows
+        self.bottomappbar_window.show(ctx);
         self.button_window.show(ctx);
         self.checkbox_window.show(ctx);
         self.chips_window.show(ctx);

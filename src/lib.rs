@@ -228,6 +228,7 @@
 //! This crate follows the Material Design 3 specifications and guidelines for consistent,
 //! accessible, and beautiful user interfaces.
 
+pub mod bottomappbar;
 pub mod button;
 pub mod card2;
 pub mod carousel;
@@ -257,6 +258,7 @@ pub mod theme;
 pub mod topappbar;
 
 pub use {
+    bottomappbar::{bottom_app_bar, MaterialBottomAppBar},
     button::{MaterialButton, MaterialButtonVariant},
     card2::{elevated_card2, filled_card2, outlined_card2, Card2Variant, MaterialCard2},
     carousel::{carousel, CarouselItem, MaterialCarousel},
