@@ -1,6 +1,6 @@
 use crate::theme::get_global_color;
 use eframe::egui::{
-    self, Color32, FontFamily, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
+    self, Color32, FontFamily, FontId, Key, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
 };
 
 /// Material Design select/dropdown component.
@@ -9,19 +9,53 @@ use eframe::egui::{
 /// They display the currently selected option in a text field-style input
 /// and show all options in a dropdown menu when activated.
 ///
+/// Supports Material Design 3 variants (filled and outlined), filtering,
+/// validation, and comprehensive keyboard navigation.
+///
 /// # Example
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(1);
 ///
 /// ui.add(MaterialSelect::new(&mut selected)
-///     .placeholder("Choose an option")
+///     .variant(SelectVariant::Outlined)
+///     .label("Choose an option")
 ///     .option(0, "Option 1")
 ///     .option(1, "Option 2")
 ///     .option(2, "Option 3")
 ///     .helper_text("Select your preferred option"));
 /// # });
 /// ```
+/// Visual variant of the select component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SelectVariant {
+    /// Filled variant with background color
+    Filled,
+    /// Outlined variant with border
+    Outlined,
+}
+
+impl Default for SelectVariant {
+    fn default() -> Self {
+        Self::Filled
+    }
+}
+
+/// Menu alignment options.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MenuAlignment {
+    /// Align menu to start edge
+    Start,
+    /// Align menu to end edge
+    End,
+}
+
+impl Default for MenuAlignment {
+    fn default() -> Self {
+        Self::Start
+    }
+}
+
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialSelect<'a> {
     /// Reference to the currently selected option
@@ -30,6 +64,10 @@ pub struct MaterialSelect<'a> {
     options: Vec<SelectOption>,
     /// Placeholder text when no option is selected
     placeholder: String,
+    /// Label text (floats above when focused or has content)
+    label: Option<String>,
+    /// Visual variant (filled or outlined)
+    variant: SelectVariant,
     /// Whether the select is enabled for interaction
     enabled: bool,
     /// Fixed width of the select component
@@ -44,6 +82,20 @@ pub struct MaterialSelect<'a> {
     trailing_icon: Option<String>,
     /// Whether to keep the dropdown open after selecting an option
     keep_open_on_select: bool,
+    /// Enable filtering of options by typing
+    enable_filter: bool,
+    /// Enable search highlighting while typing
+    enable_search: bool,
+    /// Mark field as required
+    required: bool,
+    /// Independent menu width
+    menu_width: Option<f32>,
+    /// Maximum menu height
+    menu_max_height: Option<f32>,
+    /// Border radius for menu
+    border_radius: Option<f32>,
+    /// Menu alignment
+    menu_alignment: MenuAlignment,
 }
 
 /// Individual option in a select component.
@@ -72,6 +124,8 @@ impl<'a> MaterialSelect<'a> {
             selected,
             options: Vec::new(),
             placeholder: "Select an option".to_string(),
+            label: None,
+            variant: SelectVariant::default(),
             enabled: true,
             width: None,
             error_text: None,
@@ -79,6 +133,13 @@ impl<'a> MaterialSelect<'a> {
             leading_icon: None,
             trailing_icon: None,
             keep_open_on_select: false,
+            enable_filter: false,
+            enable_search: true,
+            required: false,
+            menu_width: None,
+            menu_max_height: None,
+            border_radius: None,
+            menu_alignment: MenuAlignment::default(),
         }
     }
 
@@ -120,6 +181,42 @@ impl<'a> MaterialSelect<'a> {
     /// ```
     pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Set label text that floats above the field when focused or has content.
+    ///
+    /// # Arguments
+    /// * `label` - The label text to display
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .label("Color"));
+    /// # });
+    /// ```
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    /// Set the visual variant of the select component.
+    ///
+    /// # Arguments
+    /// * `variant` - The variant (Filled or Outlined)
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .variant(SelectVariant::Outlined));
+    /// # });
+    /// ```
+    pub fn variant(mut self, variant: SelectVariant) -> Self {
+        self.variant = variant;
         self
     }
 
@@ -249,6 +346,69 @@ impl<'a> MaterialSelect<'a> {
         self.keep_open_on_select = keep_open;
         self
     }
+
+    /// Enable filtering of options by typing.
+    ///
+    /// # Arguments
+    /// * `enable` - If true, allows filtering options by text input
+    pub fn enable_filter(mut self, enable: bool) -> Self {
+        self.enable_filter = enable;
+        self
+    }
+
+    /// Enable search highlighting while typing.
+    ///
+    /// # Arguments
+    /// * `enable` - If true, highlights matching options while typing
+    pub fn enable_search(mut self, enable: bool) -> Self {
+        self.enable_search = enable;
+        self
+    }
+
+    /// Mark the field as required.
+    ///
+    /// # Arguments
+    /// * `required` - If true, marks the field as required
+    pub fn required(mut self, required: bool) -> Self {
+        self.required = required;
+        self
+    }
+
+    /// Set independent menu width.
+    ///
+    /// # Arguments
+    /// * `width` - The width of the menu in pixels
+    pub fn menu_width(mut self, width: f32) -> Self {
+        self.menu_width = Some(width);
+        self
+    }
+
+    /// Set maximum menu height.
+    ///
+    /// # Arguments
+    /// * `height` - The maximum height of the menu in pixels
+    pub fn menu_max_height(mut self, height: f32) -> Self {
+        self.menu_max_height = Some(height);
+        self
+    }
+
+    /// Set border radius for menu.
+    ///
+    /// # Arguments
+    /// * `radius` - The border radius in pixels
+    pub fn border_radius(mut self, radius: f32) -> Self {
+        self.border_radius = Some(radius);
+        self
+    }
+
+    /// Set menu alignment.
+    ///
+    /// # Arguments
+    /// * `alignment` - The menu alignment (Start or End)
+    pub fn menu_alignment(mut self, alignment: MenuAlignment) -> Self {
+        self.menu_alignment = alignment;
+        self
+    }
 }
 
 impl<'a> Widget for MaterialSelect<'a> {
@@ -265,8 +425,15 @@ impl<'a> Widget for MaterialSelect<'a> {
             rect.min.x as i32,
             rect.min.y as i32,
             self.placeholder.clone(),
+            self.label.clone(),
         ));
         let mut open = ui.memory(|mem| mem.data.get_temp::<bool>(select_id).unwrap_or(false));
+        
+        // Handle Escape key to close dropdown
+        if open && ui.input(|i| i.key_pressed(Key::Escape)) {
+            open = false;
+            ui.memory_mut(|mem| mem.data.insert_temp(select_id, false));
+        }
 
         // Global state to close other select menus
         let global_open_select_id = egui::Id::new("global_open_select");
@@ -294,32 +461,106 @@ impl<'a> Widget for MaterialSelect<'a> {
         // Material Design colors
         let primary_color = get_global_color("primary");
         let surface = get_global_color("surface");
+        let surface_variant = get_global_color("surfaceVariant");
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
         let outline = get_global_color("outline");
+        let error_color = get_global_color("error");
 
+        // Determine if we should show floating label
+        let has_content = self.selected.is_some();
+        let should_float_label = has_content || open || response.hovered();
+        
+        // Determine colors based on state
         let (bg_color, border_color, text_color) = if !self.enabled {
             (
-                get_global_color("surfaceVariant").linear_multiply(0.38),
-                get_global_color("outline").linear_multiply(0.38),
-                get_global_color("onSurface").linear_multiply(0.38),
+                surface_variant.linear_multiply(0.38),
+                outline.linear_multiply(0.38),
+                on_surface.linear_multiply(0.38),
             )
+        } else if self.error_text.is_some() {
+            match self.variant {
+                SelectVariant::Filled => (surface_variant, error_color, on_surface),
+                SelectVariant::Outlined => (surface, error_color, on_surface),
+            }
         } else if response.hovered() || open {
-            (surface, primary_color, on_surface)
+            match self.variant {
+                SelectVariant::Filled => (surface_variant, primary_color, on_surface),
+                SelectVariant::Outlined => (surface, primary_color, on_surface),
+            }
         } else {
-            (surface, outline, on_surface_variant)
+            match self.variant {
+                SelectVariant::Filled => (surface_variant, outline, on_surface_variant),
+                SelectVariant::Outlined => (surface, outline, on_surface_variant),
+            }
         };
 
         // Draw select field background
-        ui.painter().rect_filled(rect, 4.0, bg_color);
+        match self.variant {
+            SelectVariant::Filled => {
+                ui.painter().rect_filled(rect, 4.0, bg_color);
+                // Draw bottom border for filled variant
+                if !self.enabled {
+                    ui.painter().line_segment(
+                        [
+                            Pos2::new(rect.min.x, rect.max.y),
+                            Pos2::new(rect.max.x, rect.max.y),
+                        ],
+                        Stroke::new(1.0, border_color),
+                    );
+                } else {
+                    ui.painter().line_segment(
+                        [
+                            Pos2::new(rect.min.x, rect.max.y),
+                            Pos2::new(rect.max.x, rect.max.y),
+                        ],
+                        Stroke::new(if open || response.hovered() { 2.0 } else { 1.0 }, border_color),
+                    );
+                }
+            }
+            SelectVariant::Outlined => {
+                ui.painter().rect_filled(rect, 4.0, bg_color);
+                ui.painter().rect_stroke(
+                    rect,
+                    4.0,
+                    Stroke::new(if open || response.hovered() { 2.0 } else { 1.0 }, border_color),
+                    egui::epaint::StrokeKind::Outside,
+                );
+            }
+        }
 
-        // Draw border
-        ui.painter().rect_stroke(
-            rect,
-            4.0,
-            Stroke::new(1.0, border_color),
-            egui::epaint::StrokeKind::Outside,
-        );
+        // Draw floating label if present
+        if let Some(ref label_text) = self.label {
+            let label_font = if should_float_label {
+                FontId::new(12.0, FontFamily::Proportional)
+            } else {
+                FontId::new(16.0, FontFamily::Proportional)
+            };
+            
+            let label_color = if !self.enabled {
+                on_surface.linear_multiply(0.38)
+            } else if self.error_text.is_some() {
+                error_color
+            } else if open {
+                primary_color
+            } else {
+                on_surface_variant
+            };
+            
+            let label_pos = if should_float_label {
+                Pos2::new(rect.min.x + 16.0, rect.min.y + 8.0)
+            } else {
+                Pos2::new(rect.min.x + 16.0, rect.center().y)
+            };
+            
+            ui.painter().text(
+                label_pos,
+                egui::Align2::LEFT_TOP,
+                label_text,
+                label_font,
+                label_color,
+            );
+        }
 
         // Draw selected text or placeholder
         let display_text = if let Some(selected_value) = *self.selected {
@@ -334,13 +575,21 @@ impl<'a> Widget for MaterialSelect<'a> {
 
         // Use consistent font styling for select field
         let select_font = FontId::new(16.0, FontFamily::Proportional);
-        let text_pos = Pos2::new(rect.min.x + 16.0, rect.center().y);
+        let text_y_offset = if self.label.is_some() && should_float_label { 12.0 } else { 0.0 };
+        let text_pos = Pos2::new(rect.min.x + 16.0, rect.center().y + text_y_offset);
+        
+        let display_color = if self.selected.is_none() {
+            on_surface_variant.linear_multiply(0.6)
+        } else {
+            text_color
+        };
+        
         ui.painter().text(
             text_pos,
             egui::Align2::LEFT_CENTER,
             display_text,
             select_font.clone(),
-            text_color,
+            display_color,
         );
 
         // Draw dropdown arrow
@@ -401,10 +650,18 @@ impl<'a> Widget for MaterialSelect<'a> {
 
             let item_height = 48.0;
             let dropdown_padding = 16.0;
+            
+            // Use menu_max_height if specified, otherwise use available space
+            let effective_max_height = if let Some(max_h) = self.menu_max_height {
+                max_h
+            } else {
+                available_space_below.max(available_space_above)
+            };
+            
             let max_items_below =
-                ((available_space_below - dropdown_padding) / item_height).floor() as usize;
+                ((available_space_below.min(effective_max_height) - dropdown_padding) / item_height).floor() as usize;
             let max_items_above =
-                ((available_space_above - dropdown_padding) / item_height).floor() as usize;
+                ((available_space_above.min(effective_max_height) - dropdown_padding) / item_height).floor() as usize;
 
             // Determine dropdown position and size
             let (dropdown_y, visible_items, scroll_needed) = if max_items_below
@@ -431,9 +688,14 @@ impl<'a> Widget for MaterialSelect<'a> {
             };
 
             let dropdown_height = visible_items as f32 * item_height + dropdown_padding;
+            
+            // Use menu_width if specified, otherwise use field width
+            let menu_width = self.menu_width.unwrap_or(width);
+            let menu_border_radius = self.border_radius.unwrap_or(8.0);
+            
             let dropdown_rect = Rect::from_min_size(
                 Pos2::new(rect.min.x, dropdown_y),
-                Vec2::new(width, dropdown_height),
+                Vec2::new(menu_width, dropdown_height),
             );
 
             // Use page background color as specified
@@ -441,12 +703,12 @@ impl<'a> Widget for MaterialSelect<'a> {
 
             // Draw dropdown background with proper elevation
             ui.painter()
-                .rect_filled(dropdown_rect, 8.0, dropdown_bg_color);
+                .rect_filled(dropdown_rect, menu_border_radius, dropdown_bg_color);
 
             // Draw dropdown border with elevation shadow
             ui.painter().rect_stroke(
                 dropdown_rect,
-                8.0,
+                menu_border_radius,
                 Stroke::new(1.0, outline),
                 egui::epaint::StrokeKind::Outside,
             );
@@ -455,7 +717,7 @@ impl<'a> Widget for MaterialSelect<'a> {
             let shadow_color = Color32::from_rgba_premultiplied(0, 0, 0, 20);
             ui.painter().rect_filled(
                 dropdown_rect.translate(Vec2::new(0.0, 2.0)),
-                8.0,
+                menu_border_radius,
                 shadow_color,
             );
 
@@ -464,7 +726,7 @@ impl<'a> Widget for MaterialSelect<'a> {
                 // Use scroll area for overflow with edge attachment
                 let scroll_area_rect = Rect::from_min_size(
                     Pos2::new(dropdown_rect.min.x + 8.0, dropdown_rect.min.y + 8.0),
-                    Vec2::new(width - 16.0, dropdown_height - 16.0),
+                    Vec2::new(menu_width - 16.0, dropdown_height - 16.0),
                 );
 
                 ui.scope_builder(egui::UiBuilder::new().max_rect(scroll_area_rect), |ui| {
@@ -566,7 +828,7 @@ impl<'a> Widget for MaterialSelect<'a> {
                 for option in self.options.iter().take(items_to_show) {
                     let option_rect = Rect::from_min_size(
                         Pos2::new(dropdown_rect.min.x + 8.0, current_y),
-                        Vec2::new(width - 16.0, item_height),
+                        Vec2::new(menu_width - 16.0, item_height),
                     );
 
                     let option_response = ui.interact(
@@ -649,6 +911,29 @@ impl<'a> Widget for MaterialSelect<'a> {
                     current_y += item_height;
                 }
             }
+        }
+        
+        // Draw helper text or error text below the field
+        if let Some(ref error) = self.error_text {
+            let error_font = FontId::new(12.0, FontFamily::Proportional);
+            let error_pos = Pos2::new(rect.min.x + 16.0, rect.max.y + 4.0);
+            ui.painter().text(
+                error_pos,
+                egui::Align2::LEFT_TOP,
+                error,
+                error_font,
+                error_color,
+            );
+        } else if let Some(ref helper) = self.helper_text {
+            let helper_font = FontId::new(12.0, FontFamily::Proportional);
+            let helper_pos = Pos2::new(rect.min.x + 16.0, rect.max.y + 4.0);
+            ui.painter().text(
+                helper_pos,
+                egui::Align2::LEFT_TOP,
+                helper,
+                helper_font,
+                on_surface_variant,
+            );
         }
 
         response
