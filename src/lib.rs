@@ -291,7 +291,7 @@ pub use {
         MenuButtonThemeData, MenuItem, MenuStyle, MenuThemeData, Positioning,
     },
     progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},
-    radio::{radio, radio_group, MaterialRadio, MaterialRadioGroup},
+    radio::{radio, radio_group, radio_list_tile, MaterialRadio, MaterialRadioGroup, RadioListTile, ListTileControlAffinity},
     select::{select, MaterialSelect},
     slider::{slider, MaterialSlider},
     snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition},
