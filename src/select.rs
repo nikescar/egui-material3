@@ -471,6 +471,9 @@ impl<'a> Widget for MaterialSelect<'a> {
         let has_content = self.selected.is_some();
         let should_float_label = has_content || open || response.hovered();
         
+        // Hide label if field is empty and not focused (placeholder will be shown instead)
+        let should_show_label = self.label.is_some() && should_float_label;
+        
         // Determine colors based on state
         let (bg_color, border_color, text_color) = if !self.enabled {
             (
@@ -529,8 +532,9 @@ impl<'a> Widget for MaterialSelect<'a> {
             }
         }
 
-        // Draw floating label if present
-        if let Some(ref label_text) = self.label {
+        // Draw floating label if present and should be shown
+        if should_show_label {
+            let label_text = self.label.as_ref().unwrap();
             let label_font = if should_float_label {
                 FontId::new(12.0, FontFamily::Proportional)
             } else {
@@ -575,7 +579,7 @@ impl<'a> Widget for MaterialSelect<'a> {
 
         // Use consistent font styling for select field
         let select_font = FontId::new(16.0, FontFamily::Proportional);
-        let text_y_offset = if self.label.is_some() && should_float_label { 12.0 } else { 0.0 };
+        let text_y_offset = if should_show_label && should_float_label { 12.0 } else { 0.0 };
         let text_pos = Pos2::new(rect.min.x + 16.0, rect.center().y + text_y_offset);
         
         let display_color = if self.selected.is_none() {
@@ -911,6 +915,15 @@ impl<'a> Widget for MaterialSelect<'a> {
                     current_y += item_height;
                 }
             }
+        }
+        
+        // Reserve space for dropdown menu when open to prevent overlap
+        if open {
+            let item_height = 48.0;
+            let dropdown_padding = 16.0;
+            let effective_max_height = self.menu_max_height.unwrap_or(300.0);
+            let estimated_dropdown_height = (self.options.len() as f32 * item_height + dropdown_padding).min(effective_max_height);
+            ui.add_space(estimated_dropdown_height + 8.0); // Add space for dropdown + margin
         }
         
         // Draw helper text or error text below the field

@@ -93,7 +93,7 @@ impl SelectWindow {
         let mut open = self.open;
         Window::new("Select Stories")
             .open(&mut open)
-            .default_size([900.0, 700.0])
+            .default_size([900.0, 1200.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_controls(ui);
@@ -394,7 +394,7 @@ impl SelectWindow {
                 ui.add_space(20.0);
 
                 ui.vertical(|ui| {
-                    ui.label("Outlined Select with Label:");
+                    ui.label("Outlined Select with Label:").on_hover_text("Outlined variant with floating label that moves above when focused or has content");
                     let mut outlined_select = select(&mut self.outlined_select_value)
                         .variant(SelectVariant::Outlined)
                         .label(&self.label)
@@ -496,7 +496,7 @@ impl SelectWindow {
             ui.add_space(10.0);
 
             // With icons example
-            ui.label("Select with Icons:");
+            ui.label("Select with Icons:").on_hover_text("Select component with emoji icons demonstrating visual content in options");
             let mut icon_select = select(&mut self.outlined_select_value)
                 .variant(self.variant)
                 .label("Fruit with Emoji")
@@ -546,7 +546,7 @@ impl SelectWindow {
         ui.push_id("special_examples", |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label("Long Text Options (Text Wrapping):");
+                    ui.label("Long Text Options (Text Wrapping):").on_hover_text("Demonstrates text wrapping behavior when option text exceeds the menu width");
                     let mut long_text_select = select(&mut self.long_text_select)
                         .variant(self.variant)
                         .label("Description")
@@ -573,7 +573,7 @@ impl SelectWindow {
                 ui.add_space(20.0);
                 
                 ui.vertical(|ui| {
-                    ui.label("Many Options (Scroll Attachment):");
+                    ui.label("Many Options (Scroll Attachment):").on_hover_text("Tests dropdown menu scrolling behavior with 25 options and max height control");
                     let mut many_options_select = select(&mut self.many_options_select)
                         .variant(self.variant)
                         .label("Option");
