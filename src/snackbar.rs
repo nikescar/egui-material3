@@ -6,6 +6,17 @@ use egui::{
 };
 use std::time::{Duration, Instant};
 
+/// Defines where a SnackBar should appear and how its location should be adjusted.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum SnackBarBehavior {
+    /// Fixes the SnackBar at the bottom of the screen.
+    /// The snackbar will have no margin and appear directly at the bottom.
+    Fixed,
+    /// The snackbar will float above the bottom with margins.
+    /// This allows for custom width and spacing from screen edges.
+    Floating,
+}
+
 /// Material Design snackbar component.
 ///
 /// Snackbars provide brief messages about app processes at the bottom of the screen.
@@ -32,6 +43,14 @@ pub struct MaterialSnackbar<'a> {
     position: SnackbarPosition,
     corner_radius: CornerRadius,
     elevation: Option<Shadow>,
+    behavior: SnackBarBehavior,
+    width: Option<f32>,
+    margin: Option<Vec2>,
+    show_close_icon: bool,
+    close_icon_color: Option<Color32>,
+    leading_icon: Option<String>,
+    action_overflow_threshold: f32,
+    on_visible: Option<Box<dyn Fn() + Send + Sync + 'a>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -63,6 +82,14 @@ impl<'a> MaterialSnackbar<'a> {
             position: SnackbarPosition::Bottom,
             corner_radius: CornerRadius::from(4.0), // Material Design small shape radius
             elevation: None,
+            behavior: SnackBarBehavior::Fixed,
+            width: None,
+            margin: None,
+            show_close_icon: false,
+            close_icon_color: None,
+            leading_icon: None,
+            action_overflow_threshold: 0.25,
+            on_visible: None,
         }
     }
 
@@ -165,6 +192,84 @@ impl<'a> MaterialSnackbar<'a> {
         self
     }
 
+    /// Set the behavior of the snackbar (Fixed or Floating).
+    ///
+    /// # Arguments
+    /// * `behavior` - SnackBarBehavior::Fixed or SnackBarBehavior::Floating
+    pub fn behavior(mut self, behavior: SnackBarBehavior) -> Self {
+        self.behavior = behavior;
+        self
+    }
+
+    /// Set custom width for floating snackbar.
+    /// Only applies when behavior is SnackBarBehavior::Floating.
+    ///
+    /// # Arguments
+    /// * `width` - Custom width in pixels
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = Some(width);
+        self
+    }
+
+    /// Set margin/inset padding for floating snackbar.
+    /// Only applies when behavior is SnackBarBehavior::Floating.
+    ///
+    /// # Arguments
+    /// * `margin` - Margin as Vec2 (horizontal, vertical)
+    pub fn margin(mut self, margin: Vec2) -> Self {
+        self.margin = Some(margin);
+        self
+    }
+
+    /// Show a close icon button.
+    ///
+    /// # Arguments
+    /// * `show` - Whether to show the close icon
+    pub fn show_close_icon(mut self, show: bool) -> Self {
+        self.show_close_icon = show;
+        self
+    }
+
+    /// Set the color of the close icon.
+    ///
+    /// # Arguments
+    /// * `color` - Color for the close icon
+    pub fn close_icon_color(mut self, color: Color32) -> Self {
+        self.close_icon_color = Some(color);
+        self
+    }
+
+    /// Add a leading icon to the snackbar.
+    ///
+    /// # Arguments
+    /// * `icon` - Icon text/emoji to display before the message
+    pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
+        self.leading_icon = Some(icon.into());
+        self
+    }
+
+    /// Set the action overflow threshold.
+    /// When action width exceeds this fraction of total width, it moves to a new line.
+    ///
+    /// # Arguments
+    /// * `threshold` - Value between 0.0 and 1.0 (default: 0.25)
+    pub fn action_overflow_threshold(mut self, threshold: f32) -> Self {
+        self.action_overflow_threshold = threshold.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Set a callback to be called when the snackbar first becomes visible.
+    ///
+    /// # Arguments
+    /// * `callback` - Function to execute when snackbar is first shown
+    pub fn on_visible<F>(mut self, callback: F) -> Self
+    where
+        F: Fn() + Send + Sync + 'a,
+    {
+        self.on_visible = Some(Box::new(callback));
+        self
+    }
+
     /// Show the snackbar only if the condition is true.
     ///
     /// This method manages the visibility state properly and is useful for
@@ -216,18 +321,8 @@ impl<'a> MaterialSnackbar<'a> {
     }
 
     fn get_snackbar_style(&self) -> (Color32, Option<Stroke>) {
-        // Material Design spec: mix 80% on-surface with 20% surface
-        let on_surface = get_global_color("onSurface");
-        let surface = get_global_color("surface");
-
-        // Mix colors: 80% on-surface + 20% surface
-        let bg_color = Color32::from_rgba_unmultiplied(
-            ((on_surface.r() as f32 * 0.8) + (surface.r() as f32 * 0.2)) as u8,
-            ((on_surface.g() as f32 * 0.8) + (surface.g() as f32 * 0.2)) as u8,
-            ((on_surface.b() as f32 * 0.8) + (surface.b() as f32 * 0.2)) as u8,
-            255,
-        );
-
+        // Material 3 design tokens: use inverseSurface
+        let bg_color = get_global_color("inverseSurface");
         (bg_color, None)
     }
 }
@@ -241,6 +336,10 @@ impl Widget for MaterialSnackbar<'_> {
         // Initialize show time when first rendered
         if self.show_time.is_none() {
             self.show_time = Some(Instant::now());
+            // Call onVisible callback
+            if let Some(on_visible) = &self.on_visible {
+                on_visible();
+            }
         }
 
         // Check auto-dismiss
@@ -268,13 +367,32 @@ impl Widget for MaterialSnackbar<'_> {
             position,
             corner_radius,
             elevation: _,
+            behavior,
+            width,
+            margin,
+            show_close_icon,
+            close_icon_color,
+            leading_icon,
+            action_overflow_threshold,
+            on_visible: _,
         } = self;
 
-        // Material Design spec dimensions and typography
-        let label_text_color = get_global_color("surface"); // White text on dark background
-        let action_text_color = get_global_color("inversePrimary"); // Material action color
+        // Material 3 design tokens
+        let label_text_color = get_global_color("onInverseSurface");
+        let action_text_color = get_global_color("inversePrimary");
+        let default_close_icon_color = get_global_color("onInverseSurface");
 
-        // First calculate action button size to determine available space for text
+        // Calculate leading icon size if present
+        let icon_galley = leading_icon.as_ref().map(|icon| {
+            ui.painter().layout_no_wrap(
+                icon.clone(),
+                egui::FontId::proportional(20.0), // Larger for icons
+                label_text_color,
+            )
+        });
+        let icon_width = icon_galley.as_ref().map_or(0.0, |g| g.size().x + 16.0); // icon + spacing
+
+        // Calculate action button size
         let action_galley = action_text.as_ref().map(|text| {
             ui.painter().layout_no_wrap(
                 text.clone(),
@@ -283,66 +401,107 @@ impl Widget for MaterialSnackbar<'_> {
             )
         });
 
-        // Calculate available width for message (leave space for action)
+        // Calculate close icon size
+        let close_icon_width = if show_close_icon { 48.0 } else { 0.0 }; // 24px icon + padding
+
+        // Calculate available width for message
         let action_area_width = if action_galley.is_some() {
-            action_galley.as_ref().unwrap().size().x + 64.0 // action + generous padding
+            action_galley.as_ref().unwrap().size().x + 64.0
         } else {
             0.0
         };
 
-        let max_message_width = 600.0 - action_area_width; // reasonable max width
+        let max_message_width = 600.0 - action_area_width - icon_width - close_icon_width;
 
-        // Calculate message text with width constraint to prevent overlap
+        // Calculate message text with width constraint
         let text_galley = ui.painter().layout(
             message.clone(),
-            egui::FontId::proportional(14.0), // body2 typography scale
+            egui::FontId::proportional(14.0),
             label_text_color,
-            max_message_width.max(200.0), // minimum readable width
+            max_message_width.max(200.0),
         );
 
-        // Material Design padding: 16px left, 8px right, 14px top/bottom (minimum 48px height)
-        let label_padding = Vec2::new(16.0, 14.0);
+        // Material Design padding
+        let is_floating = behavior == SnackBarBehavior::Floating;
+        let horizontalPadding = if is_floating { 16.0 } else { 24.0 };
+        let label_padding = Vec2::new(horizontalPadding, 14.0);
         let action_padding = Vec2::new(8.0, 14.0);
         let action_spacing = if action_text.is_some() { 8.0 } else { 0.0 };
-        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 32.0); // More generous button padding
+        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 32.0);
 
         // Calculate width following Material Design constraints
-        let content_width = text_galley.size().x
+        let content_width = icon_width
+            + text_galley.size().x
             + action_width
             + action_spacing
+            + close_icon_width
             + label_padding.x
             + action_padding.x;
-        let min_width = 344.0; // Material Design min-width
-        let max_width = 672.0; // Material Design max-width
-        let available_width = ui.available_width().max(min_width + 48.0) - 48.0; // 24px margins on each side, ensure positive
+        let min_width = 344.0;
+        let max_width = 672.0;
+        
+        // Apply custom width if specified (floating only)
+        let snackbar_width = if let Some(custom_width) = width {
+            if is_floating {
+                custom_width.clamp(min_width, max_width)
+            } else {
+                content_width.max(min_width).min(max_width)
+            }
+        } else {
+            let available_width = ui.available_width().max(min_width + 48.0) - 48.0;
+            content_width
+                .max(min_width)
+                .min(max_width)
+                .min(available_width)
+                .max(min_width)
+        };
 
-        let snackbar_width = content_width
-            .max(min_width)
-            .min(max_width)
-            .min(available_width)
-            .max(min_width);
-
-        // Calculate dynamic height based on wrapped text and action button
-        let min_height = 48.0; // Material Design minimum height
+        // Calculate dynamic height
+        let min_height = 48.0;
         let text_height = text_galley.size().y;
-        let action_height = if action_text.is_some() { 36.0 } else { 0.0 }; // Action button height
-        let content_height = text_height.max(action_height);
+        let icon_height = icon_galley.as_ref().map_or(0.0, |g| g.size().y);
+        let action_height = if action_text.is_some() { 36.0 } else { 0.0 };
+        let content_height = text_height.max(action_height).max(icon_height);
         let snackbar_height = (content_height + label_padding.y * 2.0).max(min_height);
 
         let snackbar_size = Vec2::new(snackbar_width, snackbar_height);
 
-        // Allocate the snackbar size first to ensure proper space allocation
+        // Allocate space
         let (_allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
 
-        // For positioning, use screen coordinates but respect the allocated space
+        // Calculate position
         let screen_rect = ui.ctx().screen_rect();
-        let snackbar_x = (screen_rect.width() - snackbar_size.x).max(0.0) / 2.0;
+        
+        // Apply margin for floating behavior
+        let effective_margin = if is_floating {
+            margin.unwrap_or(Vec2::new(24.0, 16.0))
+        } else {
+            Vec2::ZERO
+        };
+        
+        let snackbar_x = if is_floating {
+            (screen_rect.width() - snackbar_size.x).max(0.0) / 2.0
+        } else {
+            0.0
+        };
+        
         let snackbar_y = match position {
-            SnackbarPosition::Bottom => screen_rect.height() - snackbar_size.y - 32.0,
-            SnackbarPosition::Top => 32.0,
+            SnackbarPosition::Bottom => {
+                if is_floating {
+                    screen_rect.height() - snackbar_size.y - effective_margin.y - 32.0
+                } else {
+                    screen_rect.height() - snackbar_size.y
+                }
+            }
+            SnackbarPosition::Top => {
+                if is_floating {
+                    32.0 + effective_margin.y
+                } else {
+                    0.0
+                }
+            }
         };
 
-        // Use the calculated position for drawing, but keep allocated_rect for interaction
         let snackbar_pos = egui::pos2(snackbar_x, snackbar_y);
         let snackbar_rect = Rect::from_min_size(snackbar_pos, snackbar_size);
 
@@ -498,13 +657,32 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             position,
             corner_radius,
             elevation: _,
+            behavior,
+            width,
+            margin,
+            show_close_icon,
+            close_icon_color,
+            leading_icon,
+            action_overflow_threshold,
+            on_visible: _,
         } = self.snackbar;
 
-        // Material Design spec dimensions and typography
-        let label_text_color = get_global_color("surface"); // White text on dark background
-        let action_text_color = get_global_color("inversePrimary"); // Material action color
+        // Material 3 design tokens
+        let label_text_color = get_global_color("onInverseSurface");
+        let action_text_color = get_global_color("inversePrimary");
+        let default_close_icon_color = get_global_color("onInverseSurface");
 
-        // First calculate action button size to determine available space for text
+        // Calculate leading icon size if present
+        let icon_galley = leading_icon.as_ref().map(|icon| {
+            ui.painter().layout_no_wrap(
+                icon.clone(),
+                egui::FontId::proportional(20.0), // Larger for icons
+                label_text_color,
+            )
+        });
+        let icon_width = icon_galley.as_ref().map_or(0.0, |g| g.size().x + 16.0); // icon + spacing
+
+        // Calculate action button size
         let action_galley = action_text.as_ref().map(|text| {
             ui.painter().layout_no_wrap(
                 text.clone(),
@@ -513,68 +691,107 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             )
         });
 
-        // Calculate available width for message (leave space for action)
+        // Calculate close icon size
+        let close_icon_width = if show_close_icon { 48.0 } else { 0.0 }; // 24px icon + padding
+
+        // Calculate available width for message
         let action_area_width = if action_galley.is_some() {
-            action_galley.as_ref().unwrap().size().x + 64.0 // action + generous padding
+            action_galley.as_ref().unwrap().size().x + 64.0
         } else {
             0.0
         };
 
-        let max_message_width = 600.0 - action_area_width; // reasonable max width
+        let max_message_width = 600.0 - action_area_width - icon_width - close_icon_width;
 
-        // Calculate message text with width constraint to prevent overlap
+        // Calculate message text with width constraint
         let text_galley = ui.painter().layout(
             message.clone(),
-            egui::FontId::proportional(14.0), // body2 typography scale
+            egui::FontId::proportional(14.0),
             label_text_color,
-            max_message_width.max(200.0), // minimum readable width
+            max_message_width.max(200.0),
         );
 
-        // Material Design padding: 16px left, 8px right, 14px top/bottom for 48px height
-        let label_padding = Vec2::new(16.0, 14.0);
+        // Material Design padding
+        let is_floating = behavior == SnackBarBehavior::Floating;
+        let horizontalPadding = if is_floating { 16.0 } else { 24.0 };
+        let label_padding = Vec2::new(horizontalPadding, 14.0);
         let action_padding = Vec2::new(8.0, 14.0);
         let action_spacing = if action_text.is_some() { 8.0 } else { 0.0 };
-        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 32.0); // More generous button padding
+        let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 32.0);
 
         // Calculate width following Material Design constraints
-        let content_width = text_galley.size().x
+        let content_width = icon_width
+            + text_galley.size().x
             + action_width
             + action_spacing
+            + close_icon_width
             + label_padding.x
             + action_padding.x;
-        let min_width = 344.0; // Material Design min-width
-        let max_width = 672.0; // Material Design max-width
-        let available_width = ui.available_width().max(min_width + 48.0) - 48.0; // 24px margins on each side, ensure positive
+        let min_width = 344.0;
+        let max_width = 672.0;
+        
+        // Apply custom width if specified (floating only)
+        let snackbar_width = if let Some(custom_width) = width {
+            if is_floating {
+                custom_width.clamp(min_width, max_width)
+            } else {
+                content_width.max(min_width).min(max_width)
+            }
+        } else {
+            let available_width = ui.available_width().max(min_width + 48.0) - 48.0;
+            content_width
+                .max(min_width)
+                .min(max_width)
+                .min(available_width)
+                .max(min_width)
+        };
 
-        let snackbar_width = content_width
-            .max(min_width)
-            .min(max_width)
-            .min(available_width)
-            .max(min_width);
-
-        // Calculate dynamic height based on wrapped text and action button
-        let min_height = 48.0; // Material Design minimum height
+        // Calculate dynamic height
+        let min_height = 48.0;
         let text_height = text_galley.size().y;
-        let action_height = if action_text.is_some() { 36.0 } else { 0.0 }; // Action button height
-        let content_height = text_height.max(action_height);
+        let icon_height = icon_galley.as_ref().map_or(0.0, |g| g.size().y);
+        let action_height = if action_text.is_some() { 36.0 } else { 0.0 };
+        let content_height = text_height.max(action_height).max(icon_height);
         let snackbar_height = (content_height + label_padding.y * 2.0).max(min_height);
 
         let snackbar_size = Vec2::new(snackbar_width, snackbar_height);
 
-        // Allocate the snackbar size first to ensure proper space allocation
+        // Allocate space
         let (_allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
 
-        // For positioning, use screen coordinates with vertical offset for stacking
+        // Calculate position with vertical offset for stacking
         let screen_rect = ui.ctx().screen_rect();
-        let snackbar_x = (screen_rect.width() - snackbar_size.x).max(0.0) / 2.0;
+        
+        // Apply margin for floating behavior
+        let effective_margin = if is_floating {
+            margin.unwrap_or(Vec2::new(24.0, 16.0))
+        } else {
+            Vec2::ZERO
+        };
+        
+        let snackbar_x = if is_floating {
+            (screen_rect.width() - snackbar_size.x).max(0.0) / 2.0
+        } else {
+            0.0
+        };
+        
         let snackbar_y = match position {
             SnackbarPosition::Bottom => {
-                screen_rect.height() - snackbar_size.y - 32.0 - self.vertical_offset
+                if is_floating {
+                    screen_rect.height() - snackbar_size.y - effective_margin.y - 32.0 - self.vertical_offset
+                } else {
+                    screen_rect.height() - snackbar_size.y - self.vertical_offset
+                }
             }
-            SnackbarPosition::Top => 32.0 + self.vertical_offset,
+            SnackbarPosition::Top => {
+                if is_floating {
+                    32.0 + effective_margin.y + self.vertical_offset
+                } else {
+                    self.vertical_offset
+                }
+            }
         };
 
-        // Use the calculated position for drawing, but keep allocated_rect for interaction
         let snackbar_pos = egui::pos2(snackbar_x, snackbar_y);
         let snackbar_rect = Rect::from_min_size(snackbar_pos, snackbar_size);
 
@@ -616,13 +833,28 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             );
         }
 
-        // Draw message text with proper Material Design positioning
-        // For multi-line text, align to the top with proper padding
-        let text_pos = egui::pos2(
-            snackbar_rect.min.x + label_padding.x,
-            snackbar_rect.min.y + label_padding.y,
-        );
-        ui.painter().galley(text_pos, text_galley, label_text_color);
+        // Track current x position for content layout
+        let mut current_x = snackbar_rect.min.x + label_padding.x;
+
+        // Draw leading icon if present
+        if let (Some(_icon_text), Some(icon_galley)) = (leading_icon.as_ref(), icon_galley.as_ref())
+        {
+            let icon_pos = egui::pos2(
+                current_x,
+                snackbar_rect.center().y - icon_galley.size().y / 2.0,
+            );
+            ui.painter().galley(icon_pos, icon_galley.clone(), label_text_color);
+            current_x += icon_galley.size().x + 16.0; // icon + spacing
+        }
+
+        // Draw message text
+        let text_pos = egui::pos2(current_x, snackbar_rect.min.y + label_padding.y);
+        ui.painter().galley(text_pos, text_galley.clone(), label_text_color);
+
+        // Calculate action and close icon area width
+        let action_and_icon_width = action_width + close_icon_width;
+        let will_overflow_action = 
+            action_and_icon_width / snackbar_width > action_overflow_threshold;
 
         // Handle action button if present
         let mut action_clicked = false;
@@ -630,26 +862,36 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
         if let (Some(_action_text), Some(action_galley)) =
             (action_text.as_ref(), action_galley.as_ref())
         {
-            // Material Design action button positioning (right-aligned with proper spacing)
-            // Position action button at top-right, aligned with text baseline
-            let action_rect = Rect::from_min_size(
-                egui::pos2(
-                    snackbar_rect.max.x - action_width - 8.0, // 8px right margin
-                    snackbar_rect.min.y + label_padding.y - 6.0, // Align with text, slight adjustment
-                ),
-                Vec2::new(action_width, 36.0),
-            );
+            let action_rect = if will_overflow_action {
+                // Action overflows to new line
+                Rect::from_min_size(
+                    egui::pos2(
+                        snackbar_rect.max.x - action_width - close_icon_width - 8.0,
+                        snackbar_rect.min.y + label_padding.y + text_galley.size().y + 8.0,
+                    ),
+                    Vec2::new(action_width, 36.0),
+                )
+            } else {
+                // Action stays on same line
+                Rect::from_min_size(
+                    egui::pos2(
+                        snackbar_rect.max.x - action_width - close_icon_width - 8.0,
+                        snackbar_rect.min.y + label_padding.y - 6.0,
+                    ),
+                    Vec2::new(action_width, 36.0),
+                )
+            };
 
             let action_response = ui.interact(action_rect, ui.next_auto_id(), Sense::click());
 
             // Material Design state layers for action button
             if action_response.hovered() {
-                let hover_color = action_text_color.linear_multiply(0.04); // Material hover opacity
+                let hover_color = action_text_color.linear_multiply(0.08);
                 ui.painter()
                     .rect_filled(action_rect, CornerRadius::from(4.0), hover_color);
             }
             if action_response.is_pointer_button_down_on() {
-                let pressed_color = action_text_color.linear_multiply(0.10); // Material pressed opacity
+                let pressed_color = action_text_color.linear_multiply(0.12);
                 ui.painter()
                     .rect_filled(action_rect, CornerRadius::from(4.0), pressed_color);
             }
@@ -672,14 +914,61 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             response = response.union(action_response);
         }
 
-        // Update response state
-        if action_clicked {
-            response = response.on_hover_text("Action clicked");
+        // Handle close icon if present
+        let mut close_clicked = false;
+        if show_close_icon {
+            let close_icon_color = close_icon_color.unwrap_or(default_close_icon_color);
+            
+            let close_rect = Rect::from_min_size(
+                egui::pos2(
+                    snackbar_rect.max.x - 40.0,
+                    snackbar_rect.center().y - 20.0,
+                ),
+                Vec2::new(40.0, 40.0),
+            );
+
+            let close_response = ui.interact(close_rect, ui.next_auto_id(), Sense::click());
+
+            // State layer for close button
+            if close_response.hovered() {
+                let hover_color = close_icon_color.linear_multiply(0.08);
+                ui.painter()
+                    .circle_filled(close_rect.center(), 20.0, hover_color);
+            }
+            if close_response.is_pointer_button_down_on() {
+                let pressed_color = close_icon_color.linear_multiply(0.12);
+                ui.painter()
+                    .circle_filled(close_rect.center(), 20.0, pressed_color);
+            }
+
+            // Draw X icon
+            let icon_size = 16.0;
+            let center = close_rect.center();
+            ui.painter().line_segment(
+                [
+                    egui::pos2(center.x - icon_size / 2.0, center.y - icon_size / 2.0),
+                    egui::pos2(center.x + icon_size / 2.0, center.y + icon_size / 2.0),
+                ],
+                Stroke::new(2.0, close_icon_color),
+            );
+            ui.painter().line_segment(
+                [
+                    egui::pos2(center.x + icon_size / 2.0, center.y - icon_size / 2.0),
+                    egui::pos2(center.x - icon_size / 2.0, center.y + icon_size / 2.0),
+                ],
+                Stroke::new(2.0, close_icon_color),
+            );
+
+            if close_response.clicked() {
+                close_clicked = true;
+            }
+
+            response = response.union(close_response);
         }
 
-        // Allow clicking outside action to dismiss (only for basic snackbars)
-        if response.clicked() && action_text.is_none() {
-            response = response.on_hover_text("Dismissed");
+        // Update response state
+        if action_clicked || close_clicked {
+            response = response.on_hover_text("Snackbar dismissed");
         }
 
         response

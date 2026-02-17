@@ -294,7 +294,7 @@ pub use {
     radio::{radio, radio_group, radio_list_tile, MaterialRadio, MaterialRadioGroup, RadioListTile, ListTileControlAffinity},
     select::{select, MaterialSelect, SelectVariant, MenuAlignment},
     slider::{slider, range_slider, MaterialSlider, MaterialRangeSlider, RangeValues, SliderInteraction, ThumbShape},
-    snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition},
+    snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition, SnackBarBehavior},
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
     theme::{
