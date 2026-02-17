@@ -17,6 +17,8 @@ This project is built upon the foundation of several outstanding open source pro
 |---------|---------|---------|---------|
 | [Material Components Web](https://github.com/material-components/material-web) | Material Design components for the web | - | Apache-2.0 |
 | [Material Components Web Catalog](https://material-components.github.io/material-components-web-catalog/#/) | Interactive catalog of Material Design components | - | Apache-2.0 |
+| [Flutter](https://github.com/flutter/flutter) | Google's UI toolkit for building natively compiled applications | - | BSD-3-Clause |
+| [Flutter Samples](https://github.com/flutter/samples) | A collection of Flutter examples and demos | - | BSD-3-Clause |
 
 ## Icons & Assets
 
