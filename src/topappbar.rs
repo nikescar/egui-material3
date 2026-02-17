@@ -19,6 +19,10 @@ pub enum TopAppBarVariant {
 /// Top app bars display information and actions related to the current screen.
 /// They provide structure and contain elements like titles, navigation, and actions.
 ///
+/// In Material Design 3, all app bar variants use `surface` as background color
+/// and `onSurface` for foreground (title text). When scrolled under content,
+/// the background changes to `surfaceContainer`.
+///
 /// ```
 /// # egui::__run_test_ui(|ui| {
 /// let top_bar = MaterialTopAppBar::regular("My App")
@@ -40,6 +44,12 @@ pub struct MaterialTopAppBar<'a> {
     elevation: Option<Shadow>,
     scrolled: bool,
     id_salt: Option<String>,
+    background_color: Option<Color32>,
+    foreground_color: Option<Color32>,
+    title_spacing: f32,
+    leading_width: f32,
+    scrolled_under_elevation: f32,
+    surface_tint_color: Option<Color32>,
 }
 
 impl<'a> MaterialTopAppBar<'a> {
@@ -80,6 +90,12 @@ impl<'a> MaterialTopAppBar<'a> {
             elevation: None,
             scrolled: false,
             id_salt: None,
+            background_color: None,
+            foreground_color: None,
+            title_spacing: 16.0,
+            leading_width: 56.0,
+            scrolled_under_elevation: 3.0,
+            surface_tint_color: None,
         }
     }
 
@@ -131,40 +147,74 @@ impl<'a> MaterialTopAppBar<'a> {
         self
     }
 
-    fn get_app_bar_style(&self) -> (Color32, Option<Stroke>) {
-        let md_surface = get_global_color("surface");
-        let md_primary = get_global_color("primary");
+    /// Override the default background color.
+    pub fn background_color(mut self, color: Color32) -> Self {
+        self.background_color = Some(color);
+        self
+    }
 
-        match self.variant {
-            TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => (md_surface, None),
-            TopAppBarVariant::Medium | TopAppBarVariant::Large => (md_primary, None),
+    /// Override the default foreground color (title and leading icon).
+    pub fn foreground_color(mut self, color: Color32) -> Self {
+        self.foreground_color = Some(color);
+        self
+    }
+
+    /// Set the spacing between the leading widget and the title.
+    pub fn title_spacing(mut self, spacing: f32) -> Self {
+        self.title_spacing = spacing;
+        self
+    }
+
+    /// Set the width of the leading widget area.
+    pub fn leading_width(mut self, width: f32) -> Self {
+        self.leading_width = width;
+        self
+    }
+
+    /// Set the elevation when content is scrolled under the app bar.
+    pub fn scrolled_under_elevation(mut self, elevation: f32) -> Self {
+        self.scrolled_under_elevation = elevation;
+        self
+    }
+
+    /// Set the surface tint color for elevation overlay.
+    pub fn surface_tint_color(mut self, color: Color32) -> Self {
+        self.surface_tint_color = Some(color);
+        self
+    }
+
+    fn get_background_color(&self) -> Color32 {
+        if let Some(color) = self.background_color {
+            return color;
+        }
+        if self.scrolled {
+            get_global_color("surfaceContainer")
+        } else {
+            get_global_color("surface")
         }
     }
 
-    fn get_text_color(&self) -> Color32 {
-        match self.variant {
-            TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => {
-                get_global_color("onSurface")
-            }
-            TopAppBarVariant::Medium | TopAppBarVariant::Large => get_global_color("onPrimary"),
-        }
+    fn get_foreground_color(&self) -> Color32 {
+        self.foreground_color
+            .unwrap_or_else(|| get_global_color("onSurface"))
     }
 
-    fn get_icon_color(&self) -> Color32 {
-        match self.variant {
-            TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => {
-                get_global_color("onSurfaceVariant")
-            }
-            TopAppBarVariant::Medium | TopAppBarVariant::Large => get_global_color("onPrimary"),
-        }
+    fn get_leading_icon_color(&self) -> Color32 {
+        self.foreground_color
+            .unwrap_or_else(|| get_global_color("onSurface"))
+    }
+
+    fn get_action_icon_color(&self) -> Color32 {
+        get_global_color("onSurfaceVariant")
     }
 }
 
 impl Widget for MaterialTopAppBar<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let (background_color, border_stroke) = self.get_app_bar_style();
-        let text_color = self.get_text_color();
-        let icon_color = self.get_icon_color();
+        let background_color = self.get_background_color();
+        let text_color = self.get_foreground_color();
+        let leading_icon_color = self.get_leading_icon_color();
+        let action_icon_color = self.get_action_icon_color();
 
         let MaterialTopAppBar {
             variant,
@@ -176,6 +226,12 @@ impl Widget for MaterialTopAppBar<'_> {
             elevation,
             scrolled,
             id_salt,
+            background_color: _,
+            foreground_color: _,
+            title_spacing,
+            leading_width,
+            scrolled_under_elevation,
+            surface_tint_color: _,
         } = self;
 
         let desired_size = Vec2::new(ui.available_width(), height);
@@ -183,14 +239,14 @@ impl Widget for MaterialTopAppBar<'_> {
         let rect = response.rect;
 
         if ui.is_rect_visible(rect) {
-            // Draw elevation shadow if present and scrolled
-            if scrolled || variant == TopAppBarVariant::Regular {
+            // Draw elevation shadow when scrolled under content
+            if scrolled {
                 if let Some(_shadow) = elevation {
                     let shadow_rect = rect.translate(Vec2::new(0.0, 1.0));
                     ui.painter().rect_filled(
                         shadow_rect,
                         corner_radius,
-                        Color32::from_rgba_unmultiplied(0, 0, 0, 20),
+                        Color32::from_rgba_unmultiplied(0, 0, 0, (scrolled_under_elevation * 7.0) as u8),
                     );
                 }
             }
@@ -199,22 +255,13 @@ impl Widget for MaterialTopAppBar<'_> {
             ui.painter()
                 .rect_filled(rect, corner_radius, background_color);
 
-            // Draw border if present
-            if let Some(stroke) = border_stroke {
-                ui.painter().rect_stroke(
-                    rect,
-                    corner_radius,
-                    stroke,
-                    egui::epaint::StrokeKind::Outside,
-                );
-            }
-
             let icon_size = 24.0;
             let icon_padding = 12.0;
             let icon_total_size = icon_size + icon_padding * 2.0;
 
             let mut left_x = rect.min.x + 4.0;
-            let icon_y = rect.min.y + (64.0 - icon_total_size) / 2.0; // Always center in top 64px
+            let toolbar_height = 64.0_f32;
+            let icon_y = rect.min.y + (toolbar_height - icon_total_size) / 2.0;
 
             // Draw navigation icon
             if let Some((nav_icon, nav_callback)) = navigation_icon {
@@ -231,9 +278,9 @@ impl Widget for MaterialTopAppBar<'_> {
                 // Icon background on hover
                 if nav_response.hovered() {
                     let hover_color = Color32::from_rgba_unmultiplied(
-                        icon_color.r(),
-                        icon_color.g(),
-                        icon_color.b(),
+                        leading_icon_color.r(),
+                        leading_icon_color.g(),
+                        leading_icon_color.b(),
                         20,
                     );
                     ui.painter()
@@ -250,21 +297,21 @@ impl Widget for MaterialTopAppBar<'_> {
                                 icon_center + Vec2::new(4.0, -6.0),
                                 icon_center + Vec2::new(-2.0, 0.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, leading_icon_color),
                         );
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(-2.0, 0.0),
                                 icon_center + Vec2::new(4.0, 6.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, leading_icon_color),
                         );
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(-2.0, 0.0),
                                 icon_center + Vec2::new(6.0, 0.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, leading_icon_color),
                         );
                     }
                     "close" => {
@@ -274,14 +321,14 @@ impl Widget for MaterialTopAppBar<'_> {
                                 icon_center + Vec2::new(-6.0, -6.0),
                                 icon_center + Vec2::new(6.0, 6.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, leading_icon_color),
                         );
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(-6.0, 6.0),
                                 icon_center + Vec2::new(6.0, -6.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, leading_icon_color),
                         );
                     }
                     "menu" | _ => {
@@ -299,7 +346,7 @@ impl Widget for MaterialTopAppBar<'_> {
                             ui.painter().rect_filled(
                                 line_rect,
                                 CornerRadius::from(1.0),
-                                icon_color,
+                                leading_icon_color,
                             );
                         }
                     }
@@ -309,26 +356,31 @@ impl Widget for MaterialTopAppBar<'_> {
                     nav_callback();
                 }
 
-                left_x += icon_total_size;
+                left_x += leading_width.max(icon_total_size);
                 response = response.union(nav_response);
             }
 
             // Calculate title position
+            // M3: Regular/CenterAligned use titleLarge (22px)
+            // Medium expanded uses headlineSmall (24px)
+            // Large expanded uses headlineMedium (28px)
             let title_font_size = match variant {
-                TopAppBarVariant::Regular => 20.0,
-                TopAppBarVariant::CenterAligned => 20.0,
+                TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => 22.0,
                 TopAppBarVariant::Medium => 24.0,
                 TopAppBarVariant::Large => 28.0,
             };
 
+            // M3 title padding from bottom:
+            // Medium: 20px, Large: 28px (from expandedTitlePadding)
             let title_y = match variant {
                 TopAppBarVariant::Regular | TopAppBarVariant::CenterAligned => {
-                    rect.min.y + (64.0 - title_font_size) / 2.0
+                    rect.min.y + (toolbar_height - title_font_size) / 2.0
                 }
-                TopAppBarVariant::Medium => rect.min.y + height - 32.0,
-                TopAppBarVariant::Large => rect.min.y + height - 40.0,
+                TopAppBarVariant::Medium => rect.min.y + height - 20.0 - title_font_size,
+                TopAppBarVariant::Large => rect.min.y + height - 28.0 - title_font_size,
             };
 
+            // M3 expanded title left padding is 16px
             let title_x = match variant {
                 TopAppBarVariant::CenterAligned => {
                     // Center the title
@@ -339,7 +391,10 @@ impl Widget for MaterialTopAppBar<'_> {
                     );
                     rect.center().x - title_galley.size().x / 2.0
                 }
-                _ => left_x + 8.0,
+                TopAppBarVariant::Medium | TopAppBarVariant::Large => {
+                    rect.min.x + title_spacing
+                }
+                _ => left_x + title_spacing,
             };
 
             // Draw title
@@ -372,9 +427,9 @@ impl Widget for MaterialTopAppBar<'_> {
                 // Icon background on hover
                 if action_response.hovered() {
                     let hover_color = Color32::from_rgba_unmultiplied(
-                        icon_color.r(),
-                        icon_color.g(),
-                        icon_color.b(),
+                        action_icon_color.r(),
+                        action_icon_color.g(),
+                        action_icon_color.b(),
                         20,
                     );
                     ui.painter()
@@ -389,14 +444,14 @@ impl Widget for MaterialTopAppBar<'_> {
                         ui.painter().circle_stroke(
                             icon_center + Vec2::new(-2.0, -2.0),
                             6.0,
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, action_icon_color),
                         );
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(3.0, 3.0),
                                 icon_center + Vec2::new(6.0, 6.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, action_icon_color),
                         );
                     }
                     "favorite" | "favorite_border" => {
@@ -413,7 +468,7 @@ impl Widget for MaterialTopAppBar<'_> {
                             let next_i = (i + 1) % heart_points.len();
                             ui.painter().line_segment(
                                 [heart_points[i], heart_points[next_i]],
-                                Stroke::new(1.5, icon_color),
+                                Stroke::new(1.5, action_icon_color),
                             );
                         }
                     }
@@ -424,78 +479,78 @@ impl Widget for MaterialTopAppBar<'_> {
                                 icon_center + Vec2::new(-4.0, 2.0),
                                 icon_center + Vec2::new(4.0, -2.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, action_icon_color),
                         );
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(2.0, -4.0),
                                 icon_center + Vec2::new(4.0, -2.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, action_icon_color),
                         );
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(2.0, 0.0),
                                 icon_center + Vec2::new(4.0, -2.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, action_icon_color),
                         );
                         ui.painter().circle_filled(
                             icon_center + Vec2::new(-6.0, 4.0),
                             2.0,
-                            icon_color,
+                            action_icon_color,
                         );
                         ui.painter().circle_filled(
                             icon_center + Vec2::new(6.0, -4.0),
                             2.0,
-                            icon_color,
+                            action_icon_color,
                         );
                     }
                     "notifications" | "notifications_none" => {
                         // Notification bell
                         ui.painter()
-                            .circle_stroke(icon_center, 6.0, Stroke::new(2.0, icon_color));
+                            .circle_stroke(icon_center, 6.0, Stroke::new(2.0, action_icon_color));
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(-2.0, -8.0),
                                 icon_center + Vec2::new(2.0, -8.0),
                             ],
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, action_icon_color),
                         );
                         ui.painter().line_segment(
                             [
                                 icon_center + Vec2::new(-2.0, 6.0),
                                 icon_center + Vec2::new(2.0, 6.0),
                             ],
-                            Stroke::new(3.0, icon_color),
+                            Stroke::new(3.0, action_icon_color),
                         );
                     }
                     "account_circle" | "person" => {
                         // Person icon
                         ui.painter()
-                            .circle_stroke(icon_center, 8.0, Stroke::new(2.0, icon_color));
+                            .circle_stroke(icon_center, 8.0, Stroke::new(2.0, action_icon_color));
                         ui.painter().circle_filled(
                             icon_center + Vec2::new(0.0, -3.0),
                             3.0,
-                            icon_color,
+                            action_icon_color,
                         );
                         ui.painter().circle_stroke(
                             icon_center + Vec2::new(0.0, 2.0),
                             5.0,
-                            Stroke::new(2.0, icon_color),
+                            Stroke::new(2.0, action_icon_color),
                         );
                     }
                     "settings" => {
                         // Gear icon
                         ui.painter()
-                            .circle_stroke(icon_center, 4.0, Stroke::new(2.0, icon_color));
+                            .circle_stroke(icon_center, 4.0, Stroke::new(2.0, action_icon_color));
                         for i in 0..8 {
                             let angle = i as f32 * std::f32::consts::PI / 4.0;
                             let start =
                                 icon_center + Vec2::new(angle.cos() * 6.0, angle.sin() * 6.0);
                             let end = icon_center + Vec2::new(angle.cos() * 8.0, angle.sin() * 8.0);
                             ui.painter()
-                                .line_segment([start, end], Stroke::new(2.0, icon_color));
+                                .line_segment([start, end], Stroke::new(2.0, action_icon_color));
                         }
                     }
                     "more_vert" | _ => {
@@ -505,7 +560,7 @@ impl Widget for MaterialTopAppBar<'_> {
                             ui.painter().circle_filled(
                                 icon_center + Vec2::new(0.0, y_offset),
                                 1.5,
-                                icon_color,
+                                action_icon_color,
                             );
                         }
                     }

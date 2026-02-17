@@ -2,9 +2,9 @@
 
 use crate::{
     center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar, MaterialButton,
-    MaterialCheckbox,
+    MaterialCheckbox, MaterialTopAppBar,
 };
-use eframe::egui::{self, Ui, Window};
+use eframe::egui::{self, Color32, Ui, Window};
 
 #[doc(hidden)]
 pub struct TopAppBarWindow {
@@ -15,6 +15,7 @@ pub struct TopAppBarWindow {
     is_scrolled: bool,
     custom_height: f32,
     use_custom_height: bool,
+    use_custom_colors: bool,
 }
 
 impl Default for TopAppBarWindow {
@@ -27,6 +28,7 @@ impl Default for TopAppBarWindow {
             is_scrolled: false,
             custom_height: 64.0,
             use_custom_height: false,
+            use_custom_colors: false,
         }
     }
 }
@@ -52,7 +54,7 @@ impl TopAppBarWindow {
             ui.horizontal(|ui| {
                 ui.heading("Top App Bar Controls");
                 if ui.add(MaterialButton::filled("Target").small()).clicked() {
-                    let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/top-app-bar");
+                    let _ = webbrowser::open("https://m3.material.io/components/top-app-bar/overview");
                 }
             });
 
@@ -73,12 +75,16 @@ impl TopAppBarWindow {
                     ui.add(egui::Slider::new(&mut self.custom_height, 48.0..=200.0).suffix("px"));
                 }
             });
+
+            ui.horizontal(|ui| {
+                ui.add(MaterialCheckbox::new(&mut self.use_custom_colors, "Custom Colors"));
+            });
         });
     }
 
     fn render_top_app_bar_examples(&mut self, ui: &mut Ui) {
         ui.heading("Regular Top App Bar");
-        ui.label("Standard app bar with consistent height and surface color.");
+        ui.label("Standard app bar with surface color background. 64dp height, titleLarge (22sp).");
 
         let mut regular_bar = top_app_bar(&self.title_text)
             .id_salt("regular_topappbar")
@@ -86,6 +92,12 @@ impl TopAppBarWindow {
 
         if self.use_custom_height {
             regular_bar = regular_bar.height(self.custom_height);
+        }
+
+        if self.use_custom_colors {
+            regular_bar = regular_bar
+                .background_color(Color32::from_rgb(103, 80, 164))
+                .foreground_color(Color32::WHITE);
         }
 
         if self.show_navigation {
@@ -131,7 +143,7 @@ impl TopAppBarWindow {
         ui.add_space(30.0);
 
         ui.heading("Medium Top App Bar");
-        ui.label("Taller app bar with title at the bottom, provides more visual weight.");
+        ui.label("112dp height. Expanded title uses headlineSmall (24sp) with 20dp bottom padding.");
 
         let mut medium_bar = medium_top_app_bar(&self.title_text)
             .id_salt("medium_topappbar")
@@ -153,7 +165,7 @@ impl TopAppBarWindow {
         ui.add_space(30.0);
 
         ui.heading("Large Top App Bar");
-        ui.label("Tallest app bar variant, creates strong visual hierarchy.");
+        ui.label("152dp height. Expanded title uses headlineMedium (28sp) with 28dp bottom padding.");
 
         let mut large_bar = large_top_app_bar(&self.title_text)
             .id_salt("large_topappbar")
@@ -175,7 +187,45 @@ impl TopAppBarWindow {
 
         ui.add_space(30.0);
 
-        ui.heading("Interactive Demo");
+        ui.heading("About Page Demo");
+        ui.label("Demonstrates TopAppBar in an about page context, inspired by Flutter's AboutDialog.");
+
+        let about_bar = top_app_bar("About")
+            .id_salt("about_topappbar")
+            .navigation_icon("arrow_back", || println!("About: Back clicked!"))
+            .action_icon("more_vert", || println!("About: More clicked!"));
+
+        ui.add(about_bar);
+
+        // Simulated about content below the app bar
+        ui.push_id("about_content", |ui| {
+            ui.add_space(16.0);
+            ui.horizontal(|ui| {
+                ui.add_space(24.0);
+                ui.vertical(|ui| {
+                    ui.heading("egui-material3");
+                    ui.label("Version 0.1.0");
+                    ui.add_space(8.0);
+                    ui.label("Material Design 3 components for egui.");
+                    ui.add_space(4.0);
+                    ui.label("Copyright 2024. All rights reserved.");
+                    ui.add_space(16.0);
+                    ui.horizontal(|ui| {
+                        if ui.add(MaterialButton::text("View Licenses")).clicked() {
+                            println!("View Licenses clicked!");
+                        }
+                        if ui.add(MaterialButton::text("Close")).clicked() {
+                            println!("Close clicked!");
+                        }
+                    });
+                });
+            });
+        });
+
+        ui.add_space(30.0);
+
+        ui.heading("Scrolled-Under Demo");
+        ui.label("Toggle scroll state to see background change from surface to surfaceContainer.");
 
         ui.horizontal(|ui| {
             if ui.add(MaterialButton::filled("Simulate Scroll")).clicked() {
@@ -191,7 +241,6 @@ impl TopAppBarWindow {
 
         ui.add_space(10.0);
 
-        // Demo with different contexts
         let demo_bar = top_app_bar("Demo App")
             .id_salt("demo_topappbar")
             .navigation_icon("menu", || println!("Demo: Menu clicked!"))
@@ -204,52 +253,66 @@ impl TopAppBarWindow {
 
         ui.add_space(30.0);
 
+        ui.heading("Color Override Demo");
+        ui.label("Custom background and foreground colors using background_color/foreground_color.");
+
+        let custom_bar = MaterialTopAppBar::regular("Custom Colors")
+            .id_salt("custom_color_topappbar")
+            .background_color(Color32::from_rgb(103, 80, 164))
+            .foreground_color(Color32::WHITE)
+            .navigation_icon("arrow_back", || println!("Custom: Back clicked!"))
+            .action_icon("search", || println!("Custom: Search clicked!"))
+            .action_icon("more_vert", || println!("Custom: More clicked!"));
+
+        ui.add(custom_bar);
+
+        ui.add_space(30.0);
+
         ui.heading("Usage Guidelines");
 
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("Regular:");
-                ui.label("• Most common variant");
-                ui.label("• Surface color background");
-                ui.label("• Good for most apps");
-                ui.label("• Standard 64dp height");
+                ui.label("  Most common variant");
+                ui.label("  Surface color background");
+                ui.label("  Good for most apps");
+                ui.label("  Standard 64dp height");
             });
 
             ui.vertical(|ui| {
                 ui.label("Center Aligned:");
-                ui.label("• Simple layouts");
-                ui.label("• Centered title");
-                ui.label("• Minimal action icons");
-                ui.label("• Clean aesthetic");
+                ui.label("  Simple layouts");
+                ui.label("  Centered title");
+                ui.label("  Minimal action icons");
+                ui.label("  Clean aesthetic");
             });
 
             ui.vertical(|ui| {
                 ui.label("Medium/Large:");
-                ui.label("• Landing pages");
-                ui.label("• Primary color background");
-                ui.label("• Strong visual hierarchy");
-                ui.label("• Hero sections");
+                ui.label("  Landing pages");
+                ui.label("  Surface color background");
+                ui.label("  Strong visual hierarchy");
+                ui.label("  Expanded title area");
             });
         });
 
         ui.add_space(20.0);
 
-        ui.heading("Best Practices");
+        ui.heading("M3 Color Spec");
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
-                ui.label("Do:");
-                ui.label("• Keep titles concise");
-                ui.label("• Use appropriate icons");
-                ui.label("• Maintain consistent spacing");
-                ui.label("• Consider scroll behavior");
+                ui.label("Default:");
+                ui.label("  Background: surface");
+                ui.label("  Title: onSurface");
+                ui.label("  Leading icon: onSurface");
+                ui.label("  Action icons: onSurfaceVariant");
             });
 
             ui.vertical(|ui| {
-                ui.label("Don't:");
-                ui.label("• Overcrowd with actions");
-                ui.label("• Use unclear icons");
-                ui.label("• Ignore accessibility");
-                ui.label("• Break visual hierarchy");
+                ui.label("Scrolled Under:");
+                ui.label("  Background: surfaceContainer");
+                ui.label("  Elevation: 3dp shadow");
+                ui.label("  Other colors unchanged");
             });
         });
     }
