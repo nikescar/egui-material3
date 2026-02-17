@@ -257,19 +257,22 @@ impl<'a> Widget for MaterialFab<'a> {
         } else {
             match variant {
                 FabVariant::Surface => {
-                    if response.hovered() {
+                    if response.is_pointer_button_down_on() {
+                        (get_global_color("surfaceContainerHighest"), on_surface)
+                    } else if response.hovered() {
                         (get_global_color("surfaceContainerHigh"), on_surface)
                     } else {
                         (surface, on_surface)
                     }
                 }
                 FabVariant::Primary => {
-                    if response.hovered() {
+                    if response.hovered() || response.is_pointer_button_down_on() {
+                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
                         (
                             Color32::from_rgba_premultiplied(
-                                primary_color.r().saturating_add(20),
-                                primary_color.g().saturating_add(20),
-                                primary_color.b().saturating_add(20),
+                                primary_color.r().saturating_add(lighten_amount),
+                                primary_color.g().saturating_add(lighten_amount),
+                                primary_color.b().saturating_add(lighten_amount),
                                 255,
                             ),
                             on_primary,
@@ -279,12 +282,13 @@ impl<'a> Widget for MaterialFab<'a> {
                     }
                 }
                 FabVariant::Secondary => {
-                    if response.hovered() {
+                    if response.hovered() || response.is_pointer_button_down_on() {
+                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
                         (
                             Color32::from_rgba_premultiplied(
-                                secondary_color.r().saturating_add(20),
-                                secondary_color.g().saturating_add(20),
-                                secondary_color.b().saturating_add(20),
+                                secondary_color.r().saturating_add(lighten_amount),
+                                secondary_color.g().saturating_add(lighten_amount),
+                                secondary_color.b().saturating_add(lighten_amount),
                                 255,
                             ),
                             on_primary,
@@ -294,12 +298,13 @@ impl<'a> Widget for MaterialFab<'a> {
                     }
                 }
                 FabVariant::Tertiary => {
-                    if response.hovered() {
+                    if response.hovered() || response.is_pointer_button_down_on() {
+                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
                         (
                             Color32::from_rgba_premultiplied(
-                                tertiary_color.r().saturating_add(20),
-                                tertiary_color.g().saturating_add(20),
-                                tertiary_color.b().saturating_add(20),
+                                tertiary_color.r().saturating_add(lighten_amount),
+                                tertiary_color.g().saturating_add(lighten_amount),
+                                tertiary_color.b().saturating_add(lighten_amount),
                                 255,
                             ),
                             on_primary,
@@ -311,12 +316,13 @@ impl<'a> Widget for MaterialFab<'a> {
                 FabVariant::Branded => {
                     // Google brand colors
                     let google_brand = Color32::from_rgb(66, 133, 244);
-                    if response.hovered() {
+                    if response.hovered() || response.is_pointer_button_down_on() {
+                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
                         (
                             Color32::from_rgba_premultiplied(
-                                google_brand.r().saturating_add(20),
-                                google_brand.g().saturating_add(20),
-                                google_brand.b().saturating_add(20),
+                                google_brand.r().saturating_add(lighten_amount),
+                                google_brand.g().saturating_add(lighten_amount),
+                                google_brand.b().saturating_add(lighten_amount),
                                 255,
                             ),
                             on_primary,
@@ -420,17 +426,6 @@ impl<'a> Widget for MaterialFab<'a> {
                     });
                 }
             }
-        }
-
-        // Add ripple effect on click
-        if response.hovered() && enabled {
-            let ripple_color = Color32::from_rgba_premultiplied(
-                icon_color.r(),
-                icon_color.g(),
-                icon_color.b(),
-                30,
-            );
-            ui.painter().rect_filled(rect, corner_radius, ripple_color);
         }
 
         response
