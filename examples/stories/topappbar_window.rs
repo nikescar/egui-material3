@@ -1,10 +1,15 @@
 #![doc(hidden)]
 
 use crate::{
-    center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar, MaterialButton,
-    MaterialCheckbox, MaterialTopAppBar,
+    center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, menu, menu_item,
+    top_app_bar, MaterialButton, MaterialCheckbox, MaterialTopAppBar,
 };
-use eframe::egui::{self, Color32, Ui, Window};
+use eframe::egui::{self, Color32, Rect, Ui, Window};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+// Atomic flags for cross-callback state toggling
+static SEARCH_TOGGLE: AtomicBool = AtomicBool::new(false);
+static MENU_TOGGLE: AtomicBool = AtomicBool::new(false);
 
 #[doc(hidden)]
 pub struct TopAppBarWindow {
@@ -16,6 +21,13 @@ pub struct TopAppBarWindow {
     custom_height: f32,
     use_custom_height: bool,
     use_custom_colors: bool,
+    // Search state
+    search_open: bool,
+    search_text: String,
+    // Menu state
+    menu_open: bool,
+    menu_anchor_rect: Option<Rect>,
+    menu_selected: String,
 }
 
 impl Default for TopAppBarWindow {
@@ -29,6 +41,11 @@ impl Default for TopAppBarWindow {
             custom_height: 64.0,
             use_custom_height: false,
             use_custom_colors: false,
+            search_open: false,
+            search_text: String::new(),
+            menu_open: false,
+            menu_anchor_rect: None,
+            menu_selected: String::new(),
         }
     }
 }
@@ -47,14 +64,31 @@ impl TopAppBarWindow {
                 });
             });
         self.open = open;
+
+        // Check atomic toggle flags set by callbacks
+        if SEARCH_TOGGLE.swap(false, Ordering::Relaxed) {
+            self.search_open = !self.search_open;
+            if self.search_open {
+                self.search_text.clear();
+            }
+        }
+        if MENU_TOGGLE.swap(false, Ordering::Relaxed) {
+            self.menu_open = !self.menu_open;
+        }
+
+        self.show_navigation_menu(ctx);
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
         ui.push_id("topappbar_controls", |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Top App Bar Controls");
-                if ui.add(MaterialButton::filled("Target").small()).clicked() {
-                    let _ = webbrowser::open("https://m3.material.io/components/top-app-bar/overview");
+                if ui
+                    .add(MaterialButton::filled("Target").small())
+                    .clicked()
+                {
+                    let _ =
+                        webbrowser::open("https://m3.material.io/components/top-app-bar/overview");
                 }
             });
 
@@ -64,25 +98,43 @@ impl TopAppBarWindow {
             });
 
             ui.horizontal(|ui| {
-                ui.add(MaterialCheckbox::new(&mut self.show_navigation, "Show Navigation Icon"));
-                ui.add(MaterialCheckbox::new(&mut self.show_actions, "Show Action Icons"));
-                ui.add(MaterialCheckbox::new(&mut self.is_scrolled, "Scrolled State"));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.show_navigation,
+                    "Show Navigation Icon",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.show_actions,
+                    "Show Action Icons",
+                ));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.is_scrolled,
+                    "Scrolled State",
+                ));
             });
 
             ui.horizontal(|ui| {
-                ui.add(MaterialCheckbox::new(&mut self.use_custom_height, "Custom Height"));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.use_custom_height,
+                    "Custom Height",
+                ));
                 if self.use_custom_height {
-                    ui.add(egui::Slider::new(&mut self.custom_height, 48.0..=200.0).suffix("px"));
+                    ui.add(
+                        egui::Slider::new(&mut self.custom_height, 48.0..=200.0).suffix("px"),
+                    );
                 }
             });
 
             ui.horizontal(|ui| {
-                ui.add(MaterialCheckbox::new(&mut self.use_custom_colors, "Custom Colors"));
+                ui.add(MaterialCheckbox::new(
+                    &mut self.use_custom_colors,
+                    "Custom Colors",
+                ));
             });
         });
     }
 
     fn render_top_app_bar_examples(&mut self, ui: &mut Ui) {
+        // --- Regular ---
         ui.heading("Regular Top App Bar");
         ui.label("Standard app bar with surface color background. 64dp height, titleLarge (22sp).");
 
@@ -116,6 +168,7 @@ impl TopAppBarWindow {
 
         ui.add_space(30.0);
 
+        // --- Center Aligned ---
         ui.heading("Center Aligned Top App Bar");
         ui.label("App bar with centered title, typically used for simple layouts.");
 
@@ -142,8 +195,11 @@ impl TopAppBarWindow {
 
         ui.add_space(30.0);
 
+        // --- Medium ---
         ui.heading("Medium Top App Bar");
-        ui.label("112dp height. Expanded title uses headlineSmall (24sp) with 20dp bottom padding.");
+        ui.label(
+            "112dp height. Expanded title uses headlineSmall (24sp) with 20dp bottom padding.",
+        );
 
         let mut medium_bar = medium_top_app_bar(&self.title_text)
             .id_salt("medium_topappbar")
@@ -164,8 +220,11 @@ impl TopAppBarWindow {
 
         ui.add_space(30.0);
 
+        // --- Large ---
         ui.heading("Large Top App Bar");
-        ui.label("152dp height. Expanded title uses headlineMedium (28sp) with 28dp bottom padding.");
+        ui.label(
+            "152dp height. Expanded title uses headlineMedium (28sp) with 28dp bottom padding.",
+        );
 
         let mut large_bar = large_top_app_bar(&self.title_text)
             .id_salt("large_topappbar")
@@ -187,8 +246,11 @@ impl TopAppBarWindow {
 
         ui.add_space(30.0);
 
+        // --- About Page Demo ---
         ui.heading("About Page Demo");
-        ui.label("Demonstrates TopAppBar in an about page context, inspired by Flutter's AboutDialog.");
+        ui.label(
+            "Demonstrates TopAppBar in an about page context, inspired by Flutter's AboutDialog.",
+        );
 
         let about_bar = top_app_bar("About")
             .id_salt("about_topappbar")
@@ -197,7 +259,6 @@ impl TopAppBarWindow {
 
         ui.add(about_bar);
 
-        // Simulated about content below the app bar
         ui.push_id("about_content", |ui| {
             ui.add_space(16.0);
             ui.horizontal(|ui| {
@@ -224,11 +285,60 @@ impl TopAppBarWindow {
 
         ui.add_space(30.0);
 
-        ui.heading("Scrolled-Under Demo");
-        ui.label("Toggle scroll state to see background change from surface to surfaceContainer.");
+        // --- Interactive Demo with search + menu ---
+        ui.heading("Interactive Demo");
+        ui.label(
+            "Click the menu icon to open a navigation menu. Click search to open a search field.",
+        );
 
+        let interactive_bar = top_app_bar(&self.title_text)
+            .id_salt("interactive_topappbar")
+            .navigation_icon("menu", || {
+                MENU_TOGGLE.store(true, Ordering::Relaxed);
+            })
+            .action_icon("search", || {
+                SEARCH_TOGGLE.store(true, Ordering::Relaxed);
+            })
+            .action_icon("notifications", || println!("Interactive: Notifications"))
+            .action_icon("account_circle", || println!("Interactive: Account"))
+            .action_icon("more_vert", || println!("Interactive: More"))
+            .scrolled(self.is_scrolled);
+
+        let response = ui.add(interactive_bar);
+
+        // Capture the appbar rect for positioning the navigation menu
+        self.menu_anchor_rect = Some(Rect::from_min_size(
+            response.rect.left_top(),
+            egui::vec2(56.0, 64.0),
+        ));
+
+        // Show search text field below the bar when active
+        if self.search_open {
+            ui.horizontal(|ui| {
+                ui.label("Search:");
+                let te_response = ui.text_edit_singleline(&mut self.search_text);
+                if te_response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    println!("Search for: {}", self.search_text);
+                }
+                if ui.add(MaterialButton::text("Close")).clicked() {
+                    self.search_open = false;
+                    self.search_text.clear();
+                }
+            });
+        }
+
+        if !self.menu_selected.is_empty() {
+            ui.label(format!("Menu selected: {}", self.menu_selected));
+        }
+
+        ui.add_space(20.0);
+
+        // Buttons that affect the bars above
         ui.horizontal(|ui| {
-            if ui.add(MaterialButton::filled("Simulate Scroll")).clicked() {
+            if ui
+                .add(MaterialButton::filled("Simulate Scroll"))
+                .clicked()
+            {
                 self.is_scrolled = !self.is_scrolled;
             }
             if ui.add(MaterialButton::outlined("Reset Title")).clicked() {
@@ -239,22 +349,13 @@ impl TopAppBarWindow {
             }
         });
 
-        ui.add_space(10.0);
-
-        let demo_bar = top_app_bar("Demo App")
-            .id_salt("demo_topappbar")
-            .navigation_icon("menu", || println!("Demo: Menu clicked!"))
-            .action_icon("notifications", || println!("Demo: Notifications clicked!"))
-            .action_icon("settings", || println!("Demo: Settings clicked!"))
-            .action_icon("account_circle", || println!("Demo: Account clicked!"))
-            .scrolled(self.is_scrolled);
-
-        ui.add(demo_bar);
-
         ui.add_space(30.0);
 
+        // --- Color Override Demo ---
         ui.heading("Color Override Demo");
-        ui.label("Custom background and foreground colors using background_color/foreground_color.");
+        ui.label(
+            "Custom background and foreground colors using background_color/foreground_color.",
+        );
 
         let custom_bar = MaterialTopAppBar::regular("Custom Colors")
             .id_salt("custom_color_topappbar")
@@ -265,55 +366,37 @@ impl TopAppBarWindow {
             .action_icon("more_vert", || println!("Custom: More clicked!"));
 
         ui.add(custom_bar);
+    }
 
-        ui.add_space(30.0);
+    fn show_navigation_menu(&mut self, ctx: &egui::Context) {
+        if !self.menu_open {
+            return;
+        }
 
-        ui.heading("Usage Guidelines");
+        let home_item = menu_item("Home")
+            .leading_icon("home")
+            .on_click(|| println!("Home clicked!"));
+        let profile_item = menu_item("Profile")
+            .leading_icon("person")
+            .on_click(|| println!("Profile clicked!"));
+        let settings_item = menu_item("Settings")
+            .leading_icon("settings")
+            .on_click(|| println!("Settings clicked!"));
+        let help_item = menu_item("Help & Feedback")
+            .leading_icon("help")
+            .on_click(|| println!("Help & Feedback clicked!"));
 
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("Regular:");
-                ui.label("  Most common variant");
-                ui.label("  Surface color background");
-                ui.label("  Good for most apps");
-                ui.label("  Standard 64dp height");
-            });
+        let mut menu_builder = menu("topappbar_nav_menu", &mut self.menu_open)
+            .item(home_item)
+            .item(profile_item)
+            .item(menu_item("").divider_after(true))
+            .item(settings_item)
+            .item(help_item);
 
-            ui.vertical(|ui| {
-                ui.label("Center Aligned:");
-                ui.label("  Simple layouts");
-                ui.label("  Centered title");
-                ui.label("  Minimal action icons");
-                ui.label("  Clean aesthetic");
-            });
+        if let Some(rect) = self.menu_anchor_rect {
+            menu_builder = menu_builder.anchor_rect(rect);
+        }
 
-            ui.vertical(|ui| {
-                ui.label("Medium/Large:");
-                ui.label("  Landing pages");
-                ui.label("  Surface color background");
-                ui.label("  Strong visual hierarchy");
-                ui.label("  Expanded title area");
-            });
-        });
-
-        ui.add_space(20.0);
-
-        ui.heading("M3 Color Spec");
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("Default:");
-                ui.label("  Background: surface");
-                ui.label("  Title: onSurface");
-                ui.label("  Leading icon: onSurface");
-                ui.label("  Action icons: onSurfaceVariant");
-            });
-
-            ui.vertical(|ui| {
-                ui.label("Scrolled Under:");
-                ui.label("  Background: surfaceContainer");
-                ui.label("  Elevation: 3dp shadow");
-                ui.label("  Other colors unchanged");
-            });
-        });
+        menu_builder.show(ctx);
     }
 }

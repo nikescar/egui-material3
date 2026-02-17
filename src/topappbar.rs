@@ -1,7 +1,8 @@
+use crate::material_symbol::material_symbol_text;
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,
-    epaint::{CornerRadius, Shadow, Stroke},
+    epaint::{CornerRadius, Shadow},
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
 
@@ -287,70 +288,15 @@ impl Widget for MaterialTopAppBar<'_> {
                         .rect_filled(nav_rect, CornerRadius::from(20.0), hover_color);
                 }
 
-                // Draw different navigation icons based on icon name
-                let icon_center = nav_rect.center();
-                match nav_icon.as_str() {
-                    "arrow_back" | "arrow_back_ios" => {
-                        // Back arrow
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(4.0, -6.0),
-                                icon_center + Vec2::new(-2.0, 0.0),
-                            ],
-                            Stroke::new(2.0, leading_icon_color),
-                        );
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(-2.0, 0.0),
-                                icon_center + Vec2::new(4.0, 6.0),
-                            ],
-                            Stroke::new(2.0, leading_icon_color),
-                        );
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(-2.0, 0.0),
-                                icon_center + Vec2::new(6.0, 0.0),
-                            ],
-                            Stroke::new(2.0, leading_icon_color),
-                        );
-                    }
-                    "close" => {
-                        // X close icon
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(-6.0, -6.0),
-                                icon_center + Vec2::new(6.0, 6.0),
-                            ],
-                            Stroke::new(2.0, leading_icon_color),
-                        );
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(-6.0, 6.0),
-                                icon_center + Vec2::new(6.0, -6.0),
-                            ],
-                            Stroke::new(2.0, leading_icon_color),
-                        );
-                    }
-                    "menu" | _ => {
-                        // Hamburger menu (default)
-                        let line_width = 16.0;
-                        let line_height = 2.0;
-                        let line_spacing = 4.0;
-
-                        for i in 0..3 {
-                            let y_offset = (i as f32 - 1.0) * line_spacing;
-                            let line_rect = Rect::from_center_size(
-                                icon_center + Vec2::new(0.0, y_offset),
-                                Vec2::new(line_width, line_height),
-                            );
-                            ui.painter().rect_filled(
-                                line_rect,
-                                CornerRadius::from(1.0),
-                                leading_icon_color,
-                            );
-                        }
-                    }
-                }
+                // Render navigation icon using material symbol font
+                let nav_icon_text = material_symbol_text(&nav_icon);
+                ui.painter().text(
+                    nav_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    &nav_icon_text,
+                    egui::FontId::proportional(icon_size),
+                    leading_icon_color,
+                );
 
                 if nav_response.clicked() {
                     nav_callback();
@@ -436,135 +382,15 @@ impl Widget for MaterialTopAppBar<'_> {
                         .rect_filled(action_rect, CornerRadius::from(20.0), hover_color);
                 }
 
-                // Draw different action icons based on icon name
-                let icon_center = action_rect.center();
-                match action_icon.as_str() {
-                    "search" => {
-                        // Search icon (magnifying glass)
-                        ui.painter().circle_stroke(
-                            icon_center + Vec2::new(-2.0, -2.0),
-                            6.0,
-                            Stroke::new(2.0, action_icon_color),
-                        );
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(3.0, 3.0),
-                                icon_center + Vec2::new(6.0, 6.0),
-                            ],
-                            Stroke::new(2.0, action_icon_color),
-                        );
-                    }
-                    "favorite" | "favorite_border" => {
-                        // Heart icon
-                        let heart_points = [
-                            icon_center + Vec2::new(0.0, 2.0),
-                            icon_center + Vec2::new(-4.0, -2.0),
-                            icon_center + Vec2::new(-2.0, -4.0),
-                            icon_center + Vec2::new(0.0, -2.0),
-                            icon_center + Vec2::new(2.0, -4.0),
-                            icon_center + Vec2::new(4.0, -2.0),
-                        ];
-                        for i in 0..heart_points.len() {
-                            let next_i = (i + 1) % heart_points.len();
-                            ui.painter().line_segment(
-                                [heart_points[i], heart_points[next_i]],
-                                Stroke::new(1.5, action_icon_color),
-                            );
-                        }
-                    }
-                    "share" => {
-                        // Share icon (arrow with dots)
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(-4.0, 2.0),
-                                icon_center + Vec2::new(4.0, -2.0),
-                            ],
-                            Stroke::new(2.0, action_icon_color),
-                        );
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(2.0, -4.0),
-                                icon_center + Vec2::new(4.0, -2.0),
-                            ],
-                            Stroke::new(2.0, action_icon_color),
-                        );
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(2.0, 0.0),
-                                icon_center + Vec2::new(4.0, -2.0),
-                            ],
-                            Stroke::new(2.0, action_icon_color),
-                        );
-                        ui.painter().circle_filled(
-                            icon_center + Vec2::new(-6.0, 4.0),
-                            2.0,
-                            action_icon_color,
-                        );
-                        ui.painter().circle_filled(
-                            icon_center + Vec2::new(6.0, -4.0),
-                            2.0,
-                            action_icon_color,
-                        );
-                    }
-                    "notifications" | "notifications_none" => {
-                        // Notification bell
-                        ui.painter()
-                            .circle_stroke(icon_center, 6.0, Stroke::new(2.0, action_icon_color));
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(-2.0, -8.0),
-                                icon_center + Vec2::new(2.0, -8.0),
-                            ],
-                            Stroke::new(2.0, action_icon_color),
-                        );
-                        ui.painter().line_segment(
-                            [
-                                icon_center + Vec2::new(-2.0, 6.0),
-                                icon_center + Vec2::new(2.0, 6.0),
-                            ],
-                            Stroke::new(3.0, action_icon_color),
-                        );
-                    }
-                    "account_circle" | "person" => {
-                        // Person icon
-                        ui.painter()
-                            .circle_stroke(icon_center, 8.0, Stroke::new(2.0, action_icon_color));
-                        ui.painter().circle_filled(
-                            icon_center + Vec2::new(0.0, -3.0),
-                            3.0,
-                            action_icon_color,
-                        );
-                        ui.painter().circle_stroke(
-                            icon_center + Vec2::new(0.0, 2.0),
-                            5.0,
-                            Stroke::new(2.0, action_icon_color),
-                        );
-                    }
-                    "settings" => {
-                        // Gear icon
-                        ui.painter()
-                            .circle_stroke(icon_center, 4.0, Stroke::new(2.0, action_icon_color));
-                        for i in 0..8 {
-                            let angle = i as f32 * std::f32::consts::PI / 4.0;
-                            let start =
-                                icon_center + Vec2::new(angle.cos() * 6.0, angle.sin() * 6.0);
-                            let end = icon_center + Vec2::new(angle.cos() * 8.0, angle.sin() * 8.0);
-                            ui.painter()
-                                .line_segment([start, end], Stroke::new(2.0, action_icon_color));
-                        }
-                    }
-                    "more_vert" | _ => {
-                        // Three vertical dots (default)
-                        for i in 0..3 {
-                            let y_offset = (i as f32 - 1.0) * 3.0;
-                            ui.painter().circle_filled(
-                                icon_center + Vec2::new(0.0, y_offset),
-                                1.5,
-                                action_icon_color,
-                            );
-                        }
-                    }
-                }
+                // Render action icon using material symbol font
+                let action_icon_text = material_symbol_text(action_icon.as_str());
+                ui.painter().text(
+                    action_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    &action_icon_text,
+                    egui::FontId::proportional(icon_size),
+                    action_icon_color,
+                );
 
                 if action_response.clicked() {
                     action_callback();
