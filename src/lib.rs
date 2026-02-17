@@ -253,6 +253,7 @@ pub mod slider;
 pub mod snackbar;
 pub mod switch;
 pub mod tabs;
+pub mod textfield;
 pub mod theme;
 pub mod topappbar;
 
@@ -299,6 +300,7 @@ pub use {
     snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition, SnackBarBehavior},
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
+    textfield::{text_field, text_field_outlined, MaterialTextField, TextFieldVariant},
     theme::{
         get_global_color, get_global_theme, update_global_theme, ContrastLevel,
         MaterialThemeContext, MaterialThemeFile, ThemeMode,

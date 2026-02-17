@@ -33,6 +33,7 @@ mod snackbar_window;
 mod switch_window;
 mod symbol_window;
 mod tabs_window;
+mod textfield_window;
 mod topappbar_window;
 
 use button_window::ButtonWindow;
@@ -57,6 +58,7 @@ use snackbar_window::SnackbarWindow;
 use switch_window::SwitchWindow;
 use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
+use textfield_window::TextFieldWindow;
 use topappbar_window::TopAppBarWindow;
 
 fn main() -> Result<(), eframe::Error> {
@@ -127,6 +129,7 @@ struct MaterialApp {
     slider_window: SliderWindow,
     switch_window: SwitchWindow,
     tabs_window: TabsWindow,
+    textfield_window: TextFieldWindow,
     datatable_window: DataTableWindow,
     drawer_window: DrawerWindow,
     imagelist_window: ImageListWindow,
@@ -171,6 +174,7 @@ impl Default for MaterialApp {
             slider_window: SliderWindow::default(),
             switch_window: SwitchWindow::default(),
             tabs_window: TabsWindow::default(),
+            textfield_window: TextFieldWindow::default(),
             datatable_window: DataTableWindow::default(),
             drawer_window: DrawerWindow::default(),
             imagelist_window: ImageListWindow::default(),
@@ -374,6 +378,7 @@ impl MaterialApp {
         self.slider_window.open = false;
         self.switch_window.open = false;
         self.tabs_window.open = false;
+        self.textfield_window.open = false;
         self.datatable_window.open = false;
         self.drawer_window.open = false;
         self.imagelist_window.open = false;
@@ -723,6 +728,10 @@ impl eframe::App for MaterialApp {
                     self.tabs_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Text Field Stories")).clicked() {
+                    self.textfield_window.open = true;
+                }
+
                 if ui
                     .add(MaterialButton::filled("Top App Bar Stories"))
                     .clicked()
@@ -749,6 +758,7 @@ impl eframe::App for MaterialApp {
         self.slider_window.show(ctx);
         self.switch_window.show(ctx);
         self.tabs_window.show(ctx);
+        self.textfield_window.show(ctx);
         self.datatable_window.show(ctx);
         self.drawer_window.show(ctx);
         self.imagelist_window.show(ctx);
