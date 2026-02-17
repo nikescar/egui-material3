@@ -10,6 +10,7 @@ pub struct TabsWindow {
     auto_activate: bool,
     inline_icon: bool,
     content: String,
+    tabs_enabled: bool,
     // Tab states
     _primary_selected: usize,
     _secondary_selected: usize,
@@ -19,6 +20,10 @@ pub struct TabsWindow {
     scrolling_selected: usize,
     nested_primary_selected: usize,
     nested_secondary_selected: usize,
+    m3_primary_selected: usize,
+    m3_secondary_selected: usize,
+    icon_text_primary_selected: usize,
+    icon_text_secondary_selected: usize,
 }
 
 impl Default for TabsWindow {
@@ -29,6 +34,7 @@ impl Default for TabsWindow {
             auto_activate: true,
             inline_icon: false,
             content: "both".to_string(),
+            tabs_enabled: true,
             _primary_selected: 0,
             _secondary_selected: 0,
             music_primary_selected: 0,
@@ -37,6 +43,10 @@ impl Default for TabsWindow {
             scrolling_selected: 0,
             nested_primary_selected: 0,
             nested_secondary_selected: 0,
+            m3_primary_selected: 0,
+            m3_secondary_selected: 0,
+            icon_text_primary_selected: 0,
+            icon_text_secondary_selected: 0,
         }
     }
 }
@@ -50,6 +60,10 @@ impl TabsWindow {
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_controls(ui);
+                    ui.add_space(20.0);
+                    self.render_m3_demo_tabs(ui);
+                    ui.add_space(20.0);
+                    self.render_icon_text_tabs(ui);
                     ui.add_space(20.0);
                     self.render_primary_tabs(ui);
                     ui.add_space(20.0);
@@ -82,6 +96,7 @@ impl TabsWindow {
 
             ui.checkbox(&mut self.auto_activate, "Auto Activate");
             ui.checkbox(&mut self.inline_icon, "Inline Icon");
+            ui.checkbox(&mut self.tabs_enabled, "Enabled");
 
             ui.horizontal(|ui| {
                 ui.label("Content:");
@@ -389,6 +404,98 @@ impl TabsWindow {
                 );
             }
         }
+    }
+
+    fn render_m3_demo_tabs(&mut self, ui: &mut egui::Ui) {
+        ui.push_id("m3_demo_section", |ui| {
+            ui.heading("M3 Tabs (from component_screen.dart)");
+            ui.label("Primary tabs - text only, label-width indicator");
+
+            ui.add(
+                tabs_primary(&mut self.m3_primary_selected)
+                    .id_salt("m3_primary")
+                    .tab("Video")
+                    .tab("Photos")
+                    .tab("Audio")
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.m3_primary_selected {
+                0 => ui.label("Video content area"),
+                1 => ui.label("Photos content area"),
+                2 => ui.label("Audio content area"),
+                _ => ui.label("Select a tab"),
+            };
+
+            ui.add_space(16.0);
+            ui.label("Secondary tabs - text only, full-width underline");
+
+            ui.add(
+                tabs_secondary(&mut self.m3_secondary_selected)
+                    .id_salt("m3_secondary")
+                    .tab("Video")
+                    .tab("Photos")
+                    .tab("Audio")
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.m3_secondary_selected {
+                0 => ui.label("Video content area"),
+                1 => ui.label("Photos content area"),
+                2 => ui.label("Audio content area"),
+                _ => ui.label("Select a tab"),
+            };
+        });
+    }
+
+    fn render_icon_text_tabs(&mut self, ui: &mut egui::Ui) {
+        ui.push_id("icon_text_section", |ui| {
+            ui.heading("Icon + Text Tabs (72px height)");
+            ui.label("Primary tabs with icon and text");
+
+            ui.add(
+                tabs_primary(&mut self.icon_text_primary_selected)
+                    .id_salt("icon_text_primary")
+                    .tab_with_icon("Video", "\u{1F3AC}")
+                    .tab_with_icon("Photos", "\u{1F4F7}")
+                    .tab_with_icon("Audio", "\u{1F3B5}")
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.icon_text_primary_selected {
+                0 => ui.label("Video content with icon tabs"),
+                1 => ui.label("Photos content with icon tabs"),
+                2 => ui.label("Audio content with icon tabs"),
+                _ => ui.label("Select a tab"),
+            };
+
+            ui.add_space(16.0);
+            ui.label("Secondary tabs with icon and text");
+
+            ui.add(
+                tabs_secondary(&mut self.icon_text_secondary_selected)
+                    .id_salt("icon_text_secondary")
+                    .tab_with_icon("Video", "\u{1F3AC}")
+                    .tab_with_icon("Photos", "\u{1F4F7}")
+                    .tab_with_icon("Audio", "\u{1F3B5}")
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.icon_text_secondary_selected {
+                0 => ui.label("Video content with icon tabs"),
+                1 => ui.label("Photos content with icon tabs"),
+                2 => ui.label("Audio content with icon tabs"),
+                _ => ui.label("Select a tab"),
+            };
+        });
     }
 
     fn render_nested_tabs(&mut self, ui: &mut egui::Ui) {

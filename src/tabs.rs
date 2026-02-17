@@ -1,5 +1,6 @@
 use crate::get_global_color;
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use eframe::egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
+use eframe::egui::epaint::CornerRadius;
 
 /// Material Design tabs component.
 ///
@@ -202,33 +203,57 @@ impl<'a> MaterialTabs<'a> {
 
     /// Set a custom height for the tab bar.
     ///
-    /// Default is 48.0 pixels if not specified.
+    /// Default height is 46.0 for text-only tabs, 72.0 for tabs with icons.
     pub fn height(mut self, height: f32) -> Self {
         self.height = Some(height);
         self
     }
 }
 
+/// M3 tab height constants
+const TAB_HEIGHT_TEXT_ONLY: f32 = 46.0;
+const TAB_HEIGHT_WITH_ICON: f32 = 72.0;
+/// M3 indicator constants
+const PRIMARY_INDICATOR_HEIGHT: f32 = 3.0;
+const SECONDARY_INDICATOR_HEIGHT: f32 = 2.0;
+const INDICATOR_TOP_ROUNDING: f32 = 3.0;
+/// M3 divider
+const DIVIDER_HEIGHT: f32 = 1.0;
+/// M3 label font size
+const LABEL_FONT_SIZE: f32 = 14.0;
+const ICON_FONT_SIZE: f32 = 18.0;
+
 impl<'a> Widget for MaterialTabs<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let tab_height = self.height.unwrap_or(48.0);
+        let has_icons = self.tabs.iter().any(|t| t.icon.is_some());
+        let tab_height = self
+            .height
+            .unwrap_or(if has_icons { TAB_HEIGHT_WITH_ICON } else { TAB_HEIGHT_TEXT_ONLY });
         let tab_width = ui.available_width() / self.tabs.len().max(1) as f32;
 
         let desired_size = Vec2::new(ui.available_width(), tab_height);
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
-        // Material Design colors
+        // Material Design 3 colors
         let primary_color = get_global_color("primary");
+        let surface_container = get_global_color("surfaceContainer");
         let surface = get_global_color("surface");
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
         let outline_variant = get_global_color("outlineVariant");
 
         // Draw tab bar background
-        ui.painter().rect_filled(rect, 0.0, surface);
+        let bg_color = match self.variant {
+            TabVariant::Primary => surface_container,
+            TabVariant::Secondary => surface,
+        };
+        ui.painter().rect_filled(rect, 0.0, bg_color);
 
         // Draw tabs
         let mut any_clicked = false;
+        let label_font = FontId::proportional(LABEL_FONT_SIZE);
+        let icon_font = FontId::proportional(ICON_FONT_SIZE);
+
         for (index, tab) in self.tabs.iter().enumerate() {
             let tab_rect = Rect::from_min_size(
                 Pos2::new(rect.min.x + index as f32 * tab_width, rect.min.y),
@@ -247,35 +272,42 @@ impl<'a> Widget for MaterialTabs<'a> {
             let is_selected = *self.selected == index;
             let is_hovered = tab_response.hovered();
 
-            // Determine colors
-            let (text_color, indicator_color) = match self.variant {
+            // M3 label colors per variant
+            let text_color = match self.variant {
                 TabVariant::Primary => {
                     if is_selected {
-                        (primary_color, primary_color)
-                    } else if is_hovered && self.enabled {
-                        (on_surface, on_surface_variant)
+                        primary_color
                     } else {
-                        (on_surface_variant, Color32::TRANSPARENT)
+                        on_surface_variant
                     }
                 }
                 TabVariant::Secondary => {
                     if is_selected {
-                        (on_surface, outline_variant)
-                    } else if is_hovered && self.enabled {
-                        (on_surface, Color32::TRANSPARENT)
+                        on_surface
                     } else {
-                        (on_surface_variant, Color32::TRANSPARENT)
+                        on_surface_variant
                     }
                 }
             };
 
-            // Draw hover background
+            // Apply disabled opacity
+            let text_color = if self.enabled {
+                text_color
+            } else {
+                text_color.linear_multiply(0.38)
+            };
+
+            // M3 state layer (hover overlay)
             if is_hovered && self.enabled {
-                let hover_color = Color32::from_rgba_premultiplied(
-                    text_color.r(),
-                    text_color.g(),
-                    text_color.b(),
-                    20,
+                let state_layer_color = match self.variant {
+                    TabVariant::Primary => primary_color,
+                    TabVariant::Secondary => on_surface,
+                };
+                let hover_color = Color32::from_rgba_unmultiplied(
+                    state_layer_color.r(),
+                    state_layer_color.g(),
+                    state_layer_color.b(),
+                    20, // ~8% opacity
                 );
                 ui.painter().rect_filled(tab_rect, 0.0, hover_color);
             }
@@ -286,70 +318,85 @@ impl<'a> Widget for MaterialTabs<'a> {
                 any_clicked = true;
             }
 
-            // Layout tab content
-            let mut content_y = tab_rect.center().y;
+            // Layout and draw tab content
+            if let Some(icon) = &tab.icon {
+                // Icon + text layout: icon above label
+                let icon_y = tab_rect.center().y - 10.0;
+                let label_y = tab_rect.center().y + 12.0;
 
-            // Draw icon if present
-            if let Some(_icon) = &tab.icon {
-                let icon_rect = Rect::from_min_size(
-                    Pos2::new(tab_rect.center().x - 12.0, content_y - 20.0),
-                    Vec2::splat(24.0),
+                // Draw icon as text (emoji/unicode)
+                ui.painter().text(
+                    Pos2::new(tab_rect.center().x, icon_y),
+                    egui::Align2::CENTER_CENTER,
+                    icon,
+                    icon_font.clone(),
+                    text_color,
                 );
 
-                ui.painter()
-                    .circle_filled(icon_rect.center(), 8.0, text_color);
-                content_y += 12.0;
+                // Draw label text
+                ui.painter().text(
+                    Pos2::new(tab_rect.center().x, label_y),
+                    egui::Align2::CENTER_CENTER,
+                    &tab.label,
+                    label_font.clone(),
+                    text_color,
+                );
+            } else {
+                // Text-only layout: centered
+                ui.painter().text(
+                    tab_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    &tab.label,
+                    label_font.clone(),
+                    text_color,
+                );
             }
 
-            // Draw tab text
-            let text_pos = Pos2::new(tab_rect.center().x, content_y);
-            let font_size = if tab.icon.is_some() {
-                egui::FontId::proportional(12.0)
-            } else {
-                egui::FontId::default()
-            };
-
-            ui.painter().text(
-                text_pos,
-                egui::Align2::CENTER_CENTER,
-                &tab.label,
-                font_size,
-                text_color,
-            );
-
-            // Draw indicator
-            match self.variant {
-                TabVariant::Primary => {
-                    if is_selected && indicator_color != Color32::TRANSPARENT {
+            // Draw indicator for selected tab
+            if is_selected && self.enabled {
+                match self.variant {
+                    TabVariant::Primary => {
+                        // M3: indicator width matches label, top-rounded corners
+                        let galley = ui.painter().layout_no_wrap(
+                            tab.label.clone(),
+                            label_font.clone(),
+                            text_color,
+                        );
+                        let label_width = galley.size().x + 16.0; // add padding
+                        let indicator_x =
+                            tab_rect.center().x - label_width / 2.0;
                         let indicator_rect = Rect::from_min_size(
-                            Pos2::new(tab_rect.min.x + 8.0, tab_rect.max.y - 3.0),
-                            Vec2::new(tab_width - 16.0, 3.0),
+                            Pos2::new(indicator_x, tab_rect.max.y - PRIMARY_INDICATOR_HEIGHT),
+                            Vec2::new(label_width, PRIMARY_INDICATOR_HEIGHT),
+                        );
+                        let rounding = CornerRadius {
+                            nw: INDICATOR_TOP_ROUNDING as u8,
+                            ne: INDICATOR_TOP_ROUNDING as u8,
+                            sw: 0,
+                            se: 0,
+                        };
+                        ui.painter()
+                            .rect_filled(indicator_rect, rounding, primary_color);
+                    }
+                    TabVariant::Secondary => {
+                        // M3: full tab width underline, primary color
+                        let indicator_rect = Rect::from_min_size(
+                            Pos2::new(tab_rect.min.x, tab_rect.max.y - SECONDARY_INDICATOR_HEIGHT),
+                            Vec2::new(tab_width, SECONDARY_INDICATOR_HEIGHT),
                         );
                         ui.painter()
-                            .rect_filled(indicator_rect, 1.5, indicator_color);
-                    }
-                }
-                TabVariant::Secondary => {
-                    if is_selected && indicator_color != Color32::TRANSPARENT {
-                        ui.painter().rect_stroke(
-                            tab_rect,
-                            0.0,
-                            Stroke::new(1.0, indicator_color),
-                            egui::epaint::StrokeKind::Outside,
-                        );
+                            .rect_filled(indicator_rect, 0.0, primary_color);
                     }
                 }
             }
         }
 
-        // Draw bottom border for secondary variant
-        if self.variant == TabVariant::Secondary {
-            let border_rect = Rect::from_min_size(
-                Pos2::new(rect.min.x, rect.max.y - 1.0),
-                Vec2::new(rect.width(), 1.0),
-            );
-            ui.painter().rect_filled(border_rect, 0.0, outline_variant);
-        }
+        // M3: Draw bottom divider for both variants
+        let divider_rect = Rect::from_min_size(
+            Pos2::new(rect.min.x, rect.max.y - DIVIDER_HEIGHT),
+            Vec2::new(rect.width(), DIVIDER_HEIGHT),
+        );
+        ui.painter().rect_filled(divider_rect, 0.0, outline_variant);
 
         if any_clicked {
             response.mark_changed();
