@@ -113,7 +113,7 @@ impl Card2Window {
     fn render_controls(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading("Enhanced Card Controls");
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/card");
             }
         });

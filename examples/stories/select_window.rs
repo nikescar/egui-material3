@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::select;
+use crate::{select, MaterialButton};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -82,7 +82,7 @@ impl SelectWindow {
             ui.horizontal(|ui| {
                 ui.heading("Select Controls");
 
-                if ui.button("Target").clicked() {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ = webbrowser::open("https://material-web.dev/components/select/stories/");
                 }
             });

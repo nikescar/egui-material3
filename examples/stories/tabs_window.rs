@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{tabs_primary, tabs_secondary};
+use crate::{tabs_primary, tabs_secondary, MaterialButton};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -70,7 +70,7 @@ impl TabsWindow {
             ui.horizontal(|ui| {
                 ui.heading("Tabs Controls");
 
-                if ui.button("Target").clicked() {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ = webbrowser::open("https://material-web.dev/components/tabs/stories/");
                 }
             });
@@ -478,14 +478,14 @@ impl TabsWindow {
         ui.separator();
         ui.label("Dynamic Tab Controls:");
         ui.horizontal(|ui| {
-            if ui.button("← Previous Tab").clicked() {
+            if ui.add(MaterialButton::filled("← Previous Tab").small()).clicked() {
                 if self.nested_primary_selected > 0 {
                     self.nested_primary_selected -= 1;
                     self.nested_secondary_selected = 0; // Reset secondary
                 }
             }
 
-            if ui.button("Next Tab →").clicked() {
+            if ui.add(MaterialButton::filled("Next Tab →").small()).clicked() {
                 if self.nested_primary_selected < 2 {
                     self.nested_primary_selected += 1;
                     self.nested_secondary_selected = 0; // Reset secondary

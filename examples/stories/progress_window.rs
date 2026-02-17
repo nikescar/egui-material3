@@ -75,7 +75,7 @@ impl ProgressWindow {
         ui.horizontal(|ui| {
             ui.heading("Progress Controls");
 
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-web.dev/components/progress/stories/");
             }
         });

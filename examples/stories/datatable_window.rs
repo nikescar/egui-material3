@@ -137,7 +137,7 @@ impl DataTableWindow {
             ui.horizontal(|ui| {
                 ui.heading("Data Table Controls");
 
-                if ui.button("Target").clicked() {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ = webbrowser::open("https://m2.material.io/components/data-tables");
                 }
             });

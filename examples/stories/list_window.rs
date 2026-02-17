@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{list, list_item};
+use crate::{list, list_item, MaterialButton};
 use egui_material3::{ListTileTitleAlignment, VisualDensity};
 use eframe::egui::{self, Window};
 
@@ -64,7 +64,7 @@ impl ListWindow {
             ui.horizontal(|ui| {
                 ui.heading("List Controls");
 
-                if ui.button("Target").clicked() {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ = webbrowser::open("https://material-web.dev/components/list/stories/");
                 }
             });
@@ -281,7 +281,7 @@ impl ListWindow {
             selection_list = selection_list.item(item);
 
             // Handle selection toggle via UI interaction
-            if ui.button(format!("Toggle Item {}", i + 1)).clicked() {
+            if ui.add(MaterialButton::filled(format!("Toggle Item {}", i + 1)).small()).clicked() {
                 self.selected_items[i] = !self.selected_items[i];
             }
         }

@@ -51,7 +51,7 @@ impl TopAppBarWindow {
         ui.push_id("topappbar_controls", |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Top App Bar Controls");
-                if ui.button("Target").clicked() {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/top-app-bar");
                 }
             });

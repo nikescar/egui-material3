@@ -230,6 +230,8 @@ impl MaterialApp {
         let on_primary = theme.get_on_primary_color();
         let surface = theme.get_surface_color(visuals.dark_mode);
         let on_surface = theme.get_color_by_name("onSurface");
+        let background = theme.get_color_by_name("background");
+        let on_background = theme.get_color_by_name("onBackground");
 
         // Apply colors to visuals
         visuals.selection.bg_fill = primary_color;
@@ -261,7 +263,7 @@ impl MaterialApp {
         visuals.panel_fill = theme.get_color_by_name("surfaceContainer");
 
         // Text colors
-        visuals.override_text_color = Some(on_surface);
+        // visuals.override_text_color = Some(background);
 
         // Apply surface colors
         visuals.extreme_bg_color = theme.get_color_by_name("surfaceContainerLowest");
@@ -416,13 +418,13 @@ impl eframe::App for MaterialApp {
                 ui.horizontal(|ui| {
                     ui.heading("Material Theme Controls");
 
-                    if ui.button("Theme Builder").clicked() {
+                    if ui.add(MaterialButton::filled("Theme Builder").small()).clicked() {
                         let _ = webbrowser::open(
                             "https://material-foundation.github.io/material-theme-builder/",
                         );
                     }
 
-                    if ui.button("Google Fonts").clicked() {
+                    if ui.add(MaterialButton::filled("Google Fonts").small()).clicked() {
                         let _ = webbrowser::open(
                             "https://fonts.google.com/specimen/Google+Sans+Code?query=google+sans",
                         );
@@ -436,7 +438,7 @@ impl eframe::App for MaterialApp {
                     ui.horizontal(|ui| {
                         ui.label("Theme File:");
 
-                        if ui.button("📁 Load JSON Theme").clicked() {
+                        if ui.add(MaterialButton::filled("📁 Load JSON Theme").small()).clicked() {
                             self.load_theme_file();
                         }
 

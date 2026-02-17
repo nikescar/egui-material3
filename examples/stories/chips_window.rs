@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{assist_chip, filter_chip, image_utils, input_chip, suggestion_chip, MaterialCheckbox};
+use crate::{assist_chip, filter_chip, image_utils, input_chip, suggestion_chip, MaterialButton, MaterialCheckbox};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -61,7 +61,7 @@ impl ChipsWindow {
         ui.horizontal(|ui| {
             ui.heading("Chips Controls");
 
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-web.dev/components/chip/stories/");
             }
         });

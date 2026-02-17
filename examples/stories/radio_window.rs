@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{radio, radio_group};
+use crate::{radio, radio_group, MaterialButton};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -51,7 +51,7 @@ impl RadioWindow {
         ui.horizontal(|ui| {
             ui.heading("Radio Controls");
 
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-web.dev/components/radio/stories/");
             }
         });

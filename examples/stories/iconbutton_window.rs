@@ -2,7 +2,7 @@
 
 use crate::{
     icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
-    icon_button_toggle, noto_emoji, MaterialCheckbox,
+    icon_button_toggle, noto_emoji, MaterialButton, MaterialCheckbox,
 };
 use eframe::egui::{self, Ui, Window};
 
@@ -54,7 +54,7 @@ impl IconButtonWindow {
     fn render_controls(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading("Icon Button Controls");
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://github.com/material-components/material-web/blob/main/docs/components/icon-button.md");
             }
         });

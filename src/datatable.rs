@@ -1,3 +1,4 @@
+use crate::button::MaterialButton;
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,
@@ -1208,22 +1209,27 @@ impl<'a> MaterialDataTable<'a> {
                             );
 
                             ui.scope_builder(egui::UiBuilder::new().max_rect(button_rect), |ui| {
-                                ui.horizontal(|ui| {
-                                    if is_row_editing {
-                                        if ui.small_button("Save").clicked() {
-                                            row_actions.push(RowAction::Save(row_idx));
+                                egui::ScrollArea::horizontal()
+                                    .id_salt(format!("actions_scroll_{}", row_idx))
+                                    .auto_shrink([false, true])
+                                    .show(ui, |ui| {
+                                    ui.horizontal(|ui| {
+                                        if is_row_editing {
+                                            if ui.add(MaterialButton::filled("Save").small()).clicked() {
+                                                row_actions.push(RowAction::Save(row_idx));
+                                            }
+                                            if ui.add(MaterialButton::filled("Cancel").small()).clicked() {
+                                                row_actions.push(RowAction::Cancel(row_idx));
+                                            }
+                                        } else {
+                                            if ui.add(MaterialButton::filled("Edit").small()).clicked() {
+                                                row_actions.push(RowAction::Edit(row_idx));
+                                            }
+                                            if ui.add(MaterialButton::filled("Delete").small()).clicked() {
+                                                row_actions.push(RowAction::Delete(row_idx));
+                                            }
                                         }
-                                        if ui.small_button("Cancel").clicked() {
-                                            row_actions.push(RowAction::Cancel(row_idx));
-                                        }
-                                    } else {
-                                        if ui.small_button("Edit").clicked() {
-                                            row_actions.push(RowAction::Edit(row_idx));
-                                        }
-                                        if ui.small_button("Delete").clicked() {
-                                            row_actions.push(RowAction::Delete(row_idx));
-                                        }
-                                    }
+                                    });
                                 });
                             });
                         } else if is_row_editing {

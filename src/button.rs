@@ -573,15 +573,15 @@ impl Widget for MaterialButton<'_> {
 
         // Resolve the variant-based text color (used for text and icons)
         let resolved_text_color = if disabled {
-            md_on_surface.gamma_multiply(0.38)
+            md_background.gamma_multiply(0.38)
         } else if let Some(custom) = custom_text_color {
             custom
         } else {
             match variant {
                 MaterialButtonVariant::Filled => md_background,
-                MaterialButtonVariant::Outlined => md_primary,
-                MaterialButtonVariant::Text => md_primary,
-                MaterialButtonVariant::Elevated => md_primary,
+                MaterialButtonVariant::Outlined => md_on_background,
+                MaterialButtonVariant::Text => md_on_background,
+                MaterialButtonVariant::Elevated => md_on_background,
                 MaterialButtonVariant::FilledTonal => get_global_color("onSecondaryContainer"),
             }
         };

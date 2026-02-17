@@ -397,7 +397,7 @@ impl DrawerWindow {
                 // Top menu with hamburger button
                 egui::TopBottomPanel::top("dismissible_top_panel").show_inside(ui, |ui| {
                     ui.horizontal(|ui| {
-                        if ui.button("☰").clicked() {
+                        if ui.add(MaterialButton::filled("☰").small()).clicked() {
                             self.is_dismissible_sidebar_open = !self.is_dismissible_sidebar_open;
                         }
                         ui.colored_label(get_global_color("onSurface"), "Top Menu - Dismissible Drawer Demo");
@@ -506,7 +506,7 @@ impl DrawerWindow {
                             if self.is_dismissible_sidebar_open { "OPEN" } else { "CLOSED" }));
                         
                         ui.add_space(10.0);
-                        if ui.button("Toggle Drawer").clicked() {
+                        if ui.add(MaterialButton::filled("Toggle Drawer").small()).clicked() {
                             self.is_dismissible_sidebar_open = !self.is_dismissible_sidebar_open;
                         }
                         
@@ -578,7 +578,7 @@ impl DrawerWindow {
                 // Top menu with hamburger button
                 egui::TopBottomPanel::top("modal_top_panel").show_inside(ui, |ui| {
                     ui.horizontal(|ui| {
-                        if ui.button("☰").clicked() {
+                        if ui.add(MaterialButton::filled("☰").small()).clicked() {
                             self.is_modal_sidebar_open = !self.is_modal_sidebar_open;
                         }
                         ui.colored_label(
@@ -614,7 +614,7 @@ impl DrawerWindow {
                     ));
 
                     ui.add_space(10.0);
-                    if ui.button("Toggle Modal Drawer").clicked() {
+                    if ui.add(MaterialButton::filled("Toggle Modal Drawer").small()).clicked() {
                         // self.is_modal_sidebar_open = !self.is_modal_sidebar_open;
                     }
 
@@ -903,7 +903,7 @@ impl DrawerWindow {
                                     ui.add_space(20.0);
 
                                     // Fixed close button at bottom
-                                    if ui.button("Close Modal").clicked() {
+                                    if ui.add(MaterialButton::filled("Close Modal").small()).clicked() {
                                         self.is_modal_sidebar_open = false;
                                     }
                                 });
@@ -929,7 +929,7 @@ impl DrawerWindow {
             ui.horizontal(|ui| {
                 ui.heading("Drawer Controls");
 
-                if ui.button("📖 Material Design Spec").clicked() {
+                if ui.add(MaterialButton::filled("📖 Material Design Spec").small()).clicked() {
                     let _ = webbrowser::open("https://m3.material.io/components/navigation-drawer/overview");
                 }
             });

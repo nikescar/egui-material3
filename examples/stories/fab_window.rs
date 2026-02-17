@@ -2,7 +2,7 @@
 
 use crate::{
     fab_branded, fab_primary, fab_secondary, fab_surface, fab_tertiary, google_branded_icon,
-    FabSize,
+    FabSize, MaterialButton,
 };
 use eframe::egui::{self, Window};
 
@@ -46,7 +46,7 @@ impl FabWindow {
     fn render_controls(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             ui.heading("FAB Controls");
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-web.dev/components/fab/stories/");
             }
         });

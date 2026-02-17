@@ -67,7 +67,7 @@ impl LayoutGridWindow {
     fn render_controls(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading("Layout Grid Controls");
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ =
                     webbrowser::open("https://material-web.dev/components/layout-grid/stories/");
             }

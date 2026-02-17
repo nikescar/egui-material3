@@ -58,7 +58,7 @@ impl ButtonWindow {
         ui.horizontal(|ui| {
             ui.heading("Button Controls");
 
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-web.dev/components/button/stories/");
             }
         });

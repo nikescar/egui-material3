@@ -65,10 +65,10 @@ impl SnackbarWindow {
     fn render_controls(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading("Snackbar Controls");
-            if ui.button("Material Specs").clicked() {
+            if ui.add(MaterialButton::filled("Material Specs").small()).clicked() {
                 let _ = webbrowser::open("https://m2.material.io/components/snackbars#specs");
             }
-            if ui.button("MDC Reference").clicked() {
+            if ui.add(MaterialButton::filled("MDC Reference").small()).clicked() {
                 let _ = webbrowser::open("https://material-components.github.io/material-components-web-catalog/#/component/snackbar");
             }
         });

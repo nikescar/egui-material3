@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::switch;
+use crate::{switch, MaterialButton};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -69,7 +69,7 @@ impl SwitchWindow {
         ui.horizontal(|ui| {
             ui.heading("Switch Controls");
 
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-web.dev/components/switch/stories/");
             }
         });

@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::slider;
+use crate::{slider, MaterialButton};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -73,7 +73,7 @@ impl SliderWindow {
         ui.horizontal(|ui| {
             ui.heading("Slider Controls");
 
-            if ui.button("Target").clicked() {
+            if ui.add(MaterialButton::filled("Target").small()).clicked() {
                 let _ = webbrowser::open("https://material-web.dev/components/slider/stories/");
             }
         });

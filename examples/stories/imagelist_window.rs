@@ -83,7 +83,7 @@ impl ImageListWindow {
             ui.horizontal(|ui| {
                 ui.heading("Image List Controls");
 
-                if ui.button("Target").clicked() {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ =
                         webbrowser::open("https://material-web.dev/components/image-list/stories/");
                 }

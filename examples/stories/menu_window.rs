@@ -167,7 +167,7 @@ impl MenuWindow {
                 ui.add_space(16.0);
 
                 // IconButtonAnchorExample: icon button (more_vert) that opens a menu
-                let icon_button = ui.button("\u{22EE}"); // vertical ellipsis
+                let icon_button = ui.add(MaterialButton::filled("\u{22EE}").small()); // vertical ellipsis
                 self.icon_anchor_rect = Some(icon_button.rect);
                 if icon_button.clicked() {
                     self.icon_anchor_open = !self.icon_anchor_open;
@@ -346,7 +346,7 @@ impl MenuWindow {
             ui.horizontal(|ui| {
                 ui.heading("Menu Controls");
 
-                if ui.button("Target").clicked() {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ = webbrowser::open("https://material-web.dev/components/menu/stories/");
                 }
             });

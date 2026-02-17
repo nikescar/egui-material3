@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{checkbox, MaterialCheckbox};
+use crate::{checkbox, MaterialButton, MaterialCheckbox};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -103,7 +103,7 @@ impl CheckboxWindow {
             ui.label("(Apply to examples below)");
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("📖 Material Design Spec").clicked() {
+                if ui.add(MaterialButton::filled("📖 Material Design Spec").small()).clicked() {
                     let _ = webbrowser::open("https://m3.material.io/components/checkbox/overview");
                 }
             });
