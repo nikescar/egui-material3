@@ -518,8 +518,8 @@ impl<'a> Widget for MaterialChip<'a> {
             content_x += 24.0;
         }
 
-        // Draw text
-        let text_pos = Pos2::new(content_x, rect.center().y);
+        // Draw text (offset by 1px to visually center, compensating for font descender space)
+        let text_pos = Pos2::new(content_x, rect.center().y + 2.0);
         ui.painter().text(
             text_pos,
             egui::Align2::LEFT_CENTER,

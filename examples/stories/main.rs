@@ -30,6 +30,7 @@ mod select_window;
 mod slider_window;
 mod snackbar_window;
 mod switch_window;
+mod symbol_window;
 mod tabs_window;
 mod topappbar_window;
 
@@ -52,6 +53,7 @@ use select_window::SelectWindow;
 use slider_window::SliderWindow;
 use snackbar_window::SnackbarWindow;
 use switch_window::SwitchWindow;
+use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
 use topappbar_window::TopAppBarWindow;
 
@@ -130,6 +132,7 @@ struct MaterialApp {
     snackbar_window: SnackbarWindow,
     topappbar_window: TopAppBarWindow,
     card2_window: Card2Window,
+    symbol_window: SymbolWindow,
 }
 
 impl Default for MaterialApp {
@@ -172,6 +175,7 @@ impl Default for MaterialApp {
             snackbar_window: SnackbarWindow::default(),
             topappbar_window: TopAppBarWindow::default(),
             card2_window: Card2Window::default(),
+            symbol_window: SymbolWindow::default(),
         }
     }
 }
@@ -373,6 +377,7 @@ impl MaterialApp {
         self.snackbar_window.open = false;
         self.topappbar_window.open = false;
         self.card2_window.open = false;
+        self.symbol_window.open = false;
         self.color_pickers_open.clear(); // Also close all color pickers
     }
 }
@@ -701,6 +706,10 @@ impl eframe::App for MaterialApp {
                     self.switch_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Symbol Stories")).clicked() {
+                    self.symbol_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
                     self.tabs_window.open = true;
                 }
@@ -738,6 +747,7 @@ impl eframe::App for MaterialApp {
         self.snackbar_window.show(ctx);
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
+        self.symbol_window.show(ctx);
 
         // let image_bytes = include_bytes!("../../resources/imgur_image.png");
         // egui::Window::new("Test egui::Image")
