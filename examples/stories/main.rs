@@ -13,6 +13,7 @@ use std::path::PathBuf;
 // Import window modules - reorganized from src/ to examples/stories/ directory structure
 mod button_window;
 mod card2_window;
+mod carousel_window;
 mod checkbox_window;
 mod chips_window;
 mod datatable_window;
@@ -36,6 +37,7 @@ mod topappbar_window;
 
 use button_window::ButtonWindow;
 use card2_window::Card2Window;
+use carousel_window::CarouselWindow;
 use checkbox_window::CheckboxWindow;
 use chips_window::ChipsWindow;
 use datatable_window::DataTableWindow;
@@ -132,6 +134,7 @@ struct MaterialApp {
     snackbar_window: SnackbarWindow,
     topappbar_window: TopAppBarWindow,
     card2_window: Card2Window,
+    carousel_window: CarouselWindow,
     symbol_window: SymbolWindow,
 }
 
@@ -175,6 +178,7 @@ impl Default for MaterialApp {
             snackbar_window: SnackbarWindow::default(),
             topappbar_window: TopAppBarWindow::default(),
             card2_window: Card2Window::default(),
+            carousel_window: CarouselWindow::default(),
             symbol_window: SymbolWindow::default(),
         }
     }
@@ -377,6 +381,7 @@ impl MaterialApp {
         self.snackbar_window.open = false;
         self.topappbar_window.open = false;
         self.card2_window.open = false;
+        self.carousel_window.open = false;
         self.symbol_window.open = false;
         self.color_pickers_open.clear(); // Also close all color pickers
     }
@@ -649,6 +654,10 @@ impl eframe::App for MaterialApp {
                     self.card2_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Carousel Stories")).clicked() {
+                    self.carousel_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("FAB Stories")).clicked() {
                     self.fab_window.open = true;
                 }
@@ -747,6 +756,7 @@ impl eframe::App for MaterialApp {
         self.snackbar_window.show(ctx);
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
+        self.carousel_window.show(ctx);
         self.symbol_window.show(ctx);
 
         // let image_bytes = include_bytes!("../../resources/imgur_image.png");

@@ -230,6 +230,7 @@
 
 pub mod button;
 pub mod card2;
+pub mod carousel;
 pub mod checkbox;
 pub mod chips;
 pub mod datatable;
@@ -258,6 +259,7 @@ pub mod topappbar;
 pub use {
     button::{MaterialButton, MaterialButtonVariant},
     card2::{elevated_card2, filled_card2, outlined_card2, Card2Variant, MaterialCard2},
+    carousel::{carousel, CarouselItem, MaterialCarousel},
     checkbox::{checkbox, MaterialCheckbox},
     chips::{assist_chip, filter_chip, input_chip, suggestion_chip, ChipVariant, MaterialChip},
     datatable::{
