@@ -293,7 +293,7 @@ pub use {
     progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},
     radio::{radio, radio_group, radio_list_tile, MaterialRadio, MaterialRadioGroup, RadioListTile, ListTileControlAffinity},
     select::{select, MaterialSelect, SelectVariant, MenuAlignment},
-    slider::{slider, MaterialSlider},
+    slider::{slider, range_slider, MaterialSlider, MaterialRangeSlider, RangeValues, SliderInteraction, ThumbShape},
     snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition},
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
