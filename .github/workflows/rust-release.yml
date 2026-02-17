@@ -9,20 +9,42 @@ on:
       - v*
 
 jobs:
-  rust_publish:
+  build:
     runs-on: ubuntu-latest
+    
+    # here we use a GitHub Actions _Environment_ that allows for more 
+    # control and steps to ensure security of the publishing 
+    # process
+    # 
+    # See https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment
+    environment: release
+
+    permissions:
+      id-token: write  # required in order to get a signed ID token
+      contents: read
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Cache Cargo Registry
-        uses: actions/cache@v5
-        with:
-          path: ~/.cargo/registry
-          key: ubuntu-latest-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
+    - uses: dtolnay/rust-toolchain@stable
+    - name: Cache Cargo Registry
+      uses: actions/cache@v5
+      with:
+        path: ~/.cargo/registry
+        key: ubuntu-latest-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
 
-      - name: Publish package rust
-        if: ${{ !contains(github.ref, 'rc') }}
-        working-directory: .
-        run: cargo publish --token ${CRATES_TOKEN}
+    # The step below is not strictly required as `cargo publish`
+    # will perform a build as well.
+    # - name: Install dependencies
+    #   run: cargo build --release
+
+    # This action does not exist currently.
+    - name: Authenticate with crates.io
+      id: auth
+      uses: rust-lang/crates-io-auth-action@v1
+
+    - name: Publish to crates.io
+      run: cargo publish
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
