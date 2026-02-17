@@ -496,7 +496,7 @@ impl<'a> MaterialDialog<'a> {
                         ui.add_space(0.0);
                         // Material icon - centered above title
                         // Use MaterialIcon for proper icon rendering
-                        let icon_widget = crate::icon::MaterialIcon::new(crate::icons::icon_text(icon))
+                        let icon_widget = crate::icon::MaterialIcon::new(crate::material_symbol::material_symbol_text(icon))
                             .size(24.0)
                             .color(on_surface_variant);
                         ui.add(icon_widget);

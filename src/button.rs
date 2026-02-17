@@ -1,4 +1,4 @@
-use crate::{get_global_color, icons::icon_text};
+use crate::{get_global_color, material_symbol::material_symbol_text};
 use egui::{
     ecolor::Color32,
     emath::NumExt,
@@ -588,13 +588,13 @@ impl Widget for MaterialButton<'_> {
 
         // Build leading icon galley
         let leading_icon_galley = leading_icon.map(|name| {
-            let icon_str: WidgetText = icon_text(&name).into();
+            let icon_str: WidgetText = material_symbol_text(&name).into();
             icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
         });
 
         // Build trailing icon galley
         let trailing_icon_galley = trailing_icon.map(|name| {
-            let icon_str: WidgetText = icon_text(&name).into();
+            let icon_str: WidgetText = material_symbol_text(&name).into();
             icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
         });
 

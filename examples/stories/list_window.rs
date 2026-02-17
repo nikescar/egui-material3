@@ -120,10 +120,10 @@ impl ListWindow {
             .visual_density(visual_density);
 
         if self.leading_icon {
-            single_item = single_item.leading_icon("folder");
+            single_item = single_item.leading_icon("folder".to_string());
         }
         if self.trailing_icon {
-            single_item = single_item.trailing_icon("chevron_right");
+            single_item = single_item.trailing_icon("chevron_right".to_string());
         }
         if !self.overline.is_empty() {
             single_item = single_item.overline(&self.overline);
@@ -143,10 +143,10 @@ impl ListWindow {
             .visual_density(visual_density);
 
         if self.leading_icon {
-            two_line_item = two_line_item.leading_icon("image");
+            two_line_item = two_line_item.leading_icon("image".to_string());
         }
         if self.trailing_icon {
-            two_line_item = two_line_item.trailing_icon("info");
+            two_line_item = two_line_item.trailing_icon("info".to_string());
         }
         if !self.overline.is_empty() {
             two_line_item = two_line_item.overline(&self.overline);
@@ -166,10 +166,10 @@ impl ListWindow {
             .visual_density(visual_density);
 
         if self.leading_icon {
-            three_line_item = three_line_item.leading_icon("description");
+            three_line_item = three_line_item.leading_icon("description".to_string());
         }
         if self.trailing_icon {
-            three_line_item = three_line_item.trailing_icon("more_vert");
+            three_line_item = three_line_item.trailing_icon("more_vert".to_string());
         }
         if !self.overline.is_empty() {
             three_line_item = three_line_item.overline(&self.overline);
@@ -191,14 +191,14 @@ impl ListWindow {
 
         // Link item
         let mut link_item = list_item("Link item")
-            .trailing_icon("open_in_new")
+            .trailing_icon("open_in_new".to_string())
             .enabled(!self.disabled)
             .selected(self.selected)
             .dense(self.dense)
             .visual_density(visual_density);
 
         if self.leading_icon {
-            link_item = link_item.leading_icon("link");
+            link_item = link_item.leading_icon("link".to_string());
         }
         if !self.overline.is_empty() {
             link_item = link_item.overline(&self.overline);
@@ -214,10 +214,10 @@ impl ListWindow {
             .visual_density(visual_density);
 
         if self.leading_icon {
-            button_item = button_item.leading_icon("touch_app");
+            button_item = button_item.leading_icon("touch_app".to_string());
         }
         if self.trailing_icon {
-            button_item = button_item.trailing_icon("arrow_forward");
+            button_item = button_item.trailing_icon("arrow_forward".to_string());
         }
         if !self.overline.is_empty() {
             button_item = button_item.overline(&self.overline);
@@ -239,10 +239,10 @@ impl ListWindow {
         .visual_density(visual_density);
 
         if self.leading_icon {
-            non_interactive_item = non_interactive_item.leading_icon("label");
+            non_interactive_item = non_interactive_item.leading_icon("label".to_string());
         }
         if self.trailing_icon {
-            non_interactive_item = non_interactive_item.trailing_icon("info_outline");
+            non_interactive_item = non_interactive_item.trailing_icon("info_outline".to_string());
         }
         if !self.overline.is_empty() {
             non_interactive_item = non_interactive_item.overline(&self.overline);
@@ -266,7 +266,7 @@ impl ListWindow {
             let is_selected = self.selected_items[i];
 
             let item = list_item(&item_text)
-                .leading_icon(if is_selected { "check_box" } else { "check_box_outline_blank" })
+                .leading_icon(if is_selected { "check_box".to_string() } else { "check_box_outline_blank".to_string() })
                 .selected(is_selected)
                 .on_click({
                     let items = &mut self.selected_items;
@@ -299,12 +299,12 @@ impl ListWindow {
                     .id("standard_list")
                     .item(
                         list_item("Item 1")
-                            .leading_icon("inbox")
+                            .leading_icon("inbox".to_string())
                             .visual_density(VisualDensity::STANDARD),
                     )
                     .item(
                         list_item("Item 2")
-                            .leading_icon("star")
+                            .leading_icon("star".to_string())
                             .visual_density(VisualDensity::STANDARD),
                     );
                 ui.add(standard_list);
@@ -316,12 +316,12 @@ impl ListWindow {
                     .id("comfortable_list")
                     .item(
                         list_item("Item 1")
-                            .leading_icon("inbox")
+                            .leading_icon("inbox".to_string())
                             .visual_density(VisualDensity::COMFORTABLE),
                     )
                     .item(
                         list_item("Item 2")
-                            .leading_icon("star")
+                            .leading_icon("star".to_string())
                             .visual_density(VisualDensity::COMFORTABLE),
                     );
                 ui.add(comfortable_list);
@@ -333,12 +333,12 @@ impl ListWindow {
                     .id("compact_list")
                     .item(
                         list_item("Item 1")
-                            .leading_icon("inbox")
+                            .leading_icon("inbox".to_string())
                             .visual_density(VisualDensity::COMPACT),
                     )
                     .item(
                         list_item("Item 2")
-                            .leading_icon("star")
+                            .leading_icon("star".to_string())
                             .visual_density(VisualDensity::COMPACT),
                     );
                 ui.add(compact_list);
@@ -355,22 +355,22 @@ impl ListWindow {
             .item(
                 list_item("Wi-Fi")
                     .secondary_text("Connected to Network")
-                    .leading_icon("wifi")
-                    .trailing_icon("chevron_right")
+                    .leading_icon("wifi".to_string())
+                    .trailing_icon("chevron_right".to_string())
                     .on_click(|| println!("Wi-Fi settings")),
             )
             .item(
                 list_item("Bluetooth")
                     .secondary_text("Off")
-                    .leading_icon("bluetooth")
-                    .trailing_icon("chevron_right")
+                    .leading_icon("bluetooth".to_string())
+                    .trailing_icon("chevron_right".to_string())
                     .on_click(|| println!("Bluetooth settings")),
             )
             .item(
                 list_item("Display")
                     .secondary_text("Brightness & Sleep")
-                    .leading_icon("brightness_6")
-                    .trailing_icon("chevron_right")
+                    .leading_icon("brightness_6".to_string())
+                    .trailing_icon("chevron_right".to_string())
                     .on_click(|| println!("Display settings")),
             );
         ui.add(settings_list);
@@ -384,7 +384,7 @@ impl ListWindow {
                 list_item("Meeting Tomorrow")
                     .overline("John Doe")
                     .secondary_text("Don't forget about the meeting at 10 AM")
-                    .leading_icon("mail")
+                    .leading_icon("mail".to_string())
                     .trailing_text("9:30 AM")
                     .on_click(|| println!("Open email")),
             )
@@ -392,7 +392,7 @@ impl ListWindow {
                 list_item("Project Update")
                     .overline("Manager")
                     .secondary_text("The project is progressing well")
-                    .leading_icon("mail")
+                    .leading_icon("mail".to_string())
                     .trailing_text("Yesterday")
                     .on_click(|| println!("Open email")),
             )
@@ -400,7 +400,7 @@ impl ListWindow {
                 list_item("Welcome!")
                     .overline("System")
                     .secondary_text("Thank you for joining our platform")
-                    .leading_icon("mail_outline")
+                    .leading_icon("mail_outline".to_string())
                     .trailing_text("2 days ago")
                     .on_click(|| println!("Open email")),
             );
@@ -414,23 +414,23 @@ impl ListWindow {
             .item(
                 list_item("Bohemian Rhapsody")
                     .secondary_text("Queen • A Night at the Opera")
-                    .leading_icon("music_note")
-                    .trailing_icon("more_vert")
+                    .leading_icon("music_note".to_string())
+                    .trailing_icon("more_vert".to_string())
                     .on_click(|| println!("Play song")),
             )
             .item(
                 list_item("Hotel California")
                     .secondary_text("Eagles • Hotel California")
-                    .leading_icon("music_note")
-                    .trailing_icon("more_vert")
+                    .leading_icon("music_note".to_string())
+                    .trailing_icon("more_vert".to_string())
                     .selected(true)
                     .on_click(|| println!("Play song")),
             )
             .item(
                 list_item("Stairway to Heaven")
                     .secondary_text("Led Zeppelin • Led Zeppelin IV")
-                    .leading_icon("music_note")
-                    .trailing_icon("more_vert")
+                    .leading_icon("music_note".to_string())
+                    .trailing_icon("more_vert".to_string())
                     .on_click(|| println!("Play song")),
             );
         ui.add(playlist);

@@ -1,6 +1,6 @@
 use crate::get_global_color;
 use crate::icon::MaterialIcon;
-use crate::icons::icon_text;
+use crate::material_symbol::material_symbol_text;
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Material Design FAB (Floating Action Button) variants
@@ -354,7 +354,7 @@ impl<'a> Widget for MaterialFab<'a> {
                     );
 
                     // Draw material icon
-                    let icon_char = icon_text(icon_name);
+                    let icon_char = material_symbol_text(icon_name);
                     let icon = MaterialIcon::new(icon_char).size(24.0).color(icon_color);
                     ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                         ui.add(icon);
@@ -397,7 +397,7 @@ impl<'a> Widget for MaterialFab<'a> {
                     };
 
                     let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
-                    let icon_char = icon_text(icon_name);
+                    let icon_char = material_symbol_text(icon_name);
                     let icon = MaterialIcon::new(icon_char)
                         .size(icon_size)
                         .color(icon_color);
@@ -413,7 +413,7 @@ impl<'a> Widget for MaterialFab<'a> {
                     };
 
                     let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
-                    let icon_char = icon_text("add");
+                    let icon_char = material_symbol_text("add");
                     let icon = MaterialIcon::new(icon_char).size(icon_size).color(icon_color);
                     ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                         ui.add(icon);

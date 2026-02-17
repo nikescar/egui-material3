@@ -1,4 +1,4 @@
-use crate::icons::icon_text;
+use crate::material_symbol::material_symbol_text;
 use crate::theme::get_global_color;
 use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
@@ -843,7 +843,7 @@ impl<'a> Widget for MaterialList<'a> {
                 let leading_width = min_leading_width;
                 let icon_pos = Pos2::new(content_x + leading_width / 2.0, content_y);
 
-                let icon_string = icon_text(icon_name);
+                let icon_string = material_symbol_text(icon_name);
                 ui.painter().text(
                     icon_pos,
                     egui::Align2::CENTER_CENTER,
@@ -974,7 +974,7 @@ impl<'a> Widget for MaterialList<'a> {
             if let Some(icon_name) = &item.trailing_icon {
                 let icon_pos = Pos2::new(item_rect.max.x - 28.0, content_y);
 
-                let icon_string = icon_text(icon_name);
+                let icon_string = material_symbol_text(icon_name);
                 ui.painter().text(
                     icon_pos,
                     egui::Align2::CENTER_CENTER,

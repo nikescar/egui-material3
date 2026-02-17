@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::material_symbol_icons::{ICON_PAUSE, ICON_PLAY_ARROW, ICON_SYNC};
+use egui_material3::material_symbol::{ICON_PAUSE, ICON_PLAY_ARROW};
 use crate::{circular_progress, icon_button_standard, linear_progress, MaterialButton};
 use eframe::egui::{self, Color32, Vec2, Window};
 
@@ -311,7 +311,7 @@ impl ProgressWindow {
             if self.loading_button_active {
                 ui.add(
                     MaterialButton::filled("Loading...")
-                        .leading_icon(ICON_SYNC.to_string())
+                        .leading_icon("sync".to_string())
                         .enabled(false),
                 );
 
