@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Material Design checkbox component following Material Design 3 specifications
 ///

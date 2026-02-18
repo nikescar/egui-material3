@@ -1,4 +1,4 @@
-use eframe::egui::{self, ColorImage, Context, TextureHandle};
+use egui::{self, ColorImage, Context, TextureHandle};
 use resvg::{
     tiny_skia::Pixmap,
     usvg::{Options, Tree},

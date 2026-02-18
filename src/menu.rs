@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use eframe::egui::{self, Color32, Context, Id, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
+use egui::{self, Color32, Context, Id, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 /// Corner position for menu positioning.
 #[derive(Clone, Copy, PartialEq)]
