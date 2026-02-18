@@ -21,8 +21,6 @@ ondemand = ["dep:ureq"]
 
 [dependencies]
 egui = "0.32.3"
-eframe = { version = "0.32.3", default-features = false, features = ["default_fonts", "glow"] }
-
 # egui = { git = "https://github.com/emilk/egui", default-features = false, features = ["default_fonts"] }
 # eframe = { git = "https://github.com/emilk/egui", default-features = true }
 

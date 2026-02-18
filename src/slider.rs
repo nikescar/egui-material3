@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use eframe::egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
+use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 use std::ops::RangeInclusive;
 
 /// Interaction modes for sliders
