@@ -34,6 +34,8 @@ mod switch_window;
 mod symbol_window;
 mod tabs_window;
 mod topappbar_window;
+#[cfg(feature = "spreadsheet")]
+mod spreadsheet_window;
 
 use button_window::ButtonWindow;
 use card2_window::Card2Window;
@@ -58,6 +60,8 @@ use switch_window::SwitchWindow;
 use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
 use topappbar_window::TopAppBarWindow;
+#[cfg(feature = "spreadsheet")]
+use spreadsheet_window::SpreadsheetWindow;
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
@@ -136,6 +140,8 @@ struct MaterialApp {
     card2_window: Card2Window,
     carousel_window: CarouselWindow,
     symbol_window: SymbolWindow,
+    #[cfg(feature = "spreadsheet")]
+    spreadsheet_window: SpreadsheetWindow,
 }
 
 impl Default for MaterialApp {
@@ -180,6 +186,8 @@ impl Default for MaterialApp {
             card2_window: Card2Window::default(),
             carousel_window: CarouselWindow::default(),
             symbol_window: SymbolWindow::default(),
+            #[cfg(feature = "spreadsheet")]
+            spreadsheet_window: SpreadsheetWindow::default(),
         }
     }
 }
@@ -383,6 +391,8 @@ impl MaterialApp {
         self.card2_window.open = false;
         self.carousel_window.open = false;
         self.symbol_window.open = false;
+        #[cfg(feature = "spreadsheet")]
+        { self.spreadsheet_window.open = false; }
         self.color_pickers_open.clear(); // Also close all color pickers
     }
 }
@@ -729,6 +739,14 @@ impl eframe::App for MaterialApp {
                 {
                     self.topappbar_window.open = true;
                 }
+
+                #[cfg(feature = "spreadsheet")]
+                if ui
+                    .add(MaterialButton::filled("Spreadsheet Stories"))
+                    .clicked()
+                {
+                    self.spreadsheet_window.open = true;
+                }
             });
 
             ui.add_space(15.0);
@@ -758,6 +776,8 @@ impl eframe::App for MaterialApp {
         self.card2_window.show(ctx);
         self.carousel_window.show(ctx);
         self.symbol_window.show(ctx);
+        #[cfg(feature = "spreadsheet")]
+        self.spreadsheet_window.show(ctx);
 
         // let image_bytes = include_bytes!("../../resources/imgur_image.png");
         // egui::Window::new("Test egui::Image")

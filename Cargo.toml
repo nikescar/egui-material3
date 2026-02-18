@@ -16,9 +16,9 @@ categories = ["gui", "graphics", "visualization"]
 exclude = ["resources/*.ttf"]
 
 [features]
-default = []
+default = ["spreadsheet"]
 ondemand = ["dep:ureq"]
-spreadsheet = ["dep:duckdb"]
+spreadsheet = ["dep:duckdb", "dep:egui_extras", "dep:tap", "dep:itertools"]
 
 [dependencies]
 egui = "0.32.3"
@@ -32,7 +32,10 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 tiny-skia = "0.11"
 lazy_static = "1.4"
 ureq = { version = "2.9", features = ["json"], optional = true } # for ondemand feature
-duckdb = { version = "1.4.4", optional = true } # for spreadsheet feature
+duckdb = { version = "1.4.4", optional = true, features = ["bundled"] } # for spreadsheet feature
+egui_extras = { version = "0.32.3", default-features = false, features = ["serde"], optional = true }
+tap = { version = "1", optional = true }
+itertools = { version = "0.14", optional = true }
 base64 = "0.22"
 hex = "0.4"
 

@@ -234,6 +234,8 @@ pub mod carousel;
 pub mod checkbox;
 pub mod chips;
 pub mod datatable;
+#[cfg(feature = "spreadsheet")]
+pub mod spreadsheet;
 pub mod dialog;
 pub mod drawer;
 pub mod fab;
@@ -308,3 +310,6 @@ pub use {
         MaterialTopAppBar, TopAppBarVariant,
     },
 };
+
+#[cfg(feature = "spreadsheet")]
+pub use spreadsheet::*;
