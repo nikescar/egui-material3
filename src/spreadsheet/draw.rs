@@ -1,10 +1,11 @@
 use std::mem::{replace, take};
 
-use egui::{Align, Color32, CornerRadius, Event, Label, Layout, PointerButton, PopupAnchor, Rect, Response, RichText, Sense, Stroke, StrokeKind, Tooltip, Vec2b};
+use egui::{Align, Event, Label, Layout, PointerButton, PopupAnchor, Rect, Response, RichText, Sense, Stroke, StrokeKind, Tooltip, Vec2b};
 use egui_extras::Column;
 use tap::prelude::{Pipe, Tap};
 
 use crate::{
+    theme::get_global_color,
     viewer::{EmptyRowCreateContext, RowViewer},
     DataTable, UiAction,
 };
@@ -161,15 +162,6 @@ impl<'a, R, V: RowViewer<R>> Renderer<'a, R, V> {
         let mut commands = Vec::<Command<R>>::new();
         let ui_layer_id = ui.layer_id();
 
-        // NOTE: unlike RED and YELLOW which can be acquirable through 'error_bg_color' and
-        // 'warn_bg_color', there's no 'green' color which can be acquired from inherent theme.
-        // Following logic simply gets 'green' color from current background's brightness.
-        let green = if visual.window_fill.g() > 128 {
-            Color32::DARK_GREEN
-        } else {
-            Color32::GREEN
-        };
-
         let mut builder = egui_extras::TableBuilder::new(ui).column(Column::auto());
 
         let iter_vis_cols_with_flag = s
@@ -216,7 +208,7 @@ impl<'a, R, V: RowViewer<R>> Renderer<'a, R, V> {
                                 let is_asc = s.sort()[pos].1 .0 as usize;
 
                                 ui.colored_label(
-                                    [green, Color32::RED][is_asc],
+                                    get_global_color("primary"),
                                     RichText::new(format!("{}{}", ["↘", "↗"][is_asc], pos + 1,))
                                         .monospace(),
                                 );
@@ -571,9 +563,9 @@ impl<'a, R, V: RowViewer<R>> Renderer<'a, R, V> {
                         .color = if is_interactive_cell {
                         self.style
                             .fg_selected_highlight_cell
-                            .unwrap_or(visual.strong_text_color())
+                            .unwrap_or(get_global_color("onSurface"))
                     } else {
-                        visual.strong_text_color()
+                        get_global_color("onSurface")
                     };
 
                     // FIXME: After egui 0.27, now the widgets spawned inside this closure
