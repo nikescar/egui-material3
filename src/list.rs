@@ -1,6 +1,6 @@
 use crate::material_symbol::material_symbol_text;
 use crate::theme::get_global_color;
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Defines the title font used for ListTile descendants.
 ///

@@ -1,4 +1,4 @@
-use eframe::egui::{self, Color32, Response, Sense, Ui, Vec2, Widget};
+use egui::{self, Color32, Response, Sense, Ui, Vec2, Widget};
 
 pub struct MaterialIcon {
     name: String,

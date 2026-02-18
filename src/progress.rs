@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use eframe::egui::{Color32, CornerRadius, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use egui::{Color32, CornerRadius, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use std::f32::consts::PI;
 
 // Animation duration constants (from Flutter reference)

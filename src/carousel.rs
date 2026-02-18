@@ -1,6 +1,6 @@
 use crate::get_global_color;
-use eframe::egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
-use eframe::egui::epaint::CornerRadius;
+use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
+use egui::epaint::CornerRadius;
 
 /// A Material Design 3 Carousel component.
 ///

@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget, FontId};
+use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget, FontId};
 
 /// Material Design radio button component.
 ///

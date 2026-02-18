@@ -1,7 +1,7 @@
 use crate::get_global_color;
 use crate::icon::MaterialIcon;
 use crate::material_symbol::material_symbol_text;
-use eframe::egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
+use egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Material Design FAB (Floating Action Button) variants
 #[derive(Clone, Copy, PartialEq)]

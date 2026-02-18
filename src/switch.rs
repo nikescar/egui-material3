@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use eframe::egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2, Widget};
+use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2, Widget};
 
 /// Material Design switch component following Material Design 3 specifications
 ///

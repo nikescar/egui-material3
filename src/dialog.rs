@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use eframe::egui::{self, Color32, Context, Id, Modal, Response, Sense, Stroke, Ui, Vec2};
+use egui::{self, Color32, Context, Id, Modal, Response, Sense, Stroke, Ui, Vec2};
 
 /// Material Design dialog types following Material Design 3 specifications
 #[derive(Clone, Copy, PartialEq)]

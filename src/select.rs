@@ -1,5 +1,5 @@
 use crate::theme::get_global_color;
-use eframe::egui::{
+use egui::{
     self, Color32, FontFamily, FontId, Key, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
 };
 
