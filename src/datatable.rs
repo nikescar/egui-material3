@@ -173,6 +173,7 @@ pub struct MaterialDataTable<'a> {
     default_row_height: f32,
     theme: DataTableTheme,
     row_hover_states: HashMap<usize, bool>,
+    auto_height: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -383,6 +384,7 @@ impl<'a> MaterialDataTable<'a> {
             default_row_height: 52.0,
             theme: DataTableTheme::default(),
             row_hover_states: HashMap::new(),
+            auto_height: false,
         }
     }
 
@@ -524,8 +526,29 @@ impl<'a> MaterialDataTable<'a> {
     }
 
     /// Set default row height in pixels.
+    /// This sets a fixed minimum height for all rows.
     pub fn default_row_height(mut self, height: f32) -> Self {
         self.default_row_height = height;
+        self.theme.data_row_min_height = Some(height);
+        self.auto_height = false;
+        self
+    }
+
+    /// Enable automatic row height calculation based on content.
+    /// Each row will size independently to fit its content.
+    /// You can still set a minimum height that will be respected.
+    pub fn auto_row_height(mut self, enabled: bool) -> Self {
+        self.auto_height = enabled;
+        if enabled {
+            // Set a minimal default height to allow content-based sizing
+            self.theme.data_row_min_height = Some(20.0);
+        }
+        self
+    }
+
+    /// Set minimum row height for auto-sizing mode.
+    /// Only effective when auto_row_height is enabled.
+    pub fn min_row_height(mut self, height: f32) -> Self {
         self.theme.data_row_min_height = Some(height);
         self
     }
@@ -613,6 +636,7 @@ impl<'a> MaterialDataTable<'a> {
             corner_radius,
             default_row_height,
             theme,
+            auto_height,
             ..
         } = self;
 
@@ -698,13 +722,20 @@ impl<'a> MaterialDataTable<'a> {
         // Calculate individual row heights based on content
         let mut row_heights = Vec::new();
         for row in &rows {
-            let mut max_height: f32 = min_row_height;
+            // In auto_height mode, start with a minimal height, otherwise use min_row_height
+            let base_height = if auto_height { 20.0 } else { min_row_height };
+            let mut max_height: f32 = base_height;
+            
             for (cell_idx, cell) in row.cells.iter().enumerate() {
                 if let Some(column) = columns.get(cell_idx) {
                     match &cell.content {
                         CellContent::Text(cell_text) => {
                             let available_width = column.width - 32.0;
-                            let cell_font = FontId::new(14.0, FontFamily::Proportional);
+                            let cell_font = if let Some((ref font_id, _)) = theme.data_text_style {
+                                font_id.clone()
+                            } else {
+                                FontId::new(14.0, FontFamily::Proportional)
+                            };
 
                             let galley = ui.painter().layout_job(egui::text::LayoutJob {
                                 text: cell_text.text().to_string(),
@@ -733,12 +764,18 @@ impl<'a> MaterialDataTable<'a> {
                         }
                         CellContent::Widget(_) => {
                             // For widgets, use minimum height - they will size themselves
-                            // We could make this configurable in the future
+                            // In auto mode, don't force a minimum for widget rows
+                            if !auto_height {
+                                max_height = max_height.max(min_row_height);
+                            }
                         }
                     }
                 }
             }
-            row_heights.push(max_height);
+            
+            // Apply minimum height constraint
+            let final_height = max_height.max(min_row_height);
+            row_heights.push(final_height);
         }
 
         let total_height = header_height + row_heights.iter().sum::<f32>();

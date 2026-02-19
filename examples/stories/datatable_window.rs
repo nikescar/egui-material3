@@ -784,6 +784,49 @@ impl DataTableWindow {
         
         ui.add_space(20.0);
         ui.separator();
+        ui.heading("Auto Row Height by Content");
+        ui.label("Rows automatically adjust height based on their content length");
+        
+        let auto_height_table = data_table()
+            .id(Id::new("auto_height_table"))
+            .column("Category", 100.0, false)
+            .column("Description", 250.0, false)
+            .column("Status", 80.0, false)
+            .auto_row_height(true)
+            .min_row_height(30.0)
+            .row(|row| {
+                row.cell("Short")
+                   .cell("Brief description")
+                   .cell("Active")
+            })
+            .row(|row| {
+                row.cell("Medium")
+                   .cell("This is a medium-length description that will wrap to multiple lines when the content exceeds the column width")
+                   .cell("Active")
+            })
+            .row(|row| {
+                row.cell("Long")
+                   .cell("This is a very long description with extensive details that will definitely wrap to multiple lines. It demonstrates how the auto row height feature automatically calculates and adjusts the row height based on the actual content length, ensuring all text is visible without manual height adjustment. Each row can have a different height based on its content.")
+                   .cell("Active")
+            })
+            .row(|row| {
+                row.cell("Short")
+                   .cell("Another brief one")
+                   .cell("Done")
+            })
+            .row(|row| {
+                row.cell("Variable")
+                   .cell("Some rows have more content than others, and the auto height feature ensures each row is exactly as tall as it needs to be - no more, no less.")
+                   .cell("Pending")
+            });
+        
+        ui.add(auto_height_table);
+        
+        ui.add_space(10.0);
+        ui.label("Notice how each row has a different height based on its content length!");
+        
+        ui.add_space(20.0);
+        ui.separator();
         ui.heading("Show/Hide Checkbox Column");
         ui.label("Selection enabled but checkbox column hidden");
         
