@@ -251,6 +251,7 @@ pub mod radio;
 pub mod select;
 pub mod slider;
 pub mod snackbar;
+pub mod spreadsheet;
 pub mod switch;
 pub mod tabs;
 pub mod theme;
@@ -307,4 +308,10 @@ pub use {
         center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar,
         MaterialTopAppBar, TopAppBarVariant,
     },
+};
+
+#[cfg(feature = "spreadsheet")]
+pub use spreadsheet::{
+    column, integer_column, number_column, text_column, ColumnDef, ColumnType, FileFormat,
+    MaterialSpreadsheet, RowData, SpreadsheetAction, SpreadsheetDataModel,
 };

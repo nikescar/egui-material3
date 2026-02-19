@@ -206,13 +206,10 @@ impl<'a> Widget for MaterialFab<'a> {
                 };
 
                 let text_width = if let Some(ref text) = self.text {
-                    ui.fonts(|fonts| {
-                        let font_id = egui::FontId::proportional(14.0);
-                        fonts
-                            .layout_no_wrap(text.clone(), font_id, Color32::WHITE)
-                            .size()
-                            .x
-                    })
+                    let font_id = egui::FontId::proportional(14.0);
+                    ui.painter().layout_no_wrap(text.clone(), font_id, Color32::WHITE)
+                        .size()
+                        .x
                 } else {
                     0.0
                 };

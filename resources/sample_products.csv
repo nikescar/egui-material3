@@ -1,0 +1,9 @@
+Product,Category,Price,Stock,Supplier
+Laptop,Electronics,999.99,15,TechCorp
+Mouse,Electronics,29.99,150,TechCorp
+Keyboard,Electronics,79.99,85,KeyMaster
+Monitor,Electronics,299.99,42,ScreenPro
+Desk Chair,Furniture,199.99,30,ComfortSeats
+Desk,Furniture,349.99,20,OfficePro
+Notebook,Stationery,5.99,500,PaperGoods
+Pen Pack,Stationery,12.99,300,WriteWell
