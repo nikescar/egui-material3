@@ -526,6 +526,7 @@ impl<'a> MaterialDataTable<'a> {
     /// Set default row height in pixels.
     pub fn default_row_height(mut self, height: f32) -> Self {
         self.default_row_height = height;
+        self.theme.data_row_min_height = Some(height);
         self
     }
 

@@ -724,6 +724,66 @@ impl DataTableWindow {
         
         ui.add_space(20.0);
         ui.separator();
+        ui.heading("Custom Row Height");
+        ui.label("Using default_row_height() to set custom row heights");
+        
+        ui.label("Compact (30px rows):");
+        let compact_height_table = data_table()
+            .id(Id::new("compact_height_table"))
+            .column("Item", 120.0, false)
+            .column("Value", 80.0, true)
+            .default_row_height(30.0)
+            .row(|row| {
+                row.cell("Compact A").cell("100")
+            })
+            .row(|row| {
+                row.cell("Compact B").cell("200")
+            })
+            .row(|row| {
+                row.cell("Compact C").cell("300")
+            });
+        
+        ui.add(compact_height_table);
+        
+        ui.add_space(10.0);
+        ui.label("Standard (52px rows - default):");
+        let standard_height_table = data_table()
+            .id(Id::new("standard_height_table"))
+            .column("Item", 120.0, false)
+            .column("Value", 80.0, true)
+            .row(|row| {
+                row.cell("Standard A").cell("100")
+            })
+            .row(|row| {
+                row.cell("Standard B").cell("200")
+            })
+            .row(|row| {
+                row.cell("Standard C").cell("300")
+            });
+        
+        ui.add(standard_height_table);
+        
+        ui.add_space(10.0);
+        ui.label("Spacious (80px rows):");
+        let spacious_height_table = data_table()
+            .id(Id::new("spacious_height_table"))
+            .column("Item", 120.0, false)
+            .column("Value", 80.0, true)
+            .default_row_height(80.0)
+            .row(|row| {
+                row.cell("Spacious A").cell("100")
+            })
+            .row(|row| {
+                row.cell("Spacious B").cell("200")
+            })
+            .row(|row| {
+                row.cell("Spacious C").cell("300")
+            });
+        
+        ui.add(spacious_height_table);
+        
+        ui.add_space(20.0);
+        ui.separator();
         ui.heading("Show/Hide Checkbox Column");
         ui.label("Selection enabled but checkbox column hidden");
         
