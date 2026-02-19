@@ -654,7 +654,7 @@ impl MaterialSpreadsheet {
         ui.ctx().plugin_or_default::<egui_async::EguiAsyncPlugin>();
 
         // Handle async load state
-        match self.load_bind.state_or_request(|| async { Ok(Vec::new()) }) {
+        match self.load_bind.state() {
             StateWithData::Pending => {
                 ui.ctx().request_repaint();
                 return ui.label("Loading...").interact(Sense::hover());

@@ -65,9 +65,9 @@ impl Default for SpreadsheetWindow {
 
             {
                 let mut model = spreadsheet.data_model.lock().unwrap();
-                let _ = model.insert_rows(sample_data);
+                model.insert_rows(sample_data).expect("Failed to insert sample data");
             }
-            let _ = spreadsheet.refresh_data();
+            spreadsheet.refresh_data().expect("Failed to refresh spreadsheet data");
 
             Self {
                 open: false,
