@@ -1,0 +1,28 @@
+DEPARTMENT_ID,DEPARTMENT_NAME,MANAGER_ID,LOCATION_ID,TEST
+10,Administration,200,1700,100
+20,Marketing,201,1800,100
+30,Purchasing,114,1700,100
+40,Human Resources,203,2400,100
+50,Shipping,121,1500,100
+60,IT,103,1400,100
+70,Public Relations,204,2700,100
+80,Sales,145,2500,100
+90,Executive,100,1700,100
+100,Finance,108,1700,100
+110,Accounting,205,1700,100
+120,Treasury,0,1700,100
+130,Corporate Tax,0,1700,100
+140,Control And Credit,0,1700,100
+150,Shareholder Services,0,1700,100
+160,Benefits,0,1700,100
+170,Manufacturing,0,1700,100
+180,Construction,0,1700,100
+190,Contracting,0,1700,100
+200,Operations,0,1700,100
+210,IT Support,0,1700,100
+220,NOC,0,1700,100
+230,IT Helpdesk,0,1700,100
+240,Government Sales,0,1700,100
+250,Retail Sales,0,1700,100
+260,Recruiting,0,1700,100
+270,Payroll,0,1700,100

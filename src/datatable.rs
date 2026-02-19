@@ -668,28 +668,26 @@ impl<'a> MaterialDataTable<'a> {
             let available_width = column.width - 48.0; // Account for padding and sort icon
             let header_font = FontId::new(16.0, FontFamily::Proportional);
 
-            let galley = ui.fonts(|f| {
-                f.layout_job(egui::text::LayoutJob {
-                    text: column.title.clone(),
-                    sections: vec![egui::text::LayoutSection {
-                        leading_space: 0.0,
-                        byte_range: 0..column.title.len(),
-                        format: egui::TextFormat {
-                            font_id: header_font,
-                            color: get_global_color("onSurface"),
-                            ..Default::default()
-                        },
-                    }],
-                    wrap: egui::text::TextWrapping {
-                        max_width: available_width,
+            let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                text: column.title.clone(),
+                sections: vec![egui::text::LayoutSection {
+                    leading_space: 0.0,
+                    byte_range: 0..column.title.len(),
+                    format: egui::TextFormat {
+                        font_id: header_font,
+                        color: get_global_color("onSurface"),
                         ..Default::default()
                     },
-                    break_on_newline: true,
-                    halign: egui::Align::LEFT,
-                    justify: false,
-                    first_row_min_height: 0.0,
-                    round_output_to_gui: true,
-                })
+                }],
+                wrap: egui::text::TextWrapping {
+                    max_width: available_width,
+                    ..Default::default()
+                },
+                break_on_newline: true,
+                halign: egui::Align::LEFT,
+                justify: false,
+                first_row_min_height: 0.0,
+                round_output_to_gui: true,
             });
 
             let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -707,28 +705,26 @@ impl<'a> MaterialDataTable<'a> {
                             let available_width = column.width - 32.0;
                             let cell_font = FontId::new(14.0, FontFamily::Proportional);
 
-                            let galley = ui.fonts(|f| {
-                                f.layout_job(egui::text::LayoutJob {
-                                    text: cell_text.text().to_string(),
-                                    sections: vec![egui::text::LayoutSection {
-                                        leading_space: 0.0,
-                                        byte_range: 0..cell_text.text().len(),
-                                        format: egui::TextFormat {
-                                            font_id: cell_font,
-                                            color: get_global_color("onSurface"),
-                                            ..Default::default()
-                                        },
-                                    }],
-                                    wrap: egui::text::TextWrapping {
-                                        max_width: available_width,
+                            let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                                text: cell_text.text().to_string(),
+                                sections: vec![egui::text::LayoutSection {
+                                    leading_space: 0.0,
+                                    byte_range: 0..cell_text.text().len(),
+                                    format: egui::TextFormat {
+                                        font_id: cell_font,
+                                        color: get_global_color("onSurface"),
                                         ..Default::default()
                                     },
-                                    break_on_newline: true,
-                                    halign: egui::Align::LEFT, // Always left-align within galley; positioning handles cell alignment
-                                    justify: false,
-                                    first_row_min_height: 0.0,
-                                    round_output_to_gui: true,
-                                })
+                                }],
+                                wrap: egui::text::TextWrapping {
+                                    max_width: available_width,
+                                    ..Default::default()
+                                },
+                                break_on_newline: true,
+                                halign: egui::Align::LEFT, // Always left-align within galley; positioning handles cell alignment
+                                justify: false,
+                                first_row_min_height: 0.0,
+                                round_output_to_gui: true,
                             });
 
                             let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -876,28 +872,26 @@ impl<'a> MaterialDataTable<'a> {
                 let available_width = column.width - 48.0; // Account for padding and sort icon
                 let header_font = FontId::new(16.0, FontFamily::Proportional);
 
-                let galley = ui.fonts(|f| {
-                    f.layout_job(egui::text::LayoutJob {
-                        text: column.title.clone(),
-                        sections: vec![egui::text::LayoutSection {
-                            leading_space: 0.0,
-                            byte_range: 0..column.title.len(),
-                            format: egui::TextFormat {
-                                font_id: header_font,
-                                color: get_global_color("onSurface"),
-                                ..Default::default()
-                            },
-                        }],
-                        wrap: egui::text::TextWrapping {
-                            max_width: available_width,
+                let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                    text: column.title.clone(),
+                    sections: vec![egui::text::LayoutSection {
+                        leading_space: 0.0,
+                        byte_range: 0..column.title.len(),
+                        format: egui::TextFormat {
+                            font_id: header_font,
+                            color: get_global_color("onSurface"),
                             ..Default::default()
                         },
-                        break_on_newline: true,
-                        halign: egui::Align::LEFT,
-                        justify: false,
-                        first_row_min_height: 0.0,
-                        round_output_to_gui: true,
-                    })
+                    }],
+                    wrap: egui::text::TextWrapping {
+                        max_width: available_width,
+                        ..Default::default()
+                    },
+                    break_on_newline: true,
+                    halign: egui::Align::LEFT,
+                    justify: false,
+                    first_row_min_height: 0.0,
+                    round_output_to_gui: true,
                 });
 
                 let text_pos = egui::pos2(
@@ -1292,28 +1286,26 @@ impl<'a> MaterialDataTable<'a> {
                                         get_global_color("onSurface")
                                     };
 
-                                    let galley = ui.fonts(|f| {
-                                        f.layout_job(egui::text::LayoutJob {
-                                            text: cell_text.text().to_string(),
-                                            sections: vec![egui::text::LayoutSection {
-                                                leading_space: 0.0,
-                                                byte_range: 0..cell_text.text().len(),
-                                                format: egui::TextFormat {
-                                                    font_id: cell_font,
-                                                    color: text_color,
-                                                    ..Default::default()
-                                                },
-                                            }],
-                                            wrap: egui::text::TextWrapping {
-                                                max_width: available_width,
+                                    let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                                        text: cell_text.text().to_string(),
+                                        sections: vec![egui::text::LayoutSection {
+                                            leading_space: 0.0,
+                                            byte_range: 0..cell_text.text().len(),
+                                            format: egui::TextFormat {
+                                                font_id: cell_font,
+                                                color: text_color,
                                                 ..Default::default()
                                             },
-                                            break_on_newline: true,
-                                            halign: egui::Align::LEFT, // Always left-align within galley; positioning handles cell alignment
-                                            justify: false,
-                                            first_row_min_height: 0.0,
-                                            round_output_to_gui: true,
-                                        })
+                                        }],
+                                        wrap: egui::text::TextWrapping {
+                                            max_width: available_width,
+                                            ..Default::default()
+                                        },
+                                        break_on_newline: true,
+                                        halign: egui::Align::LEFT, // Always left-align within galley; positioning handles cell alignment
+                                        justify: false,
+                                        first_row_min_height: 0.0,
+                                        round_output_to_gui: true,
                                     });
 
                                     // Calculate horizontal position based on alignment

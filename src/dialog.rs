@@ -641,12 +641,11 @@ impl<'a> MaterialDialog<'a> {
 
         let [btn_h_padding, btn_v_padding] = button_padding.unwrap_or([12.0, 8.0]);
         
-        let text_width = ui.fonts(|fonts| {
-            fonts
-                .layout_no_wrap(action.text.clone(), egui::FontId::default(), Color32::WHITE)
-                .rect
-                .width()
-        });
+        let text_width = ui.painter().layout_no_wrap(
+            action.text.clone(),
+            egui::FontId::default(),
+            Color32::WHITE,
+        ).rect.width();
 
         let button_width = (text_width + btn_h_padding * 2.0).max(64.0);
         let button_height = (20.0 + btn_v_padding * 2.0).max(40.0);

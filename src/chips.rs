@@ -365,16 +365,11 @@ impl<'a> Widget for MaterialChip<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let is_selected = self.selected.as_ref().map_or(false, |s| **s);
 
-        let text_width = ui.fonts(|fonts| {
-            fonts
-                .layout_no_wrap(
-                    self.text.clone(),
-                    egui::FontId::default(),
-                    egui::Color32::WHITE,
-                )
-                .rect
-                .width()
-        });
+        let text_width = ui.painter().layout_no_wrap(
+            self.text.clone(),
+            egui::FontId::default(),
+            egui::Color32::WHITE,
+        ).rect.width();
 
         let has_leading = self.leading_icon.is_some()
             || (self.variant == ChipVariant::Filter && is_selected);
