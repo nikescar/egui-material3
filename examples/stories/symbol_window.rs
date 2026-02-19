@@ -60,16 +60,14 @@ impl SymbolWindow {
         ui.heading("Loaded Fonts");
         ui.add_space(4.0);
 
-        let (families, has_material_symbols, has_noto_emoji) = ui.ctx().fonts(|fonts| {
-            let families = fonts.families();
-            
-            // Test if material symbol and emoji glyphs can be rendered
-            let font_id = egui::FontId::proportional(16.0);
-            let has_material_symbols = fonts.has_glyph(&font_id, ICON_HOME);
-            let has_noto_emoji = fonts.has_glyph(&font_id, '❤');
-            
-            (families, has_material_symbols, has_noto_emoji)
+        let families = ui.ctx().fonts(|fonts| {
+            fonts.families()
         });
+        
+        // Note: In egui 0.33, glyph checking requires mutable access which isn't available in the fonts closure
+        // For now, we'll assume fonts are available if they're in the family list
+        let has_material_symbols = families.iter().any(|f| f.to_string().contains("MaterialSymbols"));
+        let has_noto_emoji = families.iter().any(|f| f.to_string().contains("NotoEmoji"));
 
         // Display status
         ui.horizontal(|ui| {

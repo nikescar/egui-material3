@@ -30,6 +30,7 @@ mod radio_window;
 mod select_window;
 mod slider_window;
 mod snackbar_window;
+mod spreadsheet_window;
 mod switch_window;
 mod symbol_window;
 mod tabs_window;
@@ -54,6 +55,7 @@ use radio_window::RadioWindow;
 use select_window::SelectWindow;
 use slider_window::SliderWindow;
 use snackbar_window::SnackbarWindow;
+use spreadsheet_window::SpreadsheetWindow;
 use switch_window::SwitchWindow;
 use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
@@ -132,6 +134,7 @@ struct MaterialApp {
     imagelist_window: ImageListWindow,
     layoutgrid_window: LayoutGridWindow,
     snackbar_window: SnackbarWindow,
+    spreadsheet_window: SpreadsheetWindow,
     topappbar_window: TopAppBarWindow,
     card2_window: Card2Window,
     carousel_window: CarouselWindow,
@@ -176,6 +179,7 @@ impl Default for MaterialApp {
             imagelist_window: ImageListWindow::default(),
             layoutgrid_window: LayoutGridWindow::default(),
             snackbar_window: SnackbarWindow::default(),
+            spreadsheet_window: SpreadsheetWindow::default(),
             topappbar_window: TopAppBarWindow::default(),
             card2_window: Card2Window::default(),
             carousel_window: CarouselWindow::default(),
@@ -379,6 +383,7 @@ impl MaterialApp {
         self.imagelist_window.open = false;
         self.layoutgrid_window.open = false;
         self.snackbar_window.open = false;
+        self.spreadsheet_window.open = false;
         self.topappbar_window.open = false;
         self.card2_window.open = false;
         self.carousel_window.open = false;
@@ -711,6 +716,10 @@ impl eframe::App for MaterialApp {
                     self.snackbar_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Spreadsheet Stories")).clicked() {
+                    self.spreadsheet_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("Switch Stories")).clicked() {
                     self.switch_window.open = true;
                 }
@@ -754,6 +763,7 @@ impl eframe::App for MaterialApp {
         self.imagelist_window.show(ctx);
         self.layoutgrid_window.show(ctx);
         self.snackbar_window.show(ctx);
+        self.spreadsheet_window.show(ctx);
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
         self.carousel_window.show(ctx);

@@ -367,7 +367,7 @@ impl<'a> Widget for MaterialSlider<'a> {
 
             // Simple rectangle indicator
             let indicator_font = FontId::proportional(12.0);
-            let galley = ui.fonts(|f| f.layout_no_wrap(value_text, indicator_font, on_surface));
+            let galley = ui.painter().layout_no_wrap(value_text, indicator_font, on_surface);
             let indicator_size = Vec2::new(galley.size().x + 16.0, galley.size().y + 8.0);
             let indicator_pos = Pos2::new(
                 thumb_center.x - indicator_size.x / 2.0,

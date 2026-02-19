@@ -784,28 +784,26 @@ impl<'a> Widget for MaterialSelect<'a> {
 
                                 // Handle text wrapping for long content
                                 let available_width = option_rect.width() - 32.0; // Account for padding
-                                let galley = ui.fonts(|f| {
-                                    f.layout_job(egui::text::LayoutJob {
-                                        text: option.text.clone(),
-                                        sections: vec![egui::text::LayoutSection {
-                                            leading_space: 0.0,
-                                            byte_range: 0..option.text.len(),
-                                            format: egui::TextFormat {
-                                                font_id: select_font.clone(),
-                                                color: text_color,
-                                                ..Default::default()
-                                            },
-                                        }],
-                                        wrap: egui::text::TextWrapping {
-                                            max_width: available_width,
+                                let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                                    text: option.text.clone(),
+                                    sections: vec![egui::text::LayoutSection {
+                                        leading_space: 0.0,
+                                        byte_range: 0..option.text.len(),
+                                        format: egui::TextFormat {
+                                            font_id: select_font.clone(),
+                                            color: text_color,
                                             ..Default::default()
                                         },
-                                        break_on_newline: true,
-                                        halign: egui::Align::LEFT,
-                                        justify: false,
-                                        first_row_min_height: 0.0,
-                                        round_output_to_gui: true,
-                                    })
+                                    }],
+                                    wrap: egui::text::TextWrapping {
+                                        max_width: available_width,
+                                        ..Default::default()
+                                    },
+                                    break_on_newline: true,
+                                    halign: egui::Align::LEFT,
+                                    justify: false,
+                                    first_row_min_height: 0.0,
+                                    round_output_to_gui: true,
                                 });
 
                                 ui.painter().galley(text_pos, galley, text_color);
@@ -886,28 +884,26 @@ impl<'a> Widget for MaterialSelect<'a> {
 
                     // Handle text wrapping for long content
                     let available_width = option_rect.width() - 32.0; // Account for padding
-                    let galley = ui.fonts(|f| {
-                        f.layout_job(egui::text::LayoutJob {
-                            text: option.text.clone(),
-                            sections: vec![egui::text::LayoutSection {
-                                leading_space: 0.0,
-                                byte_range: 0..option.text.len(),
-                                format: egui::TextFormat {
-                                    font_id: select_font.clone(),
-                                    color: text_color,
-                                    ..Default::default()
-                                },
-                            }],
-                            wrap: egui::text::TextWrapping {
-                                max_width: available_width,
+                    let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                        text: option.text.clone(),
+                        sections: vec![egui::text::LayoutSection {
+                            leading_space: 0.0,
+                            byte_range: 0..option.text.len(),
+                            format: egui::TextFormat {
+                                font_id: select_font.clone(),
+                                color: text_color,
                                 ..Default::default()
                             },
-                            break_on_newline: true,
-                            halign: egui::Align::LEFT,
-                            justify: false,
-                            first_row_min_height: 0.0,
-                            round_output_to_gui: true,
-                        })
+                        }],
+                        wrap: egui::text::TextWrapping {
+                            max_width: available_width,
+                            ..Default::default()
+                        },
+                        break_on_newline: true,
+                        halign: egui::Align::LEFT,
+                        justify: false,
+                        first_row_min_height: 0.0,
+                        round_output_to_gui: true,
                     });
 
                     ui.painter().galley(text_pos, galley, text_color);

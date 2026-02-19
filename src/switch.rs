@@ -139,9 +139,11 @@ impl<'a> Widget for MaterialSwitch<'a> {
         let track_height = 32.0;
 
         let desired_size = if let Some(ref text) = self.text {
-            let text_width = ui.fonts(|fonts| {
-                fonts.glyph_width(&egui::FontId::default(), ' ') * text.len() as f32
-            });
+            let text_width = ui.painter().layout_no_wrap(
+                text.clone(),
+                egui::FontId::default(),
+                egui::Color32::WHITE,
+            ).size().x;
             Vec2::new(switch_width + 8.0 + text_width, switch_height)
         } else {
             Vec2::new(switch_width, switch_height)
