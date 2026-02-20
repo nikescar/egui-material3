@@ -1,6 +1,7 @@
 #![doc(hidden)]
 
 use crate::{assist_chip, filter_chip, image_utils, input_chip, suggestion_chip, MaterialButton, MaterialCheckbox};
+use crate::svg_emoji::SOLAR_ICONS;
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -15,6 +16,10 @@ pub struct ChipsWindow {
     filter_icon_selected: bool,
     filter_removable_selected: bool,
     filter_elevated_selected: bool,
+    // Small filter chip states
+    small_filter_selected_1: bool,
+    small_filter_selected_2: bool,
+    small_filter_selected_3: bool,
 }
 
 impl Default for ChipsWindow {
@@ -29,6 +34,9 @@ impl Default for ChipsWindow {
             filter_icon_selected: false,
             filter_removable_selected: true,
             filter_elevated_selected: false,
+            small_filter_selected_1: true,
+            small_filter_selected_2: false,
+            small_filter_selected_3: true,
         }
     }
 }
@@ -47,7 +55,11 @@ impl ChipsWindow {
                     ui.add_space(20.0);
                     self.render_assist_chips(ui);
                     ui.add_space(20.0);
+                    self.render_small_assist_chips(ui);
+                    ui.add_space(20.0);
                     self.render_filter_chips(ui);
+                    ui.add_space(20.0);
+                    self.render_small_filter_chips(ui);
                     ui.add_space(20.0);
                     self.render_input_chips(ui);
                     ui.add_space(20.0);
@@ -206,6 +218,60 @@ impl ChipsWindow {
         });
     }
 
+    fn render_small_assist_chips(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Small Assist Chips");
+
+        let label = self.label.clone();
+        let l = |default: &str| -> String {
+            if label.is_empty() {
+                default.to_string()
+            } else {
+                label.clone()
+            }
+        };
+
+        ui.horizontal_wrapped(|ui| {
+            // Plain small assist chip
+            ui.add(assist_chip(l("Small")).small());
+            ui.add_space(8.0);
+
+            // Small with material icon
+            ui.add(
+                assist_chip(l("Icon"))
+                    .small()
+                    .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE),
+            );
+            ui.add_space(8.0);
+
+            // Small with SVG icon from Solar Icons
+            if let Some(&star_svg) = SOLAR_ICONS.get("star") {
+                ui.add(assist_chip(l("Star")).small().leading_icon_svg(star_svg));
+                ui.add_space(8.0);
+            }
+
+            if let Some(&heart_svg) = SOLAR_ICONS.get("heart") {
+                ui.add(assist_chip(l("Like")).small().leading_icon_svg(heart_svg));
+                ui.add_space(8.0);
+            }
+
+            if let Some(&settings_svg) = SOLAR_ICONS.get("settings") {
+                ui.add(
+                    assist_chip(l("Settings"))
+                        .small()
+                        .leading_icon_svg(settings_svg),
+                );
+                ui.add_space(8.0);
+            }
+
+            // Small elevated
+            ui.add(assist_chip(l("Elevated")).small().elevated(true));
+            ui.add_space(8.0);
+
+            // Small soft-disabled
+            ui.add(assist_chip(l("Disabled")).small().soft_disabled(true));
+        });
+    }
+
     fn render_filter_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Filter Chips");
 
@@ -244,6 +310,89 @@ impl ChipsWindow {
             // Soft-disabled filter chip
             let mut soft_selected = true;
             ui.add(filter_chip(l("Soft-disabled"), &mut soft_selected).soft_disabled(true));
+        });
+    }
+
+    fn render_small_filter_chips(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Small Filter Chips");
+
+        let label = self.label.clone();
+        let l = |default: &str| -> String {
+            if label.is_empty() {
+                default.to_string()
+            } else {
+                label.clone()
+            }
+        };
+
+        ui.horizontal_wrapped(|ui| {
+            // Basic small filter chip
+            ui.add(filter_chip(l("Filter"), &mut self.small_filter_selected_1).small());
+            ui.add_space(8.0);
+
+            // Small filter with material icon
+            ui.add(
+                filter_chip(l("Icon"), &mut self.small_filter_selected_2)
+                    .small()
+                    .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE),
+            );
+            ui.add_space(8.0);
+
+            // Small filter with SVG icons from Solar Icons
+            if let Some(&star_svg) = SOLAR_ICONS.get("star") {
+                let mut selected = false;
+                ui.add(
+                    filter_chip(l("Star"), &mut selected)
+                        .small()
+                        .leading_icon_svg(star_svg),
+                );
+                ui.add_space(8.0);
+            }
+
+            if let Some(&bookmark_svg) = SOLAR_ICONS.get("bookmark") {
+                ui.add(
+                    filter_chip(l("Save"), &mut self.small_filter_selected_3)
+                        .small()
+                        .leading_icon_svg(bookmark_svg),
+                );
+                ui.add_space(8.0);
+            }
+
+            if let Some(&heart_svg) = SOLAR_ICONS.get("heart") {
+                let mut selected = true;
+                ui.add(
+                    filter_chip(l("Like"), &mut selected)
+                        .small()
+                        .leading_icon_svg(heart_svg),
+                );
+                ui.add_space(8.0);
+            }
+
+            // Small removable filter chip
+            let mut removable_selected = true;
+            ui.add(
+                filter_chip(l("Remove"), &mut removable_selected)
+                    .small()
+                    .removable(true),
+            );
+            ui.add_space(8.0);
+
+            // Small elevated filter chip
+            let mut elevated_selected = false;
+            ui.add(
+                filter_chip(l("Elevated"), &mut elevated_selected)
+                    .small()
+                    .elevated(true),
+            );
+            ui.add_space(8.0);
+
+            // Small soft-disabled filter chip
+            let mut soft_selected = true;
+            ui.add(
+                filter_chip(l("Disabled"), &mut soft_selected)
+                    .small()
+                    .soft_disabled(true),
+            );
         });
     }
 

@@ -80,6 +80,8 @@ pub struct MaterialChip<'a> {
     leading_icon: Option<IconType>,
     /// Whether to use avatar-style rounded appearance
     avatar: bool,
+    /// Whether to use small size (24dp height instead of 32dp)
+    is_small: bool,
     /// Optional action callback when chip is clicked
     action: Option<Box<dyn Fn() + 'a>>,
 }
@@ -101,6 +103,7 @@ impl<'a> MaterialChip<'a> {
             removable: false,
             leading_icon: None,
             avatar: false, // regular chips are more rectangular by default
+            is_small: false,
             action: None,
         }
     }
@@ -191,6 +194,15 @@ impl<'a> MaterialChip<'a> {
         if soft_disabled {
             self.enabled = false; // soft disabled means not enabled
         }
+        self
+    }
+
+    /// Create a small variant of the chip (24dp height instead of 32dp)
+    ///
+    /// Small chips are more compact and useful when space is limited or when
+    /// displaying many chips in a constrained area.
+    pub fn small(mut self) -> Self {
+        self.is_small = true;
         self
     }
 
@@ -373,13 +385,15 @@ impl<'a> Widget for MaterialChip<'a> {
 
         let has_leading = self.leading_icon.is_some()
             || (self.variant == ChipVariant::Filter && is_selected);
-        let icon_width = if has_leading { 24.0 } else { 0.0 };
-        let remove_width = if self.removable { 24.0 } else { 0.0 };
-        let padding = 16.0;
+        let height = if self.is_small { 24.0 } else { 32.0 };
+        let icon_size = if self.is_small { 18.0 } else { 24.0 };
+        let icon_width = if has_leading { icon_size } else { 0.0 };
+        let remove_width = if self.removable { icon_size } else { 0.0 };
+        let padding = if self.is_small { 12.0 } else { 16.0 };
 
         let desired_size = Vec2::new(
             (text_width + icon_width + remove_width + padding).min(ui.available_width()),
-            32.0,
+            height,
         );
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
@@ -433,18 +447,20 @@ impl<'a> Widget for MaterialChip<'a> {
 
         // Draw leading icon or checkmark
         if let Some(icon) = &self.leading_icon {
+            let icon_display_size = icon_size * 0.833; // 20/24 ratio for visual balance
             let icon_rect = Rect::from_min_size(
-                Pos2::new(content_x, rect.center().y - 10.0),
-                Vec2::splat(20.0),
+                Pos2::new(content_x, rect.center().y - icon_display_size / 2.0),
+                Vec2::splat(icon_display_size),
             );
 
             match icon {
                 IconType::MaterialIcon(icon_str) => {
+                    let font_size = if self.is_small { 14.0 } else { 16.0 };
                     ui.painter().text(
                         icon_rect.center(),
                         egui::Align2::CENTER_CENTER,
                         icon_str,
-                        egui::FontId::proportional(16.0),
+                        egui::FontId::proportional(font_size),
                         colors.icon,
                     );
                 }
@@ -485,16 +501,17 @@ impl<'a> Widget for MaterialChip<'a> {
                     );
                 }
             }
-            content_x += 24.0;
+            content_x += icon_size;
         } else if self.variant == ChipVariant::Filter && is_selected {
             // Draw checkmark for selected filter chips
+            let icon_display_size = icon_size * 0.833; // 20/24 ratio for visual balance
             let icon_rect = Rect::from_min_size(
-                Pos2::new(content_x, rect.center().y - 10.0),
-                Vec2::splat(20.0),
+                Pos2::new(content_x, rect.center().y - icon_display_size / 2.0),
+                Vec2::splat(icon_display_size),
             );
 
             let center = icon_rect.center();
-            let checkmark_size = 12.0;
+            let checkmark_size = if self.is_small { 10.0 } else { 12.0 };
 
             let start = Pos2::new(center.x - checkmark_size * 0.3, center.y);
             let middle = Pos2::new(
@@ -506,11 +523,12 @@ impl<'a> Widget for MaterialChip<'a> {
                 center.y - checkmark_size * 0.2,
             );
 
+            let stroke_width = if self.is_small { 1.5 } else { 2.0 };
             ui.painter()
-                .line_segment([start, middle], Stroke::new(2.0, colors.icon));
+                .line_segment([start, middle], Stroke::new(stroke_width, colors.icon));
             ui.painter()
-                .line_segment([middle, end], Stroke::new(2.0, colors.icon));
-            content_x += 24.0;
+                .line_segment([middle, end], Stroke::new(stroke_width, colors.icon));
+            content_x += icon_size;
         }
 
         // Draw text (offset by 1px to visually center, compensating for font descender space)
@@ -525,26 +543,28 @@ impl<'a> Widget for MaterialChip<'a> {
 
         // Draw remove button for removable chips
         if self.removable {
+            let icon_display_size = icon_size * 0.833; // 20/24 ratio for visual balance
             let remove_rect = Rect::from_min_size(
-                Pos2::new(rect.max.x - 24.0, rect.center().y - 10.0),
-                Vec2::splat(20.0),
+                Pos2::new(rect.max.x - icon_size, rect.center().y - icon_display_size / 2.0),
+                Vec2::splat(icon_display_size),
             );
 
             let center = remove_rect.center();
-            let cross_size = 8.0;
+            let cross_size = if self.is_small { 6.0 } else { 8.0 };
+            let stroke_width = if self.is_small { 1.2 } else { 1.5 };
             ui.painter().line_segment(
                 [
                     Pos2::new(center.x - cross_size / 2.0, center.y - cross_size / 2.0),
                     Pos2::new(center.x + cross_size / 2.0, center.y + cross_size / 2.0),
                 ],
-                Stroke::new(1.5, colors.delete_icon),
+                Stroke::new(stroke_width, colors.delete_icon),
             );
             ui.painter().line_segment(
                 [
                     Pos2::new(center.x + cross_size / 2.0, center.y - cross_size / 2.0),
                     Pos2::new(center.x - cross_size / 2.0, center.y + cross_size / 2.0),
                 ],
-                Stroke::new(1.5, colors.delete_icon),
+                Stroke::new(stroke_width, colors.delete_icon),
             );
         }
 

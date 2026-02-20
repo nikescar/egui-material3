@@ -49,6 +49,10 @@ impl ListWindow {
                     ui.add_space(20.0);
                     self.render_interactive_list(ui);
                     ui.add_space(20.0);
+                    self.render_small_lists(ui);
+                    ui.add_space(20.0);
+                    self.render_narrow_lists(ui);
+                    ui.add_space(20.0);
                     self.render_selection_demo(ui);
                     ui.add_space(20.0);
                     self.render_visual_density_comparison(ui);
@@ -254,6 +258,298 @@ impl ListWindow {
         interactive_list = interactive_list.item(non_interactive_item);
 
         ui.add(interactive_list);
+    }
+
+    fn render_small_lists(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Small Lists (Dense & Compact)");
+
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.label("Dense List:");
+                let small_list = list()
+                    .id("small_dense_list")
+                    .item(
+                        list_item("Inbox")
+                            .leading_icon("inbox".to_string())
+                            .trailing_text("12")
+                            .dense(true)
+                            .on_click(|| println!("Inbox clicked")),
+                    )
+                    .item(
+                        list_item("Drafts")
+                            .leading_icon("drafts".to_string())
+                            .trailing_text("3")
+                            .dense(true)
+                            .on_click(|| println!("Drafts clicked")),
+                    )
+                    .item(
+                        list_item("Sent")
+                            .leading_icon("send".to_string())
+                            .dense(true)
+                            .on_click(|| println!("Sent clicked")),
+                    )
+                    .item(
+                        list_item("Trash")
+                            .leading_icon("delete".to_string())
+                            .trailing_text("5")
+                            .dense(true)
+                            .on_click(|| println!("Trash clicked")),
+                    );
+                ui.add(small_list);
+            });
+
+            ui.vertical(|ui| {
+                ui.label("Compact Visual Density:");
+                let compact_list = list()
+                    .id("compact_density_list")
+                    .item(
+                        list_item("Starred")
+                            .leading_icon("star".to_string())
+                            .visual_density(VisualDensity::COMPACT)
+                            .on_click(|| println!("Starred clicked")),
+                    )
+                    .item(
+                        list_item("Important")
+                            .leading_icon("label_important".to_string())
+                            .visual_density(VisualDensity::COMPACT)
+                            .on_click(|| println!("Important clicked")),
+                    )
+                    .item(
+                        list_item("Spam")
+                            .leading_icon("report".to_string())
+                            .visual_density(VisualDensity::COMPACT)
+                            .on_click(|| println!("Spam clicked")),
+                    )
+                    .item(
+                        list_item("Archive")
+                            .leading_icon("archive".to_string())
+                            .visual_density(VisualDensity::COMPACT)
+                            .on_click(|| println!("Archive clicked")),
+                    );
+                ui.add(compact_list);
+            });
+
+            ui.vertical(|ui| {
+                ui.label("Custom Small Height:");
+                let custom_small_list = list()
+                    .id("custom_small_list")
+                    .item(
+                        list_item("Tasks")
+                            .leading_icon("task_alt".to_string())
+                            .trailing_text("8")
+                            .min_tile_height(40.0)
+                            .min_vertical_padding(4.0)
+                            .on_click(|| println!("Tasks clicked")),
+                    )
+                    .item(
+                        list_item("Notes")
+                            .leading_icon("note".to_string())
+                            .trailing_text("15")
+                            .min_tile_height(40.0)
+                            .min_vertical_padding(4.0)
+                            .on_click(|| println!("Notes clicked")),
+                    )
+                    .item(
+                        list_item("Calendar")
+                            .leading_icon("calendar_today".to_string())
+                            .min_tile_height(40.0)
+                            .min_vertical_padding(4.0)
+                            .on_click(|| println!("Calendar clicked")),
+                    )
+                    .item(
+                        list_item("Reminders")
+                            .leading_icon("alarm".to_string())
+                            .trailing_text("2")
+                            .min_tile_height(40.0)
+                            .min_vertical_padding(4.0)
+                            .on_click(|| println!("Reminders clicked")),
+                    );
+                ui.add(custom_small_list);
+            });
+        });
+
+        ui.add_space(10.0);
+        ui.label("Dense lists with secondary text:");
+        let dense_two_line = list()
+            .id("dense_two_line_list")
+            .item(
+                list_item("Meeting Tomorrow")
+                    .secondary_text("Conference Room A, 10:00 AM")
+                    .leading_icon("event".to_string())
+                    .dense(true)
+                    .on_click(|| println!("Meeting clicked")),
+            )
+            .item(
+                list_item("Project Deadline")
+                    .secondary_text("Submit final report by Friday")
+                    .leading_icon("assignment".to_string())
+                    .dense(true)
+                    .on_click(|| println!("Project clicked")),
+            )
+            .item(
+                list_item("Team Standup")
+                    .secondary_text("Daily sync at 9:30 AM")
+                    .leading_icon("groups".to_string())
+                    .dense(true)
+                    .on_click(|| println!("Standup clicked")),
+            );
+        ui.add(dense_two_line);
+    }
+
+    fn render_narrow_lists(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Narrow Lists (Reduced Spacing)");
+
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.label("Narrow Leading Width:");
+                let narrow_list = list()
+                    .id("narrow_leading_list")
+                    .item(
+                        list_item("Photos")
+                            .leading_icon("photo".to_string())
+                            .trailing_text("1.2 GB")
+                            .min_leading_width(32.0)
+                            .horizontal_title_gap(8.0)
+                            .on_click(|| println!("Photos clicked")),
+                    )
+                    .item(
+                        list_item("Videos")
+                            .leading_icon("videocam".to_string())
+                            .trailing_text("5.8 GB")
+                            .min_leading_width(32.0)
+                            .horizontal_title_gap(8.0)
+                            .on_click(|| println!("Videos clicked")),
+                    )
+                    .item(
+                        list_item("Documents")
+                            .leading_icon("description".to_string())
+                            .trailing_text("245 MB")
+                            .min_leading_width(32.0)
+                            .horizontal_title_gap(8.0)
+                            .on_click(|| println!("Documents clicked")),
+                    )
+                    .item(
+                        list_item("Music")
+                            .leading_icon("music_note".to_string())
+                            .trailing_text("3.4 GB")
+                            .min_leading_width(32.0)
+                            .horizontal_title_gap(8.0)
+                            .on_click(|| println!("Music clicked")),
+                    );
+                ui.add(narrow_list);
+            });
+
+            ui.vertical(|ui| {
+                ui.label("Compact Horizontal Spacing:");
+                let compact_spacing_list = list()
+                    .id("compact_spacing_list")
+                    .item(
+                        list_item("Downloads")
+                            .leading_icon("download".to_string())
+                            .horizontal_title_gap(6.0)
+                            .min_vertical_padding(6.0)
+                            .on_click(|| println!("Downloads clicked")),
+                    )
+                    .item(
+                        list_item("Recent")
+                            .leading_icon("history".to_string())
+                            .horizontal_title_gap(6.0)
+                            .min_vertical_padding(6.0)
+                            .on_click(|| println!("Recent clicked")),
+                    )
+                    .item(
+                        list_item("Shared")
+                            .leading_icon("people".to_string())
+                            .horizontal_title_gap(6.0)
+                            .min_vertical_padding(6.0)
+                            .on_click(|| println!("Shared clicked")),
+                    )
+                    .item(
+                        list_item("Favorites")
+                            .leading_icon("favorite".to_string())
+                            .horizontal_title_gap(6.0)
+                            .min_vertical_padding(6.0)
+                            .on_click(|| println!("Favorites clicked")),
+                    );
+                ui.add(compact_spacing_list);
+            });
+
+            ui.vertical(|ui| {
+                ui.label("Ultra-Narrow (Combined):");
+                let ultra_narrow_list = list()
+                    .id("ultra_narrow_list")
+                    .item(
+                        list_item("Home")
+                            .leading_icon("home".to_string())
+                            .min_leading_width(28.0)
+                            .horizontal_title_gap(4.0)
+                            .min_vertical_padding(4.0)
+                            .min_tile_height(36.0)
+                            .on_click(|| println!("Home clicked")),
+                    )
+                    .item(
+                        list_item("Work")
+                            .leading_icon("work".to_string())
+                            .min_leading_width(28.0)
+                            .horizontal_title_gap(4.0)
+                            .min_vertical_padding(4.0)
+                            .min_tile_height(36.0)
+                            .on_click(|| println!("Work clicked")),
+                    )
+                    .item(
+                        list_item("Profile")
+                            .leading_icon("person".to_string())
+                            .min_leading_width(28.0)
+                            .horizontal_title_gap(4.0)
+                            .min_vertical_padding(4.0)
+                            .min_tile_height(36.0)
+                            .on_click(|| println!("Profile clicked")),
+                    )
+                    .item(
+                        list_item("Settings")
+                            .leading_icon("settings".to_string())
+                            .min_leading_width(28.0)
+                            .horizontal_title_gap(4.0)
+                            .min_vertical_padding(4.0)
+                            .min_tile_height(36.0)
+                            .on_click(|| println!("Settings clicked")),
+                    );
+                ui.add(ultra_narrow_list);
+            });
+        });
+
+        ui.add_space(10.0);
+        ui.label("Narrow list with secondary text:");
+        let narrow_two_line = list()
+            .id("narrow_two_line_list")
+            .item(
+                list_item("Inbox")
+                    .secondary_text("12 unread messages")
+                    .leading_icon("mail".to_string())
+                    .min_leading_width(32.0)
+                    .horizontal_title_gap(8.0)
+                    .min_vertical_padding(6.0)
+                    .on_click(|| println!("Inbox clicked")),
+            )
+            .item(
+                list_item("Drafts")
+                    .secondary_text("3 drafts saved")
+                    .leading_icon("edit".to_string())
+                    .min_leading_width(32.0)
+                    .horizontal_title_gap(8.0)
+                    .min_vertical_padding(6.0)
+                    .on_click(|| println!("Drafts clicked")),
+            )
+            .item(
+                list_item("Sent")
+                    .secondary_text("Last sent 2 hours ago")
+                    .leading_icon("send".to_string())
+                    .min_leading_width(32.0)
+                    .horizontal_title_gap(8.0)
+                    .min_vertical_padding(6.0)
+                    .on_click(|| println!("Sent clicked")),
+            );
+        ui.add(narrow_two_line);
     }
 
     fn render_selection_demo(&mut self, ui: &mut egui::Ui) {

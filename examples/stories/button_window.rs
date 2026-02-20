@@ -1,6 +1,7 @@
 #![doc(hidden)]
 
 use crate::MaterialButton;
+use crate::svg_emoji::SOLAR_ICONS;
 use eframe::egui::{self, epaint::Stroke, Ui, Vec2, Window};
 
 #[doc(hidden)]
@@ -41,6 +42,8 @@ impl ButtonWindow {
                     self.render_buttons_with_both_icons(ui);
                     ui.add_space(20.0);
                     self.render_small_buttons(ui);
+                    ui.add_space(20.0);
+                    self.render_small_buttons_with_svg_icons(ui);
                     ui.add_space(20.0);
                     self.render_custom_stroke_buttons(ui);
                     ui.add_space(20.0);
@@ -160,6 +163,112 @@ impl ButtonWindow {
                 let button = if disabled { button.enabled(false) } else { button };
                 if ui.add(button).clicked() && !disabled {
                     println!("{label} small button clicked!");
+                }
+            }
+        });
+    }
+
+    fn render_small_buttons_with_svg_icons(&mut self, ui: &mut Ui) {
+        ui.heading("Small Buttons with SVG Icons");
+
+        let disabled = self.is_disabled();
+
+        // Leading SVG icons
+        ui.label("With leading SVG icon:");
+        ui.horizontal_wrapped(|ui| {
+            if let Some(&star_svg) = SOLAR_ICONS.get("star") {
+                let button = MaterialButton::filled(self.label_or("Star"))
+                    .small()
+                    .leading_svg(star_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small filled button with SVG clicked!");
+                }
+            }
+
+            if let Some(&heart_svg) = SOLAR_ICONS.get("heart") {
+                let button = MaterialButton::outlined(self.label_or("Like"))
+                    .small()
+                    .leading_svg(heart_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small outlined button with SVG clicked!");
+                }
+            }
+
+            if let Some(&bookmark_svg) = SOLAR_ICONS.get("bookmark") {
+                let button = MaterialButton::filled_tonal(self.label_or("Save"))
+                    .small()
+                    .leading_svg(bookmark_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small tonal button with SVG clicked!");
+                }
+            }
+
+            if let Some(&settings_svg) = SOLAR_ICONS.get("settings") {
+                let button = MaterialButton::elevated(self.label_or("Settings"))
+                    .small()
+                    .leading_svg(settings_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small elevated button with SVG clicked!");
+                }
+            }
+        });
+
+        ui.add_space(8.0);
+
+        // Trailing SVG icons
+        ui.label("With trailing SVG icon:");
+        ui.horizontal_wrapped(|ui| {
+            if let Some(&arrow_right_svg) = SOLAR_ICONS.get("arrow-right") {
+                let button = MaterialButton::filled(self.label_or("Next"))
+                    .small()
+                    .trailing_svg(arrow_right_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small button with trailing SVG clicked!");
+                }
+            }
+
+            if let Some(&share_svg) = SOLAR_ICONS.get("share") {
+                let button = MaterialButton::text(self.label_or("Share"))
+                    .small()
+                    .trailing_svg(share_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small text button with trailing SVG clicked!");
+                }
+            }
+        });
+
+        ui.add_space(8.0);
+
+        // Both leading and trailing SVG icons
+        ui.label("With both leading and trailing SVG icons:");
+        ui.horizontal_wrapped(|ui| {
+            if let (Some(&star_svg), Some(&arrow_right_svg)) =
+                (SOLAR_ICONS.get("star"), SOLAR_ICONS.get("arrow-right")) {
+                let button = MaterialButton::filled(self.label_or("Featured"))
+                    .small()
+                    .leading_svg(star_svg)
+                    .trailing_svg(arrow_right_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small button with both SVG icons clicked!");
+                }
+            }
+
+            if let (Some(&download_svg), Some(&check_svg)) =
+                (SOLAR_ICONS.get("download"), SOLAR_ICONS.get("check")) {
+                let button = MaterialButton::outlined(self.label_or("Download"))
+                    .small()
+                    .leading_svg(download_svg)
+                    .trailing_svg(check_svg);
+                let button = if disabled { button.enabled(false) } else { button };
+                if ui.add(button).clicked() && !disabled {
+                    println!("Small outlined button with both SVG icons clicked!");
                 }
             }
         });
