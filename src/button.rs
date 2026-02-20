@@ -121,6 +121,10 @@ pub struct MaterialButton<'a> {
     leading_icon: Option<String>,
     /// Trailing icon name (rendered using Material Symbols font)
     trailing_icon: Option<String>,
+    /// Leading icon SVG data (rendered as texture, takes precedence over leading_icon)
+    leading_svg: Option<String>,
+    /// Trailing icon SVG data (rendered as texture, takes precedence over trailing_icon)
+    trailing_svg: Option<String>,
     /// Custom text color override (None uses variant default)
     text_color: Option<Color32>,
 }
@@ -265,6 +269,8 @@ impl<'a> MaterialButton<'a> {
             disabled: false,
             leading_icon: None,
             trailing_icon: None,
+            leading_svg: None,
+            trailing_svg: None,
             text_color: None,
         }
     }
@@ -420,6 +426,24 @@ impl<'a> MaterialButton<'a> {
         self
     }
 
+    /// Add a leading SVG icon to the button (rendered before the text).
+    ///
+    /// Takes SVG data as a string. This takes precedence over `leading_icon`.
+    #[inline]
+    pub fn leading_svg(mut self, svg_data: impl Into<String>) -> Self {
+        self.leading_svg = Some(svg_data.into());
+        self
+    }
+
+    /// Add a trailing SVG icon to the button (rendered after the text).
+    ///
+    /// Takes SVG data as a string. This takes precedence over `trailing_icon`.
+    #[inline]
+    pub fn trailing_svg(mut self, svg_data: impl Into<String>) -> Self {
+        self.trailing_svg = Some(svg_data.into());
+        self
+    }
+
     /// Override the text color for this button.
     ///
     /// When set, overrides the variant-based text color.
@@ -452,6 +476,8 @@ impl Widget for MaterialButton<'_> {
             disabled,
             leading_icon,
             trailing_icon,
+            leading_svg,
+            trailing_svg,
             text_color: custom_text_color,
         } = self;
 
@@ -545,13 +571,39 @@ impl Widget for MaterialButton<'_> {
             _ => true,
         });
 
+        // Load SVG textures early if provided (takes precedence over font icons)
+        let leading_svg_texture = leading_svg.and_then(|svg_data| {
+            crate::image_utils::create_texture_from_svg(ui.ctx(), &svg_data, &format!("btn_lead_{}", svg_data.len())).ok()
+        });
+        let trailing_svg_texture = trailing_svg.and_then(|svg_data| {
+            crate::image_utils::create_texture_from_svg(ui.ctx(), &svg_data, &format!("btn_trail_{}", svg_data.len())).ok()
+        });
+
+        // Build icon galleys early (only if no SVG provided)
+        let leading_icon_galley = if leading_svg_texture.is_none() {
+            leading_icon.map(|name| {
+                let icon_str: WidgetText = material_symbol_text(&name).into();
+                icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
+            })
+        } else {
+            None
+        };
+        let trailing_icon_galley = if trailing_svg_texture.is_none() {
+            trailing_icon.map(|name| {
+                let icon_str: WidgetText = material_symbol_text(&name).into();
+                icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
+            })
+        } else {
+            None
+        };
+
         // Material Design button padding
         // With leading icon: 16px left, 24px right
         // With trailing icon: 24px left, 16px right
         // With both icons: 16px left, 16px right
         // No icons: 24px left, 24px right
-        let has_leading = leading_icon.is_some() || image.is_some();
-        let has_trailing = trailing_icon.is_some();
+        let has_leading = leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some();
+        let has_trailing = trailing_icon_galley.is_some() || trailing_svg_texture.is_some();
         let padding_left = if has_leading { 16.0 } else { 24.0 };
         let padding_right = if has_trailing { 16.0 } else { 24.0 };
         let button_padding_left;
@@ -570,6 +622,7 @@ impl Widget for MaterialButton<'_> {
         // Material Design minimum button height
         let min_button_height = if small { 32.0 } else { 40.0 };
         let icon_spacing = 8.0; // Material Design icon-to-text gap
+        let svg_icon_size = 18.0; // Size for SVG icons
 
         // Resolve the variant-based text color (used for text and icons)
         let resolved_text_color = if disabled {
@@ -585,18 +638,6 @@ impl Widget for MaterialButton<'_> {
                 MaterialButtonVariant::FilledTonal => get_global_color("onSecondaryContainer"),
             }
         };
-
-        // Build leading icon galley
-        let leading_icon_galley = leading_icon.map(|name| {
-            let icon_str: WidgetText = material_symbol_text(&name).into();
-            icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
-        });
-
-        // Build trailing icon galley
-        let trailing_icon_galley = trailing_icon.map(|name| {
-            let icon_str: WidgetText = material_symbol_text(&name).into();
-            icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
-        });
 
         let space_available_for_image = if let Some(_text) = &text {
             let font_height = ui.text_style_height(&TextStyle::Body);
@@ -623,8 +664,14 @@ impl Widget for MaterialButton<'_> {
         if leading_icon_galley.is_some() {
             text_wrap_width -= leading_icon_galley.as_ref().unwrap().size().x + icon_spacing;
         }
+        if leading_svg_texture.is_some() {
+            text_wrap_width -= svg_icon_size + icon_spacing;
+        }
         if trailing_icon_galley.is_some() {
             text_wrap_width -= trailing_icon_galley.as_ref().unwrap().size().x + icon_spacing;
+        }
+        if trailing_svg_texture.is_some() {
+            text_wrap_width -= svg_icon_size + icon_spacing;
         }
 
         // Note: we don't wrap the shortcut text
@@ -646,15 +693,19 @@ impl Widget for MaterialButton<'_> {
 
         let mut desired_size = Vec2::ZERO;
 
-        // Leading icon
+        // Leading icon (font or SVG)
         if let Some(lg) = &leading_icon_galley {
             desired_size.x += lg.size().x;
             desired_size.y = desired_size.y.max(lg.size().y);
         }
+        if leading_svg_texture.is_some() {
+            desired_size.x += svg_icon_size;
+            desired_size.y = desired_size.y.max(svg_icon_size);
+        }
 
         // Image
         if image.is_some() {
-            if leading_icon_galley.is_some() {
+            if leading_icon_galley.is_some() || leading_svg_texture.is_some() {
                 desired_size.x += icon_spacing;
             }
             desired_size.x += image_size.x;
@@ -662,7 +713,7 @@ impl Widget for MaterialButton<'_> {
         }
 
         // Gap between leading content and text
-        if (leading_icon_galley.is_some() || image.is_some()) && galley.is_some() {
+        if (leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some()) && galley.is_some() {
             desired_size.x += icon_spacing;
         }
 
@@ -671,13 +722,20 @@ impl Widget for MaterialButton<'_> {
             desired_size.y = desired_size.y.max(galley.size().y);
         }
 
-        // Trailing icon
+        // Trailing icon (font or SVG)
         if let Some(tg) = &trailing_icon_galley {
-            if galley.is_some() || image.is_some() || leading_icon_galley.is_some() {
+            if galley.is_some() || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
                 desired_size.x += icon_spacing;
             }
             desired_size.x += tg.size().x;
             desired_size.y = desired_size.y.max(tg.size().y);
+        }
+        if trailing_svg_texture.is_some() {
+            if galley.is_some() || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
+                desired_size.x += icon_spacing;
+            }
+            desired_size.x += svg_icon_size;
+            desired_size.y = desired_size.y.max(svg_icon_size);
         }
 
         if let Some(shortcut_galley) = &shortcut_galley {
@@ -783,7 +841,7 @@ impl Widget for MaterialButton<'_> {
             let content_rect_y_max = rect.max.y - button_padding_y;
             let content_height = content_rect_y_max - content_rect_y_min;
 
-            // Draw leading icon
+            // Draw leading icon (font icon)
             if let Some(leading_galley) = &leading_icon_galley {
                 let icon_y =
                     content_rect_y_min + (content_height - leading_galley.size().y) / 2.0;
@@ -791,6 +849,26 @@ impl Widget for MaterialButton<'_> {
                 ui.painter()
                     .galley(icon_pos, leading_galley.clone(), resolved_text_color);
                 cursor_x += leading_galley.size().x + icon_spacing;
+            }
+
+            // Draw leading icon (SVG texture)
+            if let Some(texture) = &leading_svg_texture {
+                let icon_y = content_rect_y_min + (content_height - svg_icon_size) / 2.0;
+                let icon_rect = Rect::from_min_size(
+                    egui::pos2(cursor_x, icon_y),
+                    Vec2::splat(svg_icon_size),
+                );
+                ui.painter().image(
+                    texture.id(),
+                    icon_rect,
+                    Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                    Color32::WHITE, // Use WHITE to preserve original SVG colors (e.g., emoji)
+                );
+                cursor_x += svg_icon_size;
+                // Add spacing only if there's content after the icon
+                if image.is_some() || galley.is_some() || trailing_icon_galley.is_some() || trailing_svg_texture.is_some() || shortcut_galley.is_some() {
+                    cursor_x += icon_spacing;
+                }
             }
 
             // Draw image
@@ -818,13 +896,16 @@ impl Widget for MaterialButton<'_> {
             }
 
             // Draw main text
+            let has_text = galley.is_some();
             if let Some(galley) = galley {
                 let text_y = content_rect_y_min + (content_height - galley.size().y) / 2.0;
                 let mut text_pos = egui::pos2(cursor_x, text_y);
                 // Center text if no leading/trailing elements
                 if leading_icon_galley.is_none()
+                    && leading_svg_texture.is_none()
                     && image.is_none()
                     && trailing_icon_galley.is_none()
+                    && trailing_svg_texture.is_none()
                     && shortcut_galley.is_none()
                 {
                     text_pos = ui
@@ -849,7 +930,7 @@ impl Widget for MaterialButton<'_> {
                 ui.painter().galley(text_pos, galley, resolved_text_color);
             }
 
-            // Draw trailing icon
+            // Draw trailing icon (font icon)
             if let Some(trailing_galley) = &trailing_icon_galley {
                 cursor_x += icon_spacing;
                 let icon_y =
@@ -857,6 +938,25 @@ impl Widget for MaterialButton<'_> {
                 let icon_pos = egui::pos2(cursor_x, icon_y);
                 ui.painter()
                     .galley(icon_pos, trailing_galley.clone(), resolved_text_color);
+            }
+
+            // Draw trailing icon (SVG texture)
+            if let Some(texture) = &trailing_svg_texture {
+                // Add spacing before the icon if there's content before it
+                if has_text || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
+                    cursor_x += icon_spacing;
+                }
+                let icon_y = content_rect_y_min + (content_height - svg_icon_size) / 2.0;
+                let icon_rect = Rect::from_min_size(
+                    egui::pos2(cursor_x, icon_y),
+                    Vec2::splat(svg_icon_size),
+                );
+                ui.painter().image(
+                    texture.id(),
+                    icon_rect,
+                    Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                    Color32::WHITE, // Use WHITE to preserve original SVG colors (e.g., emoji)
+                );
             }
 
             // Draw shortcut text

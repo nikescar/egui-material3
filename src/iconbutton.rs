@@ -499,15 +499,14 @@ impl<'a> Widget for MaterialIconButton<'a> {
 
         if let Some(svg_content) = &self.svg_data {
             // Render inline SVG content
-            // Create a hash-like cache key from first and last bytes
+            // Create a proper hash of the content for cache key
             let bytes = svg_content.as_bytes();
-            let len = bytes.len();
-            let cache_key = if len > 16 {
-                format!("inline_{}_{}_{}_{}", 
-                    bytes[0], bytes[1], bytes[len-2], bytes[len-1])
-            } else {
-                format!("inline_{}", len)
-            };
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+            let mut hasher = DefaultHasher::new();
+            bytes.hash(&mut hasher);
+            let hash = hasher.finish();
+            let cache_key = format!("inline_{:x}", hash);
             render_svg(ui, bytes, &cache_key, icon_rect, icon_size);
         } else if let Some(path) = &self.svg_path {
             // Try to load and rasterize SVG from file

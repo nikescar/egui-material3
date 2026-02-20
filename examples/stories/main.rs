@@ -32,6 +32,8 @@ mod slider_window;
 mod snackbar_window;
 mod spreadsheet_window;
 mod switch_window;
+#[cfg(feature = "svg_emoji")]
+mod svgemoji_window;
 mod symbol_window;
 mod tabs_window;
 mod topappbar_window;
@@ -57,6 +59,8 @@ use slider_window::SliderWindow;
 use snackbar_window::SnackbarWindow;
 use spreadsheet_window::SpreadsheetWindow;
 use switch_window::SwitchWindow;
+#[cfg(feature = "svg_emoji")]
+use svgemoji_window::SvgEmojiWindow;
 use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
 use topappbar_window::TopAppBarWindow;
@@ -139,6 +143,8 @@ struct MaterialApp {
     card2_window: Card2Window,
     carousel_window: CarouselWindow,
     symbol_window: SymbolWindow,
+    #[cfg(feature = "svg_emoji")]
+    svgemoji_window: SvgEmojiWindow,
 }
 
 impl Default for MaterialApp {
@@ -184,6 +190,8 @@ impl Default for MaterialApp {
             card2_window: Card2Window::default(),
             carousel_window: CarouselWindow::default(),
             symbol_window: SymbolWindow::default(),
+            #[cfg(feature = "svg_emoji")]
+            svgemoji_window: SvgEmojiWindow::default(),
         }
     }
 }
@@ -387,6 +395,10 @@ impl MaterialApp {
         self.topappbar_window.open = false;
         self.card2_window.open = false;
         self.carousel_window.open = false;
+        #[cfg(feature = "svg_emoji")]
+        {
+            self.svgemoji_window.open = false;
+        }
         self.symbol_window.open = false;
         self.color_pickers_open.clear(); // Also close all color pickers
     }
@@ -724,6 +736,13 @@ impl eframe::App for MaterialApp {
                     self.switch_window.open = true;
                 }
 
+                #[cfg(feature = "svg_emoji")]
+                {
+                    if ui.add(MaterialButton::filled("SVG Emoji Stories")).clicked() {
+                        self.svgemoji_window.open = true;
+                    }
+                }
+
                 if ui.add(MaterialButton::filled("Symbol Stories")).clicked() {
                     self.symbol_window.open = true;
                 }
@@ -767,6 +786,8 @@ impl eframe::App for MaterialApp {
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
         self.carousel_window.show(ctx);
+        #[cfg(feature = "svg_emoji")]
+        self.svgemoji_window.show(ctx);
         self.symbol_window.show(ctx);
 
         // let image_bytes = include_bytes!("../../resources/imgur_image.png");

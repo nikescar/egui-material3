@@ -241,6 +241,8 @@ pub mod icon;
 pub mod iconbutton;
 pub mod material_symbol;
 pub mod noto_emoji;
+#[cfg(feature = "svg_emoji")]
+pub mod svg_emoji;
 pub mod image_utils;
 pub mod imagelist;
 pub mod layoutgrid;

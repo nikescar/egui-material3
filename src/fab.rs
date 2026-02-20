@@ -76,6 +76,8 @@ pub struct MaterialFab<'a> {
     text: Option<String>,
     /// Custom SVG icon data
     svg_icon: Option<SvgIcon>,
+    /// Raw SVG data string
+    svg_data: Option<String>,
     /// Whether the FAB is interactive
     enabled: bool,
     /// Action callback when FAB is pressed
@@ -112,6 +114,7 @@ impl<'a> MaterialFab<'a> {
             icon: None,
             text: None,
             svg_icon: None,
+            svg_data: None,
             enabled: true,
             action: None,
         }
@@ -180,6 +183,12 @@ impl<'a> MaterialFab<'a> {
         self
     }
 
+    /// Set raw SVG data for the FAB icon
+    pub fn svg_data(mut self, svg_data: impl Into<String>) -> Self {
+        self.svg_data = Some(svg_data.into());
+        self
+    }
+
     /// Set the action to perform when the FAB is clicked
     pub fn on_click<F>(mut self, f: F) -> Self
     where
@@ -199,7 +208,7 @@ impl<'a> Widget for MaterialFab<'a> {
             FabSize::Extended => {
                 let left_margin = 16.0;
                 let right_margin = 24.0;
-                let icon_width = if self.icon.is_some() || self.svg_icon.is_some() {
+                let icon_width = if self.icon.is_some() || self.svg_icon.is_some() || self.svg_data.is_some() {
                     24.0 + 12.0
                 } else {
                     0.0
@@ -229,6 +238,7 @@ impl<'a> Widget for MaterialFab<'a> {
         let icon = self.icon;
         let text = self.text;
         let svg_icon = self.svg_icon;
+        let svg_data = self.svg_data;
 
         let clicked = response.clicked() && enabled;
 
@@ -350,7 +360,22 @@ impl<'a> Widget for MaterialFab<'a> {
                 let icon_text_gap = 12.0;
                 let mut content_x = rect.min.x + left_margin;
 
-                if let Some(ref icon_name) = icon {
+                if let Some(ref svg_str) = svg_data {
+                    // Render SVG data
+                    if let Ok(texture) = render_svg_to_texture(ui.ctx(), svg_str, 24) {
+                        let icon_rect = Rect::from_center_size(
+                            Pos2::new(content_x + 12.0, rect.center().y),
+                            Vec2::splat(24.0),
+                        );
+                        ui.painter().image(
+                            texture.id(),
+                            icon_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
+                    }
+                    content_x += 24.0 + icon_text_gap;
+                } else if let Some(ref icon_name) = icon {
                     let icon_rect = Rect::from_min_size(
                         Pos2::new(content_x, rect.center().y - 12.0),
                         Vec2::splat(24.0),
@@ -383,7 +408,24 @@ impl<'a> Widget for MaterialFab<'a> {
             }
             _ => {
                 // Draw centered icon
-                if let Some(ref _svg_icon) = svg_icon {
+                if let Some(ref svg_str) = svg_data {
+                    let icon_size = match size_enum {
+                        FabSize::Small => 18,
+                        FabSize::Large => 36,
+                        _ => 24,
+                    };
+
+                    // Render SVG data
+                    if let Ok(texture) = render_svg_to_texture(ui.ctx(), svg_str, icon_size) {
+                        let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size as f32));
+                        ui.painter().image(
+                            texture.id(),
+                            icon_rect,
+                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
+                    }
+                } else if let Some(ref _svg_icon) = svg_icon {
                     let icon_size = match size_enum {
                         FabSize::Small => 18.0,
                         FabSize::Large => 36.0,
@@ -474,6 +516,43 @@ fn draw_google_logo(ui: &mut Ui, center: Pos2, size: f32) {
         0.0,
         Color32::from_rgb(234, 67, 53), // Red #EA4335
     );
+}
+
+// Helper function to render SVG data to texture
+fn render_svg_to_texture(
+    ctx: &egui::Context,
+    svg_data: &str,
+    size: u32,
+) -> Result<egui::TextureHandle, String> {
+    use resvg::usvg;
+
+    let tree = usvg::Tree::from_str(svg_data, &usvg::Options::default())
+        .map_err(|e| e.to_string())?;
+    let mut pixmap =
+        tiny_skia::Pixmap::new(size, size).ok_or_else(|| "pixmap alloc failed".to_string())?;
+
+    let ts = tree.size();
+    let scale = (size as f32 / ts.width()).min(size as f32 / ts.height());
+    resvg::render(
+        &tree,
+        tiny_skia::Transform::from_scale(scale, scale),
+        &mut pixmap.as_mut(),
+    );
+
+    let color_image = egui::ColorImage::from_rgba_unmultiplied(
+        [size as usize, size as usize],
+        pixmap.data(),
+    );
+
+    // Create a unique key for this texture
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut hasher = DefaultHasher::new();
+    svg_data.hash(&mut hasher);
+    size.hash(&mut hasher);
+    let key = format!("fab_svg_{:x}", hasher.finish());
+
+    Ok(ctx.load_texture(key, color_image, egui::TextureOptions::LINEAR))
 }
 
 pub fn fab_surface() -> MaterialFab<'static> {
