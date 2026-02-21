@@ -50,6 +50,8 @@ pub struct SvgEmojiWindow {
     all_icons: Vec<(&'static str, &'static str)>,
     /// Demo state for filter chip
     filter_selected_1: bool,
+    /// Pinned item name (stays open on click until another item is hovered)
+    pinned_item: Option<String>,
 }
 
 impl Default for SvgEmojiWindow {
@@ -62,6 +64,7 @@ impl Default for SvgEmojiWindow {
             cached_kind: None,
             all_icons: Vec::new(),
             filter_selected_1: false,
+            pinned_item: None,
         }
     }
 }
@@ -222,7 +225,7 @@ impl SvgEmojiWindow {
                 ui.image((tid, egui::vec2(64.0, 64.0)));
             }
             ui.add_space(4.0);
-            ui.strong(name);
+            ui.label(name);
         });
 
         ui.separator();
