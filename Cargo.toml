@@ -27,22 +27,22 @@ egui = "0.33"
 # egui = { git = "https://github.com/emilk/egui", default-features = false, features = ["default_fonts"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-resvg = "0.42"
+resvg = "0.45"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 tiny-skia = "0.11"
-lazy_static = "1.4"
+lazy_static = "1.5"
 base64 = "0.22"
 hex = "0.4"
-once_cell = "1.20"
+once_cell = "1.21"
 
-ureq = { version = "2.9", features = ["json"], optional = true } # for ondemand feature
+ureq = { version = "2.12", features = ["json"], optional = true } # for ondemand feature
 # duckdb = { version = "1.4.4", optional = true, features = ["parquet", "json", "bundled"] } # for spreadsheet feature - requires system libduckdb
 # duckdb = { version = "=1.4.4", features = ["parquet", "json", "bundled"], optional = true }
 duckdb = { version = "=1.4.4", features = ["bundled"], optional = true  }
 egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
 egui-async = { version = "0.3", optional = true } # for spreadsheet feature
-tokio = { version = "1.41", features = ["rt", "rt-multi-thread"], optional = true } # for spreadsheet feature
-csv = { version = "1.3", optional = true } # for spreadsheet feature
+tokio = { version = "1.49", features = ["rt", "rt-multi-thread"], optional = true } # for spreadsheet feature
+csv = { version = "1.4", optional = true } # for spreadsheet feature
 calamine = { version = "0.26", optional = true } # for spreadsheet feature (xls/xlsx)
 # arrow = { version = "53.3", optional = true } # for spreadsheet feature - temporarily disabled due to version conflicts
 
@@ -50,12 +50,12 @@ calamine = { version = "0.26", optional = true } # for spreadsheet feature (xls/
 egui_extras = { version = "0.33", default-features = false, features = ["image", "svg", "svg_text"] }
 # egui_extras = { git = "https://github.com/emilk/egui", default-features = false, features = ["image", "svg", "svg_text"] }
 
-ureq = { version = "2.9", features = ["json"] }
+ureq = { version = "2.12", features = ["json"] }
 egui-file-dialog = "0.12"
-webbrowser = { version = "1.0.5", default-features = false }
+webbrowser = { version = "1.1.0", default-features = false }
 glob = "0.3"
 egui-async = "0.3"
-tokio = { version = "1.41", features = ["rt", "rt-multi-thread"] }
+tokio = { version = "1.49", features = ["rt", "rt-multi-thread"] }
 
 # Android specific dependencies
 [target.'cfg(target_os = "android")'.dependencies]
@@ -89,9 +89,9 @@ rustdoc-args = ["--cfg", "docsrs"]
 doc = true
 
 [build-dependencies]
-ureq = { version = "2.9", features = ["json"] }
+ureq = { version = "2.12", features = ["json"] }
 serde_json = "1.0"
-once_cell = "1.5"
+once_cell = "1.21"
 
 # $ cargo run --example nobel_prizes_example
 # $ cargo run --example widget_gallery_example

@@ -156,3 +156,12 @@ Look at the `examples/` folder for complete examples:
 - `widget_gallery_example.rs` - Showcase of all Material components
 - `nobel_prizes_example.rs` - Real-world data table example
 - `ondemand` - Image list with online/offline images and caching demo
+
+<details markdown>
+<summary> Todos </summary>
+
+## Todos
+
+* svg sprite
+
+</details>
