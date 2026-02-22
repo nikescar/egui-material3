@@ -27,7 +27,7 @@ egui = "0.33"
 # egui = { git = "https://github.com/emilk/egui", default-features = false, features = ["default_fonts"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-resvg = "0.45"
+resvg = "0.43"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 tiny-skia = "0.11"
 lazy_static = "1.5"
