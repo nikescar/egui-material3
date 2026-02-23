@@ -524,7 +524,7 @@ fn render_svg_to_texture(
     svg_data: &str,
     size: u32,
 ) -> Result<egui::TextureHandle, String> {
-    use resvg::usvg;
+    use resvg::{usvg, tiny_skia};
 
     let tree = usvg::Tree::from_str(svg_data, &usvg::Options::default())
         .map_err(|e| e.to_string())?;
