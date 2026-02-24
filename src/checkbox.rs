@@ -141,7 +141,22 @@ impl<'a> MaterialCheckbox<'a> {
 
 impl<'a> Widget for MaterialCheckbox<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let desired_size = Vec2::new(ui.available_width().min(300.0), 24.0);
+        let checkbox_size = 18.0;
+        let spacing = 4.0;
+
+        // Calculate actual width needed: checkbox + spacing + text width
+        let text_width = if !self.text.is_empty() {
+            let font_id = ui.style().text_styles.get(&egui::TextStyle::Body)
+                .cloned()
+                .unwrap_or_else(|| egui::FontId::default());
+            let galley = ui.painter().layout_no_wrap(self.text.clone(), font_id, egui::Color32::WHITE);
+            galley.size().x
+        } else {
+            0.0
+        };
+
+        let desired_width = checkbox_size + spacing + text_width;
+        let desired_size = Vec2::new(desired_width, 24.0);
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
@@ -155,7 +170,6 @@ impl<'a> Widget for MaterialCheckbox<'a> {
         }
 
         let visuals = ui.style().interact(&response);
-        let checkbox_size = 18.0;
         let checkbox_rect = Rect::from_min_size(
             Pos2::new(rect.min.x, rect.center().y - checkbox_size / 2.0),
             Vec2::splat(checkbox_size),
@@ -246,7 +260,7 @@ impl<'a> Widget for MaterialCheckbox<'a> {
 
         // Draw label text
         if !self.text.is_empty() {
-            let text_pos = Pos2::new(checkbox_rect.max.x + 8.0, rect.center().y);
+            let text_pos = Pos2::new(checkbox_rect.max.x + 4.0, rect.center().y);
 
             let text_color = if self.enabled {
                 on_surface
