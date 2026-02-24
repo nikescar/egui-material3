@@ -602,17 +602,19 @@ impl Widget for MaterialButton<'_> {
         // With trailing icon: 24px left, 16px right
         // With both icons: 16px left, 16px right
         // No icons: 24px left, 24px right
+        // For small buttons: 4px (with icon) or 6px (without icon)
         let has_leading = leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some();
         let has_trailing = trailing_icon_galley.is_some() || trailing_svg_texture.is_some();
-        let padding_left = if has_leading { 16.0 } else { 24.0 };
-        let padding_right = if has_trailing { 16.0 } else { 24.0 };
+        let padding_multiplier = if small { 0.25 } else { 1.0 };
+        let padding_left = if has_leading { 16.0 } else { 24.0 } * padding_multiplier;
+        let padding_right = if has_trailing { 16.0 } else { 24.0 } * padding_multiplier;
         let button_padding_left;
         let button_padding_right;
         let button_padding_y;
         if frame || variant == MaterialButtonVariant::Text {
             button_padding_left = padding_left;
             button_padding_right = padding_right;
-            button_padding_y = if small { 0.0 } else { 10.0 };
+            button_padding_y = if small { 4.0 } else { 10.0 };
         } else {
             button_padding_left = 0.0;
             button_padding_right = 0.0;
@@ -621,7 +623,7 @@ impl Widget for MaterialButton<'_> {
 
         // Material Design minimum button height
         let min_button_height = if small { 32.0 } else { 40.0 };
-        let icon_spacing = 8.0; // Material Design icon-to-text gap
+        let icon_spacing = if small { 4.0 } else { 8.0 }; // Material Design icon-to-text gap
         let svg_icon_size = 18.0; // Size for SVG icons
 
         // Resolve the variant-based text color (used for text and icons)
@@ -898,7 +900,7 @@ impl Widget for MaterialButton<'_> {
             // Draw main text
             let has_text = galley.is_some();
             if let Some(galley) = galley {
-                let text_y = content_rect_y_min + (content_height - galley.size().y) / 2.0;
+                let text_y = content_rect_y_min + (content_height - galley.size().y) / 2.0 + if small { 1.0 } else { 0.0 };
                 let mut text_pos = egui::pos2(cursor_x, text_y);
                 // Center text if no leading/trailing elements
                 if leading_icon_galley.is_none()
