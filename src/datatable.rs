@@ -168,7 +168,7 @@ pub struct MaterialDataTable<'a> {
     id: Option<Id>,
     allow_selection: bool,
     allow_drawer: bool,
-    drawer_row_height: f32,
+    drawer_row_height: Option<f32>,
     sticky_header: bool,
     progress_visible: bool,
     corner_radius: CornerRadius,
@@ -400,7 +400,7 @@ impl<'a> MaterialDataTable<'a> {
             id: None,
             allow_selection: false,
             allow_drawer: false,
-            drawer_row_height: 120.0,
+            drawer_row_height: None,
             sticky_header: false,
             progress_visible: false,
             corner_radius: CornerRadius::from(4.0),
@@ -539,9 +539,10 @@ impl<'a> MaterialDataTable<'a> {
         self
     }
 
-    /// Set the fixed height of expanded drawer panels (default: 120.0).
+    /// Set the fixed height of expanded drawer panels (default: automatic sizing).
+    /// If not set, drawer height will automatically adjust to fit its contents.
     pub fn drawer_row_height(mut self, height: f32) -> Self {
-        self.drawer_row_height = height;
+        self.drawer_row_height = Some(height);
         self
     }
 
@@ -843,7 +844,16 @@ impl<'a> MaterialDataTable<'a> {
                     && row.drawer.is_some()
                     && state.drawer_open_rows.contains(&row_idx)
                 {
-                    drawer_row_height
+                    // Use fixed height if specified, otherwise check cached height from previous frame
+                    if let Some(fixed_height) = drawer_row_height {
+                        fixed_height
+                    } else {
+                        // Try to get cached height from previous frame's rendering
+                        let cached_height = ui.data(|data| {
+                            data.get_temp::<f32>(table_id.with(format!("drawer_height_{}", row_idx)))
+                        });
+                        cached_height.unwrap_or(120.0) // Default to 120 if not cached yet
+                    }
                 } else {
                     0.0
                 }
@@ -884,8 +894,9 @@ impl<'a> MaterialDataTable<'a> {
         ui.ctx().set_style(style);
 
         let desired_size = Vec2::new(total_width, total_height);
-        let response = ui.allocate_response(desired_size, Sense::click());
-        let rect = response.rect;
+        let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
+        // Ensure the allocated rect is marked as used to advance the cursor properly
+        ui.advance_cursor_after_rect(rect);
 
         if ui.is_rect_visible(rect) {
             // Draw table background
@@ -1639,17 +1650,28 @@ impl<'a> MaterialDataTable<'a> {
                                 primary,
                             );
 
-                            // Render drawer content
+                            // Render drawer content with proper clipping using child_ui
                             let content_rect = Rect::from_min_size(
                                 drawer_rect.left_top() + Vec2::new(12.0, 0.0),
                                 Vec2::new(total_width - 12.0, open_drawer_height),
                             );
-                            ui.scope_builder(
-                                egui::UiBuilder::new().max_rect(content_rect),
-                                |ui| {
-                                    drawer_fn(ui);
-                                },
+
+                            // Use child_ui with clip rect to ensure content doesn't escape
+                            let mut child_ui = ui.child_ui(
+                                content_rect,
+                                egui::Layout::top_down(egui::Align::LEFT),
+                                Some(egui::UiStackInfo::default()),
                             );
+                            child_ui.set_clip_rect(content_rect);
+                            drawer_fn(&mut child_ui);
+
+                            // Cache the actual measured height for next frame if auto-sizing
+                            if drawer_row_height.is_none() {
+                                let actual_height = child_ui.min_rect().height().max(40.0);
+                                ui.data_mut(|data| {
+                                    data.insert_temp(table_id.with(format!("drawer_height_{}", row_idx)), actual_height);
+                                });
+                            }
 
                             // Divider at the bottom of the drawer
                             let divider_thickness = theme.divider_thickness.unwrap_or(1.0);
@@ -1714,6 +1736,10 @@ impl<'a> MaterialDataTable<'a> {
             mem.data
                 .remove::<Option<usize>>(table_id.with("column_clicked"));
         });
+
+        // Ensure the UI cursor is advanced past the full table height
+        // This is critical when child UIs are used for drawer content
+        ui.expand_to_include_rect(rect);
 
         DataTableResponse {
             response,

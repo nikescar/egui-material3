@@ -869,7 +869,6 @@ impl DataTableWindow {
             .id(Id::new("drawer_table"))
             .allow_selection(self.allow_selection)
             .allow_drawer(true)
-            .drawer_row_height(110.0)
             .column("Product", 180.0, false)
             .column("Category", 120.0, false)
             .column("Price", 100.0, true)
