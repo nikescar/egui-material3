@@ -46,6 +46,8 @@ pub struct DataTableWindow {
     // Sorting state
     sort_column: Option<SortColumn>,
     sort_direction: SortDirection,
+    // Track selection state for drawer table
+    drawer_selection: Vec<bool>,
 }
 
 impl Default for DataTableWindow {
@@ -101,6 +103,7 @@ impl Default for DataTableWindow {
             edit_data: HashMap::new(),
             sort_column: None,
             sort_direction: SortDirection::Ascending,
+            drawer_selection: vec![false; 4], // 4 rows in the drawer table
         }
     }
 }
@@ -859,6 +862,9 @@ impl DataTableWindow {
         ui.heading("Data Table with Drawer");
         ui.label("Click the > arrow on a row to expand its drawer panel. Click v to collapse.");
 
+        // Ensure drawer_selection length matches row count
+        self.drawer_selection.resize(4, false);
+
         let drawer_table = data_table()
             .id(Id::new("drawer_table"))
             .allow_selection(self.allow_selection)
@@ -873,6 +879,7 @@ impl DataTableWindow {
                    .cell("Electronics")
                    .cell("$1299")
                    .cell("15")
+                   .selected(self.drawer_selection[0])
                    .drawer(|ui| {
                        ui.add_space(8.0);
                        ui.label("High-performance laptop with 16 GB RAM, 512 GB SSD, 14\" display.");
@@ -885,6 +892,7 @@ impl DataTableWindow {
                    .cell("Accessories")
                    .cell("$39")
                    .cell("200")
+                   .selected(self.drawer_selection[1])
                    .drawer(|ui| {
                        ui.add_space(8.0);
                        ui.label("Ergonomic wireless mouse with 3-year battery life.");
@@ -897,12 +905,14 @@ impl DataTableWindow {
                    .cell("Accessories")
                    .cell("$12")
                    .cell("500")
+                   .selected(self.drawer_selection[2])
             })
             .row(|row| {
                 row.cell("Mechanical Keyboard")
                    .cell("Accessories")
                    .cell("$129")
                    .cell("45")
+                   .selected(self.drawer_selection[3])
                    .drawer(|ui| {
                        ui.add_space(8.0);
                        ui.label("Tenkeyless layout, Cherry MX Brown switches, per-key RGB.");
@@ -911,7 +921,11 @@ impl DataTableWindow {
                    })
             });
 
-        ui.add(drawer_table);
+        let drawer_response = drawer_table.show(ui);
+        // Sync selection state back so it persists across frames
+        if drawer_response.selected_rows.len() == self.drawer_selection.len() {
+            self.drawer_selection = drawer_response.selected_rows;
+        }
 
         ui.add_space(10.0);
         ui.label("Note: rows without a .drawer() call show no arrow and never expand.");

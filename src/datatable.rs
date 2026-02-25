@@ -305,6 +305,10 @@ impl DataTableCell {
 pub struct DataTableRow<'a> {
     cells: Vec<DataTableCell>,
     selected: bool,
+    /// True only when `.selected()` was explicitly called.
+    /// Lets the table distinguish externally-managed rows from rows
+    /// whose selection is managed internally by click state.
+    selection_externally_set: bool,
     readonly: bool,
     id: Option<String>,
     color: Option<Color32>,
@@ -319,6 +323,7 @@ impl<'a> DataTableRow<'a> {
         Self {
             cells: Vec::new(),
             selected: false,
+            selection_externally_set: false,
             readonly: false,
             id: None,
             color: None,
@@ -351,6 +356,7 @@ impl<'a> DataTableRow<'a> {
 
     pub fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
+        self.selection_externally_set = true;
         self
     }
 
@@ -652,9 +658,10 @@ impl<'a> MaterialDataTable<'a> {
             state.selected_rows.resize(self.rows.len(), false);
         }
 
-        // Sync selection state from rows - always update to match external state
+        // Sync selection state only for rows where the caller explicitly set `.selected()`.
+        // Rows without an explicit `.selected()` call preserve their internally-clicked state.
         for (i, row) in self.rows.iter().enumerate() {
-            if i < state.selected_rows.len() {
+            if i < state.selected_rows.len() && row.selection_externally_set {
                 state.selected_rows[i] = row.selected;
             }
         }
