@@ -722,10 +722,24 @@ impl<'a> MaterialDataTable<'a> {
             }
         }
 
-        // Calculate table dimensions with dynamic row heights
-        let checkbox_width = if allow_selection && theme.show_checkbox_column { 48.0 } else { 0.0 };
-        let drawer_arrow_width = if allow_drawer { 32.0 } else { 0.0 };
-        let total_width = checkbox_width + drawer_arrow_width + columns.iter().map(|col| col.width).sum::<f32>();
+        // Calculate table dimensions with dynamic row heights.
+        // Use the data-columns width to decide whether to use compact special-column widths:
+        // when the total table width would be < 500px, minimize checkbox/arrow padding.
+        let columns_only_width: f32 = columns.iter().map(|col| col.width).sum();
+        let base_checkbox_width = if allow_selection && theme.show_checkbox_column { 48.0 } else { 0.0 };
+        let base_drawer_arrow_width = if allow_drawer { 32.0 } else { 0.0 };
+        let is_narrow = base_checkbox_width + base_drawer_arrow_width + columns_only_width < 500.0;
+        let checkbox_width = if allow_selection && theme.show_checkbox_column {
+            if is_narrow { 32.0 } else { 48.0 }
+        } else {
+            0.0
+        };
+        let drawer_arrow_width = if allow_drawer {
+            if is_narrow { 20.0 } else { 32.0 }
+        } else {
+            0.0
+        };
+        let total_width = checkbox_width + drawer_arrow_width + columns_only_width;
         let min_row_height = theme.data_row_min_height.unwrap_or(default_row_height);
         let min_header_height = theme.heading_row_height.unwrap_or(56.0);
 
