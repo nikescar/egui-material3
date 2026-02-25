@@ -1631,6 +1631,11 @@ impl<'a> MaterialDataTable<'a> {
                                 Vec2::new(total_width, open_drawer_height),
                             );
 
+                            // Save the current clip rect and set a new one constrained to table bounds
+                            let old_clip_rect = ui.clip_rect();
+                            let table_clip_rect = rect.intersect(old_clip_rect);
+                            ui.set_clip_rect(table_clip_rect);
+
                             // Drawer background: slightly tinted surface
                             let drawer_bg = get_global_color("surfaceVariant");
                             ui.painter().rect_filled(
@@ -1656,13 +1661,18 @@ impl<'a> MaterialDataTable<'a> {
                                 Vec2::new(total_width - 12.0, open_drawer_height),
                             );
 
-                            // Use child_ui with clip rect to ensure content doesn't escape
-                            let mut child_ui = ui.child_ui(
+                            // Get parent's clip rect and intersect with our content rect for proper clipping
+                            let parent_clip_rect = ui.clip_rect();
+                            let clipped_rect = content_rect.intersect(parent_clip_rect);
+
+                            // Use child_ui with proper clip rect inheritance
+                            let mut child_ui = ui.child_ui_with_id_source(
                                 content_rect,
                                 egui::Layout::top_down(egui::Align::LEFT),
-                                Some(egui::UiStackInfo::default()),
+                                format!("drawer_{}", row_idx),
+                                None,
                             );
-                            child_ui.set_clip_rect(content_rect);
+                            child_ui.set_clip_rect(clipped_rect);
                             drawer_fn(&mut child_ui);
 
                             // Cache the actual measured height for next frame if auto-sizing
@@ -1688,6 +1698,9 @@ impl<'a> MaterialDataTable<'a> {
                                 ],
                                 Stroke::new(divider_thickness, divider_color),
                             );
+
+                            // Restore the original clip rect
+                            ui.set_clip_rect(old_clip_rect);
 
                             current_y += open_drawer_height;
                         }
