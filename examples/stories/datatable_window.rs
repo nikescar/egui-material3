@@ -850,9 +850,71 @@ impl DataTableWindow {
             });
         
         ui.add(no_checkbox_table);
-        
+
         ui.add_space(20.0);
         ui.label("Note: Rows are selected, but checkboxes are hidden per theme setting");
+
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Data Table with Drawer");
+        ui.label("Click the > arrow on a row to expand its drawer panel. Click v to collapse.");
+
+        let drawer_table = data_table()
+            .id(Id::new("drawer_table"))
+            .allow_selection(self.allow_selection)
+            .allow_drawer(true)
+            .drawer_row_height(110.0)
+            .column("Product", 180.0, false)
+            .column("Category", 120.0, false)
+            .column("Price", 100.0, true)
+            .column("Stock", 80.0, true)
+            .row(|row| {
+                row.cell("Laptop Pro")
+                   .cell("Electronics")
+                   .cell("$1299")
+                   .cell("15")
+                   .drawer(|ui| {
+                       ui.add_space(8.0);
+                       ui.label("High-performance laptop with 16 GB RAM, 512 GB SSD, 14\" display.");
+                       ui.label("SKU: LAP-001 · Weight: 1.8 kg · Color: Silver");
+                       ui.label("Warranty: 2 years · Origin: Taiwan");
+                   })
+            })
+            .row(|row| {
+                row.cell("Wireless Mouse")
+                   .cell("Accessories")
+                   .cell("$39")
+                   .cell("200")
+                   .drawer(|ui| {
+                       ui.add_space(8.0);
+                       ui.label("Ergonomic wireless mouse with 3-year battery life.");
+                       ui.label("SKU: MOU-007 · DPI: 400–4000 · Color: Black");
+                   })
+            })
+            .row(|row| {
+                // Row without a drawer — no arrow shown
+                row.cell("HDMI Cable")
+                   .cell("Accessories")
+                   .cell("$12")
+                   .cell("500")
+            })
+            .row(|row| {
+                row.cell("Mechanical Keyboard")
+                   .cell("Accessories")
+                   .cell("$129")
+                   .cell("45")
+                   .drawer(|ui| {
+                       ui.add_space(8.0);
+                       ui.label("Tenkeyless layout, Cherry MX Brown switches, per-key RGB.");
+                       ui.label("SKU: KEY-042 · Connection: USB-C + Bluetooth · Color: Space Gray");
+                       ui.label("Warranty: 3 years · N-key rollover: yes");
+                   })
+            });
+
+        ui.add(drawer_table);
+
+        ui.add_space(10.0);
+        ui.label("Note: rows without a .drawer() call show no arrow and never expand.");
         });
     }
 }

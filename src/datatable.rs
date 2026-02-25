@@ -90,6 +90,8 @@ pub struct DataTableState {
     pub editing_rows: std::collections::HashSet<usize>,
     /// Temporary edit data for rows being edited (row_index -> cell_values)
     pub edit_data: HashMap<usize, Vec<String>>,
+    /// Set of row indices with their drawer expanded
+    pub drawer_open_rows: HashSet<usize>,
 }
 
 /// Response returned by the data table widget.
@@ -165,6 +167,8 @@ pub struct MaterialDataTable<'a> {
     rows: Vec<DataTableRow<'a>>,
     id: Option<Id>,
     allow_selection: bool,
+    allow_drawer: bool,
+    drawer_row_height: f32,
     sticky_header: bool,
     progress_visible: bool,
     corner_radius: CornerRadius,
@@ -305,6 +309,8 @@ pub struct DataTableRow<'a> {
     id: Option<String>,
     color: Option<Color32>,
     on_hover: bool,
+    /// Optional drawer widget rendered below the row when expanded
+    drawer: Option<std::sync::Arc<dyn Fn(&mut Ui) + Send + Sync>>,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 
@@ -317,6 +323,7 @@ impl<'a> DataTableRow<'a> {
             id: None,
             color: None,
             on_hover: true,
+            drawer: None,
             _phantom: std::marker::PhantomData,
         }
     }
@@ -366,6 +373,16 @@ impl<'a> DataTableRow<'a> {
         self.on_hover = hover;
         self
     }
+
+    /// Set a drawer widget shown below this row when expanded.
+    /// A clickable arrow (> closed / v open) is displayed in the drawer column.
+    pub fn drawer<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut Ui) + Send + Sync + 'static,
+    {
+        self.drawer = Some(std::sync::Arc::new(f));
+        self
+    }
 }
 
 impl<'a> MaterialDataTable<'a> {
@@ -376,6 +393,8 @@ impl<'a> MaterialDataTable<'a> {
             rows: Vec::new(),
             id: None,
             allow_selection: false,
+            allow_drawer: false,
+            drawer_row_height: 120.0,
             sticky_header: false,
             progress_visible: false,
             corner_radius: CornerRadius::from(4.0),
@@ -507,6 +526,19 @@ impl<'a> MaterialDataTable<'a> {
         self
     }
 
+    /// Enable row drawers. Rows with a `.drawer()` closure will show a clickable
+    /// arrow (> closed, v open) that expands a panel below the row.
+    pub fn allow_drawer(mut self, allow: bool) -> Self {
+        self.allow_drawer = allow;
+        self
+    }
+
+    /// Set the fixed height of expanded drawer panels (default: 120.0).
+    pub fn drawer_row_height(mut self, height: f32) -> Self {
+        self.drawer_row_height = height;
+        self
+    }
+
     /// Make the header sticky.
     pub fn sticky_header(mut self, sticky: bool) -> Self {
         self.sticky_header = sticky;
@@ -631,6 +663,8 @@ impl<'a> MaterialDataTable<'a> {
             columns,
             mut rows,
             allow_selection,
+            allow_drawer,
+            drawer_row_height,
             sticky_header: _,
             progress_visible,
             corner_radius,
@@ -683,7 +717,8 @@ impl<'a> MaterialDataTable<'a> {
 
         // Calculate table dimensions with dynamic row heights
         let checkbox_width = if allow_selection && theme.show_checkbox_column { 48.0 } else { 0.0 };
-        let total_width = checkbox_width + columns.iter().map(|col| col.width).sum::<f32>();
+        let drawer_arrow_width = if allow_drawer { 32.0 } else { 0.0 };
+        let total_width = checkbox_width + drawer_arrow_width + columns.iter().map(|col| col.width).sum::<f32>();
         let min_row_height = theme.data_row_min_height.unwrap_or(default_row_height);
         let min_header_height = theme.heading_row_height.unwrap_or(56.0);
 
@@ -778,7 +813,25 @@ impl<'a> MaterialDataTable<'a> {
             row_heights.push(final_height);
         }
 
-        let total_height = header_height + row_heights.iter().sum::<f32>();
+        // Calculate drawer heights for open rows (0.0 when closed)
+        let drawer_heights: Vec<f32> = rows
+            .iter()
+            .enumerate()
+            .map(|(row_idx, row)| {
+                if allow_drawer
+                    && row.drawer.is_some()
+                    && state.drawer_open_rows.contains(&row_idx)
+                {
+                    drawer_row_height
+                } else {
+                    0.0
+                }
+            })
+            .collect();
+
+        let total_height = header_height
+            + row_heights.iter().sum::<f32>()
+            + drawer_heights.iter().sum::<f32>();
 
         // Collect all row actions from this frame
         let mut all_row_actions: Vec<RowAction> = Vec::new();
@@ -897,6 +950,11 @@ impl<'a> MaterialDataTable<'a> {
                 }
 
                 current_x += checkbox_width;
+            }
+
+            // Drawer arrow column spacer in header (no header label)
+            if allow_drawer {
+                current_x += drawer_arrow_width;
             }
 
             // Header columns
@@ -1116,8 +1174,11 @@ impl<'a> MaterialDataTable<'a> {
                 ui.painter()
                     .rect_filled(row_rect, CornerRadius::ZERO, row_bg);
                     
-                // Draw divider below row
-                if row_idx < rows.len() - 1 || theme.show_bottom_border {
+                // Draw divider below row — skip when a drawer immediately follows
+                let row_has_open_drawer = allow_drawer
+                    && row.drawer.is_some()
+                    && state.drawer_open_rows.contains(&row_idx);
+                if !row_has_open_drawer && (row_idx < rows.len() - 1 || theme.show_bottom_border) {
                     let divider_y = current_y + row_height;
                     let divider_thickness = theme.divider_thickness.unwrap_or(1.0);
                     let divider_color = theme.divider_color.unwrap_or_else(|| get_global_color("outlineVariant"));
@@ -1217,6 +1278,65 @@ impl<'a> MaterialDataTable<'a> {
                     }
 
                     current_x += checkbox_width;
+                }
+
+                // Row drawer arrow
+                if allow_drawer {
+                    let arrow_area_rect = Rect::from_min_size(
+                        egui::pos2(current_x, current_y),
+                        Vec2::new(drawer_arrow_width, row_height),
+                    );
+
+                    if row.drawer.is_some() {
+                        let is_open = state.drawer_open_rows.contains(&row_idx);
+                        let arrow_color = get_global_color("onSurfaceVariant");
+                        let center = arrow_area_rect.center();
+
+                        if is_open {
+                            // Down chevron: v
+                            let pts = [
+                                center + Vec2::new(-5.0, -3.0),
+                                center + Vec2::new(0.0, 3.0),
+                                center + Vec2::new(5.0, -3.0),
+                            ];
+                            ui.painter().line_segment(
+                                [pts[0], pts[1]],
+                                Stroke::new(2.0, arrow_color),
+                            );
+                            ui.painter().line_segment(
+                                [pts[1], pts[2]],
+                                Stroke::new(2.0, arrow_color),
+                            );
+                        } else {
+                            // Right chevron: >
+                            let pts = [
+                                center + Vec2::new(-3.0, -5.0),
+                                center + Vec2::new(3.0, 0.0),
+                                center + Vec2::new(-3.0, 5.0),
+                            ];
+                            ui.painter().line_segment(
+                                [pts[0], pts[1]],
+                                Stroke::new(2.0, arrow_color),
+                            );
+                            ui.painter().line_segment(
+                                [pts[1], pts[2]],
+                                Stroke::new(2.0, arrow_color),
+                            );
+                        }
+
+                        let arrow_id = table_id.with(format!("drawer_arrow_{}", row_idx));
+                        let arrow_response =
+                            ui.interact(arrow_area_rect, arrow_id, Sense::click());
+                        if arrow_response.clicked() {
+                            if is_open {
+                                state.drawer_open_rows.remove(&row_idx);
+                            } else {
+                                state.drawer_open_rows.insert(row_idx);
+                            }
+                        }
+                    }
+
+                    current_x += drawer_arrow_width;
                 }
 
                 // Track row actions for this specific row
@@ -1469,6 +1589,67 @@ impl<'a> MaterialDataTable<'a> {
                 all_row_actions.extend(row_actions);
 
                 current_y += row_height;
+
+                // Draw open drawer panel below this row
+                if let Some(open_drawer_height) = drawer_heights.get(row_idx).copied() {
+                    if open_drawer_height > 0.0 {
+                        if let Some(drawer_fn) = &row.drawer {
+                            let drawer_rect = Rect::from_min_size(
+                                egui::pos2(rect.min.x, current_y),
+                                Vec2::new(total_width, open_drawer_height),
+                            );
+
+                            // Drawer background: slightly tinted surface
+                            let drawer_bg = get_global_color("surfaceVariant");
+                            ui.painter().rect_filled(
+                                drawer_rect,
+                                CornerRadius::ZERO,
+                                drawer_bg,
+                            );
+
+                            // Left accent stripe in primary color
+                            let primary = get_global_color("primary");
+                            ui.painter().rect_filled(
+                                Rect::from_min_size(
+                                    drawer_rect.left_top(),
+                                    Vec2::new(3.0, open_drawer_height),
+                                ),
+                                CornerRadius::ZERO,
+                                primary,
+                            );
+
+                            // Render drawer content
+                            let content_rect = Rect::from_min_size(
+                                drawer_rect.left_top() + Vec2::new(12.0, 0.0),
+                                Vec2::new(total_width - 12.0, open_drawer_height),
+                            );
+                            ui.scope_builder(
+                                egui::UiBuilder::new().max_rect(content_rect),
+                                |ui| {
+                                    drawer_fn(ui);
+                                },
+                            );
+
+                            // Divider at the bottom of the drawer
+                            let divider_thickness = theme.divider_thickness.unwrap_or(1.0);
+                            let divider_color = theme
+                                .divider_color
+                                .unwrap_or_else(|| get_global_color("outlineVariant"));
+                            ui.painter().line_segment(
+                                [
+                                    egui::pos2(rect.min.x, current_y + open_drawer_height),
+                                    egui::pos2(
+                                        rect.min.x + total_width,
+                                        current_y + open_drawer_height,
+                                    ),
+                                ],
+                                Stroke::new(divider_thickness, divider_color),
+                            );
+
+                            current_y += open_drawer_height;
+                        }
+                    }
+                }
             }
 
             // Draw progress indicator if visible
