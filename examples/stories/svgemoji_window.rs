@@ -1,16 +1,24 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, TextureHandle, TextureId, Window};
+use eframe::egui::{self, Window};
+
+#[cfg(feature = "svg_emoji")]
+use eframe::egui::{TextureHandle, TextureId};
+#[cfg(feature = "svg_emoji")]
 use egui_material3::{
     svg_emoji::SvgCollection,
     MaterialButton, assist_chip, filter_chip, input_chip, suggestion_chip,
     fab_primary, fab_secondary,
     icon_button_standard, icon_button_filled, icon_button_filled_tonal, icon_button_outlined,
 };
+#[cfg(feature = "svg_emoji")]
 use std::collections::HashMap;
+#[cfg(feature = "svg_emoji")]
 use std::collections::hash_map::DefaultHasher;
+#[cfg(feature = "svg_emoji")]
 use std::hash::{Hash, Hasher};
 
+#[cfg(feature = "svg_emoji")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CollectionKind {
     Solar,
@@ -18,6 +26,7 @@ enum CollectionKind {
     Twemoji,
 }
 
+#[cfg(feature = "svg_emoji")]
 impl CollectionKind {
     fn label(self) -> &'static str {
         match self {
@@ -40,31 +49,47 @@ impl CollectionKind {
 #[doc(hidden)]
 pub struct SvgEmojiWindow {
     pub open: bool,
+    #[cfg(feature = "svg_emoji")]
     active_kind: CollectionKind,
+    #[cfg(feature = "svg_emoji")]
     filter: String,
+    #[cfg(feature = "svg_emoji")]
     /// Texture cache: texture_key(svg_data, size) -> TextureHandle
     svg_textures: HashMap<u64, TextureHandle>,
+    #[cfg(feature = "svg_emoji")]
     /// Cached collection for the active kind
     cached_kind: Option<CollectionKind>,
+    #[cfg(feature = "svg_emoji")]
     /// All icons as static string pairs (name, svg_data)
     all_icons: Vec<(&'static str, &'static str)>,
+    #[cfg(feature = "svg_emoji")]
     /// Demo state for filter chip
     filter_selected_1: bool,
+    #[cfg(feature = "svg_emoji")]
     /// Pinned item name (stays open on click until another item is hovered)
     pinned_item: Option<String>,
 }
 
 impl Default for SvgEmojiWindow {
     fn default() -> Self {
-        Self {
-            open: false,
-            active_kind: CollectionKind::Solar,
-            filter: String::new(),
-            svg_textures: HashMap::new(),
-            cached_kind: None,
-            all_icons: Vec::new(),
-            filter_selected_1: false,
-            pinned_item: None,
+        #[cfg(feature = "svg_emoji")]
+        {
+            Self {
+                open: false,
+                active_kind: CollectionKind::Solar,
+                filter: String::new(),
+                svg_textures: HashMap::new(),
+                cached_kind: None,
+                all_icons: Vec::new(),
+                filter_selected_1: false,
+                pinned_item: None,
+            }
+        }
+        #[cfg(not(feature = "svg_emoji"))]
+        {
+            Self {
+                open: false,
+            }
         }
     }
 }
@@ -76,11 +101,20 @@ impl SvgEmojiWindow {
             .open(&mut open)
             .default_size([960.0, 700.0])
             .show(ctx, |ui| {
-                self.ui(ui);
+                #[cfg(feature = "svg_emoji")]
+                {
+                    self.ui(ui);
+                }
+                #[cfg(not(feature = "svg_emoji"))]
+                {
+                    ui.label("SVG Emoji feature is not enabled.");
+                    ui.label("Enable it with --features svg_emoji");
+                }
             });
         self.open = open;
     }
 
+    #[cfg(feature = "svg_emoji")]
     fn ensure_collection(&mut self) {
         if self.cached_kind != Some(self.active_kind) {
             self.all_icons = self.active_kind.load();
@@ -88,6 +122,7 @@ impl SvgEmojiWindow {
         }
     }
 
+    #[cfg(feature = "svg_emoji")]
     fn ui(&mut self, ui: &mut egui::Ui) {
         self.ensure_collection();
 
@@ -216,6 +251,7 @@ impl SvgEmojiWindow {
     }
 
     /// Tooltip popup shown when hovering an icon cell.
+    #[cfg(feature = "svg_emoji")]
     fn hover_panel(&mut self, ui: &mut egui::Ui, name: &str, svg_data: &str) {
         ui.set_min_width(340.0);
 
@@ -288,6 +324,7 @@ impl SvgEmojiWindow {
 
     // ── Texture helpers ───────────────────────────────────────────────────────
 
+    #[cfg(feature = "svg_emoji")]
     fn texture_key(svg_data: &str, size: u32) -> u64 {
         let mut h = DefaultHasher::new();
         svg_data.hash(&mut h);
@@ -296,6 +333,7 @@ impl SvgEmojiWindow {
     }
 
     /// Load (if needed) and return a `TextureId` (Copy – no borrow held on self).
+    #[cfg(feature = "svg_emoji")]
     fn get_or_load_id(&mut self, ctx: &egui::Context, svg_data: &str, size: u32) -> Option<TextureId> {
         let key = Self::texture_key(svg_data, size);
         if !self.svg_textures.contains_key(&key) {
@@ -313,6 +351,7 @@ impl SvgEmojiWindow {
         self.svg_textures.get(&key).map(|t| t.id())
     }
 
+    #[cfg(feature = "svg_emoji")]
     fn render_svg(
         ctx: &egui::Context,
         svg_data: &str,
@@ -342,6 +381,7 @@ impl SvgEmojiWindow {
     }
 }
 
+#[cfg(feature = "svg_emoji")]
 fn truncate_name(name: &str, max_chars: usize) -> String {
     let mut chars = name.char_indices();
     let end = chars
