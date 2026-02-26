@@ -36,6 +36,7 @@ mod switch_window;
 mod svgemoji_window;
 mod symbol_window;
 mod tabs_window;
+mod timeline_window;
 mod topappbar_window;
 
 use button_window::ButtonWindow;
@@ -63,6 +64,7 @@ use switch_window::SwitchWindow;
 use svgemoji_window::SvgEmojiWindow;
 use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
+use timeline_window::TimelineWindow;
 use topappbar_window::TopAppBarWindow;
 
 fn main() -> Result<(), eframe::Error> {
@@ -143,6 +145,7 @@ struct MaterialApp {
     card2_window: Card2Window,
     carousel_window: CarouselWindow,
     symbol_window: SymbolWindow,
+    timeline_window: TimelineWindow,
     #[cfg(feature = "svg_emoji")]
     svgemoji_window: SvgEmojiWindow,
 }
@@ -190,6 +193,7 @@ impl Default for MaterialApp {
             card2_window: Card2Window::default(),
             carousel_window: CarouselWindow::default(),
             symbol_window: SymbolWindow::default(),
+            timeline_window: TimelineWindow::default(),
             #[cfg(feature = "svg_emoji")]
             svgemoji_window: SvgEmojiWindow::default(),
         }
@@ -395,6 +399,7 @@ impl MaterialApp {
         self.topappbar_window.open = false;
         self.card2_window.open = false;
         self.carousel_window.open = false;
+        self.timeline_window.open = false;
         #[cfg(feature = "svg_emoji")]
         {
             self.svgemoji_window.open = false;
@@ -751,6 +756,10 @@ impl eframe::App for MaterialApp {
                     self.tabs_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Timeline Stories")).clicked() {
+                    self.timeline_window.open = true;
+                }
+
                 if ui
                     .add(MaterialButton::filled("Top App Bar Stories"))
                     .clicked()
@@ -786,6 +795,7 @@ impl eframe::App for MaterialApp {
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
         self.carousel_window.show(ctx);
+        self.timeline_window.show(ctx);
         #[cfg(feature = "svg_emoji")]
         self.svgemoji_window.show(ctx);
         self.symbol_window.show(ctx);

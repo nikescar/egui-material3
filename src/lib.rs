@@ -138,7 +138,7 @@
 //! - [`MaterialProgress`] - Progress indicators and loading states
 //! - [`MaterialDataTable`] - Data tables with sorting and selection
 //!
-//! ### Navigation Components  
+//! ### Navigation Components
 //! - [`MaterialTabs`] - Tab navigation
 //! - [`MaterialDrawer`] - Navigation drawers
 //! - [`MaterialTopAppBar`] - App bars and toolbars
@@ -147,6 +147,7 @@
 //! - [`MaterialIcon`] - Material Design icons with font support
 //! - [`MaterialList`] - Lists following Material Design patterns
 //! - [`MaterialImageList`] - Image lists with online/offline support and smart caching
+//! - [`MaterialTimeline`] - Timeline component for displaying chronological events
 //!
 //! ## Image Lists and OnDemand Feature
 //!
@@ -257,6 +258,7 @@ pub mod spreadsheet;
 pub mod switch;
 pub mod tabs;
 pub mod theme;
+pub mod timeline;
 pub mod topappbar;
 
 pub use {
@@ -305,6 +307,10 @@ pub use {
     theme::{
         get_global_color, get_global_theme, update_global_theme, ContrastLevel,
         MaterialThemeContext, MaterialThemeFile, ThemeMode,
+    },
+    timeline::{
+        timeline, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant,
+        TimelineItem, TimelinePosition,
     },
     topappbar::{
         center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar,
