@@ -4,6 +4,10 @@ use crate::{
     center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, menu, menu_item,
     top_app_bar, MaterialButton, MaterialCheckbox, MaterialTopAppBar,
 };
+use egui_material3::material_symbol::{
+    ICON_ACCOUNT_CIRCLE, ICON_ARROW_BACK, ICON_FAVORITE, ICON_MENU, ICON_MORE_VERT,
+    ICON_NOTIFICATIONS, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
+};
 use eframe::egui::{self, Color32, Rect, Ui, Window};
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -153,15 +157,15 @@ impl TopAppBarWindow {
         }
 
         if self.show_navigation {
-            regular_bar = regular_bar.navigation_icon("menu", || println!("Navigation clicked!"));
+            regular_bar = regular_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
         }
 
         if self.show_actions {
             regular_bar = regular_bar
-                .action_icon("search", || println!("Search clicked!"))
-                .action_icon("notifications", || println!("Notifications clicked!"))
-                .action_icon("account_circle", || println!("Account clicked!"))
-                .action_icon("more_vert", || println!("More clicked!"));
+                .action_icon_char(ICON_SEARCH, || println!("Search clicked!"))
+                .action_icon_char(ICON_NOTIFICATIONS, || println!("Notifications clicked!"))
+                .action_icon_char(ICON_ACCOUNT_CIRCLE, || println!("Account clicked!"))
+                .action_icon_char(ICON_MORE_VERT, || println!("More clicked!"));
         }
 
         ui.add(regular_bar);
@@ -181,14 +185,14 @@ impl TopAppBarWindow {
         }
 
         if self.show_navigation {
-            center_bar = center_bar.navigation_icon("arrow_back", || println!("Back clicked!"));
+            center_bar = center_bar.navigation_icon_char(ICON_ARROW_BACK, || println!("Back clicked!"));
         }
 
         if self.show_actions {
             center_bar = center_bar
-                .action_icon("share", || println!("Share clicked!"))
-                .action_icon("favorite", || println!("Favorite clicked!"))
-                .action_icon("more_vert", || println!("More clicked!"));
+                .action_icon_char(ICON_SHARE, || println!("Share clicked!"))
+                .action_icon_char(ICON_FAVORITE, || println!("Favorite clicked!"))
+                .action_icon_char(ICON_MORE_VERT, || println!("More clicked!"));
         }
 
         ui.add(center_bar);
@@ -206,14 +210,14 @@ impl TopAppBarWindow {
             .scrolled(self.is_scrolled);
 
         if self.show_navigation {
-            medium_bar = medium_bar.navigation_icon("menu", || println!("Navigation clicked!"));
+            medium_bar = medium_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
         }
 
         if self.show_actions {
             medium_bar = medium_bar
-                .action_icon("search", || println!("Search clicked!"))
-                .action_icon("settings", || println!("Settings clicked!"))
-                .action_icon("more_vert", || println!("More clicked!"));
+                .action_icon_char(ICON_SEARCH, || println!("Search clicked!"))
+                .action_icon_char(ICON_SETTINGS, || println!("Settings clicked!"))
+                .action_icon_char(ICON_MORE_VERT, || println!("More clicked!"));
         }
 
         ui.add(medium_bar);
@@ -231,15 +235,15 @@ impl TopAppBarWindow {
             .scrolled(self.is_scrolled);
 
         if self.show_navigation {
-            large_bar = large_bar.navigation_icon("menu", || println!("Navigation clicked!"));
+            large_bar = large_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
         }
 
         if self.show_actions {
             large_bar = large_bar
-                .action_icon("search", || println!("Search clicked!"))
-                .action_icon("favorite", || println!("Favorite clicked!"))
-                .action_icon("share", || println!("Share clicked!"))
-                .action_icon("more_vert", || println!("More clicked!"));
+                .action_icon_char(ICON_SEARCH, || println!("Search clicked!"))
+                .action_icon_char(ICON_FAVORITE, || println!("Favorite clicked!"))
+                .action_icon_char(ICON_SHARE, || println!("Share clicked!"))
+                .action_icon_char(ICON_MORE_VERT, || println!("More clicked!"));
         }
 
         ui.add(large_bar);
@@ -254,8 +258,8 @@ impl TopAppBarWindow {
 
         let about_bar = top_app_bar("About")
             .id_salt("about_topappbar")
-            .navigation_icon("arrow_back", || println!("About: Back clicked!"))
-            .action_icon("more_vert", || println!("About: More clicked!"));
+            .navigation_icon_char(ICON_ARROW_BACK, || println!("About: Back clicked!"))
+            .action_icon_char(ICON_MORE_VERT, || println!("About: More clicked!"));
 
         ui.add(about_bar);
 
@@ -293,15 +297,15 @@ impl TopAppBarWindow {
 
         let interactive_bar = top_app_bar(&self.title_text)
             .id_salt("interactive_topappbar")
-            .navigation_icon("menu", || {
+            .navigation_icon_char(ICON_MENU, || {
                 MENU_TOGGLE.store(true, Ordering::Relaxed);
             })
-            .action_icon("search", || {
+            .action_icon_char(ICON_SEARCH, || {
                 SEARCH_TOGGLE.store(true, Ordering::Relaxed);
             })
-            .action_icon("notifications", || println!("Interactive: Notifications"))
-            .action_icon("account_circle", || println!("Interactive: Account"))
-            .action_icon("more_vert", || println!("Interactive: More"))
+            .action_icon_char(ICON_NOTIFICATIONS, || println!("Interactive: Notifications"))
+            .action_icon_char(ICON_ACCOUNT_CIRCLE, || println!("Interactive: Account"))
+            .action_icon_char(ICON_MORE_VERT, || println!("Interactive: More"))
             .scrolled(self.is_scrolled);
 
         let response = ui.add(interactive_bar);
@@ -361,9 +365,9 @@ impl TopAppBarWindow {
             .id_salt("custom_color_topappbar")
             .background_color(Color32::from_rgb(103, 80, 164))
             .foreground_color(Color32::WHITE)
-            .navigation_icon("arrow_back", || println!("Custom: Back clicked!"))
-            .action_icon("search", || println!("Custom: Search clicked!"))
-            .action_icon("more_vert", || println!("Custom: More clicked!"));
+            .navigation_icon_char(ICON_ARROW_BACK, || println!("Custom: Back clicked!"))
+            .action_icon_char(ICON_SEARCH, || println!("Custom: Search clicked!"))
+            .action_icon_char(ICON_MORE_VERT, || println!("Custom: More clicked!"));
 
         ui.add(custom_bar);
     }

@@ -24,12 +24,29 @@ pub enum TopAppBarVariant {
 /// and `onSurface` for foreground (title text). When scrolled under content,
 /// the background changes to `surfaceContainer`.
 ///
+/// # Examples
+///
+/// Using icon names:
 /// ```
 /// # egui::__run_test_ui(|ui| {
 /// let top_bar = MaterialTopAppBar::regular("My App")
 ///     .navigation_icon("menu", || println!("Menu clicked!"))
 ///     .action_icon("search", || println!("Search clicked!"))
 ///     .action_icon("more_vert", || println!("More clicked!"));
+///
+/// ui.add(top_bar);
+/// # });
+/// ```
+///
+/// Using material symbol constants:
+/// ```
+/// # egui::__run_test_ui(|ui| {
+/// use egui_material3::material_symbol::{ICON_MENU, ICON_SEARCH, ICON_MORE_VERT};
+///
+/// let top_bar = MaterialTopAppBar::regular("My App")
+///     .navigation_icon_char(ICON_MENU, || println!("Menu clicked!"))
+///     .action_icon_char(ICON_SEARCH, || println!("Search clicked!"))
+///     .action_icon_char(ICON_MORE_VERT, || println!("More clicked!"));
 ///
 /// ui.add(top_bar);
 /// # });
@@ -109,12 +126,30 @@ impl<'a> MaterialTopAppBar<'a> {
         self
     }
 
+    /// Add a navigation icon using a material symbol character constant.
+    pub fn navigation_icon_char<F>(mut self, icon: char, callback: F) -> Self
+    where
+        F: Fn() + Send + Sync + 'a,
+    {
+        self.navigation_icon = Some((icon.to_string(), Box::new(callback)));
+        self
+    }
+
     /// Add an action icon to the app bar.
     pub fn action_icon<F>(mut self, icon: impl Into<String>, callback: F) -> Self
     where
         F: Fn() + Send + Sync + 'a,
     {
         self.action_icons.push((icon.into(), Box::new(callback)));
+        self
+    }
+
+    /// Add an action icon using a material symbol character constant.
+    pub fn action_icon_char<F>(mut self, icon: char, callback: F) -> Self
+    where
+        F: Fn() + Send + Sync + 'a,
+    {
+        self.action_icons.push((icon.to_string(), Box::new(callback)));
         self
     }
 
@@ -289,7 +324,12 @@ impl Widget for MaterialTopAppBar<'_> {
                 }
 
                 // Render navigation icon using material symbol font
-                let nav_icon_text = material_symbol_text(&nav_icon);
+                // Support both icon names (like "menu") and direct characters
+                let nav_icon_text = if nav_icon.chars().count() == 1 {
+                    nav_icon.clone()
+                } else {
+                    material_symbol_text(&nav_icon)
+                };
                 ui.painter().text(
                     nav_rect.center(),
                     egui::Align2::CENTER_CENTER,
@@ -383,7 +423,12 @@ impl Widget for MaterialTopAppBar<'_> {
                 }
 
                 // Render action icon using material symbol font
-                let action_icon_text = material_symbol_text(action_icon.as_str());
+                // Support both icon names (like "search") and direct characters
+                let action_icon_text = if action_icon.chars().count() == 1 {
+                    action_icon.clone()
+                } else {
+                    material_symbol_text(action_icon.as_str())
+                };
                 ui.painter().text(
                     action_rect.center(),
                     egui::Align2::CENTER_CENTER,

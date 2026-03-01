@@ -306,5 +306,7 @@ Example structure:
 ## Todos
 
 * svg sprite
+* bump with egui_extras for it to having resvg 0.45.1. we are using 0.47 faked version due to some error.
+
 
 </details>
