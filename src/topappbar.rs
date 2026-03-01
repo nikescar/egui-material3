@@ -324,10 +324,19 @@ impl Widget for MaterialTopAppBar<'_> {
                 }
 
                 // Render navigation icon using material symbol font
-                // Support both icon names (like "menu") and direct characters
+                // Support both icon names (like "menu") and direct character constants
                 let nav_icon_text = if nav_icon.chars().count() == 1 {
-                    nav_icon.clone()
+                    // If it's a single character, check if it's in Material Symbols range
+                    let ch = nav_icon.chars().next().unwrap();
+                    if (ch >= '\u{e000}' && ch <= '\u{f8ff}') || (ch >= '\u{ea00}' && ch <= '\u{eb8d}') {
+                        // It's already a Material Symbol character, use it directly
+                        nav_icon.clone()
+                    } else {
+                        // Try to look it up as a name
+                        material_symbol_text(&nav_icon)
+                    }
                 } else {
+                    // Multiple characters, treat as icon name
                     material_symbol_text(&nav_icon)
                 };
                 ui.painter().text(
@@ -423,10 +432,19 @@ impl Widget for MaterialTopAppBar<'_> {
                 }
 
                 // Render action icon using material symbol font
-                // Support both icon names (like "search") and direct characters
+                // Support both icon names (like "search") and direct character constants
                 let action_icon_text = if action_icon.chars().count() == 1 {
-                    action_icon.clone()
+                    // If it's a single character, check if it's in Material Symbols range
+                    let ch = action_icon.chars().next().unwrap();
+                    if (ch >= '\u{e000}' && ch <= '\u{f8ff}') || (ch >= '\u{ea00}' && ch <= '\u{eb8d}') {
+                        // It's already a Material Symbol character, use it directly
+                        action_icon.clone()
+                    } else {
+                        // Try to look it up as a name
+                        material_symbol_text(action_icon.as_str())
+                    }
                 } else {
+                    // Multiple characters, treat as icon name
                     material_symbol_text(action_icon.as_str())
                 };
                 ui.painter().text(

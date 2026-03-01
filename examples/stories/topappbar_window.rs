@@ -5,8 +5,11 @@ use crate::{
     top_app_bar, MaterialButton, MaterialCheckbox, MaterialTopAppBar,
 };
 use egui_material3::material_symbol::{
-    ICON_ACCOUNT_CIRCLE, ICON_ARROW_BACK, ICON_FAVORITE, ICON_MENU, ICON_MORE_VERT,
-    ICON_NOTIFICATIONS, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
+    ICON_ACCOUNT_CIRCLE, ICON_ADD, ICON_ARROW_BACK, ICON_CLOSE, ICON_CLOUD_UPLOAD,
+    ICON_DELETE, ICON_DOWNLOAD, ICON_EDIT, ICON_EMAIL, ICON_FAVORITE, ICON_FILTER_LIST,
+    ICON_HELP, ICON_IMAGE, ICON_INFO, ICON_MAIL, ICON_MENU, ICON_MORE_VERT, ICON_MUSIC_NOTE,
+    ICON_NOTIFICATIONS, ICON_PHOTO, ICON_REFRESH, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
+    ICON_SORT, ICON_UPLOAD,
 };
 use eframe::egui::{self, Color32, Rect, Ui, Window};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -370,6 +373,109 @@ impl TopAppBarWindow {
             .action_icon_char(ICON_MORE_VERT, || println!("Custom: More clicked!"));
 
         ui.add(custom_bar);
+
+        ui.add_space(30.0);
+
+        // --- Mail App Demo ---
+        ui.heading("Mail App Example");
+        ui.label(
+            "Email/Mail application with compose, refresh, and search actions.",
+        );
+
+        let mail_bar = top_app_bar("Inbox")
+            .id_salt("mail_topappbar")
+            .navigation_icon_char(ICON_MENU, || println!("Mail: Menu clicked!"))
+            .action_icon_char(ICON_SEARCH, || println!("Mail: Search clicked!"))
+            .action_icon_char(ICON_REFRESH, || println!("Mail: Refresh clicked!"))
+            .action_icon_char(ICON_MORE_VERT, || println!("Mail: More clicked!"));
+
+        ui.add(mail_bar);
+
+        ui.add_space(30.0);
+
+        // --- Photo Gallery Demo ---
+        ui.heading("Photo Gallery Example");
+        ui.label(
+            "Photo gallery app with upload, filter, and sort capabilities.",
+        );
+
+        let photo_bar = top_app_bar("Photos")
+            .id_salt("photo_topappbar")
+            .navigation_icon_char(ICON_MENU, || println!("Photos: Menu clicked!"))
+            .action_icon_char(ICON_CLOUD_UPLOAD, || println!("Photos: Upload clicked!"))
+            .action_icon_char(ICON_FILTER_LIST, || println!("Photos: Filter clicked!"))
+            .action_icon_char(ICON_SORT, || println!("Photos: Sort clicked!"))
+            .action_icon_char(ICON_MORE_VERT, || println!("Photos: More clicked!"));
+
+        ui.add(photo_bar);
+
+        ui.add_space(30.0);
+
+        // --- Music Player Demo ---
+        ui.heading("Music Player Example");
+        ui.label(
+            "Music player with search and favorite actions.",
+        );
+
+        let music_bar = top_app_bar("Now Playing")
+            .id_salt("music_topappbar")
+            .navigation_icon_char(ICON_ARROW_BACK, || println!("Music: Back clicked!"))
+            .action_icon_char(ICON_SEARCH, || println!("Music: Search clicked!"))
+            .action_icon_char(ICON_FAVORITE, || println!("Music: Favorite clicked!"))
+            .action_icon_char(ICON_SHARE, || println!("Music: Share clicked!"))
+            .action_icon_char(ICON_MORE_VERT, || println!("Music: More clicked!"));
+
+        ui.add(music_bar);
+
+        ui.add_space(30.0);
+
+        // --- Editor Demo ---
+        ui.heading("Document Editor Example");
+        ui.label(
+            "Document editor with edit, upload, and download actions.",
+        );
+
+        let editor_bar = top_app_bar("Document.txt")
+            .id_salt("editor_topappbar")
+            .navigation_icon_char(ICON_CLOSE, || println!("Editor: Close clicked!"))
+            .action_icon_char(ICON_DOWNLOAD, || println!("Editor: Download clicked!"))
+            .action_icon_char(ICON_UPLOAD, || println!("Editor: Upload clicked!"))
+            .action_icon_char(ICON_SHARE, || println!("Editor: Share clicked!"))
+            .action_icon_char(ICON_MORE_VERT, || println!("Editor: More clicked!"));
+
+        ui.add(editor_bar);
+
+        ui.add_space(30.0);
+
+        // --- Detail View Demo ---
+        ui.heading("Detail View Example");
+        ui.label(
+            "Detail view with edit, delete, and info actions.",
+        );
+
+        let detail_bar = top_app_bar("Item Details")
+            .id_salt("detail_topappbar")
+            .navigation_icon_char(ICON_ARROW_BACK, || println!("Detail: Back clicked!"))
+            .action_icon_char(ICON_EDIT, || println!("Detail: Edit clicked!"))
+            .action_icon_char(ICON_DELETE, || println!("Detail: Delete clicked!"))
+            .action_icon_char(ICON_INFO, || println!("Detail: Info clicked!"));
+
+        ui.add(detail_bar);
+
+        ui.add_space(30.0);
+
+        // --- Help Page Demo ---
+        ui.heading("Help Page Example");
+        ui.label(
+            "Help page with back navigation and search.",
+        );
+
+        let help_bar = center_aligned_top_app_bar("Help & Support")
+            .id_salt("help_topappbar")
+            .navigation_icon_char(ICON_ARROW_BACK, || println!("Help: Back clicked!"))
+            .action_icon_char(ICON_SEARCH, || println!("Help: Search clicked!"));
+
+        ui.add(help_bar);
     }
 
     fn show_navigation_menu(&mut self, ctx: &egui::Context) {
