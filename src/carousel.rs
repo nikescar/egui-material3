@@ -165,7 +165,7 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
         let available_width = ui.available_width();
         let desired_size = Vec2::new(available_width, self.height);
 
-        let (outer_rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
+        let (outer_rect, response) = ui.allocate_exact_size(desired_size, Sense::click_and_drag());
 
         if !ui.is_rect_visible(outer_rect) {
             return response;
@@ -185,8 +185,8 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
         let total_content_width = item_step * item_count as f32;
         let max_scroll = (total_content_width - available_width).max(0.0);
 
-        // Handle scroll input
-        let scroll_delta = ui.input(|i| {
+        // Handle scroll input (wheel + drag)
+        let mut scroll_delta = ui.input(|i| {
             // Horizontal scroll or shift+vertical scroll
             let mut delta = 0.0;
             if let Some(hover_pos) = i.pointer.hover_pos() {
@@ -197,6 +197,11 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
             }
             delta
         });
+
+        // Add drag input (reverse direction for natural scrolling)
+        if response.dragged() {
+            scroll_delta -= response.drag_delta().x;
+        }
 
         *self.scroll_offset = (*self.scroll_offset + scroll_delta).clamp(0.0, max_scroll);
 
