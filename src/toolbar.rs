@@ -3,10 +3,29 @@ use egui::{
     Align, Color32, CornerRadius, Layout, Response, Shadow, Stroke, Ui, Vec2, Widget,
 };
 
-/// Material Design toolbar component.
+/// Material Design 3 toolbar component.
 ///
 /// A fixed area at the bottom (or top) of a screen that contains navigation elements.
 /// The toolbar serves as a container for navigational links, buttons, and icon buttons.
+///
+/// # Material Design 3 Color Roles
+///
+/// This component follows M3 color guidelines:
+///
+/// ## Top Toolbar (App Bar)
+/// - Background: `surface` (at rest) or `surfaceContainerLow` (for subtle elevation)
+/// - Content: `onSurface` for text/icons, `onSurfaceVariant` for secondary icons
+/// - Border: `outlineVariant` for dividers
+///
+/// ## Bottom Navigation Bar
+/// - Background: `surfaceContainer` (standard for bottom navigation)
+/// - Content: `onSurface` for text/icons, `onSurfaceVariant` for secondary elements
+/// - Border: `outlineVariant` for top divider
+///
+/// ## Elevation
+/// M3 prefers tone-based surface containers over shadows for visual hierarchy.
+/// The component uses surface container color roles to indicate elevation levels
+/// without relying heavily on shadows.
 ///
 /// # Example
 /// ```rust
@@ -19,6 +38,19 @@ use egui::{
 ///     .item(MaterialButton::text("Settings")));
 /// # });
 /// ```
+/// Material Design 3 surface elevation levels for toolbar
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ToolbarElevation {
+    /// No elevation - uses base surface colors
+    Level0,
+    /// Low elevation - uses surfaceContainerLow
+    Level1,
+    /// Medium elevation - uses surfaceContainer
+    Level2,
+    /// High elevation - uses surfaceContainerHigh
+    Level3,
+}
+
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialToolbar<'a> {
     /// Items to display in the toolbar (buttons, icon buttons, etc.)
@@ -33,8 +65,10 @@ pub struct MaterialToolbar<'a> {
     tabbar_labels: bool,
     /// Show outline/border
     outline: bool,
-    /// Custom background color
+    /// Custom background color (overrides elevation-based colors)
     bg_color: Option<Color32>,
+    /// M3 elevation level (determines surface container to use)
+    elevation: Option<ToolbarElevation>,
     /// Minimum height of the toolbar
     min_height: f32,
     /// Spacing between items
@@ -61,6 +95,7 @@ impl<'a> Default for MaterialToolbar<'a> {
             tabbar_labels: false,
             outline: true,
             bg_color: None,
+            elevation: None, // Use automatic elevation based on position
             min_height: 56.0, // Material Design standard toolbar height
             item_spacing: 8.0,
             padding: Vec2::new(16.0, 8.0),
@@ -186,9 +221,28 @@ impl<'a> MaterialToolbar<'a> {
         self
     }
 
-    /// Set custom background color
+    /// Set custom background color (overrides elevation-based colors)
     pub fn bg_color(mut self, color: Color32) -> Self {
         self.bg_color = Some(color);
+        self
+    }
+
+    /// Set M3 elevation level
+    ///
+    /// Controls which surface container color role is used for the background.
+    /// Higher elevation levels use darker/lighter surface containers (depending on theme).
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// use egui_material3::{toolbar, ToolbarElevation};
+    ///
+    /// ui.add(toolbar()
+    ///     .elevation(ToolbarElevation::Level2));
+    /// # });
+    /// ```
+    pub fn elevation(mut self, elevation: ToolbarElevation) -> Self {
+        self.elevation = Some(elevation);
         self
     }
 
@@ -213,19 +267,33 @@ impl<'a> MaterialToolbar<'a> {
 
 impl<'a> Widget for MaterialToolbar<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        // Material Design colors for toolbar/bottom navigation
+        // Material Design 3 color roles for toolbar/bottom navigation
+        // Following M3 guidelines for surface containers and elevation
         let surface = get_global_color("surface");
+        let surface_container_low = get_global_color("surfaceContainerLow");
         let surface_container = get_global_color("surfaceContainer");
+        let surface_container_high = get_global_color("surfaceContainerHigh");
         let outline_variant = get_global_color("outlineVariant");
-        let surface_tint = get_global_color("surfaceTint");
+        let _on_surface = get_global_color("onSurface");
+        let _on_surface_variant = get_global_color("onSurfaceVariant");
 
-        // Determine background color based on position and state
-        let bg_color = self.bg_color.unwrap_or({
-            if self.top {
-                // Top toolbar uses surface with elevation
+        // Determine background color based on position, elevation, and M3 guidelines
+        // M3 uses surface container levels to create visual hierarchy without relying on shadows
+        let bg_color = self.bg_color.unwrap_or_else(|| {
+            // If elevation is explicitly set, use it to determine surface container
+            if let Some(elev) = self.elevation {
+                match elev {
+                    ToolbarElevation::Level0 => surface,
+                    ToolbarElevation::Level1 => surface_container_low,
+                    ToolbarElevation::Level2 => surface_container,
+                    ToolbarElevation::Level3 => surface_container_high,
+                }
+            } else if self.top {
+                // Top toolbar default: surface (M3 standard for top app bars at rest)
+                // Top app bars use surface with minimal or no shadow in modern M3
                 surface
             } else {
-                // Bottom navigation uses surface container
+                // Bottom navigation default: surfaceContainer (M3 standard for bottom nav)
                 surface_container
             }
         });
@@ -240,22 +308,29 @@ impl<'a> Widget for MaterialToolbar<'a> {
         );
 
         if ui.is_rect_visible(rect) {
-            // Draw elevation shadow for top toolbar (behind background)
+            // Material Design 3 elevation approach:
+            // M3 prefers tone-based surface containers over shadows for elevation
+            // Surface containers (surfaceContainerLowest through surfaceContainerHighest)
+            // provide visual hierarchy without relying solely on shadows
+
+            // Optional: Draw subtle shadow for top toolbar (legacy elevation support)
+            // Modern M3 apps may omit this in favor of pure surface container tones
             if self.top {
-                // Material Design 3 elevation level 2
+                // Subtle shadow for top app bar (elevation level 2)
+                // Note: M3 de-emphasizes shadows in favor of surface container tones
                 let shadow = Shadow {
-                    offset: [0, 2],
-                    blur: 6,
+                    offset: [0, 1],
+                    blur: 3,
                     spread: 0,
-                    color: Color32::from_black_alpha(16),
+                    color: Color32::from_black_alpha(12), // Reduced from 16 for subtlety
                 };
                 let shadow_offset = Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32);
                 let shadow_rect = rect.translate(shadow_offset);
 
-                // Draw shadow with blur simulation
-                for i in 0..3 {
-                    let blur_offset = i as f32 * 1.5;
-                    let alpha = (16 / (i + 1)) as u8;
+                // Draw minimal shadow with reduced blur for modern M3 look
+                for i in 0..2 {
+                    let blur_offset = i as f32 * 1.0;
+                    let alpha = (12 / (i + 1)) as u8;
                     ui.painter().rect_filled(
                         shadow_rect.expand(blur_offset),
                         CornerRadius::ZERO,
@@ -264,43 +339,26 @@ impl<'a> Widget for MaterialToolbar<'a> {
                 }
             }
 
-            // Draw background with surface tint for elevation
-            if self.top {
-                // Top toolbar with elevation tint
-                ui.painter().rect_filled(
-                    rect,
-                    CornerRadius::ZERO,
-                    bg_color,
-                );
+            // Draw background using M3 surface color roles
+            // No additional tint overlay needed - the surface container colors
+            // already provide the correct tonal values for elevation hierarchy
+            ui.painter().rect_filled(
+                rect,
+                CornerRadius::ZERO,
+                bg_color,
+            );
 
-                // Apply surface tint overlay for elevated appearance
-                let tint_overlay = Color32::from_rgba_unmultiplied(
-                    surface_tint.r(),
-                    surface_tint.g(),
-                    surface_tint.b(),
-                    8, // 3% opacity for elevation level 2
-                );
-                ui.painter().rect_filled(
-                    rect,
-                    CornerRadius::ZERO,
-                    tint_overlay,
-                );
-            } else {
-                // Bottom navigation - flat surface
-                ui.painter().rect_filled(
-                    rect,
-                    CornerRadius::ZERO,
-                    bg_color,
-                );
-            }
-
-            // Draw outline/border with proper Material Design colors
+            // Draw outline/border using M3 outline color roles
+            // outlineVariant: A less emphasized version of the outline color
+            // Used for borders or dividers that provide structure to UI elements
             if self.outline {
-                let border_color = outline_variant; // Subtle for both top and bottom
+                let border_color = outline_variant;
 
                 let border_y = if self.top {
+                    // Top toolbar: border at bottom edge
                     rect.max.y
                 } else {
+                    // Bottom navigation: border at top edge
                     rect.min.y
                 };
 
