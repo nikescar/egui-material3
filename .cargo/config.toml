@@ -1,0 +1,6 @@
+# Local cargo configuration
+# This file is used for local development and is not included in crates.io packages
+
+[patch.crates-io]
+resvg = { git = "https://github.com/nikescar/resvg" }
+usvg = { git = "https://github.com/nikescar/resvg" }
