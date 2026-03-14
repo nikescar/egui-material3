@@ -14,13 +14,21 @@ documentation = "https://docs.rs/egui-material3"
 readme = "README.md"
 keywords = ["egui", "material-design", "gui", "ui", "components"]
 categories = ["gui", "graphics", "visualization"]
-exclude = ["resources/*.ttf"]
+exclude = [
+    "resources/*.ttf",
+    "resources/noto/**",
+    "resources/twemoji/**",
+    "resources/solar/**"
+]
 
 [features]
 default = []
 ondemand = ["dep:ureq"]
 spreadsheet = ["dep:duckdb", "dep:egui_extras", "dep:egui-async", "dep:tokio", "dep:csv", "dep:calamine"]
-svg_emoji = []
+svg_solar = []
+svg_noto = []
+svg_twemoji = []
+svg_emoji = ["svg_solar", "svg_noto", "svg_twemoji"]
 
 [dependencies]
 egui = "0.33"

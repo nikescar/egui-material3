@@ -6,20 +6,56 @@ A Material Design component library for egui, providing Material Design 3 compon
 
 <img src="./resources/screenshot.png" alt="Material Design Components" width="600"/>
 
-## Usage
+## What's New
 
-Add this to your `Cargo.toml`:
+### v0.0.8 (Latest)
+- **New Components**: ActionSheet, Badge, Breadcrumbs, Notification, Timeline, Toolbar, Tooltip, TreeView
+- **Optimized Package Size**: SVG icon collections now available as separate optional features (`svg_solar`, `svg_noto`, `svg_twemoji`)
+- **Enhanced Components**: Button, Chip, and List now support small size variants
+- **Improved Carousel**: Added mouse drag support for better interaction
+- **Better Mobile Support**: Optimized DataTable padding for mobile UI
+
+### v0.0.7
+- **Spreadsheet Component**: Full-featured spreadsheet with DuckDB backend
+- **Image Carousel**: New MaterialCarousel component
+- **Small Controls**: Added size variants for buttons, chips, and lists
+
+### v0.0.6
+- Initial release with core Material Design 3 components
+
+## Installation
+
+Add egui-material3 to your project:
 
 ```bash
-$ cargo add egui-material3
+# Basic installation
+cargo add egui-material3
+
+# With optional features
+cargo add egui-material3 --features ondemand
+cargo add egui-material3 --features "svg_solar,spreadsheet"
+cargo add egui-material3 --features svg_emoji  # All icon collections
 ```
 
-### Basic Example
+Or manually in `Cargo.toml`:
+
+```toml
+[dependencies]
+egui-material3 = "0.0.8"
+
+# With features
+egui-material3 = { version = "0.0.8", features = ["ondemand", "svg_solar"] }
+```
+
+## Usage
+
+### Quick Start Example
 
 ```rust
 use eframe::egui;
 use egui_material3::{
-    MaterialButton, MaterialCheckbox, MaterialSlider,
+    MaterialButton, MaterialCheckbox, MaterialSlider, MaterialChip,
+    MaterialBadge, MaterialSwitch, ButtonVariant,
     theme::{setup_google_fonts, setup_local_fonts, setup_local_theme,
            load_fonts, load_themes, update_window_background}
 };
@@ -54,7 +90,9 @@ fn main() -> Result<(), eframe::Error> {
 #[derive(Default)]
 struct MyApp {
     checked: bool,
+    switch_on: bool,
     slider_value: f32,
+    chip_selected: bool,
 }
 
 impl eframe::App for MyApp {
@@ -62,10 +100,92 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Material Design Components");
 
-            // Use Material Design components
-            ui.add(MaterialButton::new("Click me"));
+            // Buttons with different variants
+            ui.horizontal(|ui| {
+                ui.add(MaterialButton::new("Filled").variant(ButtonVariant::Filled));
+                ui.add(MaterialButton::new("Outlined").variant(ButtonVariant::Outlined));
+                ui.add(MaterialButton::new("Text").variant(ButtonVariant::Text));
+            });
+
+            // Input controls
             ui.add(MaterialCheckbox::new(&mut self.checked, "Check me"));
+            ui.add(MaterialSwitch::new(&mut self.switch_on, "Enable feature"));
             ui.add(MaterialSlider::new(&mut self.slider_value, 0.0..=100.0));
+
+            // Chips and badges
+            ui.horizontal(|ui| {
+                ui.add(MaterialChip::new("Filter chip")
+                    .selected(&mut self.chip_selected));
+                ui.add(MaterialBadge::new().value(5).show(ui, |ui| {
+                    ui.add(MaterialButton::new("Inbox"));
+                }));
+            });
+        });
+    }
+}
+```
+
+### Advanced Example
+
+Here's a more comprehensive example showcasing recent additions:
+
+```rust
+use egui_material3::{
+    MaterialButton, MaterialBadge, MaterialToolbar, MaterialBreadcrumbs,
+    MaterialNotification, MaterialTimeline, MaterialTooltip, MaterialTreeView,
+    ButtonVariant, TimelineItem, TreeNode,
+};
+
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // Toolbar with actions
+            ui.add(MaterialToolbar::new()
+                .title("My Application")
+                .add_action("search", || println!("Search"))
+                .add_action("settings", || println!("Settings")));
+
+            // Breadcrumb navigation
+            ui.add(MaterialBreadcrumbs::new()
+                .add_item("Home", || println!("Home"))
+                .add_item("Projects", || println!("Projects"))
+                .add_current("Current Project"));
+
+            // Badge example
+            ui.horizontal(|ui| {
+                ui.add(MaterialBadge::new().value(3).show(ui, |ui| {
+                    ui.add(MaterialButton::new("Messages"));
+                }));
+
+                // Tooltip example
+                MaterialTooltip::new("Click to refresh").show(ui, |ui| {
+                    ui.add(MaterialButton::new("Refresh")
+                        .variant(ButtonVariant::Outlined));
+                });
+            });
+
+            // Notification
+            ui.add(MaterialNotification::new("Update available")
+                .description("Version 2.0 is ready to install")
+                .add_action("Update", || println!("Updating..."))
+                .closable(true));
+
+            // Timeline
+            let events = vec![
+                TimelineItem::new("Project created").with_timestamp("2024-01-01"),
+                TimelineItem::new("First commit").with_timestamp("2024-01-02"),
+                TimelineItem::new("Version 1.0 released").with_timestamp("2024-02-01"),
+            ];
+            ui.add(MaterialTimeline::new(events));
+
+            // TreeView for hierarchical data
+            let tree = vec![
+                TreeNode::new("Root")
+                    .add_child(TreeNode::new("Child 1"))
+                    .add_child(TreeNode::new("Child 2")
+                        .add_child(TreeNode::new("Grandchild"))),
+            ];
+            ui.add(MaterialTreeView::new(tree));
         });
     }
 }
@@ -101,89 +221,267 @@ load_themes();
 
 ### Theme Modes and Contrast Levels
 
-Change theme appearance at runtime:
+Dynamically change theme appearance at runtime:
 
 ```rust
 use egui_material3::theme::{get_global_theme, update_window_background, ThemeMode, ContrastLevel};
 
-// Change theme mode at runtime
+// Switch between light and dark modes
 if let Ok(mut theme) = get_global_theme().lock() {
-    theme.theme_mode = ThemeMode::Dark;
-    theme.contrast_level = ContrastLevel::High;
+    theme.theme_mode = ThemeMode::Dark; // or ThemeMode::Light
+    theme.contrast_level = ContrastLevel::High; // Standard, Medium, or High
 }
-// Apply changes
 update_window_background(ctx);
+
+// Or toggle mode with a button
+if ui.add(MaterialButton::new("Toggle Dark Mode")).clicked() {
+    if let Ok(mut theme) = get_global_theme().lock() {
+        theme.theme_mode = match theme.theme_mode {
+            ThemeMode::Light => ThemeMode::Dark,
+            ThemeMode::Dark => ThemeMode::Light,
+        };
+    }
+    update_window_background(ctx);
+}
+```
+
+### Component Size Variants
+
+Many components support size variants for different design needs:
+
+```rust
+use egui_material3::{MaterialButton, MaterialChip, ButtonSize, ChipSize};
+
+// Small button for compact UIs
+ui.add(MaterialButton::new("Compact").size(ButtonSize::Small));
+
+// Standard size (default)
+ui.add(MaterialButton::new("Standard"));
+
+// Small chips for tags
+ui.add(MaterialChip::new("Tag").size(ChipSize::Small));
 ```
 
 ## Available Components
 
-### Basic Components
+### Input & Selection
 
-- **MaterialButton** - Material Design buttons with multiple variants (filled, outlined, text, elevated, tonal)
+- **MaterialButton** - Material Design buttons with multiple variants (filled, outlined, text, elevated, tonal) and size options
+- **MaterialIconButton** - Icon buttons (standard, filled, filled tonal, outlined, toggle)
 - **MaterialCheckbox** - Checkboxes following Material Design guidelines
-- **MaterialSlider** / **MaterialRangeSlider** - Sliders with Material Design styling
 - **MaterialSwitch** - Toggle switches
 - **MaterialRadio** / **MaterialRadioGroup** - Radio button groups with list tile support
+- **MaterialSlider** / **MaterialRangeSlider** - Sliders with Material Design styling
 - **MaterialSelect** - Dropdown selection components with menu alignment options
+- **MaterialChip** - Filter, assist, input, and suggestion chips with size variants
 
-### Advanced Components
-
-- **MaterialChip** - Filter, assist, input, and suggestion chips
-- **MaterialCard2** - Material Design cards (elevated, filled, outlined variants)
-- **MaterialDialog** - Modal dialogs and alerts
-- **MaterialFab** - Floating Action Buttons (primary, secondary, tertiary, surface, branded)
-- **MaterialProgress** - Progress indicators (circular and linear)
-- **MaterialDataTable** - Data tables with sorting, selection, and custom cell content
-- **MaterialCarousel** - Carousel for displaying items in a scrollable view
-- **MaterialSnackbar** - Toast notifications with optional actions
-
-### Navigation Components
+### Navigation & Layout
 
 - **MaterialTabs** - Tab navigation (primary and secondary variants)
 - **MaterialDrawer** - Navigation drawers (permanent, dismissible, modal, standard)
 - **MaterialTopAppBar** - App bars and toolbars (standard, center-aligned, medium, large)
+- **MaterialToolbar** - Flexible toolbar component with action items
+- **MaterialBreadcrumbs** - Breadcrumb navigation for hierarchical paths
+- **MaterialMenu** - Context menus and menu items with nested support
 
-### Visual Elements
+### Feedback & Information
 
-- **MaterialIcon** - Material Design icons with font support
-- **MaterialSymbol** - Material Symbols rendering
+- **MaterialDialog** - Modal dialogs and alerts
+- **MaterialSnackbar** - Toast notifications with optional actions
+- **MaterialNotification** - Notification cards with actions and dismissal
+- **MaterialBadge** - Badge indicators for counts and status
+- **MaterialProgress** - Progress indicators (circular and linear)
+- **MaterialTooltip** - Contextual tooltips with rich text support
+- **MaterialActionSheet** - Bottom sheets for action selection
+
+### Data Display
+
+- **MaterialCard2** - Material Design cards (elevated, filled, outlined variants)
 - **MaterialList** - Lists following Material Design patterns with visual density control
+- **MaterialDataTable** - Data tables with sorting, selection, and custom cell content
+- **MaterialSpreadsheet** - Full-featured spreadsheet with DuckDB backend (requires `spreadsheet` feature)
+- **MaterialTimeline** - Timeline component for chronological data
+- **MaterialTreeView** - Hierarchical tree view with expand/collapse
+
+### Media & Content
+
+- **MaterialCarousel** - Carousel for displaying items in a scrollable view with mouse drag support
 - **MaterialImageList** - Image lists with online/offline support and smart caching (standard, masonry, woven variants)
 - **MaterialLayoutGrid** - Grid layout with tile bars
-- **MaterialIconButton** - Icon buttons (standard, filled, filled tonal, outlined, toggle)
-- **MaterialMenu** - Context menus and menu items
+- **MaterialFab** - Floating Action Buttons (primary, secondary, tertiary, surface, branded)
 
-### Emoji Collections (svg_emoji feature)
+### Icons & Symbols
 
-When the `svg_emoji` feature is enabled, you get access to comprehensive SVG emoji and icon collections:
+- **MaterialIcon** - Material Design icons with font support
+- **MaterialSymbol** - Material Symbols rendering (outlined, rounded, sharp variants)
 
-- **Solar Icons** (~1200 icons): UI/UX icon set with variants
-- **Noto Emoji** (~3600 emoji): Google's emoji collection with skin tone and gender variants
-- **Twemoji** (~3700 emoji): Twitter's emoji collection
+## Common Patterns
+
+### Building a Complete UI
+
+Combine components to create rich user interfaces:
+
+```rust
+use egui_material3::*;
+
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Top app bar
+        egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
+            ui.add(MaterialTopAppBar::new()
+                .title("My App")
+                .add_action("notifications", |ui| {
+                    // Badge on icon button
+                    MaterialBadge::new().value(5).show(ui, |ui| {
+                        ui.add(MaterialIconButton::new("notifications"));
+                    });
+                }));
+        });
+
+        // Navigation drawer
+        egui::SidePanel::left("drawer").show(ctx, |ui| {
+            ui.add(MaterialDrawer::new()
+                .add_item("Home", "home", || println!("Home"))
+                .add_item("Settings", "settings", || println!("Settings")));
+        });
+
+        // Main content
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // Action buttons with tooltips
+            ui.horizontal(|ui| {
+                MaterialTooltip::new("Create new item").show(ui, |ui| {
+                    if ui.add(MaterialButton::new("New")
+                        .variant(ButtonVariant::Filled)).clicked() {
+                        // Show action sheet
+                        self.show_action_sheet = true;
+                    }
+                });
+            });
+
+            // Data display with cards
+            ui.add(MaterialCard2::elevated()
+                .show(ui, |ui| {
+                    ui.heading("Recent Activity");
+                    ui.add(MaterialTimeline::new(self.recent_events.clone()));
+                }));
+
+            // Notifications
+            if self.has_updates {
+                ui.add(MaterialNotification::new("Update available")
+                    .add_action("Install", || self.install_update())
+                    .closable(true));
+            }
+        });
+
+        // Bottom action sheet
+        if self.show_action_sheet {
+            ui.add(MaterialActionSheet::new()
+                .add_action("Create Document", || println!("Document"))
+                .add_action("Create Folder", || println!("Folder"))
+                .on_dismiss(|| self.show_action_sheet = false));
+        }
+
+        // FAB (Floating Action Button)
+        egui::Area::new("fab")
+            .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -16.0))
+            .show(ctx, |ui| {
+                if ui.add(MaterialFab::primary().icon("add")).clicked() {
+                    println!("FAB clicked");
+                }
+            });
+    }
+}
+```
+
+### Form with Validation
+
+Create forms with Material components:
+
+```rust
+ui.vertical(|ui| {
+    ui.label("User Information");
+
+    // Text inputs with validation
+    ui.add(MaterialTextField::new(&mut self.name)
+        .label("Full Name")
+        .required(true));
+
+    // Selection controls
+    ui.add(MaterialSelect::new(&mut self.country)
+        .label("Country")
+        .options(vec!["USA", "UK", "Canada"]));
+
+    // Checkboxes for preferences
+    ui.add(MaterialCheckbox::new(&mut self.newsletter,
+        "Subscribe to newsletter"));
+
+    ui.add(MaterialCheckbox::new(&mut self.terms,
+        "I agree to the terms"));
+
+    // Action buttons
+    ui.horizontal(|ui| {
+        if ui.add(MaterialButton::new("Submit")
+            .variant(ButtonVariant::Filled)
+            .enabled(self.terms)).clicked() {
+            self.submit_form();
+        }
+
+        ui.add(MaterialButton::new("Cancel")
+            .variant(ButtonVariant::Text));
+    });
+});
+```
+
+## Optional Icon & Emoji Collections
+
+The library provides three comprehensive SVG collections as optional features. Each can be enabled independently:
+
+- **Solar Icons** (`svg_solar`) - ~1,200 UI/UX icons with variants
+- **Noto Emoji** (`svg_noto`) - ~3,600 Google emojis with skin tone and gender variants
+- **Twemoji** (`svg_twemoji`) - ~3,700 Twitter emoji
+
+### Feature Configuration
+
+Choose the collections you need:
 
 ```toml
 [dependencies]
-egui-material3 = { version = "0.0.7", features = ["svg_emoji"] }
+# Enable individual collections (recommended - smaller binary size)
+egui-material3 = { version = "0.0.8", features = ["svg_solar"] }
+
+# Or enable specific combinations
+egui-material3 = { version = "0.0.8", features = ["svg_solar", "svg_noto"] }
+
+# Or enable all collections
+egui-material3 = { version = "0.0.8", features = ["svg_emoji"] }
 ```
+
+### Usage
+
+Icons and emojis are accessible through HashMaps with O(1) lookup:
 
 ```rust
 use egui_material3::svg_emoji::{SOLAR_ICONS, NOTO_EMOJIS, TWEMOJI};
 
-// Get a Solar icon
+// Access Solar icons (requires svg_solar feature)
 if let Some(svg) = SOLAR_ICONS.get("home") {
-    // Use the SVG data
+    // Use SVG data for rendering
 }
 
-// Get a Noto emoji (filename without .svg suffix)
+// Access Noto emoji (requires svg_noto feature)
+// Filename format: "emoji_u" + unicode codepoint
 if let Some(svg) = NOTO_EMOJIS.get("emoji_u1f600") {
-    // Grinning face emoji
+    // 😀 Grinning face emoji
 }
 
-// Get a Twemoji (Unicode codepoint)
+// Access Twemoji (requires svg_twemoji feature)
+// Filename format: unicode codepoint
 if let Some(svg) = TWEMOJI.get("1f600") {
-    // Grinning face emoji
+    // 😀 Grinning face emoji
 }
 ```
+
+**Note**: SVG files are embedded at compile time when features are enabled. If building from crates.io (not git), files are automatically downloaded during build.
 
 ## Features
 
@@ -193,7 +491,7 @@ Enable online image support for `MaterialImageList`:
 
 ```toml
 [dependencies]
-egui-material3 = { version = "0.0.7", features = ["ondemand"] }
+egui-material3 = { version = "0.0.8", features = ["ondemand"] }
 ```
 
 The `MaterialImageList` component supports multiple image sources:
@@ -239,7 +537,7 @@ Enable spreadsheet components with DuckDB backend:
 
 ```toml
 [dependencies]
-egui-material3 = { version = "0.0.7", features = ["spreadsheet"] }
+egui-material3 = { version = "0.0.8", features = ["spreadsheet"] }
 ```
 
 The spreadsheet feature provides:
@@ -271,42 +569,86 @@ ui.add(MaterialSpreadsheet::new(&mut model));
 
 ## Examples
 
-The crate includes comprehensive examples:
+The crate includes comprehensive examples demonstrating all components:
 
 ```bash
-# Showcase of all Material components with theme switching
+# Complete showcase of all Material components with theme switching
 cargo run --example widget_gallery_example
 
-# Real-world data table implementation
+# Real-world data table implementation with Nobel Prize data
 cargo run --example nobel_prizes_example
 
-# Individual component showcase windows
+# Interactive component gallery (recommended for exploration)
 cargo run --example stories
 
-# SVG icon demonstration (shows Solar icons embedded in FAB)
-cargo run --example svg_icon_demo
+# SVG icon demonstration (requires svg_solar feature)
+cargo run --example svg_icon_demo --features svg_solar
+```
 
-# OnDemand example with online image support
+### Stories Example - Component Explorer
+
+The `stories` example provides an interactive gallery with individual showcases for each component:
+
+**Input & Selection**: actionsheet, button, checkbox, chips, iconbutton, radio, select, slider, switch
+**Navigation**: breadcrumbs, drawer, menu, tabs, toolbar, topappbar, treeview
+**Feedback**: badge, dialog, notification, progress, snackbar, tooltip
+**Data Display**: card2, datatable, list, spreadsheet, timeline
+**Media**: carousel, imagelist, layoutgrid, svgemoji, symbol
+
+Each story window demonstrates component variants, states, and common usage patterns.
+
+### Standalone Examples
+
+```bash
+# OnDemand example - demonstrates online image loading
 cd examples/ondemand && cargo run
 
-# Standalone package example with bundled resources
+# Package example - standalone deployable app with bundled resources
 cd examples/package && cargo run
 ```
 
-Example structure:
-- `widget_gallery_example.rs` - Complete showcase with theme controls
-- `nobel_prizes_example.rs` - Data table with real Nobel Prize data
-- `stories/` - Individual component demos (button, card, dialog, drawer, fab, etc.)
-- `ondemand/` - Standalone crate demonstrating online image loading
-- `package/` - Standalone deployable example with all resources
+### Running with Features
+
+```bash
+# Run with spreadsheet support
+cargo run --example stories --features spreadsheet
+
+# Run with all SVG icon collections
+cargo run --example stories --features svg_emoji
+
+# Run with specific features
+cargo run --example stories --features "ondemand,svg_solar"
+```
+
+## Documentation
+
+- [API Documentation](https://docs.rs/egui-material3)
+- [Material Design 3 Guidelines](https://m3.material.io/)
+- [Examples](./examples/)
+
+## Contributing
+
+Contributions are welcome! Please check the [issues](https://github.com/nikescar/egui-material3/issues) for open tasks or create a new one.
+
+## License
+
+Licensed under either of:
+
+- Apache License, Version 2.0 ([LICENSE-Apache-2.0](LICENSE-Apache-2.0) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+---
 
 <details markdown>
-<summary> Todos </summary>
+<summary>Development Notes</summary>
 
 ## Todos
 
-* svg sprite
-* bump with egui_extras for it to having resvg 0.45.1. we are using 0.47 faked version due to some error.
-
+* SVG sprite support
+* Bump egui_extras to match resvg version (currently using patched 0.47)
+* Additional component variants
+* Performance optimizations for large datasets
 
 </details>
