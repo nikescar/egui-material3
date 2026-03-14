@@ -172,7 +172,7 @@ impl ButtonWindow {
     fn render_small_buttons_with_svg_icons(&mut self, ui: &mut Ui) {
         ui.heading("Small Buttons with SVG Icons");
 
-        let disabled = self.is_disabled();
+        let _disabled = self.is_disabled();
                 
         #[cfg(feature = "svg_emoji")]
         {

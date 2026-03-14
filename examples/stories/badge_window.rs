@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
 use crate::{badge, badge_dot, BadgeColor, BadgePosition, BadgeSize, MaterialButton, MaterialIconButton, MaterialFab, FabSize, noto_emoji};
-use eframe::egui::{self, Window, Rect, Vec2, pos2};
+use eframe::egui::{self, Window};
 
 #[doc(hidden)]
 pub struct BadgeWindow {

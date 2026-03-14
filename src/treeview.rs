@@ -1,7 +1,7 @@
 use crate::theme::get_global_color;
 use crate::material_symbol::material_symbol_text;
 use egui::{
-    ecolor::Color32, pos2, FontId, Rect, Response, Sense, Ui, Vec2, Widget, Id,
+    Response, Sense, Ui, Vec2, Widget,
 };
 use std::collections::HashMap;
 
@@ -208,11 +208,11 @@ impl<'a> MaterialTreeView<'a> {
         // Get Material Design colors
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
-        let surface_variant = get_global_color("surfaceVariant");
+        let _surface_variant = get_global_color("surfaceVariant");
         let primary = get_global_color("primary");
 
         // Calculate item width
-        let available_width = ui.available_width();
+        let _available_width = ui.available_width();
 
         ui.horizontal(|ui| {
             ui.add_space(indent);

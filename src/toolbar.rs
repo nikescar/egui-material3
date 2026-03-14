@@ -234,7 +234,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
         let available_width = ui.available_width();
 
         // Allocate space for the toolbar
-        let (rect, mut response) = ui.allocate_exact_size(
+        let (rect, response) = ui.allocate_exact_size(
             Vec2::new(available_width, self.min_height),
             egui::Sense::hover(),
         );

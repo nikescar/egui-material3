@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{notification, MaterialButton, MaterialNotification, NotificationAlign};
+use crate::{notification, MaterialButton, NotificationAlign};
 use eframe::egui::{self, Ui, Window};
 use std::time::{Duration, Instant};
 

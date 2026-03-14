@@ -1,6 +1,6 @@
 use crate::theme::get_global_color;
 use egui::{
-    ecolor::Color32, epaint::CornerRadius, pos2, Align2, FontId, Painter, Pos2, Rect, Response,
+    ecolor::Color32, pos2, FontId, Rect, Response,
     Sense, Ui, Vec2, Widget,
 };
 

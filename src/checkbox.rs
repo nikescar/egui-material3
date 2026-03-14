@@ -169,7 +169,7 @@ impl<'a> Widget for MaterialCheckbox<'a> {
             response.mark_changed();
         }
 
-        let visuals = ui.style().interact(&response);
+        let _visuals = ui.style().interact(&response);
         let checkbox_rect = Rect::from_min_size(
             Pos2::new(rect.min.x, rect.center().y - checkbox_size / 2.0),
             Vec2::splat(checkbox_size),
@@ -181,8 +181,8 @@ impl<'a> Widget for MaterialCheckbox<'a> {
         let on_error = get_global_color("onError");
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
-        let surface_variant = get_global_color("surfaceVariant");
-        let outline = get_global_color("outline");
+        let _surface_variant = get_global_color("surfaceVariant");
+        let _outline = get_global_color("outline");
         let on_primary = self.check_color.unwrap_or_else(|| get_global_color("onPrimary"));
 
         // Determine colors based on state

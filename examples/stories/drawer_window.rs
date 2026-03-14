@@ -1026,7 +1026,7 @@ impl DrawerWindow {
         });
     }
 
-    fn render_drawer_examples(&mut self, ui: &mut Ui) {
+    fn render_drawer_examples(&mut self, _ui: &mut Ui) {
         
     }
 

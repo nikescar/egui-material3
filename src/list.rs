@@ -640,7 +640,7 @@ impl<'a> Widget for MaterialList<'a> {
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
         let outline_variant = get_global_color("outlineVariant");
-        let primary = get_global_color("primary");
+        let _primary = get_global_color("primary");
         let on_primary_container = get_global_color("onPrimaryContainer");
         let primary_container = get_global_color("primaryContainer");
 
@@ -832,7 +832,7 @@ impl<'a> Widget for MaterialList<'a> {
             // Layout constants
             let horizontal_title_gap = item.horizontal_title_gap.unwrap_or(16.0)
                 + visual_density.horizontal * 2.0;
-            let min_vertical_padding = item.min_vertical_padding.unwrap_or(8.0);
+            let _min_vertical_padding = item.min_vertical_padding.unwrap_or(8.0);
             let min_leading_width = item.min_leading_width.unwrap_or(40.0);
             
             let mut content_x = item_rect.min.x + 16.0;
@@ -865,7 +865,7 @@ impl<'a> Widget for MaterialList<'a> {
             } else {
                 0.0
             };
-            let total_trailing_width = trailing_icon_width + trailing_text_width;
+            let _total_trailing_width = trailing_icon_width + trailing_text_width;
 
             // Draw text content based on configuration
             match (&item.overline_text, &item.secondary_text) {

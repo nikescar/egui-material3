@@ -337,7 +337,7 @@ impl Widget for MaterialCard2<'_> {
             // Draw shadow based on elevation
             if elevation > 0.0 {
                 let shadow_offset = (elevation * 0.5).min(4.0);
-                let shadow_blur = elevation * 0.5;
+                let _shadow_blur = elevation * 0.5;
                 let shadow_alpha = (elevation * 3.0).min(30.0) as u8;
                 
                 let shadow_rect = Rect::from_min_size(

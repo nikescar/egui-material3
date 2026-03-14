@@ -160,7 +160,7 @@ impl<'a> MaterialCarousel<'a> {
 impl<'a> egui::Widget for MaterialCarousel<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let id_salt = self.id_salt.as_deref().unwrap_or("material_carousel");
-        let id = ui.make_persistent_id(id_salt);
+        let _id = ui.make_persistent_id(id_salt);
 
         let available_width = ui.available_width();
         let desired_size = Vec2::new(available_width, self.height);

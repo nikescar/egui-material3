@@ -615,7 +615,7 @@ impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
             on_surface_variant.linear_multiply(0.38)
         };
         
-        let text_rect_width = match self.control_affinity {
+        let _text_rect_width = match self.control_affinity {
             ListTileControlAffinity::Leading => rect.max.x - text_x - padding,
             ListTileControlAffinity::Trailing => radio_x - radio_size / 2.0 - gap - text_x,
         };

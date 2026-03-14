@@ -276,9 +276,9 @@ impl MaterialApp {
         let primary_color = theme.get_primary_color();
         let on_primary = theme.get_on_primary_color();
         let surface = theme.get_surface_color(visuals.dark_mode);
-        let on_surface = theme.get_color_by_name("onSurface");
-        let background = theme.get_color_by_name("background");
-        let on_background = theme.get_color_by_name("onBackground");
+        let _on_surface = theme.get_color_by_name("onSurface");
+        let _background = theme.get_color_by_name("background");
+        let _on_background = theme.get_color_by_name("onBackground");
 
         // Apply colors to visuals
         visuals.selection.bg_fill = primary_color;

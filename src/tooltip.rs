@@ -1,6 +1,6 @@
 use crate::theme::get_global_color;
 use egui::{
-    ecolor::Color32, pos2, Area, FontId, Id, Order, Rect, Response, Sense, Stroke, Ui, Vec2,
+    pos2, Area, FontId, Id, Order, Rect, Response, Sense, Stroke, Ui, Vec2,
 };
 
 /// Tooltip position relative to target element

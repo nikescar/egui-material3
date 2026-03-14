@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{radio, radio_group, radio_list_tile, RadioListTile, ListTileControlAffinity, MaterialButton};
+use crate::{radio, radio_group, radio_list_tile, ListTileControlAffinity, MaterialButton};
 use eframe::egui::{self, Window, Color32};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

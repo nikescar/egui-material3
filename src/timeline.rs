@@ -1,5 +1,5 @@
 use crate::get_global_color;
-use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Position where timeline content appears relative to the timeline axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

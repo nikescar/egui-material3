@@ -505,7 +505,7 @@ impl<'a> MaterialDialog<'a> {
                 }
 
                 // Headline with custom padding support
-                let [title_left, title_right, title_top, title_bottom] = 
+                let [title_left, title_right, _title_top, title_bottom] = 
                     title_padding.unwrap_or([24.0, 24.0, 0.0, 0.0]);
                 
                 ui.horizontal(|ui| {
@@ -582,7 +582,7 @@ impl<'a> MaterialDialog<'a> {
 
                 // Actions area with custom padding and spacing
                 if !actions.is_empty() {
-                    let [actions_left, actions_right, actions_top, actions_bottom] = 
+                    let [actions_left, actions_right, actions_top, _actions_bottom] = 
                         actions_padding.unwrap_or([24.0, 24.0, 0.0, 0.0]);
                     
                     // Add spacing between content and actions

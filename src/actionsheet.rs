@@ -231,7 +231,7 @@ impl<'a> MaterialActionSheet<'a> {
             .response
     }
 
-    fn render_content(mut self, ui: &mut Ui, open: &'a mut bool) -> Response {
+    fn render_content(self, ui: &mut Ui, open: &'a mut bool) -> Response {
         let background_color = get_global_color("surfaceContainer");
         let corner_radius = CornerRadius {
             nw: 16,
@@ -275,7 +275,7 @@ impl<'a> MaterialActionSheet<'a> {
         let groups_len = self.groups.len();
 
         // Render groups
-        for (group_idx, mut group) in self.groups.into_iter().enumerate() {
+        for (group_idx, group) in self.groups.into_iter().enumerate() {
             // Draw label if present
             if let Some(label) = &group.label {
                 let label_rect = Rect::from_min_size(

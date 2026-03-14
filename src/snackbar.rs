@@ -371,16 +371,16 @@ impl Widget for MaterialSnackbar<'_> {
             width,
             margin,
             show_close_icon,
-            close_icon_color,
+            close_icon_color: _,
             leading_icon,
-            action_overflow_threshold,
+            action_overflow_threshold: _,
             on_visible: _,
         } = self;
 
         // Material 3 design tokens
         let label_text_color = get_global_color("onInverseSurface");
         let action_text_color = get_global_color("inversePrimary");
-        let default_close_icon_color = get_global_color("onInverseSurface");
+        let _default_close_icon_color = get_global_color("onInverseSurface");
 
         // Calculate leading icon size if present
         let icon_galley = leading_icon.as_ref().map(|icon| {

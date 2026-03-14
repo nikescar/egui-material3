@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{timeline, MaterialButton, MaterialCard2, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant, TimelineItem, TimelinePosition};
+use crate::{timeline, MaterialButton, MaterialCard2, TimelineDot, TimelineDotColor, TimelineDotVariant, TimelineItem, TimelinePosition};
 use eframe::egui::{self, Color32, Window};
 
 #[doc(hidden)]

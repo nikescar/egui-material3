@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
 use crate::{list, list_item, MaterialButton};
-use egui_material3::{ListTileTitleAlignment, VisualDensity};
+use egui_material3::VisualDensity;
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -565,7 +565,7 @@ impl ListWindow {
                 .leading_icon(if is_selected { "check_box".to_string() } else { "check_box_outline_blank".to_string() })
                 .selected(is_selected)
                 .on_click({
-                    let items = &mut self.selected_items;
+                    let _items = &mut self.selected_items;
                     let idx = i;
                     move || {
                         // Note: This won't work as expected due to ownership
