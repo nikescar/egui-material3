@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
 use crate::{
-    show_tooltip_on_hover, tooltip, MaterialButton, MaterialCard2, MaterialIconButton,
+    noto_emoji, show_tooltip_on_hover, tooltip, MaterialButton, MaterialCard2, MaterialIconButton,
     TooltipPosition,
 };
 use eframe::egui::{self, Ui, Window};
@@ -94,22 +94,22 @@ impl TooltipWindow {
         ui.label("Icon buttons benefit from tooltips to explain their function:");
 
         ui.horizontal_wrapped(|ui| {
-            let icon1 = ui.add(MaterialIconButton::standard("home").size(40.0));
+            let icon1 = ui.add(MaterialIconButton::standard(noto_emoji::HOUSE_BUILDING).size(40.0));
             show_tooltip_on_hover(ui, &icon1, "Home", TooltipPosition::Bottom);
 
-            let icon2 = ui.add(MaterialIconButton::standard("search").size(40.0));
+            let icon2 = ui.add(MaterialIconButton::standard(noto_emoji::RIGHT_POINTING_MAGNIFYING_GLASS).size(40.0));
             show_tooltip_on_hover(ui, &icon2, "Search", TooltipPosition::Bottom);
 
-            let icon3 = ui.add(MaterialIconButton::standard("settings").size(40.0));
+            let icon3 = ui.add(MaterialIconButton::standard(noto_emoji::GEAR).size(40.0));
             show_tooltip_on_hover(ui, &icon3, "Settings", TooltipPosition::Bottom);
 
-            let icon4 = ui.add(MaterialIconButton::standard("favorite").size(40.0));
+            let icon4 = ui.add(MaterialIconButton::standard(noto_emoji::SPARKLING_HEART).size(40.0));
             show_tooltip_on_hover(ui, &icon4, "Favorite", TooltipPosition::Bottom);
 
-            let icon5 = ui.add(MaterialIconButton::standard("share").size(40.0));
+            let icon5 = ui.add(MaterialIconButton::standard(noto_emoji::ARROW_POINTING_RIGHTWARDS_THEN_CURVING_UPWARDS).size(40.0));
             show_tooltip_on_hover(ui, &icon5, "Share", TooltipPosition::Bottom);
 
-            let icon6 = ui.add(MaterialIconButton::standard("delete").size(40.0));
+            let icon6 = ui.add(MaterialIconButton::standard(noto_emoji::WASTEBASKET).size(40.0));
             show_tooltip_on_hover(ui, &icon6, "Delete", TooltipPosition::Bottom);
         });
 
@@ -120,16 +120,16 @@ impl TooltipWindow {
         ui.label("All icon button variants support tooltips:");
 
         ui.horizontal_wrapped(|ui| {
-            let icon1 = ui.add(MaterialIconButton::standard("info").size(40.0));
+            let icon1 = ui.add(MaterialIconButton::standard(noto_emoji::INFORMATION_SOURCE).size(40.0));
             show_tooltip_on_hover(ui, &icon1, "Standard icon button", TooltipPosition::Top);
 
-            let icon2 = ui.add(MaterialIconButton::filled("check_circle").size(40.0));
+            let icon2 = ui.add(MaterialIconButton::filled(noto_emoji::WHITE_HEAVY_CHECK_MARK).size(40.0));
             show_tooltip_on_hover(ui, &icon2, "Filled icon button", TooltipPosition::Top);
 
-            let icon3 = ui.add(MaterialIconButton::filled_tonal("notifications").size(40.0));
+            let icon3 = ui.add(MaterialIconButton::filled_tonal(noto_emoji::BELL).size(40.0));
             show_tooltip_on_hover(ui, &icon3, "Filled tonal icon button", TooltipPosition::Top);
 
-            let icon4 = ui.add(MaterialIconButton::outlined("mail").size(40.0));
+            let icon4 = ui.add(MaterialIconButton::outlined(noto_emoji::ENVELOPE).size(40.0));
             show_tooltip_on_hover(ui, &icon4, "Outlined icon button", TooltipPosition::Top);
         });
 
