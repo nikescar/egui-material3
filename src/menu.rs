@@ -42,6 +42,7 @@ pub enum Positioning {
 /// - `min_width`: `112.0`
 /// - `max_width`: `280.0`
 #[derive(Clone, Debug)]
+#[derive(Default)]
 pub struct MenuStyle {
     /// The menu's background fill color.
     pub background_color: Option<Color32>,
@@ -61,20 +62,6 @@ pub struct MenuStyle {
     pub corner_radius: Option<f32>,
 }
 
-impl Default for MenuStyle {
-    fn default() -> Self {
-        Self {
-            background_color: None,
-            shadow_color: None,
-            surface_tint_color: None,
-            elevation: None,
-            padding: None,
-            min_width: None,
-            max_width: None,
-            corner_radius: None,
-        }
-    }
-}
 
 impl MenuStyle {
     /// Returns a copy of this `MenuStyle` where `None` fields are
@@ -157,6 +144,7 @@ pub struct MenuBarThemeData {
 /// - `icon_size`: `24.0`
 /// - `padding_horizontal`: `12.0`
 #[derive(Clone, Debug)]
+#[derive(Default)]
 pub struct MenuButtonThemeData {
     /// Text/foreground color for enabled menu items.
     pub foreground_color: Option<Color32>,
@@ -180,22 +168,6 @@ pub struct MenuButtonThemeData {
     pub padding_horizontal: Option<f32>,
 }
 
-impl Default for MenuButtonThemeData {
-    fn default() -> Self {
-        Self {
-            foreground_color: None,
-            icon_color: None,
-            disabled_foreground_color: None,
-            disabled_icon_color: None,
-            hover_overlay_opacity: None,
-            pressed_overlay_opacity: None,
-            text_font: None,
-            min_height: None,
-            icon_size: None,
-            padding_horizontal: None,
-        }
-    }
-}
 
 impl MenuButtonThemeData {
     /// Resolve all button theme values, applying M3 defaults for `None` fields.
@@ -605,7 +577,7 @@ impl<'a> MaterialMenu<'a> {
             )
         } else {
             // Center on screen
-            let screen_rect = ctx.screen_rect();
+            let screen_rect = ctx.content_rect();
             screen_rect.center() - menu_size / 2.0
         };
 

@@ -28,33 +28,27 @@ use egui::{
 /// ```
 /// Visual variant of the select component.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum SelectVariant {
     /// Filled variant with background color
+    #[default]
     Filled,
     /// Outlined variant with border
     Outlined,
 }
 
-impl Default for SelectVariant {
-    fn default() -> Self {
-        Self::Filled
-    }
-}
 
 /// Menu alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum MenuAlignment {
     /// Align menu to start edge
+    #[default]
     Start,
     /// Align menu to end edge
     End,
 }
 
-impl Default for MenuAlignment {
-    fn default() -> Self {
-        Self::Start
-    }
-}
 
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialSelect<'a> {
@@ -332,7 +326,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Arguments
     /// * `keep_open` - If true, the dropdown remains open after selection;
-    ///                 if false, it closes (default behavior)
+    ///   if false, it closes (default behavior)
     ///
     /// # Example
     /// ```rust

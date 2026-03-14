@@ -175,6 +175,12 @@ pub struct ListItem<'a> {
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
+impl<'a> Default for MaterialList<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> MaterialList<'a> {
     /// Create a new empty list.
     ///

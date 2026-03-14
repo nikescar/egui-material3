@@ -95,7 +95,7 @@ impl MaterialTooltip {
         );
 
         // Calculate tooltip position based on preferred position
-        let screen_rect = ui.ctx().screen_rect();
+        let screen_rect = ui.ctx().content_rect();
         let tooltip_pos = self.calculate_position(target_rect, tooltip_size, screen_rect);
 
         // Create unique ID for this tooltip

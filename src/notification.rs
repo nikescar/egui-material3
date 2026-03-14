@@ -192,7 +192,7 @@ impl MaterialNotification {
         let bg_color = self.bg_color.unwrap_or(surface_container_highest);
 
         // Calculate notification width
-        let screen_rect = ui.ctx().screen_rect();
+        let screen_rect = ui.ctx().content_rect();
         let max_width: f32 = 400.0;
         let width = self.width.unwrap_or(max_width.min(screen_rect.width() - 48.0));
 
@@ -264,7 +264,7 @@ impl MaterialNotification {
         // Position notification based on alignment
         // Use screen_rect to keep notifications fixed in viewport (not affected by scrolling)
         // Add 50px to avoid being cropped by window header
-        let screen_rect = ui.ctx().screen_rect();
+        let screen_rect = ui.ctx().content_rect();
         let notification_x = match self.align {
             NotificationAlign::Left => screen_rect.min.x + 16.0,
             NotificationAlign::Center => screen_rect.min.x + (screen_rect.width() - width) / 2.0,

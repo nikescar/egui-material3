@@ -40,6 +40,7 @@ pub struct MaterialCarousel<'a> {
 }
 
 /// A single item in a carousel.
+#[allow(clippy::type_complexity)]
 pub struct CarouselItem<'a> {
     content: Box<dyn FnOnce(&mut Ui, Rect) + 'a>,
 }
@@ -131,30 +132,6 @@ impl<'a> MaterialCarousel<'a> {
         self
     }
 
-    /// Compute the width of an item based on its position relative to viewport edges.
-    ///
-    /// Items fully within the viewport get `item_extent`.
-    /// Items partially outside shrink towards `shrink_extent`.
-    fn compute_item_width(&self, item_left: f32, item_right: f32, viewport_left: f32, viewport_right: f32) -> f32 {
-        let full = self.item_extent;
-        let min = self.shrink_extent;
-
-        // How much of the item is clipped on the left
-        let left_clip = (viewport_left - item_left).max(0.0);
-        // How much of the item is clipped on the right
-        let right_clip = (item_right - viewport_right).max(0.0);
-
-        let total_clip = left_clip + right_clip;
-        if total_clip <= 0.0 {
-            return full;
-        }
-
-        // Proportion clipped
-        let clip_ratio = (total_clip / full).min(1.0);
-        // Lerp from full to min
-        let width = full - (full - min) * clip_ratio;
-        width.max(min)
-    }
 }
 
 impl<'a> egui::Widget for MaterialCarousel<'a> {
@@ -237,6 +214,7 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
         // We need to consume items, so iterate with index tracking
         let mut items_vec: Vec<Option<CarouselItem<'a>>> = self.items.into_iter().map(Some).collect();
 
+        #[allow(clippy::needless_range_loop)]
         for i in first_visible..last_visible {
             let item_content_left = i as f32 * item_step + padding;
             let item_content_right = item_content_left + item_extent;

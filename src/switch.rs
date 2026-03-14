@@ -237,19 +237,11 @@ impl<'a> Widget for MaterialSwitch<'a> {
                 on_primary
             };
             let outline = Color32::TRANSPARENT;
-            let icon = if is_pressed || is_hovered || is_focused {
-                on_primary_container
-            } else {
-                on_primary_container
-            };
+            let icon = on_primary_container;
             (track, thumb, outline, icon)
         } else {
             // Unselected (off) state
-            let track = if is_pressed || is_hovered || is_focused {
-                surface_container_highest
-            } else {
-                surface_container_highest
-            };
+            let track = surface_container_highest;
             let thumb = if is_pressed || is_hovered || is_focused {
                 on_surface_variant
             } else {

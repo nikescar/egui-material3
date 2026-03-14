@@ -328,7 +328,7 @@ impl Widget for MaterialTopAppBar<'_> {
                 let nav_icon_text = if nav_icon.chars().count() == 1 {
                     // If it's a single character, check if it's in Material Symbols range
                     let ch = nav_icon.chars().next().unwrap();
-                    if (ch >= '\u{e000}' && ch <= '\u{f8ff}') || (ch >= '\u{ea00}' && ch <= '\u{eb8d}') {
+                    if ('\u{e000}'..='\u{f8ff}').contains(&ch) || ('\u{ea00}'..='\u{eb8d}').contains(&ch) {
                         // It's already a Material Symbol character, use it directly
                         nav_icon.clone()
                     } else {
@@ -436,7 +436,7 @@ impl Widget for MaterialTopAppBar<'_> {
                 let action_icon_text = if action_icon.chars().count() == 1 {
                     // If it's a single character, check if it's in Material Symbols range
                     let ch = action_icon.chars().next().unwrap();
-                    if (ch >= '\u{e000}' && ch <= '\u{f8ff}') || (ch >= '\u{ea00}' && ch <= '\u{eb8d}') {
+                    if ('\u{e000}'..='\u{f8ff}').contains(&ch) || ('\u{ea00}'..='\u{eb8d}').contains(&ch) {
                         // It's already a Material Symbol character, use it directly
                         action_icon.clone()
                     } else {

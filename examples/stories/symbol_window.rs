@@ -16,9 +16,7 @@ use eframe::egui::{self, Window};
 pub struct SymbolWindow {
     pub open: bool,
     filter_selected_1: bool,
-    filter_selected_2: bool,
     filter_selected_3: bool,
-    filter_selected_4: bool,
 }
 
 impl Default for SymbolWindow {
@@ -26,9 +24,7 @@ impl Default for SymbolWindow {
         Self {
             open: false,
             filter_selected_1: false,
-            filter_selected_2: true,
             filter_selected_3: false,
-            filter_selected_4: true,
         }
     }
 }

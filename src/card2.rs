@@ -37,6 +37,7 @@ pub enum Card2Variant {
 /// # });
 /// ```
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
+#[allow(clippy::type_complexity)]
 pub struct MaterialCard2<'a> {
     variant: Card2Variant,
     header_title: Option<String>,
@@ -228,15 +229,15 @@ impl<'a> MaterialCard2<'a> {
     /// Calculate surface tint overlay based on elevation level.
     /// Material 3 uses elevation levels: 0 (0%), 1 (5%), 2 (8%), 3 (11%), 4 (12%), 5 (14%)
     fn calculate_tint_overlay(&self, elevation: f32) -> f32 {
-        let opacity = match elevation as i32 {
+        
+        match elevation as i32 {
             0 => 0.0,
             1 => 0.05,
             2..=3 => 0.08,
             4..=6 => 0.11,
             7..=8 => 0.12,
             _ => 0.14,
-        };
-        opacity
+        }
     }
 
     /// Blend surface tint color with base color based on elevation.

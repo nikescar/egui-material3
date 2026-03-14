@@ -170,7 +170,7 @@ impl<'a, T: PartialEq + Clone> Widget for MaterialRadio<'a, T> {
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
-        let is_selected = self.selected.as_ref().map_or(false, |s| s == &self.value);
+        let is_selected = self.selected.as_ref() == Some(&self.value);
 
         if response.clicked() && self.enabled {
             if self.toggleable && is_selected {
@@ -511,7 +511,7 @@ impl<'a, T: PartialEq + Clone> RadioListTile<'a, T> {
 
 impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let is_selected = self.selected.as_ref().map_or(false, |s| s == &self.value);
+        let is_selected = self.selected.as_ref() == Some(&self.value);
         
         // Calculate dimensions
         let height = if self.dense {

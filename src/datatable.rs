@@ -176,41 +176,35 @@ pub struct MaterialDataTable<'a> {
     sort_direction: SortDirection,
     default_row_height: f32,
     theme: DataTableTheme,
-    row_hover_states: HashMap<usize, bool>,
     auto_height: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[derive(Default)]
 pub enum VAlign {
     Top,
+    #[default]
     Center,
     Bottom,
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[derive(Default)]
 pub enum HAlign {
+    #[default]
     Left,
     Center,
     Right,
 }
 
-impl Default for VAlign {
-    fn default() -> Self {
-        VAlign::Center
-    }
-}
 
-impl Default for HAlign {
-    fn default() -> Self {
-        HAlign::Left
-    }
-}
 
 #[derive(Clone)]
 pub struct DataTableColumn {
     /// Display title for the column header (can be text or widget closure)
     pub title: String,
     /// Optional widget builder for custom header content
+    #[allow(clippy::type_complexity)]
     pub header_widget: Option<std::sync::Arc<dyn Fn(&mut Ui) + Send + Sync>>,
     /// Fixed width of the column in pixels
     pub width: f32,
@@ -233,16 +227,13 @@ pub struct DataTableColumn {
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Default)]
 pub enum SortDirection {
+    #[default]
     Ascending,
     Descending,
 }
 
-impl Default for SortDirection {
-    fn default() -> Self {
-        SortDirection::Ascending
-    }
-}
 
 pub enum CellContent {
     Text(WidgetText),
@@ -314,8 +305,15 @@ pub struct DataTableRow<'a> {
     color: Option<Color32>,
     on_hover: bool,
     /// Optional drawer widget rendered below the row when expanded
+    #[allow(clippy::type_complexity)]
     drawer: Option<std::sync::Arc<dyn Fn(&mut Ui) + Send + Sync>>,
     _phantom: std::marker::PhantomData<&'a ()>,
+}
+
+impl<'a> Default for DataTableRow<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> DataTableRow<'a> {
@@ -408,7 +406,6 @@ impl<'a> MaterialDataTable<'a> {
             sort_direction: SortDirection::Ascending,
             default_row_height: 52.0,
             theme: DataTableTheme::default(),
-            row_hover_states: HashMap::new(),
             auto_height: false,
         }
     }
@@ -1666,11 +1663,11 @@ impl<'a> MaterialDataTable<'a> {
                             let clipped_rect = content_rect.intersect(parent_clip_rect);
 
                             // Use child_ui with proper clip rect inheritance
-                            let mut child_ui = ui.child_ui_with_id_source(
-                                content_rect,
-                                egui::Layout::top_down(egui::Align::LEFT),
-                                format!("drawer_{}", row_idx),
-                                None,
+                            let mut child_ui = ui.new_child(
+                                egui::UiBuilder::new()
+                                    .max_rect(content_rect)
+                                    .layout(egui::Layout::top_down(egui::Align::LEFT))
+                                    .id_salt(format!("drawer_{}", row_idx))
                             );
                             child_ui.set_clip_rect(clipped_rect);
                             drawer_fn(&mut child_ui);

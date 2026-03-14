@@ -321,11 +321,7 @@ impl<'a> MaterialActionSheet<'a> {
                     get_global_color("onSurface")
                 };
 
-                let font_id = if button.bold {
-                    egui::FontId::proportional(16.0)
-                } else {
-                    egui::FontId::proportional(16.0)
-                };
+                let font_id = egui::FontId::proportional(16.0);
 
                 let text_pos = pos2(button_rect.min.x + 16.0, current_y + button_height / 2.0);
 

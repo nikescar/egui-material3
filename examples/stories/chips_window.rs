@@ -17,10 +17,6 @@ pub struct ChipsWindow {
     filter_icon_selected: bool,
     filter_removable_selected: bool,
     filter_elevated_selected: bool,
-    // Small filter chip states
-    small_filter_selected_1: bool,
-    small_filter_selected_2: bool,
-    small_filter_selected_3: bool,
 }
 
 impl Default for ChipsWindow {
@@ -35,9 +31,6 @@ impl Default for ChipsWindow {
             filter_icon_selected: false,
             filter_removable_selected: true,
             filter_elevated_selected: false,
-            small_filter_selected_1: true,
-            small_filter_selected_2: false,
-            small_filter_selected_3: true,
         }
     }
 }
@@ -333,12 +326,14 @@ impl ChipsWindow {
         {
             ui.horizontal_wrapped(|ui| {
                 // Basic small filter chip
-                ui.add(filter_chip(l("Filter"), &mut self.small_filter_selected_1).small());
+                let mut small_filter_selected_1 = true;
+                ui.add(filter_chip(l("Filter"), &mut small_filter_selected_1).small());
                 ui.add_space(8.0);
 
                 // Small filter with material icon
+                let mut small_filter_selected_2 = false;
                 ui.add(
-                    filter_chip(l("Icon"), &mut self.small_filter_selected_2)
+                    filter_chip(l("Icon"), &mut small_filter_selected_2)
                         .small()
                         .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE),
                 );
@@ -356,8 +351,9 @@ impl ChipsWindow {
                 }
 
                 if let Some(&bookmark_svg) = SOLAR_ICONS.get("bookmark") {
+                    let mut small_filter_selected_3 = true;
                     ui.add(
-                        filter_chip(l("Save"), &mut self.small_filter_selected_3)
+                        filter_chip(l("Save"), &mut small_filter_selected_3)
                             .small()
                             .leading_icon_svg(bookmark_svg),
                     );

@@ -18,9 +18,8 @@ pub struct SliderWindow {
     price_range: RangeValues,
     time_range: RangeValues,
     age_range: RangeValues,
-    
+
     // Real-world examples
-    volume_value: f32,
     brightness_value: f32,
     contrast_value: f32,
     saturation_value: f32,
@@ -61,7 +60,6 @@ impl Default for SliderWindow {
             price_range: RangeValues::new(100.0, 500.0),
             time_range: RangeValues::new(9.0, 17.0),
             age_range: RangeValues::new(25.0, 45.0),
-            volume_value: 65.0,
             brightness_value: 80.0,
             contrast_value: 50.0,
             saturation_value: 50.0,

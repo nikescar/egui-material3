@@ -1,6 +1,6 @@
 use crate::get_global_color;
 use egui::{
-    Align, Color32, Layout, Response, Rounding, Shadow, Stroke, Ui, Vec2, Widget,
+    Align, Color32, CornerRadius, Layout, Response, Shadow, Stroke, Ui, Vec2, Widget,
 };
 
 /// Material Design toolbar component.
@@ -220,7 +220,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
         let surface_tint = get_global_color("surfaceTint");
 
         // Determine background color based on position and state
-        let bg_color = self.bg_color.unwrap_or_else(|| {
+        let bg_color = self.bg_color.unwrap_or({
             if self.top {
                 // Top toolbar uses surface with elevation
                 surface
@@ -258,7 +258,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
                     let alpha = (16 / (i + 1)) as u8;
                     ui.painter().rect_filled(
                         shadow_rect.expand(blur_offset),
-                        Rounding::ZERO,
+                        CornerRadius::ZERO,
                         Color32::from_black_alpha(alpha),
                     );
                 }
@@ -269,7 +269,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
                 // Top toolbar with elevation tint
                 ui.painter().rect_filled(
                     rect,
-                    Rounding::ZERO,
+                    CornerRadius::ZERO,
                     bg_color,
                 );
 
@@ -282,25 +282,21 @@ impl<'a> Widget for MaterialToolbar<'a> {
                 );
                 ui.painter().rect_filled(
                     rect,
-                    Rounding::ZERO,
+                    CornerRadius::ZERO,
                     tint_overlay,
                 );
             } else {
                 // Bottom navigation - flat surface
                 ui.painter().rect_filled(
                     rect,
-                    Rounding::ZERO,
+                    CornerRadius::ZERO,
                     bg_color,
                 );
             }
 
             // Draw outline/border with proper Material Design colors
             if self.outline {
-                let border_color = if self.top {
-                    outline_variant // Subtle for top
-                } else {
-                    outline_variant // Subtle for bottom
-                };
+                let border_color = outline_variant; // Subtle for both top and bottom
 
                 let border_y = if self.top {
                     rect.max.y
@@ -318,10 +314,10 @@ impl<'a> Widget for MaterialToolbar<'a> {
             }
 
             // Create a child UI for content
-            let mut child_ui = ui.child_ui(
-                rect.shrink2(self.padding),
-                Layout::left_to_right(Align::Center),
-                None,
+            let mut child_ui = ui.new_child(
+                egui::UiBuilder::new()
+                    .max_rect(rect.shrink2(self.padding))
+                    .layout(Layout::left_to_right(Align::Center))
             );
 
             child_ui.spacing_mut().item_spacing.x = self.item_spacing;

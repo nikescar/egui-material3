@@ -281,6 +281,7 @@ pub fn debug_layout_grid() -> MaterialLayoutGrid<'static> {
 /// # });
 /// ```
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
+#[allow(clippy::type_complexity)]
 pub struct GridTileBar<'a> {
     background_color: Option<Color32>,
     leading: Option<Box<dyn FnOnce(&mut Ui) + 'a>>,

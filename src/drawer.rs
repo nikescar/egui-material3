@@ -24,6 +24,7 @@ pub enum DrawerAlignment {
 
 /// Theme data for Material Design drawers.
 #[derive(Clone, Debug)]
+#[derive(Default)]
 pub struct DrawerThemeData {
     pub background_color: Option<Color32>,
     pub scrim_color: Option<Color32>,
@@ -36,21 +37,6 @@ pub struct DrawerThemeData {
     pub clip_behavior: Option<bool>,
 }
 
-impl Default for DrawerThemeData {
-    fn default() -> Self {
-        Self {
-            background_color: None,
-            scrim_color: None,
-            elevation: None,
-            shadow_color: None,
-            surface_tint_color: None,
-            shape: None,
-            end_shape: None,
-            width: None,
-            clip_behavior: None,
-        }
-    }
-}
 
 impl DrawerThemeData {
     /// Create Material 3 defaults for drawer theming.
@@ -527,7 +513,7 @@ impl<'a> MaterialDrawer<'a> {
     fn show_modal(self, ctx: &egui::Context) -> Response {
         if *self.open {
             // Draw scrim background
-            let screen_rect = ctx.screen_rect();
+            let screen_rect = ctx.content_rect();
             let scrim_color = self.theme.scrim_color
                 .unwrap_or(Color32::from_rgba_unmultiplied(0, 0, 0, 138));
             
@@ -573,11 +559,10 @@ impl<'a> MaterialDrawer<'a> {
         if matches!(
             self.variant,
             DrawerVariant::Dismissible | DrawerVariant::Modal
-        ) {
-            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+        )
+            && ui.input(|i| i.key_pressed(egui::Key::Escape)) {
                 *self.open = false;
             }
-        }
 
         let available_rect = ui.available_rect_before_wrap();
         let drawer_rect = Rect::from_min_size(
@@ -705,6 +690,7 @@ impl<'a> MaterialDrawer<'a> {
         response
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn render_navigation_item(
         &self,
         ui: &mut Ui,

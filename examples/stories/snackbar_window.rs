@@ -317,7 +317,7 @@ impl SnackbarWindow {
             egui::Area::new("basic_snackbar".into())
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
-                    ui.set_clip_rect(ctx.screen_rect());
+                    ui.set_clip_rect(ctx.content_rect());
 
                     let mut snackbar = snackbar(&self.message_text)
                         .auto_dismiss(None)
@@ -358,7 +358,7 @@ impl SnackbarWindow {
             egui::Area::new("action_snackbar".into())
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
-                    ui.set_clip_rect(ctx.screen_rect());
+                    ui.set_clip_rect(ctx.content_rect());
 
                     let message = self.message_text.clone();
                     let action_text = self.action_text.clone();
@@ -405,7 +405,7 @@ impl SnackbarWindow {
             egui::Area::new("top_snackbar".into())
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
-                    ui.set_clip_rect(ctx.screen_rect());
+                    ui.set_clip_rect(ctx.content_rect());
 
                     let mut snackbar = snackbar(&self.message_text)
                         .position(SnackbarPosition::Top)

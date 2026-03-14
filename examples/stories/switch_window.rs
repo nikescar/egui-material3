@@ -35,7 +35,6 @@ pub struct SwitchWindow {
     // State demonstration
     state_demo_normal: bool,
     state_demo_hover: bool,
-    state_demo_focused: bool,
     state_demo_pressed: bool,
     state_demo_disabled: bool,
 }
@@ -65,7 +64,6 @@ impl Default for SwitchWindow {
             icon_done_clear: false,
             state_demo_normal: false,
             state_demo_hover: false,
-            state_demo_focused: false,
             state_demo_pressed: false,
             state_demo_disabled: true,
         }

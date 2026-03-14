@@ -15,7 +15,6 @@ pub struct SelectWindow {
     error_text: String,
     supporting_text: String,
     error: bool,
-    clamp_menu_width: bool,
     menu_align: String,
     menu_positioning: String,
     leading_icon: String,
@@ -39,7 +38,6 @@ pub struct SelectWindow {
     // New variant examples
     variant_demo_filled: Option<usize>,
     variant_demo_outlined: Option<usize>,
-    filter_demo: Option<usize>,
     validation_demo: Option<usize>,
     custom_style_demo: Option<usize>,
 }
@@ -57,7 +55,6 @@ impl Default for SelectWindow {
             error_text: "This field is required".to_string(),
             supporting_text: "Select your favorite fruit".to_string(),
             error: false,
-            clamp_menu_width: false,
             menu_align: "start".to_string(),
             menu_positioning: "absolute".to_string(),
             leading_icon: String::new(),
@@ -81,7 +78,6 @@ impl Default for SelectWindow {
             // New variant examples
             variant_demo_filled: Some(1),
             variant_demo_outlined: Some(1),
-            filter_demo: None,
             validation_demo: None,
             custom_style_demo: Some(2),
         }

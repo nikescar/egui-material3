@@ -135,7 +135,7 @@ impl DrawerWindow {
                             ui.set_width(drawer_width);
                             
                             egui::ScrollArea::vertical()
-                                .id_source("permanent_drawer_scroll")
+                                .id_salt("permanent_drawer_scroll")
                                 .show(ui, |ui| {
                                 // Header
                                 if self.show_header {
@@ -195,7 +195,7 @@ impl DrawerWindow {
                         egui::Layout::top_down(egui::Align::Min),
                         |ui| {
                             egui::ScrollArea::vertical()
-                                .id_source("permanent_drawer_content_scroll")
+                                .id_salt("permanent_drawer_content_scroll")
                                 .show(ui, |ui| {
                                 ui.add_space(20.0);
                                 ui.heading(format!("{} - Content Area", self.selected_menu_item));

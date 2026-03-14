@@ -375,7 +375,7 @@ fn resolve_chip_colors(
 
 impl<'a> Widget for MaterialChip<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let is_selected = self.selected.as_ref().map_or(false, |s| **s);
+        let is_selected = self.selected.as_ref().is_some_and(|s| **s);
 
         let text_width = ui.painter().layout_no_wrap(
             self.text.clone(),

@@ -114,20 +114,6 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 struct MaterialApp {
-    text_content: String,
-    checkbox_checked: bool,
-    checkbox_indeterminate: bool,
-    filter_chip_selected: bool,
-    dialog_open: bool,
-    menu_open: bool,
-    icon_button_selected: bool,
-    // New control states
-    progress_value: f32,
-    radio_selected: Option<usize>,
-    select_selected: Option<usize>,
-    slider_value: f32,
-    switch_enabled: bool,
-    tab_selected: usize,
     // Theme changer controls
     file_dialog: FileDialog,
     selected_file_path: Option<PathBuf>,
@@ -171,19 +157,6 @@ struct MaterialApp {
 impl Default for MaterialApp {
     fn default() -> Self {
         Self {
-            text_content: String::new(),
-            checkbox_checked: false,
-            checkbox_indeterminate: false,
-            filter_chip_selected: false,
-            dialog_open: false,
-            menu_open: false,
-            icon_button_selected: false,
-            progress_value: 0.0,
-            radio_selected: None,
-            select_selected: None,
-            slider_value: 0.0,
-            switch_enabled: false,
-            tab_selected: 0,
             file_dialog: FileDialog::new(),
             selected_file_path: None,
             color_pickers_open: HashMap::new(),
@@ -316,86 +289,6 @@ impl MaterialApp {
         visuals.extreme_bg_color = theme.get_color_by_name("surfaceContainerLowest");
 
         ctx.set_visuals(visuals);
-    }
-
-    fn lighten_color(&self, color: Color32, factor: f32) -> Color32 {
-        let r = (color.r() as f32 + (255.0 - color.r() as f32) * factor).min(255.0) as u8;
-        let g = (color.g() as f32 + (255.0 - color.g() as f32) * factor).min(255.0) as u8;
-        let b = (color.b() as f32 + (255.0 - color.b() as f32) * factor).min(255.0) as u8;
-        Color32::from_rgb(r, g, b)
-    }
-
-    fn darken_color(&self, color: Color32, factor: f32) -> Color32 {
-        let r = (color.r() as f32 * (1.0 - factor)).max(0.0) as u8;
-        let g = (color.g() as f32 * (1.0 - factor)).max(0.0) as u8;
-        let b = (color.b() as f32 * (1.0 - factor)).max(0.0) as u8;
-        Color32::from_rgb(r, g, b)
-    }
-
-    fn is_dark_color(&self, color: Color32) -> bool {
-        let luminance =
-            0.299 * color.r() as f32 + 0.587 * color.g() as f32 + 0.114 * color.b() as f32;
-        luminance < 128.0
-    }
-
-    fn adjust_color_hue(&self, color: Color32, hue_shift: f32) -> Color32 {
-        // Convert to HSV, adjust hue, convert back
-        let r = color.r() as f32 / 255.0;
-        let g = color.g() as f32 / 255.0;
-        let b = color.b() as f32 / 255.0;
-
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
-        let delta = max - min;
-
-        let mut hue = if delta == 0.0 {
-            0.0
-        } else if max == r {
-            60.0 * (((g - b) / delta) % 6.0)
-        } else if max == g {
-            60.0 * ((b - r) / delta + 2.0)
-        } else {
-            60.0 * ((r - g) / delta + 4.0)
-        };
-
-        if hue < 0.0 {
-            hue += 360.0;
-        }
-
-        // Adjust hue
-        hue = (hue + hue_shift) % 360.0;
-        if hue < 0.0 {
-            hue += 360.0;
-        }
-
-        let saturation = if max == 0.0 { 0.0 } else { delta / max };
-        let value = max;
-
-        // Convert back to RGB
-        let h = hue / 60.0;
-        let c = value * saturation;
-        let x = c * (1.0 - ((h % 2.0) - 1.0).abs());
-        let m = value - c;
-
-        let (r_prime, g_prime, b_prime) = if h < 1.0 {
-            (c, x, 0.0)
-        } else if h < 2.0 {
-            (x, c, 0.0)
-        } else if h < 3.0 {
-            (0.0, c, x)
-        } else if h < 4.0 {
-            (0.0, x, c)
-        } else if h < 5.0 {
-            (x, 0.0, c)
-        } else {
-            (c, 0.0, x)
-        };
-
-        let r = ((r_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        let g = ((g_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-        let b = ((b_prime + m) * 255.0).clamp(0.0, 255.0) as u8;
-
-        Color32::from_rgb(r, g, b)
     }
 
     /// Close all open demo windows

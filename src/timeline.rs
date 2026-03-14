@@ -3,10 +3,12 @@ use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget}
 
 /// Position where timeline content appears relative to the timeline axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum TimelinePosition {
     /// Content appears on the left side of the timeline
     Left,
     /// Content appears on the right side of the timeline
+    #[default]
     Right,
     /// Content alternates between left and right sides
     Alternate,
@@ -14,16 +16,13 @@ pub enum TimelinePosition {
     AlternateReverse,
 }
 
-impl Default for TimelinePosition {
-    fn default() -> Self {
-        Self::Right
-    }
-}
 
 /// Variant for timeline dot appearance.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum TimelineDotVariant {
     /// Filled solid dot
+    #[default]
     Filled,
     /// Outlined dot with border
     Outlined,
@@ -31,8 +30,10 @@ pub enum TimelineDotVariant {
 
 /// Color scheme for timeline dot.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum TimelineDotColor {
     /// Grey color (default)
+    #[default]
     Grey,
     /// Inherit color from context
     Inherit,
@@ -50,17 +51,7 @@ pub enum TimelineDotColor {
     Warning,
 }
 
-impl Default for TimelineDotColor {
-    fn default() -> Self {
-        Self::Grey
-    }
-}
 
-impl Default for TimelineDotVariant {
-    fn default() -> Self {
-        Self::Filled
-    }
-}
 
 /// Material Design timeline component.
 ///
@@ -97,6 +88,7 @@ pub struct TimelineItem<'a> {
     /// Main content text
     content: Option<String>,
     /// Custom content renderer (takes precedence over content text)
+    #[allow(clippy::type_complexity)]
     content_custom: Option<Box<dyn Fn(&mut Ui) + 'a>>,
     /// Optional opposite side content
     opposite_content: Option<String>,
@@ -450,7 +442,6 @@ impl<'a> Default for MaterialTimeline<'a> {
 
 // Constants for Material Design 3 timeline styling
 const DOT_SIZE: f32 = 12.0;
-const DOT_ICON_SIZE: f32 = 16.0;
 const CONNECTOR_WIDTH: f32 = 2.0;
 const CONTENT_PADDING: f32 = 32.0;  // Increased padding to prevent icon overlap with text
 const MIN_ITEM_SPACING: f32 = 24.0;  // Minimum spacing between items
@@ -625,7 +616,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                     Vec2::new(opposite_width, item_spacing),
                 );
 
-                ui.allocate_ui_at_rect(opposite_rect, |ui| {
+                ui.scope_builder(egui::UiBuilder::new().max_rect(opposite_rect), |ui| {
                     // Properly clip to both the rect and parent's clip rect
                     let parent_clip = ui.clip_rect();
                     let clipped = opposite_rect.intersect(parent_clip);
@@ -685,7 +676,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                                 Color32::WHITE
                             };
                             let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
-                            ui.allocate_ui_at_rect(icon_rect, |ui| {
+                            ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                                 // Clip icon to parent's clip rect
                                 let parent_clip = ui.clip_rect();
                                 let clipped = icon_rect.intersect(parent_clip);
@@ -713,7 +704,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                         // Draw icon if present - use allocate_at_rect for unique ID
                         if let Some(icon_text) = &dot.icon {
                             let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
-                            ui.allocate_ui_at_rect(icon_rect, |ui| {
+                            ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                                 // Clip icon to parent's clip rect
                                 let parent_clip = ui.clip_rect();
                                 let clipped = icon_rect.intersect(parent_clip);
@@ -773,7 +764,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                 );
 
                 // Use allocate_ui_at_rect for proper rendering with interaction
-                let content_inner = ui.allocate_ui_at_rect(content_rect, |ui| {
+                let content_inner = ui.scope_builder(egui::UiBuilder::new().max_rect(content_rect), |ui| {
                     // Properly clip to both the rect and parent's clip rect
                     let parent_clip = ui.clip_rect();
                     let clipped = content_rect.intersect(parent_clip);

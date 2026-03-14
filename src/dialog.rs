@@ -440,7 +440,7 @@ impl<'a> MaterialDialog<'a> {
         let dialog_max_height = self.max_height;
         
         // Calculate reasonable max height based on screen size if not specified
-        let screen_height = ctx.screen_rect().height();
+        let screen_height = ctx.content_rect().height();
         let effective_max_height = dialog_max_height.unwrap_or((screen_height * 0.9).min(800.0));
 
         let title = self.title.clone();
@@ -459,7 +459,7 @@ impl<'a> MaterialDialog<'a> {
         let modal_frame = egui::Frame::default()
             .inner_margin(egui::vec2(0.0, 24.0))
             .fill(get_global_color("surfaceContainerHigh"))
-            .rounding(egui::Rounding::same(28))
+            .corner_radius(egui::CornerRadius::same(28))
             .stroke(Stroke::NONE);
         
         let modal = Modal::new(self.id)
@@ -666,26 +666,14 @@ impl<'a> MaterialDialog<'a> {
                 }
             }
             ActionType::FilledTonal => {
-                if response.hovered() {
-                    (
-                        secondary_container,
-                        on_secondary_container,
-                        Color32::TRANSPARENT,
-                    )
-                } else {
-                    (
-                        secondary_container,
-                        on_secondary_container,
-                        Color32::TRANSPARENT,
-                    )
-                }
+                (
+                    secondary_container,
+                    on_secondary_container,
+                    Color32::TRANSPARENT,
+                )
             }
             ActionType::Filled => {
-                if response.hovered() {
-                    (primary, on_primary, Color32::TRANSPARENT)
-                } else {
-                    (primary, on_primary, Color32::TRANSPARENT)
-                }
+                (primary, on_primary, Color32::TRANSPARENT)
             }
         };
 

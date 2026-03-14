@@ -148,7 +148,7 @@ impl<'a> Widget for MaterialCheckbox<'a> {
         let text_width = if !self.text.is_empty() {
             let font_id = ui.style().text_styles.get(&egui::TextStyle::Body)
                 .cloned()
-                .unwrap_or_else(|| egui::FontId::default());
+                .unwrap_or_else(egui::FontId::default);
             let galley = ui.painter().layout_no_wrap(self.text.clone(), font_id, egui::Color32::WHITE);
             galley.size().x
         } else {
@@ -198,8 +198,6 @@ impl<'a> Widget for MaterialCheckbox<'a> {
             // Error state styling
             if *self.checked || self.indeterminate {
                 (error_color, Color32::TRANSPARENT, on_error, 0.0)
-            } else if response.hovered() {
-                (Color32::TRANSPARENT, error_color, on_surface, self.border_width)
             } else {
                 (Color32::TRANSPARENT, error_color, on_surface, self.border_width)
             }

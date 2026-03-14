@@ -482,7 +482,7 @@ impl Widget for MaterialImageList<'_> {
             ImageListVariant::Woven => item_width * 0.8, // Slightly shorter
         };
 
-        let rows = (items.len() + columns - 1) / columns;
+        let rows = items.len().div_ceil(columns);
         let total_height = rows as f32 * (item_height + item_spacing) - item_spacing;
         let total_width = available_width;
 
@@ -557,8 +557,8 @@ impl Widget for MaterialImageList<'_> {
                             }
                         } else if image_source.starts_with("data:") {
                             load_image_from_data_url(image_source)
-                        } else if image_source.starts_with("bytes:") {
-                            let bytes_str = &image_source[6..]; // Remove "bytes:" prefix
+                        } else if let Some(bytes_str) = image_source.strip_prefix("bytes:") {
+                            // Remove "bytes:" prefix
                             load_image_from_bytes(bytes_str)
                         } else {
                             load_image_from_file(image_source)

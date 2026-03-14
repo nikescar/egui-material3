@@ -232,17 +232,14 @@ pub enum ContrastLevel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub enum ThemeMode {
     Light,
     Dark,
+    #[default]
     Auto,
 }
 
-impl Default for ThemeMode {
-    fn default() -> Self {
-        ThemeMode::Auto
-    }
-}
 
 /// Global theme context that can be shared across all Material components
 #[derive(Clone, Debug)]
@@ -754,7 +751,7 @@ impl MaterialThemeContext {
                         .file_stem()
                         .and_then(|s| s.to_str())
                         .unwrap_or("CustomFont")
-                        .split(|c: char| c == '-' || c == '_')
+                        .split(['-', '_'])
                         .map(|part| {
                             let mut chars = part.chars();
                             match chars.next() {
@@ -815,12 +812,6 @@ impl MaterialThemeContext {
         }
     }
 
-    // Fallback font embedding system - includes Material Symbols font at build-time if available
-    fn get_embedded_material_symbols() -> Option<Vec<u8>> {
-        // Font files are excluded from package distribution, so this will always return None in published packages
-        // Users should provide their own font files or use the ondemand feature
-        None
-    }
 
     /// Internal implementation for preparing local themes from JSON files
     ///
@@ -1185,7 +1176,8 @@ pub fn setup_google_fonts(font_name: Option<&str>) {
 ///
 /// # Arguments
 /// * `font_path` - Optional path to a TTF font file. If None, uses the default MaterialSymbolsOutlined font
-/// Note: Fonts are only prepared, call load_fonts() to actually load them
+///
+///   Note: Fonts are only prepared, call load_fonts() to actually load them
 pub fn setup_local_fonts(font_path: Option<&str>) {
     MaterialThemeContext::setup_local_fonts(font_path);
 }

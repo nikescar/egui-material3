@@ -276,7 +276,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
         let desired_size = Vec2::splat(self.size);
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
-        let is_selected = self.selected.as_ref().map_or(false, |s| **s);
+        let is_selected = self.selected.as_ref().is_some_and(|s| **s);
 
         if response.clicked() && self.enabled {
             if let Some(selected) = self.selected {

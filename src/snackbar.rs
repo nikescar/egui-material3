@@ -119,7 +119,7 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Arguments
     /// * `duration` - How long to show the snackbar before auto-dismissing.
-    ///                Use `None` to disable auto-dismiss.
+    ///   Use `None` to disable auto-dismiss.
     ///
     /// # Example
     /// ```rust
@@ -405,8 +405,8 @@ impl Widget for MaterialSnackbar<'_> {
         let close_icon_width = if show_close_icon { 48.0 } else { 0.0 }; // 24px icon + padding
 
         // Calculate available width for message
-        let action_area_width = if action_galley.is_some() {
-            action_galley.as_ref().unwrap().size().x + 64.0
+        let action_area_width = if let Some(galley) = &action_galley {
+            galley.size().x + 64.0
         } else {
             0.0
         };
@@ -423,8 +423,8 @@ impl Widget for MaterialSnackbar<'_> {
 
         // Material Design padding
         let is_floating = behavior == SnackBarBehavior::Floating;
-        let horizontalPadding = if is_floating { 16.0 } else { 24.0 };
-        let label_padding = Vec2::new(horizontalPadding, 14.0);
+        let horizontal_padding = if is_floating { 16.0 } else { 24.0 };
+        let label_padding = Vec2::new(horizontal_padding, 14.0);
         let action_padding = Vec2::new(8.0, 14.0);
         let action_spacing = if action_text.is_some() { 8.0 } else { 0.0 };
         let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 32.0);
@@ -470,7 +470,7 @@ impl Widget for MaterialSnackbar<'_> {
         let (_allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
 
         // Calculate position
-        let screen_rect = ui.ctx().screen_rect();
+        let screen_rect = ui.ctx().content_rect();
         
         // Apply margin for floating behavior
         let effective_margin = if is_floating {
@@ -695,8 +695,8 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
         let close_icon_width = if show_close_icon { 48.0 } else { 0.0 }; // 24px icon + padding
 
         // Calculate available width for message
-        let action_area_width = if action_galley.is_some() {
-            action_galley.as_ref().unwrap().size().x + 64.0
+        let action_area_width = if let Some(galley) = &action_galley {
+            galley.size().x + 64.0
         } else {
             0.0
         };
@@ -713,8 +713,8 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
 
         // Material Design padding
         let is_floating = behavior == SnackBarBehavior::Floating;
-        let horizontalPadding = if is_floating { 16.0 } else { 24.0 };
-        let label_padding = Vec2::new(horizontalPadding, 14.0);
+        let horizontal_padding = if is_floating { 16.0 } else { 24.0 };
+        let label_padding = Vec2::new(horizontal_padding, 14.0);
         let action_padding = Vec2::new(8.0, 14.0);
         let action_spacing = if action_text.is_some() { 8.0 } else { 0.0 };
         let action_width = action_galley.as_ref().map_or(0.0, |g| g.size().x + 32.0);
@@ -760,7 +760,7 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
         let (_allocated_rect, mut response) = ui.allocate_exact_size(snackbar_size, Sense::click());
 
         // Calculate position with vertical offset for stacking
-        let screen_rect = ui.ctx().screen_rect();
+        let screen_rect = ui.ctx().content_rect();
         
         // Apply margin for floating behavior
         let effective_margin = if is_floating {

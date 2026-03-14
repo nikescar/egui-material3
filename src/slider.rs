@@ -4,8 +4,10 @@ use std::ops::RangeInclusive;
 
 /// Interaction modes for sliders
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum SliderInteraction {
     /// Allow both tapping and sliding (default)
+    #[default]
     TapAndSlide,
     /// Only allow tapping to set value
     TapOnly,
@@ -15,26 +17,18 @@ pub enum SliderInteraction {
     SlideThumb,
 }
 
-impl Default for SliderInteraction {
-    fn default() -> Self {
-        Self::TapAndSlide
-    }
-}
 
 /// Thumb shape variants
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub enum ThumbShape {
     /// Round thumb (classic Material Design)
+    #[default]
     Round,
     /// Handle thumb (Material Design 3 2024)
     Handle,
 }
 
-impl Default for ThumbShape {
-    fn default() -> Self {
-        Self::Round
-    }
-}
 
 /// Range values for RangeSlider
 #[derive(Debug, Clone, Copy, PartialEq)]

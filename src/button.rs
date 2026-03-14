@@ -53,7 +53,6 @@ use egui::{
 /// }
 /// # });
 /// ```
-
 /// Material Design button variants following Material Design 3 specifications
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MaterialButtonVariant {
@@ -566,10 +565,7 @@ impl Widget for MaterialButton<'_> {
             ),
         };
 
-        let frame = frame.unwrap_or_else(|| match variant {
-            MaterialButtonVariant::Text => false,
-            _ => true,
-        });
+        let frame = frame.unwrap_or(!matches!(variant, MaterialButtonVariant::Text));
 
         // Load SVG textures early if provided (takes precedence over font icons)
         let leading_svg_texture = leading_svg.and_then(|svg_data| {
@@ -663,14 +659,14 @@ impl Widget for MaterialButton<'_> {
         if image.is_some() {
             text_wrap_width -= image_size.x + icon_spacing;
         }
-        if leading_icon_galley.is_some() {
-            text_wrap_width -= leading_icon_galley.as_ref().unwrap().size().x + icon_spacing;
+        if let Some(galley) = &leading_icon_galley {
+            text_wrap_width -= galley.size().x + icon_spacing;
         }
         if leading_svg_texture.is_some() {
             text_wrap_width -= svg_icon_size + icon_spacing;
         }
-        if trailing_icon_galley.is_some() {
-            text_wrap_width -= trailing_icon_galley.as_ref().unwrap().size().x + icon_spacing;
+        if let Some(galley) = &trailing_icon_galley {
+            text_wrap_width -= galley.size().x + icon_spacing;
         }
         if trailing_svg_texture.is_some() {
             text_wrap_width -= svg_icon_size + icon_spacing;
