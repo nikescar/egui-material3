@@ -1,3 +1,42 @@
+//! Material Design 3 Icon Button Components
+//!
+//! This module implements icon button controls following Material Design 3 color system.
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Standard Icon Button (Minimal Emphasis)
+//! - **Transparent background**: Shows parent surface
+//! - **onSurfaceVariant**: Default icon color (lower emphasis)
+//! - **primary**: Icon color when selected
+//! - **State layers**: onSurface @ 8% (hover)
+//! - **Disabled**: surfaceContainer background, outline @ 38% icon
+//!
+//! ## Filled Icon Button (High Emphasis)
+//! - **primary**: Container background
+//! - **onPrimary**: Icon color on primary background
+//! - **State layers**: onPrimary @ 8% (hover), 12% (press)
+//! - **Selected**: Uses same colors as default state
+//! - **Disabled**: surfaceContainer background, outline @ 38% icon
+//!
+//! ## Filled Tonal Icon Button (Medium Emphasis)
+//! - **secondaryContainer**: Tinted container background
+//! - **onSecondaryContainer**: Icon color on tinted background
+//! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
+//! - **Selected**: Uses same colors as default state
+//! - **Disabled**: surfaceContainer background, outline @ 38% icon
+//!
+//! ## Outlined Icon Button (Medium Emphasis)
+//! - **Transparent background**: Shows parent surface
+//! - **onSurfaceVariant**: Icon color
+//! - **outline**: Border stroke color
+//! - **State layers**: onSurface @ 8% (hover)
+//! - **Selected**: primary @ 10% background, primary icon and border
+//! - **Disabled**: surfaceContainer background, outline @ 38% icon
+//!
+//! ## Container Shape
+//! - **Circular (default)**: 50% corner radius (fully rounded)
+//! - **Rectangular**: 20% corner radius (rounded rectangle)
+
 use crate::get_global_color;
 use egui::{
     Align2, Color32, ColorImage, FontId, Rect, Response, Sense, Stroke, TextureHandle, TextureOptions, Ui, Vec2,
@@ -244,6 +283,12 @@ impl<'a> MaterialIconButton<'a> {
     }
 
     /// Override the icon color.
+    ///
+    /// Overrides variant-based M3 color roles:
+    /// - Standard: onSurfaceVariant (default), primary (selected)
+    /// - Filled: onPrimary
+    /// - FilledTonal: onSecondaryContainer
+    /// - Outlined: onSurfaceVariant (default), primary (selected)
     pub fn icon_color(mut self, color: Color32) -> Self {
         self.icon_color_override = Some(color);
         self
@@ -288,38 +333,38 @@ impl<'a> Widget for MaterialIconButton<'a> {
             }
         }
 
-        // Material Design colors
-        let primary_color = get_global_color("primary");
-        let secondary_container = get_global_color("secondaryContainer");
-        let on_secondary_container = get_global_color("onSecondaryContainer");
-        let _surface = get_global_color("surface");
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline = get_global_color("outline");
+        // M3 Color Roles - Icon Button Variants
+        let primary = get_global_color("primary"); // Filled button background, selected icon/border
+        let on_primary = get_global_color("onPrimary"); // Icon on primary background
+        let secondary_container = get_global_color("secondaryContainer"); // Tonal button background
+        let on_secondary_container = get_global_color("onSecondaryContainer"); // Icon on tonal background
+        let on_surface = get_global_color("onSurface"); // Hover state layer color
+        let on_surface_variant = get_global_color("onSurfaceVariant"); // Default icon color (lower emphasis)
+        let outline = get_global_color("outline"); // Border color, disabled icon @ 38%
+        let surface_container = get_global_color("surfaceContainer"); // Disabled background
 
         let (bg_color, icon_color, border_color) = if !self.enabled {
+            // Disabled state: surfaceContainer background, outline @ 38% icon (M3 spec)
             (
-                get_global_color("surfaceContainer"),
-                get_global_color("outline"),
+                surface_container,
+                outline.linear_multiply(0.38),
                 Color32::TRANSPARENT,
             )
         } else {
             match self.variant {
                 IconButtonVariant::Standard => {
                     if is_selected {
-                        (Color32::TRANSPARENT, primary_color, Color32::TRANSPARENT)
+                        // Selected state: transparent background with primary icon
+                        (Color32::TRANSPARENT, primary, Color32::TRANSPARENT)
                     } else if response.hovered() {
+                        // Hover state: onSurface @ 8% state layer (M3 interaction state)
                         (
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                20,
-                            ),
+                            on_surface.linear_multiply(0.08),
                             on_surface,
                             Color32::TRANSPARENT,
                         )
                     } else {
+                        // Default state: transparent with onSurfaceVariant icon (lower emphasis)
                         (
                             Color32::TRANSPARENT,
                             on_surface_variant,
@@ -328,79 +373,56 @@ impl<'a> Widget for MaterialIconButton<'a> {
                     }
                 }
                 IconButtonVariant::Filled => {
+                    // Filled button: primary background with onPrimary icon
+                    let base_color = primary;
+                    let content_color = on_primary;
                     if is_selected {
-                        (
-                            primary_color,
-                            get_global_color("onPrimary"),
-                            Color32::TRANSPARENT,
-                        )
-                    } else if response.hovered() || response.is_pointer_button_down_on() {
-                        // Lighten background by blending with white
-                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
-                        (
-                            Color32::from_rgba_premultiplied(
-                                primary_color.r().saturating_add(lighten_amount),
-                                primary_color.g().saturating_add(lighten_amount),
-                                primary_color.b().saturating_add(lighten_amount),
-                                255,
-                            ),
-                            get_global_color("onPrimary"),
-                            Color32::TRANSPARENT,
-                        )
+                        // Selected state: same as default for filled variant
+                        (base_color, content_color, Color32::TRANSPARENT)
+                    } else if response.is_pointer_button_down_on() {
+                        // Pressed state: 12% onPrimary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.12), content_color, Color32::TRANSPARENT)
+                    } else if response.hovered() {
+                        // Hover state: 8% onPrimary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.08), content_color, Color32::TRANSPARENT)
                     } else {
-                        (primary_color, get_global_color("onPrimary"), Color32::TRANSPARENT)
+                        (base_color, content_color, Color32::TRANSPARENT)
                     }
                 }
                 IconButtonVariant::FilledTonal => {
+                    // Tonal button: secondaryContainer background with onSecondaryContainer icon
+                    let base_color = secondary_container;
+                    let content_color = on_secondary_container;
                     if is_selected {
-                        (
-                            secondary_container,
-                            on_secondary_container,
-                            Color32::TRANSPARENT,
-                        )
+                        // Selected state: same as default for tonal variant
+                        (base_color, content_color, Color32::TRANSPARENT)
+                    } else if response.is_pointer_button_down_on() {
+                        // Pressed state: 12% onSecondaryContainer overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.12), content_color, Color32::TRANSPARENT)
                     } else if response.hovered() {
-                        (
-                            Color32::from_rgba_premultiplied(
-                                secondary_container.r().saturating_sub(10),
-                                secondary_container.g().saturating_sub(10),
-                                secondary_container.b().saturating_sub(10),
-                                255,
-                            ),
-                            on_secondary_container,
-                            Color32::TRANSPARENT,
-                        )
+                        // Hover state: 8% onSecondaryContainer overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.08), content_color, Color32::TRANSPARENT)
                     } else {
-                        (
-                            secondary_container,
-                            on_secondary_container,
-                            Color32::TRANSPARENT,
-                        )
+                        (base_color, content_color, Color32::TRANSPARENT)
                     }
                 }
                 IconButtonVariant::Outlined => {
                     if is_selected {
+                        // Selected state: primary @ 10% background with primary icon and border
                         (
-                            Color32::from_rgba_premultiplied(
-                                primary_color.r(),
-                                primary_color.g(),
-                                primary_color.b(),
-                                24,
-                            ),
-                            primary_color,
-                            primary_color,
+                            primary.linear_multiply(0.10),
+                            primary,
+                            primary,
                         )
                     } else if response.hovered() {
+                        // Hover state: onSurface @ 8% state layer (M3 interaction state)
                         (
-                            Color32::from_rgba_premultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                20,
-                            ),
+                            on_surface.linear_multiply(0.08),
                             on_surface_variant,
                             outline,
                         )
                     } else {
+                        // Default state: transparent with onSurfaceVariant icon and outline border
                         (Color32::TRANSPARENT, on_surface_variant, outline)
                     }
                 }
@@ -536,6 +558,22 @@ impl<'a> Widget for MaterialIconButton<'a> {
 
         response
     }
+}
+
+/// Blend a state layer overlay on top of a base color.
+///
+/// Used for M3 interactive states (hover: 8%, press: 12%).
+fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
+    let alpha = (opacity * 255.0) as u8;
+    let overlay_with_alpha = Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
+    // Alpha blending
+    let inv_alpha = 255 - alpha;
+    Color32::from_rgba_unmultiplied(
+        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255) as u8,
+        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255) as u8,
+        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255) as u8,
+        base.a(),
+    )
 }
 
 /// Convenience function to create a standard icon button.

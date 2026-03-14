@@ -1,3 +1,11 @@
+//! Material Design 3 Layout Grid Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surface**: Grid cell background
+//! - **onSurface**: Grid content
+//! - **outlineVariant**: Grid lines (debug mode)
+
 use crate::theme::get_global_color;
 use egui::{epaint::CornerRadius, Color32, Rect, Response, Sense, Ui, Vec2, Widget};
 

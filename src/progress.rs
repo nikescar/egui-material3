@@ -1,3 +1,22 @@
+//! Material Design 3 Progress Indicator Components
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Linear Progress
+//! - **primary**: Active progress bar
+//! - **surfaceContainerHighest**: Background track
+//! - **Stop color**: Active track with animation gradient
+//!
+//! ## Circular Progress
+//! - **primary**: Progress arc/spinner
+//! - **surfaceContainerHighest**: Background track (determinate)
+//! - **Rotation animation**: Continuous for indeterminate
+//!
+//! ## Dimensions
+//! - **Linear height**: 4dp, **Track stop**: 0dp gap at completion
+//! - **Circular stroke**: 4dp, **Size**: 48dp (default)
+//! - **Corner radius**: Fully rounded track ends
+
 use crate::get_global_color;
 use egui::{Color32, CornerRadius, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 use std::f32::consts::PI;

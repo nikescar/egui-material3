@@ -1,3 +1,21 @@
+//! Material Design 3 Menu Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surfaceContainer**: Menu background (elevated container surface)
+//! - **onSurface**: Menu item text
+//! - **onSurfaceVariant**: Menu item supporting text, icons
+//! - **primaryContainer**: Selected/focused menu item background
+//! - **onPrimaryContainer**: Text on selected menu item
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//! - **shadow**: 3dp elevation shadow
+//!
+//! ## Dimensions
+//! - **Min width**: 112dp, **Max width**: 280dp
+//! - **Item height**: 48dp
+//! - **Corner radius**: 4dp
+//! - **Padding**: 8dp vertical
+
 use crate::get_global_color;
 use egui::{self, Color32, Context, Id, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
 

@@ -1,3 +1,8 @@
+//! Material Symbols Icon Font Constants
+//!
+//! Auto-generated from Material Icons font.
+//! Icons should use M3 color roles based on context.
+
 use std::collections::HashMap;
 
 // Auto-generated from MaterialIcons-Regular.codepoints

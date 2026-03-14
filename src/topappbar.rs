@@ -1,3 +1,28 @@
+//! Material Design 3 Top App Bar Components
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Default State
+//! - **surface**: App bar background (default, not scrolled)
+//! - **onSurface**: Title text and icons
+//! - **onSurfaceVariant**: Supporting text (if any)
+//! - **State layers**: onSurface @ 8% (hover), 12% (press) on icons
+//!
+//! ## Scrolled State
+//! - **surfaceContainer**: App bar background when scrolled under content
+//! - **surfaceTint**: Applied to background for elevation tint effect
+//! - **Shadow**: 2dp elevation when scrolled
+//!
+//! ## Variants
+//! - **Regular/CenterAligned**: 64dp height
+//! - **Medium**: 112dp height
+//! - **Large**: 152dp height
+//!
+//! ## Dimensions
+//! - **Icon size**: 24dp
+//! - **Touch target**: 48x48dp for icons
+//! - **Padding**: 16dp horizontal, 8dp vertical for icons
+
 use crate::material_symbol::material_symbol_text;
 use crate::theme::get_global_color;
 use egui::{

@@ -1,3 +1,47 @@
+//! Material Design 3 Chip Components
+//!
+//! This module implements chip controls following Material Design 3 color system.
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Filter Chip - Unselected (Default)
+//! - **Transparent background**: Shows parent surface
+//! - **outlineVariant**: Border stroke (1dp)
+//! - **onSurfaceVariant**: Text and remove icon
+//! - **primary**: Leading icon
+//! - **State layers**: onSurfaceVariant @ 8% (hover), 12% (press)
+//!
+//! ## Filter Chip - Selected
+//! - **secondaryContainer**: Chip background (selected state)
+//! - **onSecondaryContainer**: Text and remove icon on selected background
+//! - **primary**: Checkmark icon
+//! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
+//!
+//! ## Elevated Chip (Assist/Suggestion)
+//! - **surfaceContainerLow**: Chip background with elevation
+//! - **onSurfaceVariant**: Text and remove icon
+//! - **primary**: Leading icon
+//! - **State layers**: onSurfaceVariant @ 8% (hover), 12% (press)
+//! - **Shadow**: 1dp elevation shadow
+//!
+//! ## Input Chip (Default/Flat)
+//! - **Transparent background**: Shows parent surface
+//! - **outlineVariant**: Border stroke (1dp)
+//! - **onSurfaceVariant**: Text, remove icon
+//! - **primary**: Leading icon
+//! - **State layers**: onSurfaceVariant @ 8% (hover), 12% (press)
+//!
+//! ## Disabled State
+//! - **onSurface @ 12%**: Background and border
+//! - **onSurface @ 38%**: Text and icons (hard disabled)
+//! - **onSurface @ 60%**: Text (soft disabled)
+//!
+//! ## Dimensions
+//! - **Height**: 32dp (standard), 24dp (small)
+//! - **Corner radius**: 8dp
+//! - **Icon size**: 18dp (in 24dp chip), 24dp (in 32dp chip, displayed at 20dp for balance)
+//! - **Touch target**: 48x48dp minimum
+
 use crate::{get_global_color, image_utils};
 use egui::{
     self, Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2, Widget,
@@ -295,27 +339,30 @@ fn resolve_chip_colors(
     is_hovered: bool,
     is_pressed: bool,
 ) -> ChipColors {
-    let on_surface = get_global_color("onSurface");
-    let on_surface_variant = get_global_color("onSurfaceVariant");
-    let outline_variant = get_global_color("outlineVariant");
-    let surface_container_low = get_global_color("surfaceContainerLow");
-    let secondary_container = get_global_color("secondaryContainer");
-    let on_secondary_container = get_global_color("onSecondaryContainer");
-    let primary = get_global_color("primary");
+    // M3 Color Roles - Chip Variants
+    let on_surface = get_global_color("onSurface"); // Disabled background/text
+    let on_surface_variant = get_global_color("onSurfaceVariant"); // Default text, remove icon, state layers
+    let outline_variant = get_global_color("outlineVariant"); // Border for flat chips
+    let surface_container_low = get_global_color("surfaceContainerLow"); // Elevated chip background
+    let secondary_container = get_global_color("secondaryContainer"); // Selected filter chip background
+    let on_secondary_container = get_global_color("onSecondaryContainer"); // Text/icon on selected filter chip
+    let primary = get_global_color("primary"); // Leading icon, selected checkmark
 
-    // Disabled states (shared across all variants per M3 spec)
+    // Disabled states (M3 spec: consistent across all chip variants)
     if !enabled {
         let (bg, border, text) = if soft_disabled {
+            // Soft disabled: onSurface @ 12% background, 60% text
             (
-                on_surface.gamma_multiply(0.12),
+                on_surface.linear_multiply(0.12),
                 Color32::TRANSPARENT,
-                on_surface.gamma_multiply(0.60),
+                on_surface.linear_multiply(0.60),
             )
         } else {
+            // Hard disabled: onSurface @ 12% background/border, 38% text (M3 spec)
             (
-                on_surface.gamma_multiply(0.12),
-                on_surface.gamma_multiply(0.12),
-                on_surface.gamma_multiply(0.38),
+                on_surface.linear_multiply(0.12),
+                on_surface.linear_multiply(0.12),
+                on_surface.linear_multiply(0.38),
             )
         };
         return ChipColors {
@@ -328,47 +375,53 @@ fn resolve_chip_colors(
         };
     }
 
-    // State layer (shared logic for all enabled variants)
-    let state_layer_base = if is_selected { on_secondary_container } else { on_surface_variant };
+    // M3 state layers: hover @ 8%, press @ 12%
+    let state_layer_base = if is_selected {
+        on_secondary_container // Selected chips use onSecondaryContainer for state layers
+    } else {
+        on_surface_variant // Unselected chips use onSurfaceVariant for state layers
+    };
     let state_layer = if is_pressed {
-        state_layer_base.gamma_multiply(0.12)
+        // Pressed state: 12% opacity (M3 interaction state)
+        state_layer_base.linear_multiply(0.12)
     } else if is_hovered {
-        state_layer_base.gamma_multiply(0.08)
+        // Hover state: 8% opacity (M3 interaction state)
+        state_layer_base.linear_multiply(0.08)
     } else {
         Color32::TRANSPARENT
     };
 
-    // Selected filter chip
+    // Selected filter chip: secondaryContainer background with onSecondaryContainer content
     if variant == ChipVariant::Filter && is_selected {
         return ChipColors {
-            bg: secondary_container,
-            border: Color32::TRANSPARENT,
-            text: on_secondary_container,
-            icon: primary,
-            delete_icon: on_secondary_container,
+            bg: secondary_container, // Selected filter uses secondaryContainer
+            border: Color32::TRANSPARENT, // No border when selected
+            text: on_secondary_container, // Text uses onSecondaryContainer
+            icon: primary, // Checkmark uses primary for emphasis
+            delete_icon: on_secondary_container, // Remove icon uses onSecondaryContainer
             state_layer,
         };
     }
 
-    // Elevated (unselected)
+    // Elevated chip: surfaceContainerLow background with shadow (assist/suggestion chips)
     if elevated {
         return ChipColors {
-            bg: surface_container_low,
-            border: Color32::TRANSPARENT,
-            text: on_surface_variant,
-            icon: primary,
-            delete_icon: on_surface_variant,
+            bg: surface_container_low, // Elevated background (lighter surface)
+            border: Color32::TRANSPARENT, // No border for elevated chips
+            text: on_surface_variant, // Text uses onSurfaceVariant
+            icon: primary, // Leading icon uses primary
+            delete_icon: on_surface_variant, // Remove icon uses onSurfaceVariant
             state_layer,
         };
     }
 
-    // Default (flat, unselected)
+    // Default flat chip: transparent background with outlineVariant border (input/unselected filter)
     ChipColors {
-        bg: Color32::TRANSPARENT,
-        border: outline_variant,
-        text: on_surface_variant,
-        icon: primary,
-        delete_icon: on_surface_variant,
+        bg: Color32::TRANSPARENT, // Transparent to show parent surface
+        border: outline_variant, // Border uses outlineVariant (1dp stroke)
+        text: on_surface_variant, // Text uses onSurfaceVariant
+        icon: primary, // Leading icon uses primary
+        delete_icon: on_surface_variant, // Remove icon uses onSurfaceVariant
         state_layer,
     }
 }

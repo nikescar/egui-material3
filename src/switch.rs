@@ -1,3 +1,33 @@
+//! Material Design 3 Switch Components
+//!
+//! This module implements switch toggle controls following Material Design 3 color system.
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Selected State (On)
+//! - **primary**: Track background when on
+//! - **onPrimary**: Thumb color (default state)
+//! - **primaryContainer**: Thumb color (hover/press/focus states)
+//! - **onPrimaryContainer**: Icon color on thumb
+//! - **State layers**: primary @ 8% (hover), 10% (press/focus)
+//!
+//! ## Unselected State (Off)
+//! - **surfaceContainerHighest**: Track background when off
+//! - **outline**: Thumb color (default state), track outline (2dp stroke)
+//! - **onSurfaceVariant**: Thumb color (hover/press/focus states)
+//! - **surfaceContainerHighest**: Icon color on thumb when off
+//! - **State layers**: onSurface @ 8% (hover), 10% (press/focus)
+//!
+//! ## Disabled State
+//! - **Selected (on)**: onSurface @ 100% thumb, onSurface @ 12% track, onSurface @ 38% icon
+//! - **Unselected (off)**: onSurface @ 38% thumb, surfaceContainerHighest @ 12% track, onSurface @ 12% outline
+//!
+//! ## Dimensions
+//! - **Track**: 52x32dp, fully rounded (16dp radius)
+//! - **Thumb**: 16dp off (no icon), 24dp on or with icon, 28dp pressed
+//! - **Touch target**: 48x48dp minimum (40dp state layer)
+//! - **Icon**: 16dp on thumb
+
 use crate::get_global_color;
 use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2, Widget};
 
@@ -161,15 +191,15 @@ impl<'a> Widget for MaterialSwitch<'a> {
         let is_hovered = response.hovered();
         let is_focused = response.has_focus();
 
-        // Material Design 3 colors
-        let primary_color = get_global_color("primary");
-        let on_primary = get_global_color("onPrimary");
-        let primary_container = get_global_color("primaryContainer");
-        let on_primary_container = get_global_color("onPrimaryContainer");
-        let surface_container_highest = get_global_color("surfaceContainerHighest");
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline = get_global_color("outline");
+        // M3 Color Roles - Switch States
+        let primary = get_global_color("primary"); // Track when on
+        let on_primary = get_global_color("onPrimary"); // Thumb when on (default)
+        let primary_container = get_global_color("primaryContainer"); // Thumb when on (hover/press/focus)
+        let on_primary_container = get_global_color("onPrimaryContainer"); // Icon on thumb when on
+        let surface_container_highest = get_global_color("surfaceContainerHighest"); // Track when off, icon when off
+        let on_surface = get_global_color("onSurface"); // Text label, disabled elements, state layers
+        let on_surface_variant = get_global_color("onSurfaceVariant"); // Thumb when off (hover/press/focus)
+        let outline = get_global_color("outline"); // Thumb when off (default), track outline
 
         // Calculate switch area
         let switch_rect = Rect::from_min_size(
@@ -180,17 +210,17 @@ impl<'a> Widget for MaterialSwitch<'a> {
         let track_rect =
             Rect::from_center_size(switch_rect.center(), Vec2::new(switch_width, track_height));
 
-        // Material 3: thumb is 16dp when off, 24dp when on, 28dp when pressed
+        // M3 thumb sizing: 16dp off (no icon), 24dp on or with icon, 28dp pressed
         let has_icon = if *self.selected {
             self.selected_icon.is_some()
         } else {
             self.unselected_icon.is_some()
         };
-        
+
         let base_thumb_size_on = 24.0;
         let base_thumb_size_off = if has_icon { 24.0 } else { 16.0 };
         let pressed_thumb_size = 28.0;
-        
+
         let thumb_size = if is_pressed {
             pressed_thumb_size
         } else if *self.selected {
@@ -198,7 +228,7 @@ impl<'a> Widget for MaterialSwitch<'a> {
         } else {
             base_thumb_size_off
         };
-        
+
         let thumb_travel = switch_width - base_thumb_size_on - 4.0;
         let thumb_x = if *self.selected {
             switch_rect.min.x + 2.0 + thumb_travel
@@ -208,47 +238,53 @@ impl<'a> Widget for MaterialSwitch<'a> {
 
         let thumb_center = Pos2::new(thumb_x + thumb_size / 2.0, switch_rect.center().y);
 
-        // Material 3 color resolution based on state
+        // M3 color resolution based on state
         let (track_color, thumb_color, track_outline_color, icon_color) = if !self.enabled {
-            // Disabled state
+            // Disabled state (M3 spec)
             let disabled_track = if *self.selected {
+                // Disabled on: onSurface @ 12% track
                 on_surface.linear_multiply(0.12)
             } else {
+                // Disabled off: surfaceContainerHighest @ 12% track
                 surface_container_highest.linear_multiply(0.12)
             };
             let disabled_thumb = if *self.selected {
-                on_surface.linear_multiply(1.0)
+                // Disabled on: onSurface @ 100% thumb
+                on_surface
             } else {
+                // Disabled off: onSurface @ 38% thumb
                 on_surface.linear_multiply(0.38)
             };
-            let disabled_outline = on_surface.linear_multiply(0.12);
+            let disabled_outline = on_surface.linear_multiply(0.12); // Disabled outline @ 12%
             let disabled_icon = if *self.selected {
+                // Disabled on: onSurface @ 38% icon
                 on_surface.linear_multiply(0.38)
             } else {
+                // Disabled off: surfaceContainerHighest @ 38% icon
                 surface_container_highest.linear_multiply(0.38)
             };
             (disabled_track, disabled_thumb, disabled_outline, disabled_icon)
         } else if *self.selected {
-            // Selected (on) state
-            let track = primary_color;
+            // Selected (on) state: primary track, onPrimary/primaryContainer thumb
+            let track = primary; // Track uses primary when on
             let thumb = if is_pressed || is_hovered || is_focused {
-                primary_container
+                primary_container // Thumb uses primaryContainer on interaction
             } else {
-                on_primary
+                on_primary // Thumb uses onPrimary in default state
             };
-            let outline = Color32::TRANSPARENT;
-            let icon = on_primary_container;
-            (track, thumb, outline, icon)
+            let track_outline = Color32::TRANSPARENT; // No outline when on
+            let icon = on_primary_container; // Icon uses onPrimaryContainer when on
+            (track, thumb, track_outline, icon)
         } else {
-            // Unselected (off) state
-            let track = surface_container_highest;
+            // Unselected (off) state: surfaceContainerHighest track, outline/onSurfaceVariant thumb
+            let track = surface_container_highest; // Track uses surfaceContainerHighest when off
             let thumb = if is_pressed || is_hovered || is_focused {
-                on_surface_variant
+                on_surface_variant // Thumb uses onSurfaceVariant on interaction
             } else {
-                outline
+                outline // Thumb uses outline in default state
             };
-            let track_outline = outline;
-            let icon = surface_container_highest;
+            let track_outline = outline; // Track outline uses outline (2dp stroke) when off
+            let icon = surface_container_highest; // Icon uses surfaceContainerHighest when off
             (track, thumb, track_outline, icon)
         };
 
@@ -266,26 +302,28 @@ impl<'a> Widget for MaterialSwitch<'a> {
             );
         }
 
-        // Draw state layer (ripple/overlay effect) - Material 3
+        // M3 state layer (ripple/overlay effect) - 40dp diameter touch target
         if self.enabled {
             let overlay_radius = 20.0; // 40dp diameter / 2
             let overlay_color = if *self.selected {
-                if is_pressed {
-                    primary_color.linear_multiply(0.1)
+                // Selected state layers: primary color
+                if is_pressed || is_focused {
+                    // Press/focus state: 10% opacity (M3 interaction state)
+                    primary.linear_multiply(0.10)
                 } else if is_hovered {
-                    primary_color.linear_multiply(0.08)
-                } else if is_focused {
-                    primary_color.linear_multiply(0.1)
+                    // Hover state: 8% opacity (M3 interaction state)
+                    primary.linear_multiply(0.08)
                 } else {
                     Color32::TRANSPARENT
                 }
             } else {
-                if is_pressed {
-                    on_surface.linear_multiply(0.1)
+                // Unselected state layers: onSurface color
+                if is_pressed || is_focused {
+                    // Press/focus state: 10% opacity (M3 interaction state)
+                    on_surface.linear_multiply(0.10)
                 } else if is_hovered {
+                    // Hover state: 8% opacity (M3 interaction state)
                     on_surface.linear_multiply(0.08)
-                } else if is_focused {
-                    on_surface.linear_multiply(0.1)
                 } else {
                     Color32::TRANSPARENT
                 }
@@ -325,6 +363,7 @@ impl<'a> Widget for MaterialSwitch<'a> {
         if let Some(ref text) = self.text {
             let text_pos = Pos2::new(switch_rect.max.x + 8.0, rect.center().y);
 
+            // Label text: onSurface for enabled, onSurface @ 38% for disabled (M3 spec)
             let text_color = if self.enabled {
                 on_surface
             } else {

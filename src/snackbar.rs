@@ -1,3 +1,19 @@
+//! Material Design 3 Snackbar Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **inverseSurface**: Snackbar background (inverse surface for contrast)
+//! - **inverseOnSurface**: Message text on inverse background
+//! - **inversePrimary**: Action button text color (emphasis on inverse background)
+//! - **State layers**: inversePrimary @ 8% (hover), 12% (press)
+//!
+//! ## Dimensions
+//! - **Min width**: 344dp, **Max width**: 672dp (two-line snackbars)
+//! - **Height**: 48dp (single-line), 68dp+ (multi-line with action)
+//! - **Corner radius**: 4dp
+//! - **Elevation**: 6dp shadow (raised above content)
+//! - **Margin**: 8dp from edges (floating), 0dp (fixed)
+
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,

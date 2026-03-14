@@ -1,3 +1,20 @@
+//! Material Design 3 Navigation Drawer Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surface**: Drawer background (permanent/dismissible)
+//! - **surfaceContainerLow**: Modal drawer background (slightly elevated)
+//! - **onSurface**: Drawer content text
+//! - **onSurfaceVariant**: Supporting text, icons
+//! - **secondaryContainer**: Selected item background
+//! - **onSecondaryContainer**: Selected item text/icon
+//! - **scrim @ 32%**: Modal overlay behind drawer
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//!
+//! ## Dimensions
+//! - **Width**: 360dp (standard), 256dp (compact)
+//! - **Elevation**: 0dp (permanent), 1dp (dismissible), 1dp (modal)
+
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,

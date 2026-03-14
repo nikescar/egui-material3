@@ -1,3 +1,12 @@
+//! Material Design 3 Breadcrumbs Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **onSurface**: Current/active breadcrumb text
+//! - **onSurfaceVariant**: Inactive breadcrumb text, separators
+//! - **primary**: Breadcrumb links (hover)
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+
 use crate::{get_global_color, MaterialButton};
 use egui::{Response, RichText, Ui, Widget};
 

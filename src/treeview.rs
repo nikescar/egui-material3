@@ -1,3 +1,13 @@
+//! Material Design 3 Tree View Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **onSurface**: Node text
+//! - **onSurfaceVariant**: Expand/collapse icons
+//! - **surfaceContainerHighest**: Selected node background
+//! - **onSurface**: Selected node text
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+
 use crate::theme::get_global_color;
 use crate::material_symbol::material_symbol_text;
 use egui::{

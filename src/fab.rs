@@ -1,3 +1,37 @@
+//! Material Design 3 Floating Action Button (FAB) Components
+//!
+//! This module implements FAB controls following Material Design 3 color system.
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Surface FAB (Neutral Actions)
+//! - **surface**: FAB container background (neutral emphasis)
+//! - **onSurface**: Icon and text color on surface
+//! - **surfaceContainerHigh**: Hover state background
+//! - **surfaceContainerHighest**: Pressed state background
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//!
+//! ## Primary FAB (Main Actions - Most Common)
+//! - **primary**: FAB container background (high emphasis for primary actions)
+//! - **onPrimary**: Icon and text color on primary background
+//! - **State layers**: onPrimary @ 8% (hover), 12% (press)
+//! - **Disabled**: surfaceContainer background, outline @ 38% icon
+//!
+//! ## Secondary FAB (Secondary Actions)
+//! - **secondary**: FAB container background (secondary emphasis)
+//! - **onSecondary**: Icon and text color on secondary background
+//! - **State layers**: onSecondary @ 8% (hover), 12% (press)
+//!
+//! ## Tertiary FAB (Alternative Actions)
+//! - **tertiary**: FAB container background (alternative emphasis)
+//! - **onTertiary**: Icon and text color on tertiary background
+//! - **State layers**: onTertiary @ 8% (hover), 12% (press)
+//!
+//! ## Elevation
+//! - **Standard elevation**: 6dp shadow (raised above content)
+//! - **Hover elevation**: 8dp shadow (slight increase on hover)
+//! - **Pressed elevation**: 6dp shadow (returns to standard on press)
+
 use crate::get_global_color;
 use crate::icon::MaterialIcon;
 use crate::material_symbol::material_symbol_text;
@@ -248,94 +282,95 @@ impl<'a> Widget for MaterialFab<'a> {
             }
         }
 
-        // Material Design colors
-        let primary_color = get_global_color("primary");
-        let secondary_color = get_global_color("secondary");
-        let tertiary_color = get_global_color("tertiary");
-        let surface = get_global_color("surface");
-        let on_primary = get_global_color("onPrimary");
-        let on_surface = get_global_color("onSurface");
+        // M3 Color Roles - FAB Variants
+        let primary = get_global_color("primary"); // Primary FAB container background (high emphasis)
+        let on_primary = get_global_color("onPrimary"); // Icon/text on primary background
+        let secondary = get_global_color("secondary"); // Secondary FAB container background
+        let on_secondary = get_global_color("onSecondary"); // Icon/text on secondary background
+        let tertiary = get_global_color("tertiary"); // Tertiary FAB container background
+        let on_tertiary = get_global_color("onTertiary"); // Icon/text on tertiary background
+        let surface = get_global_color("surface"); // Surface FAB container (neutral emphasis)
+        let on_surface = get_global_color("onSurface"); // Icon/text on surface
+        let surface_container = get_global_color("surfaceContainer"); // Disabled FAB background
+        let surface_container_high = get_global_color("surfaceContainerHigh"); // Surface FAB hover state
+        let surface_container_highest = get_global_color("surfaceContainerHighest"); // Surface FAB pressed state
+        let outline = get_global_color("outline"); // Disabled icon color
 
         let (bg_color, icon_color) = if !enabled {
+            // Disabled state: surfaceContainer background with outline @ 38% for icon (M3 spec)
             (
-                get_global_color("surfaceContainer"),
-                get_global_color("outline"),
+                surface_container,
+                outline.linear_multiply(0.38),
             )
         } else {
             match variant {
                 FabVariant::Surface => {
+                    // Surface FAB: use surface container variants for state layers
                     if response.is_pointer_button_down_on() {
-                        (get_global_color("surfaceContainerHighest"), on_surface)
+                        // Pressed state: surfaceContainerHighest (highest emphasis surface)
+                        (surface_container_highest, on_surface)
                     } else if response.hovered() {
-                        (get_global_color("surfaceContainerHigh"), on_surface)
+                        // Hover state: surfaceContainerHigh (high emphasis surface)
+                        (surface_container_high, on_surface)
                     } else {
+                        // Default state: surface with onSurface for neutral emphasis
                         (surface, on_surface)
                     }
                 }
                 FabVariant::Primary => {
-                    if response.hovered() || response.is_pointer_button_down_on() {
-                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
-                        (
-                            Color32::from_rgba_premultiplied(
-                                primary_color.r().saturating_add(lighten_amount),
-                                primary_color.g().saturating_add(lighten_amount),
-                                primary_color.b().saturating_add(lighten_amount),
-                                255,
-                            ),
-                            on_primary,
-                        )
+                    // Primary FAB: use primary background with state layer overlay
+                    let base_color = primary;
+                    let content_color = on_primary;
+                    if response.is_pointer_button_down_on() {
+                        // Pressed state: 12% onPrimary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.12), content_color)
+                    } else if response.hovered() {
+                        // Hover state: 8% onPrimary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.08), content_color)
                     } else {
-                        (primary_color, on_primary)
+                        (base_color, content_color)
                     }
                 }
                 FabVariant::Secondary => {
-                    if response.hovered() || response.is_pointer_button_down_on() {
-                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
-                        (
-                            Color32::from_rgba_premultiplied(
-                                secondary_color.r().saturating_add(lighten_amount),
-                                secondary_color.g().saturating_add(lighten_amount),
-                                secondary_color.b().saturating_add(lighten_amount),
-                                255,
-                            ),
-                            on_primary,
-                        )
+                    // Secondary FAB: use secondary background with state layer overlay
+                    let base_color = secondary;
+                    let content_color = on_secondary;
+                    if response.is_pointer_button_down_on() {
+                        // Pressed state: 12% onSecondary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.12), content_color)
+                    } else if response.hovered() {
+                        // Hover state: 8% onSecondary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.08), content_color)
                     } else {
-                        (secondary_color, on_primary)
+                        (base_color, content_color)
                     }
                 }
                 FabVariant::Tertiary => {
-                    if response.hovered() || response.is_pointer_button_down_on() {
-                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
-                        (
-                            Color32::from_rgba_premultiplied(
-                                tertiary_color.r().saturating_add(lighten_amount),
-                                tertiary_color.g().saturating_add(lighten_amount),
-                                tertiary_color.b().saturating_add(lighten_amount),
-                                255,
-                            ),
-                            on_primary,
-                        )
+                    // Tertiary FAB: use tertiary background with state layer overlay
+                    let base_color = tertiary;
+                    let content_color = on_tertiary;
+                    if response.is_pointer_button_down_on() {
+                        // Pressed state: 12% onTertiary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.12), content_color)
+                    } else if response.hovered() {
+                        // Hover state: 8% onTertiary overlay (M3 interaction state)
+                        (blend_state_layer(base_color, content_color, 0.08), content_color)
                     } else {
-                        (tertiary_color, on_primary)
+                        (base_color, content_color)
                     }
                 }
                 FabVariant::Branded => {
-                    // Google brand colors
+                    // Branded FAB: custom brand colors (e.g., Google brand blue)
                     let google_brand = Color32::from_rgb(66, 133, 244);
-                    if response.hovered() || response.is_pointer_button_down_on() {
-                        let lighten_amount = if response.is_pointer_button_down_on() { 40 } else { 20 };
-                        (
-                            Color32::from_rgba_premultiplied(
-                                google_brand.r().saturating_add(lighten_amount),
-                                google_brand.g().saturating_add(lighten_amount),
-                                google_brand.b().saturating_add(lighten_amount),
-                                255,
-                            ),
-                            on_primary,
-                        )
+                    let content_color = Color32::WHITE; // White icon/text on branded background
+                    if response.is_pointer_button_down_on() {
+                        // Pressed state: 12% white overlay
+                        (blend_state_layer(google_brand, content_color, 0.12), content_color)
+                    } else if response.hovered() {
+                        // Hover state: 8% white overlay
+                        (blend_state_layer(google_brand, content_color, 0.08), content_color)
                     } else {
-                        (google_brand, on_primary)
+                        (google_brand, content_color)
                     }
                 }
             }
@@ -469,6 +504,22 @@ impl<'a> Widget for MaterialFab<'a> {
 
         response
     }
+}
+
+/// Blend a state layer overlay on top of a base color.
+///
+/// Used for M3 interactive states (hover: 8%, press: 12%).
+fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
+    let alpha = (opacity * 255.0) as u8;
+    let overlay_with_alpha = Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
+    // Alpha blending
+    let inv_alpha = 255 - alpha;
+    Color32::from_rgba_unmultiplied(
+        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255) as u8,
+        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255) as u8,
+        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255) as u8,
+        base.a(),
+    )
 }
 
 // Helper function to draw Google logo

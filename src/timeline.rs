@@ -1,3 +1,12 @@
+//! Material Design 3 Timeline Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **outlineVariant**: Timeline axis line
+//! - **primary**: Event markers, active indicators
+//! - **onSurface**: Event text
+//! - **onSurfaceVariant**: Timestamps, supporting text
+
 use crate::get_global_color;
 use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 

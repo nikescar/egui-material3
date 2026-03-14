@@ -1,3 +1,18 @@
+//! Material Design 3 Badge Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **error**: Error badge background
+//! - **onError**: Error badge text
+//! - **primary**: Primary badge background (for counts/notifications)
+//! - **onPrimary**: Primary badge text
+//! - **Custom colors**: For success, warning, neutral variants
+//!
+//! ## Dimensions
+//! - **Small badge**: 6x6dp (no label)
+//! - **Large badge**: 16dp height (with label/count)
+//! - **Corner radius**: Fully rounded (50%)
+
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, pos2, FontId, Rect, Response,

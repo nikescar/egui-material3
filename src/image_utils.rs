@@ -1,3 +1,8 @@
+//! Image and SVG Utilities
+//!
+//! Helper functions for loading and caching images and SVG graphics.
+//! Icons rendered from these utilities should use M3 color roles.
+
 use egui::{self, ColorImage, Context, TextureHandle};
 use resvg::{
     tiny_skia::Pixmap,

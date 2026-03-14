@@ -1,3 +1,16 @@
+//! Material Design 3 Tooltip Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **inverseSurface**: Tooltip background (inverse for high contrast)
+//! - **inverseOnSurface**: Tooltip text on inverse background
+//! - **Shadow**: 2dp elevation shadow
+//!
+//! ## Dimensions
+//! - **Max width**: 200dp (plain), 320dp (rich)
+//! - **Padding**: 4dp vertical, 8dp horizontal (plain)
+//! - **Corner radius**: 4dp
+
 use crate::theme::get_global_color;
 use egui::{
     pos2, Area, FontId, Id, Order, Rect, Response, Sense, Stroke, Ui, Vec2,

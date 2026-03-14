@@ -1,3 +1,13 @@
+//! Material Design 3 Carousel Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surface**: Carousel item background
+//! - **onSurface**: Item content
+//! - **surfaceContainerHighest**: Indicator background
+//! - **primary**: Active indicator dot
+//! - **onSurfaceVariant**: Inactive indicator dots
+
 use crate::get_global_color;
 use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
 use egui::epaint::CornerRadius;

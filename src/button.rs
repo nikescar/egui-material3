@@ -1,3 +1,41 @@
+//! Material Design 3 Button Components
+//!
+//! This module implements button controls following Material Design 3 color system.
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Filled Button (High Emphasis)
+//! - **primary**: Button background
+//! - **onPrimary**: Text and icon color on primary background
+//! - **State layers**: onPrimary @ 8% (hover), 12% (press)
+//! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
+//!
+//! ## Outlined Button (Medium Emphasis)
+//! - **Transparent background**: Shows parent surface
+//! - **outline**: Border stroke color
+//! - **onSurface**: Text and icon color
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//! - **Disabled**: onSurface @ 12% outline, onSurface @ 38% content
+//!
+//! ## Text Button (Low Emphasis)
+//! - **Transparent background**: No border, shows parent surface
+//! - **onSurface**: Text and icon color
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//! - **Disabled**: onSurface @ 38% content
+//!
+//! ## Elevated Button (Medium Emphasis with Shadow)
+//! - **surface**: Button background (elevated surface)
+//! - **onSurface**: Text and icon color
+//! - **Shadow**: 1dp elevation, increases to 3dp on hover
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//! - **Disabled**: surface background, onSurface @ 38% content
+//!
+//! ## Filled Tonal Button (Medium Emphasis, Toned Down)
+//! - **secondaryContainer**: Tinted container background
+//! - **onSecondaryContainer**: Text and icon color on tinted background
+//! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
+//! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
+
 use crate::{get_global_color, material_symbol::material_symbol_text};
 use egui::{
     ecolor::Color32,
@@ -300,7 +338,10 @@ impl<'a> MaterialButton<'a> {
         self
     }
 
-    /// Override background fill color. Note that this will override any on-hover effects.
+    /// Override background fill color.
+    ///
+    /// Overrides variant-based M3 color roles (primary, surface, secondaryContainer).
+    /// Note: This will override hover/press state layer effects.
     /// Calling this will also turn on the frame.
     #[inline]
     pub fn fill(mut self, fill: impl Into<Color32>) -> Self {
@@ -309,7 +350,10 @@ impl<'a> MaterialButton<'a> {
         self
     }
 
-    /// Override button stroke. Note that this will override any on-hover effects.
+    /// Override button stroke.
+    ///
+    /// Overrides variant-based M3 outline color role.
+    /// Note: This will override hover/press state effects on the border.
     /// Calling this will also turn on the frame.
     #[inline]
     pub fn stroke(mut self, stroke: impl Into<Stroke>) -> Self {
@@ -445,7 +489,11 @@ impl<'a> MaterialButton<'a> {
 
     /// Override the text color for this button.
     ///
-    /// When set, overrides the variant-based text color.
+    /// Overrides variant-based M3 color roles:
+    /// - Filled: onPrimary
+    /// - Outlined/Text/Elevated: onSurface
+    /// - FilledTonal: onSecondaryContainer
+    ///
     /// Icon colors also follow this override.
     #[inline]
     pub fn text_color(mut self, color: Color32) -> Self {
@@ -480,85 +528,43 @@ impl Widget for MaterialButton<'_> {
             text_color: custom_text_color,
         } = self;
 
-        // Material Design color palette from theme
-        let md_primary = get_global_color("primary");
-        let _md_surface_tint = get_global_color("surfaceTint");
-        let _md_on_primary = get_global_color("onPrimary");
-        let _md_primary_container = get_global_color("primaryContainer");
-        let _md_on_primary_container = get_global_color("onPrimaryContainer");
-        let _md_secondary = get_global_color("secondary");
-        let _md_on_secondary = get_global_color("onSecondary");
-        let _md_secondary_container = get_global_color("secondaryContainer");
-        let _md_on_secondary_container = get_global_color("onSecondaryContainer");
-        let _md_tertiary = get_global_color("tertiary");
-        let _md_on_tertiary = get_global_color("onTertiary");
-        let _md_tertiary_container = get_global_color("tertiaryContainer");
-        let _md_on_tertiary_container = get_global_color("onTertiaryContainer");
-        let _md_error = get_global_color("error");
-        let _md_on_error = get_global_color("onError");
-        let _md_error_container = get_global_color("errorContainer");
-        let _md_on_error_container = get_global_color("onErrorContainer");
-        let md_background = get_global_color("background");
-        let md_on_background = get_global_color("onBackground");
-        let md_surface = get_global_color("surface");
-        let md_on_surface = get_global_color("onSurface");
-        let md_surface_variant = get_global_color("surfaceVariant");
-        let _md_on_surface_variant = get_global_color("onSurfaceVariant");
-        let md_outline = get_global_color("outline");
-        let _md_outline_variant = get_global_color("outlineVariant");
-        let _md_shadow = get_global_color("shadow");
-        let _md_scrim = get_global_color("scrim");
-        let _md_inverse_surface = get_global_color("inverseSurface");
-        let _md_inverse_on_surface = get_global_color("inverseOnSurface");
-        let _md_inverse_primary = get_global_color("inversePrimary");
-        let _md_primary_fixed = get_global_color("primaryFixed");
-        let _md_on_primary_fixed = get_global_color("onPrimaryFixed");
-        let _md_primary_fixed_dim = get_global_color("primaryFixedDim");
-        let _md_on_primary_fixed_variant = get_global_color("onPrimaryFixedVariant");
-        let _md_secondary_fixed = get_global_color("secondaryFixed");
-        let _md_on_secondary_fixed = get_global_color("onSecondaryFixed");
-        let _md_secondary_fixed_dim = get_global_color("secondaryFixedDim");
-        let _md_on_secondary_fixed_variant = get_global_color("onSecondaryFixedVariant");
-        let _md_tertiary_fixed = get_global_color("tertiaryFixed");
-        let _md_on_tertiary_fixed = get_global_color("onTertiaryFixed");
-        let _md_tertiary_fixed_dim = get_global_color("tertiaryFixedDim");
-        let _md_on_tertiary_fixed_variant = get_global_color("onTertiaryFixedVariant");
-        let _md_surface_dim = get_global_color("surfaceDim");
-        let _md_surface_bright = get_global_color("surfaceBright");
-        let _md_surface_container_lowest = get_global_color("surfaceContainerLowest");
-        let _md_surface_container_low = get_global_color("surfaceContainerLow");
-        let _md_surface_container = get_global_color("surfaceContainer");
-        let _md_surface_container_high = get_global_color("surfaceContainerHigh");
-        let _md_surface_container_highest = get_global_color("surfaceContainerHighest");
+        // M3 Color Roles - Button Variants
+        let primary = get_global_color("primary"); // Filled button background
+        let on_primary = get_global_color("onPrimary"); // Content on primary background
+        let secondary_container = get_global_color("secondaryContainer"); // Tonal button background
+        let on_secondary_container = get_global_color("onSecondaryContainer"); // Content on tonal background
+        let surface = get_global_color("surface"); // Elevated button background, disabled button background
+        let on_surface = get_global_color("onSurface"); // Content on surface, disabled content @ 38%
+        let outline = get_global_color("outline"); // Outlined button border
 
         // Material Design button defaults based on variant
         let (default_fill, default_stroke, default_corner_radius, _has_elevation) = match variant {
             MaterialButtonVariant::Filled => (
-                Some(md_primary),
+                Some(primary), // Use primary for high-emphasis filled button background
                 Some(Stroke::NONE),
                 CornerRadius::from(20),
                 false,
             ),
             MaterialButtonVariant::Outlined => (
-                Some(Color32::TRANSPARENT),
-                Some(Stroke::new(1.0, md_outline)),
+                Some(Color32::TRANSPARENT), // Transparent to show parent surface
+                Some(Stroke::new(1.0, outline)), // Use outline for medium-emphasis border
                 CornerRadius::from(20),
                 false,
             ),
             MaterialButtonVariant::Text => (
-                Some(Color32::TRANSPARENT),
-                Some(Stroke::NONE),
+                Some(Color32::TRANSPARENT), // Transparent to show parent surface
+                Some(Stroke::NONE), // No border for low-emphasis text button
                 CornerRadius::from(20),
                 false,
             ),
             MaterialButtonVariant::Elevated => (
-                Some(md_surface),
+                Some(surface), // Use surface for elevated container background
                 Some(Stroke::NONE),
                 CornerRadius::from(20),
                 true,
             ),
             MaterialButtonVariant::FilledTonal => (
-                Some(md_surface_variant),
+                Some(secondary_container), // Use secondaryContainer for toned-down emphasis
                 Some(Stroke::NONE),
                 CornerRadius::from(20),
                 false,
@@ -624,16 +630,17 @@ impl Widget for MaterialButton<'_> {
 
         // Resolve the variant-based text color (used for text and icons)
         let resolved_text_color = if disabled {
-            md_background.gamma_multiply(0.38)
+            // Disabled state: use onSurface @ 38% opacity (M3 spec)
+            on_surface.linear_multiply(0.38)
         } else if let Some(custom) = custom_text_color {
             custom
         } else {
             match variant {
-                MaterialButtonVariant::Filled => md_background,
-                MaterialButtonVariant::Outlined => md_on_background,
-                MaterialButtonVariant::Text => md_on_background,
-                MaterialButtonVariant::Elevated => md_on_background,
-                MaterialButtonVariant::FilledTonal => get_global_color("onSecondaryContainer"),
+                MaterialButtonVariant::Filled => on_primary, // Use onPrimary for content on primary background
+                MaterialButtonVariant::Outlined => on_surface, // Use onSurface for content on transparent surface
+                MaterialButtonVariant::Text => on_surface, // Use onSurface for content on transparent surface
+                MaterialButtonVariant::Elevated => on_surface, // Use onSurface for content on elevated surface
+                MaterialButtonVariant::FilledTonal => on_secondary_container, // Use onSecondaryContainer for content on tinted background
             }
         };
 
@@ -783,26 +790,25 @@ impl Widget for MaterialButton<'_> {
             let mut frame_fill = fill.unwrap_or(default_fill.unwrap_or(frame_fill));
             let mut frame_stroke = stroke.unwrap_or(default_stroke.unwrap_or(frame_stroke));
 
-            // Apply disabled styling - Material Design spec
+            // Apply disabled styling (M3 spec: 38% opacity content, 12% opacity outline)
             if disabled {
-                let surface_color = get_global_color("surface");
-                frame_fill = surface_color;
-                frame_stroke.color = md_on_surface.gamma_multiply(0.12);
+                frame_fill = surface; // Use surface for disabled button background
+                frame_stroke.color = on_surface.linear_multiply(0.12); // 12% opacity for disabled outline
                 frame_stroke.width = if matches!(variant, MaterialButtonVariant::Outlined) {
-                    1.0
+                    1.0 // Keep 1dp border for outlined variant
                 } else {
-                    0.0
+                    0.0 // No border for other variants
                 };
             }
 
-            // Material Design state layers (hover/press overlays)
+            // M3 state layers: interactive overlay on hover/press
             if !disabled {
                 let state_layer_color = resolved_text_color;
                 if response.is_pointer_button_down_on() {
-                    // Pressed: 12% overlay
+                    // Pressed state: 12% opacity overlay (M3 interaction state)
                     frame_fill = blend_overlay(frame_fill, state_layer_color, 0.12);
                 } else if response.hovered() {
-                    // Hovered: 8% overlay
+                    // Hover state: 8% opacity overlay (M3 interaction state)
                     frame_fill = blend_overlay(frame_fill, state_layer_color, 0.08);
                 }
             }

@@ -1,3 +1,14 @@
+//! Material Design 3 Data Table Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surface**: Table background
+//! - **onSurface**: Table text, header text
+//! - **onSurfaceVariant**: Supporting text
+//! - **outlineVariant**: Cell borders, dividers
+//! - **surfaceContainerHighest**: Selected row background, header background
+//! - **State layers**: onSurface @ 8% (hover on rows)
+
 use crate::button::MaterialButton;
 use crate::theme::get_global_color;
 use egui::{

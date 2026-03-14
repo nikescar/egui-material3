@@ -1,3 +1,30 @@
+//! Material Design 3 Tabs Components
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Primary Tabs (Filled Container)
+//! - **surfaceContainer**: Tab bar background
+//! - **primary**: Selected tab indicator (3dp height)
+//! - **onSurface**: Selected tab text and icon
+//! - **onSurfaceVariant**: Unselected tab text and icon
+//! - **State layers**: onSurface @ 8% (hover), 12% (press) on selected; onSurfaceVariant @ 8%/12% on unselected
+//!
+//! ## Secondary Tabs (Transparent/Divider)
+//! - **surface**: Tab bar background (or transparent)
+//! - **primary**: Selected tab indicator (2dp height)
+//! - **onSurface**: Selected tab text and icon
+//! - **onSurfaceVariant**: Unselected tab text and icon
+//! - **outlineVariant**: Bottom divider line
+//! - **State layers**: Same as primary tabs
+//!
+//! ## Disabled State
+//! - **onSurface @ 38%**: Disabled tab text and icon
+//!
+//! ## Dimensions
+//! - **Height**: 46dp (text only), 72dp (with icons)
+//! - **Indicator**: 3dp (primary), 2dp (secondary), 3dp top corner radius
+//! - **Min touch target**: 48x48dp
+
 use crate::get_global_color;
 use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 use egui::epaint::CornerRadius;
@@ -234,18 +261,18 @@ impl<'a> Widget for MaterialTabs<'a> {
         let desired_size = Vec2::new(ui.available_width(), tab_height);
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
-        // Material Design 3 colors
-        let primary_color = get_global_color("primary");
-        let surface_container = get_global_color("surfaceContainer");
-        let surface = get_global_color("surface");
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline_variant = get_global_color("outlineVariant");
+        // M3 Color Roles - Tabs
+        let primary = get_global_color("primary"); // Selected tab indicator
+        let surface_container = get_global_color("surfaceContainer"); // Primary tabs background
+        let surface = get_global_color("surface"); // Secondary tabs background
+        let on_surface = get_global_color("onSurface"); // Selected tab text/icon
+        let on_surface_variant = get_global_color("onSurfaceVariant"); // Unselected tab text/icon
+        let outline_variant = get_global_color("outlineVariant"); // Secondary tabs divider
 
-        // Draw tab bar background
+        // Draw tab bar background based on variant
         let bg_color = match self.variant {
-            TabVariant::Primary => surface_container,
-            TabVariant::Secondary => surface,
+            TabVariant::Primary => surface_container, // Filled container for primary tabs
+            TabVariant::Secondary => surface, // Surface background for secondary tabs
         };
         ui.painter().rect_filled(rect, 0.0, bg_color);
 
@@ -276,7 +303,7 @@ impl<'a> Widget for MaterialTabs<'a> {
             let text_color = match self.variant {
                 TabVariant::Primary => {
                     if is_selected {
-                        primary_color
+                        primary
                     } else {
                         on_surface_variant
                     }
@@ -300,7 +327,7 @@ impl<'a> Widget for MaterialTabs<'a> {
             // M3 state layer (hover overlay)
             if is_hovered && self.enabled {
                 let state_layer_color = match self.variant {
-                    TabVariant::Primary => primary_color,
+                    TabVariant::Primary => primary,
                     TabVariant::Secondary => on_surface,
                 };
                 let hover_color = Color32::from_rgba_unmultiplied(
@@ -376,7 +403,7 @@ impl<'a> Widget for MaterialTabs<'a> {
                             se: 0,
                         };
                         ui.painter()
-                            .rect_filled(indicator_rect, rounding, primary_color);
+                            .rect_filled(indicator_rect, rounding, primary);
                     }
                     TabVariant::Secondary => {
                         // M3: full tab width underline, primary color
@@ -385,7 +412,7 @@ impl<'a> Widget for MaterialTabs<'a> {
                             Vec2::new(tab_width, SECONDARY_INDICATOR_HEIGHT),
                         );
                         ui.painter()
-                            .rect_filled(indicator_rect, 0.0, primary_color);
+                            .rect_filled(indicator_rect, 0.0, primary);
                     }
                 }
             }

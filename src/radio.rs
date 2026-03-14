@@ -1,3 +1,32 @@
+//! Material Design 3 Radio Button Components
+//!
+//! This module implements radio button controls following Material Design 3 color system.
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Selected State
+//! - **primary**: Radio button outer ring and inner dot when selected
+//! - **State layers**: primary @ 8% (hover), 10% (press/focus)
+//!
+//! ## Unselected State
+//! - **Transparent background**: Shows parent surface
+//! - **outline**: Outer ring color when unselected (2dp stroke)
+//! - **State layers**: onSurface @ 8% (hover), 10% (press/focus)
+//!
+//! ## Disabled State
+//! - **onSurfaceVariant @ 38%**: All elements (ring, dot) use this opacity (M3 spec)
+//!
+//! ## Radio List Tile
+//! - **surfaceVariant @ 50%**: Selected tile background
+//! - **onSurface**: Title text
+//! - **onSurfaceVariant**: Subtitle text
+//! - **State layers**: onSurface @ 4% (hover on unselected)
+//!
+//! ## Touch Target
+//! - **40x40dp**: Minimum touch target size (ripple overlay area)
+//! - **20x20dp**: Visible radio button size
+//! - **10x10dp**: Inner selected dot size
+
 use crate::get_global_color;
 use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget, FontId};
 
@@ -134,18 +163,28 @@ impl<'a, T: PartialEq + Clone> MaterialRadio<'a, T> {
     }
 
     /// Set custom fill color for the radio button.
+    ///
+    /// Overrides the default M3 **primary** color role.
+    /// This affects both the outer ring and inner dot when selected.
     pub fn fill_color(mut self, color: Color32) -> Self {
         self.fill_color = Some(color);
         self
     }
 
     /// Set custom overlay color for hover/press effects.
+    ///
+    /// Overrides the default M3 state layer colors:
+    /// - Selected: primary @ 8%
+    /// - Unselected: onSurface @ 8%
     pub fn overlay_color(mut self, color: Color32) -> Self {
         self.overlay_color = Some(color);
         self
     }
 
     /// Set custom background color.
+    ///
+    /// Overrides the default transparent background.
+    /// Note: Typically radio buttons have transparent backgrounds to show parent surface.
     pub fn background_color(mut self, color: Color32) -> Self {
         self.background_color = Some(color);
         self
@@ -183,11 +222,11 @@ impl<'a, T: PartialEq + Clone> Widget for MaterialRadio<'a, T> {
             response.mark_changed();
         }
 
-        // Material Design colors
-        let primary_color = self.fill_color.unwrap_or_else(|| get_global_color("primary"));
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline = get_global_color("outline");
+        // M3 Color Roles - Radio Button States
+        let primary = self.fill_color.unwrap_or_else(|| get_global_color("primary")); // Selected ring and dot
+        let on_surface = get_global_color("onSurface"); // Hover state layer, text label
+        let on_surface_variant = get_global_color("onSurfaceVariant"); // Disabled @ 38%
+        let outline = get_global_color("outline"); // Unselected ring (2dp stroke)
 
         let radio_size = 20.0;
         let radio_rect = Rect::from_min_size(
@@ -196,25 +235,24 @@ impl<'a, T: PartialEq + Clone> Widget for MaterialRadio<'a, T> {
         );
 
         let (border_color, fill_color, inner_color) = if !self.enabled {
-            let disabled_color = get_global_color("onSurfaceVariant").linear_multiply(0.38);
+            // Disabled state: onSurfaceVariant @ 38% for all elements (M3 spec)
+            let disabled_color = on_surface_variant.linear_multiply(0.38);
             (disabled_color, Color32::TRANSPARENT, disabled_color)
         } else if is_selected {
-            (primary_color, self.background_color.unwrap_or(Color32::TRANSPARENT), primary_color)
+            // Selected state: primary for ring and inner dot
+            (primary, self.background_color.unwrap_or(Color32::TRANSPARENT), primary)
         } else if response.hovered() {
-            let hover_overlay = self.overlay_color.unwrap_or_else(|| 
-                Color32::from_rgba_premultiplied(
-                    on_surface.r(),
-                    on_surface.g(),
-                    on_surface.b(),
-                    20,
-                )
+            // Hover state unselected: onSurface @ 8% state layer (M3 interaction state)
+            let hover_overlay = self.overlay_color.unwrap_or_else(||
+                on_surface.linear_multiply(0.08)
             );
             (
-                outline,
+                outline, // Unselected ring uses outline color
                 hover_overlay,
                 on_surface_variant,
             )
         } else {
+            // Default unselected state: outline for ring
             (outline, self.background_color.unwrap_or(Color32::TRANSPARENT), on_surface_variant)
         };
 
@@ -242,10 +280,11 @@ impl<'a, T: PartialEq + Clone> Widget for MaterialRadio<'a, T> {
         if !self.text.is_empty() {
             let text_pos = Pos2::new(radio_rect.max.x + 8.0, rect.center().y);
 
+            // Label text: onSurface for enabled, onSurfaceVariant @ 38% for disabled (M3 spec)
             let text_color = if self.enabled {
                 on_surface
             } else {
-                get_global_color("onSurfaceVariant").linear_multiply(0.38)
+                on_surface_variant.linear_multiply(0.38)
             };
 
             ui.painter().text(
@@ -257,18 +296,15 @@ impl<'a, T: PartialEq + Clone> Widget for MaterialRadio<'a, T> {
             );
         }
 
-        // Add ripple effect on hover
+        // M3 ripple effect on hover (40x40dp touch target)
         if response.hovered() && self.enabled {
             let ripple_color = self.overlay_color.unwrap_or_else(|| {
                 if is_selected {
-                    Color32::from_rgba_premultiplied(
-                        primary_color.r(),
-                        primary_color.g(),
-                        primary_color.b(),
-                        20,
-                    )
+                    // Selected hover: primary @ 8% (M3 interaction state)
+                    primary.linear_multiply(0.08)
                 } else {
-                    Color32::from_rgba_premultiplied(on_surface.r(), on_surface.g(), on_surface.b(), 20)
+                    // Unselected hover: onSurface @ 8% (M3 interaction state)
+                    on_surface.linear_multiply(0.08)
                 }
             });
 
@@ -535,26 +571,24 @@ impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
             response.mark_changed();
         }
         
-        // Determine colors
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let surface_variant = get_global_color("surfaceVariant");
-        
-        // Background
+        // M3 Color Roles - Radio List Tile
+        let on_surface = get_global_color("onSurface"); // Title text, hover state layer
+        let on_surface_variant = get_global_color("onSurfaceVariant"); // Subtitle text, disabled @ 38%
+        let surface_variant = get_global_color("surfaceVariant"); // Selected tile background @ 50%
+
+        // Background color based on state
         let bg_color = if is_selected {
-            self.selected_tile_color.unwrap_or_else(|| 
+            // Selected state: surfaceVariant @ 50% for subtle background (M3 list pattern)
+            self.selected_tile_color.unwrap_or_else(||
                 surface_variant.linear_multiply(0.5)
             )
         } else if response.hovered() && self.enabled {
-            self.tile_color.unwrap_or_else(|| 
-                Color32::from_rgba_premultiplied(
-                    on_surface.r(),
-                    on_surface.g(),
-                    on_surface.b(),
-                    10,
-                )
+            // Hover state: onSurface @ 4% state layer (M3 interaction state for list items)
+            self.tile_color.unwrap_or_else(||
+                on_surface.linear_multiply(0.04)
             )
         } else {
+            // Default state: transparent to show parent surface
             self.tile_color.unwrap_or(Color32::TRANSPARENT)
         };
         
@@ -583,16 +617,19 @@ impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
         
         let radio_center = Pos2::new(radio_x, rect.center().y);
         
-        // Draw radio button
-        let primary_color = self.fill_color.unwrap_or_else(|| get_global_color("primary"));
-        let outline = get_global_color("outline");
-        
+        // Draw radio button with M3 colors
+        let primary = self.fill_color.unwrap_or_else(|| get_global_color("primary")); // Selected state
+        let outline = get_global_color("outline"); // Unselected ring
+
         let (border_color, inner_color) = if !self.enabled {
+            // Disabled state: onSurfaceVariant @ 38% (M3 spec)
             let disabled_color = on_surface_variant.linear_multiply(0.38);
             (disabled_color, disabled_color)
         } else if is_selected {
-            (primary_color, primary_color)
+            // Selected state: primary for both ring and dot
+            (primary, primary)
         } else {
+            // Unselected state: outline for ring
             (outline, outline)
         };
         
@@ -608,11 +645,11 @@ impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
             ui.painter().circle_filled(radio_center, radio_size / 4.0, inner_color);
         }
         
-        // Draw text content
+        // Text colors: onSurface for title, onSurfaceVariant for subtitle
         let text_color = if self.enabled {
-            on_surface
+            on_surface // Title text uses onSurface
         } else {
-            on_surface_variant.linear_multiply(0.38)
+            on_surface_variant.linear_multiply(0.38) // Disabled @ 38% (M3 spec)
         };
         
         let _text_rect_width = match self.control_affinity {
@@ -645,7 +682,8 @@ impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
         if let Some(subtitle) = &self.subtitle {
             let subtitle_y = rect.min.y + height * 0.65;
             let subtitle_font = FontId::proportional(if self.dense { 12.0 } else { 14.0 });
-            
+
+            // Subtitle text: onSurfaceVariant for lower emphasis supporting text (M3 pattern)
             ui.painter().text(
                 Pos2::new(text_x, subtitle_y),
                 egui::Align2::LEFT_CENTER,

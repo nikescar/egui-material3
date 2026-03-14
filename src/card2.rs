@@ -1,3 +1,29 @@
+//! Material Design 3 Card Components (Enhanced)
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Elevated Card
+//! - **surfaceContainerLow**: Card background (elevated)
+//! - **onSurface**: Content text
+//! - **onSurfaceVariant**: Supporting text
+//! - **Shadow**: 1dp elevation
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//!
+//! ## Filled Card
+//! - **surfaceContainerHighest**: Card background (filled)
+//! - **onSurface**: Content text
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//!
+//! ## Outlined Card
+//! - **surface**: Card background
+//! - **outline**: Border (1dp stroke)
+//! - **onSurface**: Content text
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//!
+//! ## Dimensions
+//! - **Corner radius**: 12dp
+//! - **Padding**: 16dp
+
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,

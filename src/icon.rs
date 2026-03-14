@@ -1,3 +1,10 @@
+//! Material Design 3 Icon Component
+//!
+//! Icon rendering utility. Color should be set based on context:
+//! - **primary**: Accent/emphasis icons
+//! - **onSurface**: Default icon color
+//! - **onSurfaceVariant**: Lower emphasis icons
+
 use egui::{self, Color32, Response, Sense, Ui, Vec2, Widget};
 
 pub struct MaterialIcon {

@@ -1,3 +1,33 @@
+//! Material Design 3 Checkbox Components
+//!
+//! This module implements checkbox controls following Material Design 3 color system.
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Checked/Indeterminate State
+//! - **primary**: Checkbox container background when checked
+//! - **onPrimary**: Check mark color on primary background
+//! - **State layers**: primary @ 8% (hover), 10% (press/focus)
+//!
+//! ## Unchecked State
+//! - **Transparent background**: Shows parent surface
+//! - **onSurfaceVariant**: Border color (2dp stroke, lower emphasis)
+//! - **onSurface**: Border color on hover (2dp stroke)
+//! - **State layers**: onSurface @ 8% (hover), 10% (press/focus)
+//!
+//! ## Error State
+//! - **error**: Checkbox container background when checked in error state
+//! - **onError**: Check mark color on error background
+//! - **error**: Border color when unchecked in error state
+//! - **State layers**: error @ 8% (hover), 10% (press/focus)
+//!
+//! ## Disabled State
+//! - **onSurface @ 38%**: All elements (border, check mark, background) use this opacity (M3 spec)
+//!
+//! ## Touch Target
+//! - **40x40dp**: Minimum touch target size (state layer overlay area)
+//! - **18x18dp**: Visible checkbox size
+
 use crate::get_global_color;
 use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
@@ -109,7 +139,8 @@ impl<'a> MaterialCheckbox<'a> {
 
     /// Set custom check mark color
     ///
-    /// Overrides the default check mark color from the theme.
+    /// Overrides the default M3 **onPrimary** color role (or **onError** in error state).
+    /// The check mark appears on the filled checkbox background.
     ///
     /// ## Parameters
     /// - `color`: Custom color for the check mark
@@ -120,7 +151,8 @@ impl<'a> MaterialCheckbox<'a> {
 
     /// Set custom fill color when checked
     ///
-    /// Overrides the default fill color from the theme.
+    /// Overrides the default M3 **primary** color role (or **error** in error state).
+    /// This is the background color of the checkbox when checked or indeterminate.
     ///
     /// ## Parameters
     /// - `color`: Custom fill color when checkbox is checked
@@ -175,40 +207,40 @@ impl<'a> Widget for MaterialCheckbox<'a> {
             Vec2::splat(checkbox_size),
         );
 
-        // Material Design colors
-        let primary_color = self.fill_color.unwrap_or_else(|| get_global_color("primary"));
-        let error_color = get_global_color("error");
-        let on_error = get_global_color("onError");
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let _surface_variant = get_global_color("surfaceVariant");
-        let _outline = get_global_color("outline");
-        let on_primary = self.check_color.unwrap_or_else(|| get_global_color("onPrimary"));
+        // M3 Color Roles - Checkbox States
+        let primary = self.fill_color.unwrap_or_else(|| get_global_color("primary")); // Checked container background
+        let on_primary = self.check_color.unwrap_or_else(|| get_global_color("onPrimary")); // Check mark on primary
+        let error = get_global_color("error"); // Error state container/border
+        let on_error = get_global_color("onError"); // Check mark on error background
+        let on_surface = get_global_color("onSurface"); // Hover border, text label, disabled @ 38%
+        let on_surface_variant = get_global_color("onSurfaceVariant"); // Default unchecked border (lower emphasis)
 
         // Determine colors based on state
         let (bg_color, border_color, check_color, border_width) = if !self.enabled {
-            // Material Design disabled state: onSurface with 38% opacity
-            let disabled_color = on_surface.gamma_multiply(0.38);
+            // Disabled state: onSurface @ 38% opacity for all elements (M3 spec)
+            let disabled_color = on_surface.linear_multiply(0.38);
             if *self.checked || self.indeterminate {
-                (disabled_color, Color32::TRANSPARENT, on_surface.gamma_multiply(0.38), 0.0)
+                (disabled_color, Color32::TRANSPARENT, disabled_color, 0.0)
             } else {
                 (Color32::TRANSPARENT, disabled_color, disabled_color, self.border_width)
             }
         } else if self.is_error {
-            // Error state styling
+            // Error state: use error color for container/border
             if *self.checked || self.indeterminate {
-                (error_color, Color32::TRANSPARENT, on_error, 0.0)
+                // Checked error state: error background with onError check mark
+                (error, Color32::TRANSPARENT, on_error, 0.0)
             } else {
-                (Color32::TRANSPARENT, error_color, on_surface, self.border_width)
+                // Unchecked error state: error border
+                (Color32::TRANSPARENT, error, on_surface, self.border_width)
             }
         } else if *self.checked || self.indeterminate {
-            // Checked/indeterminate state
-            (primary_color, Color32::TRANSPARENT, on_primary, 0.0)
+            // Checked/indeterminate state: primary background with onPrimary check mark
+            (primary, Color32::TRANSPARENT, on_primary, 0.0)
         } else if response.hovered() {
-            // Hover state for unchecked
+            // Hover state unchecked: onSurface border (higher emphasis than default)
             (Color32::TRANSPARENT, on_surface, on_surface, self.border_width)
         } else {
-            // Default unchecked state
+            // Default unchecked state: onSurfaceVariant border (lower emphasis)
             (Color32::TRANSPARENT, on_surface_variant, on_surface, self.border_width)
         };
 
@@ -260,10 +292,11 @@ impl<'a> Widget for MaterialCheckbox<'a> {
         if !self.text.is_empty() {
             let text_pos = Pos2::new(checkbox_rect.max.x + 4.0, rect.center().y);
 
+            // Label text: onSurface for enabled, onSurface @ 38% for disabled (M3 spec)
             let text_color = if self.enabled {
                 on_surface
             } else {
-                on_surface.gamma_multiply(0.38)
+                on_surface.linear_multiply(0.38)
             };
 
             ui.painter().text(
@@ -275,80 +308,35 @@ impl<'a> Widget for MaterialCheckbox<'a> {
             );
         }
 
-        // Add state overlay effect (hover/focus/pressed)
+        // M3 state layer overlay (40x40dp touch target, hover/focus/press states)
         if self.enabled {
             let overlay_rect = Rect::from_center_size(checkbox_rect.center(), Vec2::splat(40.0));
             let overlay_color = if response.is_pointer_button_down_on() {
-                // Pressed state: 10% opacity
+                // Pressed state: 10% opacity (M3 interaction state)
                 if self.is_error {
-                    Color32::from_rgba_premultiplied(
-                        error_color.r(),
-                        error_color.g(),
-                        error_color.b(),
-                        25,
-                    )
+                    error.linear_multiply(0.10)
                 } else if *self.checked || self.indeterminate {
-                    Color32::from_rgba_premultiplied(
-                        primary_color.r(),
-                        primary_color.g(),
-                        primary_color.b(),
-                        25,
-                    )
+                    primary.linear_multiply(0.10)
                 } else {
-                    Color32::from_rgba_premultiplied(
-                        on_surface.r(),
-                        on_surface.g(),
-                        on_surface.b(),
-                        25,
-                    )
+                    on_surface.linear_multiply(0.10)
                 }
             } else if response.hovered() {
-                // Hover state: 8% opacity
+                // Hover state: 8% opacity (M3 interaction state)
                 if self.is_error {
-                    Color32::from_rgba_premultiplied(
-                        error_color.r(),
-                        error_color.g(),
-                        error_color.b(),
-                        20,
-                    )
+                    error.linear_multiply(0.08)
                 } else if *self.checked || self.indeterminate {
-                    Color32::from_rgba_premultiplied(
-                        primary_color.r(),
-                        primary_color.g(),
-                        primary_color.b(),
-                        20,
-                    )
+                    primary.linear_multiply(0.08)
                 } else {
-                    Color32::from_rgba_premultiplied(
-                        on_surface.r(),
-                        on_surface.g(),
-                        on_surface.b(),
-                        20,
-                    )
+                    on_surface.linear_multiply(0.08)
                 }
             } else if response.has_focus() {
-                // Focus state: 10% opacity
+                // Focus state: 10% opacity (M3 interaction state)
                 if self.is_error {
-                    Color32::from_rgba_premultiplied(
-                        error_color.r(),
-                        error_color.g(),
-                        error_color.b(),
-                        25,
-                    )
+                    error.linear_multiply(0.10)
                 } else if *self.checked || self.indeterminate {
-                    Color32::from_rgba_premultiplied(
-                        primary_color.r(),
-                        primary_color.g(),
-                        primary_color.b(),
-                        25,
-                    )
+                    primary.linear_multiply(0.10)
                 } else {
-                    Color32::from_rgba_premultiplied(
-                        on_surface.r(),
-                        on_surface.g(),
-                        on_surface.b(),
-                        25,
-                    )
+                    on_surface.linear_multiply(0.10)
                 }
             } else {
                 Color32::TRANSPARENT

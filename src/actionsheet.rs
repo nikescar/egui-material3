@@ -1,3 +1,13 @@
+//! Material Design 3 Action Sheet Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surfaceContainerLow**: Sheet background
+//! - **onSurface**: Action text
+//! - **onSurfaceVariant**: Supporting text
+//! - **scrim @ 32%**: Modal overlay
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+
 use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,

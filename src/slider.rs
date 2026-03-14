@@ -1,3 +1,25 @@
+//! Material Design 3 Slider Components
+//!
+//! # M3 Color Role Usage
+//!
+//! ## Active State
+//! - **primary**: Active track, thumb
+//! - **onPrimary**: Thumb icon (if present)
+//! - **State layers**: primary @ 8% (hover), 12% (press) on thumb
+//!
+//! ## Inactive State
+//! - **surfaceContainerHighest**: Inactive track
+//! - **onSurfaceVariant**: Tick marks, value labels
+//!
+//! ## Disabled State
+//! - **onSurface @ 12%**: Inactive track
+//! - **onSurface @ 38%**: Active track, thumb
+//!
+//! ## Dimensions
+//! - **Track height**: 4dp
+//! - **Thumb size**: 20dp (default), 44dp touch target
+//! - **Tick mark**: 2dp diameter
+
 use crate::get_global_color;
 use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 use std::ops::RangeInclusive;

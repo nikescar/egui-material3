@@ -1,3 +1,25 @@
+//! Material Design 3 Dialog Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surface**: Dialog container background (elevated surface)
+//! - **onSurface**: Title and content text
+//! - **onSurfaceVariant**: Supporting text (if any)
+//! - **Shadow**: 6dp elevation (24dp blur shadow with scrim overlay)
+//! - **scrim @ 32%**: Modal overlay behind dialog
+//!
+//! ## Action Buttons
+//! - **Text button**: onSurface text (low emphasis - secondary actions)
+//! - **Filled Tonal button**: secondaryContainer background, onSecondaryContainer text (medium emphasis)
+//! - **Filled button**: primary background, onPrimary text (high emphasis - primary action)
+//!
+//! ## Dimensions
+//! - **Max width**: 560dp, **Min width**: 280dp
+//! - **Corner radius**: 28dp
+//! - **Title padding**: 24dp horizontal
+//! - **Content padding**: 24dp horizontal, 16dp vertical
+//! - **Actions padding**: 24dp all sides, 8dp spacing between buttons
+
 use crate::get_global_color;
 use egui::{self, Color32, Context, Id, Modal, Response, Sense, Stroke, Ui, Vec2};
 

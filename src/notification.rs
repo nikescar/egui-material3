@@ -1,3 +1,19 @@
+//! Material Design 3 Notification Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surfaceContainer**: Notification background
+//! - **onSurface**: Title and body text
+//! - **onSurfaceVariant**: Supporting text, timestamp
+//! - **primary**: Action button text, icons
+//! - **Shadow**: 3dp elevation
+//! - **State layers**: onSurface @ 8% (hover), 12% (press) on actions
+//!
+//! ## Dimensions
+//! - **Min width**: 288dp, **Max width**: 568dp
+//! - **Padding**: 16dp
+//! - **Corner radius**: 12dp
+
 use crate::theme::get_global_color;
 use crate::material_symbol::material_symbol_text;
 use egui::{

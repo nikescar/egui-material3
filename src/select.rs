@@ -1,3 +1,16 @@
+//! Material Design 3 Select/Dropdown Components
+//!
+//! # M3 Color Role Usage
+//!
+//! - **surfaceContainerHighest**: Filled select background
+//! - **onSurface**: Select text, dropdown text
+//! - **onSurfaceVariant**: Label text, supporting text
+//! - **outline**: Outlined select border
+//! - **primary**: Selected item indicator, focused state
+//! - **secondaryContainer**: Selected item background in dropdown
+//! - **onSecondaryContainer**: Selected item text
+//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+
 use crate::theme::get_global_color;
 use egui::{
     self, Color32, FontFamily, FontId, Key, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
