@@ -1,3 +1,7 @@
+## What's Changed
+* feat. create svg features to reduce size for default inclusion.
+* release. v0.0.8 by @nikescar
+
 ## What's Changed in 0.0.8
 * chore. move svg feature to cargo config for local build. by @nikescar
 * chore. cargo lint by @nikescar

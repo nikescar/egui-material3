@@ -8,9 +8,14 @@ A Material Design component library for egui, providing Material Design 3 compon
 
 ## What's New
 
-### v0.0.8 (Latest)
+### v0.0.9 (Latest)
+- **Optimized Package Size**: SVG icon collections are now optional features, reducing default package size significantly
+  - Enable only the collections you need: `svg_solar`, `svg_noto`, `svg_twemoji`
+  - Or enable all with `svg_emoji` feature
+- **Build Optimization**: SVG resources excluded from default package, downloaded on-demand during build when features are enabled
+
+### v0.0.8
 - **New Components**: ActionSheet, Badge, Breadcrumbs, Notification, Timeline, Toolbar, Tooltip, TreeView
-- **Optimized Package Size**: SVG icon collections now available as separate optional features (`svg_solar`, `svg_noto`, `svg_twemoji`)
 - **Enhanced Components**: Button, Chip, and List now support small size variants
 - **Improved Carousel**: Added mouse drag support for better interaction
 - **Better Mobile Support**: Optimized DataTable padding for mobile UI
@@ -41,10 +46,10 @@ Or manually in `Cargo.toml`:
 
 ```toml
 [dependencies]
-egui-material3 = "0.0.8"
+egui-material3 = "0.0.9"
 
 # With features
-egui-material3 = { version = "0.0.8", features = ["ondemand", "svg_solar"] }
+egui-material3 = { version = "0.0.9", features = ["ondemand", "svg_solar"] }
 ```
 
 ## Usage
@@ -447,13 +452,13 @@ Choose the collections you need:
 ```toml
 [dependencies]
 # Enable individual collections (recommended - smaller binary size)
-egui-material3 = { version = "0.0.8", features = ["svg_solar"] }
+egui-material3 = { version = "0.0.9", features = ["svg_solar"] }
 
 # Or enable specific combinations
-egui-material3 = { version = "0.0.8", features = ["svg_solar", "svg_noto"] }
+egui-material3 = { version = "0.0.9", features = ["svg_solar", "svg_noto"] }
 
 # Or enable all collections
-egui-material3 = { version = "0.0.8", features = ["svg_emoji"] }
+egui-material3 = { version = "0.0.9", features = ["svg_emoji"] }
 ```
 
 ### Usage
@@ -491,7 +496,7 @@ Enable online image support for `MaterialImageList`:
 
 ```toml
 [dependencies]
-egui-material3 = { version = "0.0.8", features = ["ondemand"] }
+egui-material3 = { version = "0.0.9", features = ["ondemand"] }
 ```
 
 The `MaterialImageList` component supports multiple image sources:
@@ -537,7 +542,7 @@ Enable spreadsheet components with DuckDB backend:
 
 ```toml
 [dependencies]
-egui-material3 = { version = "0.0.8", features = ["spreadsheet"] }
+egui-material3 = { version = "0.0.9", features = ["spreadsheet"] }
 ```
 
 The spreadsheet feature provides:
