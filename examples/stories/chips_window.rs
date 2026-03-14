@@ -216,7 +216,7 @@ impl ChipsWindow {
         ui.heading("Small Assist Chips");
 
         let label = self.label.clone();
-        let _l = |default: &str| -> String {
+        let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {
@@ -314,7 +314,7 @@ impl ChipsWindow {
         ui.heading("Small Filter Chips");
 
         let label = self.label.clone();
-        let _l = |default: &str| -> String {
+        let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {

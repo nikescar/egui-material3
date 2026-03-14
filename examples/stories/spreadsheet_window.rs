@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Window};
+use eframe::egui::{self, Ui, Window};
 
 #[cfg(feature = "spreadsheet")]
 use crate::{MaterialButton, MaterialCheckbox};
