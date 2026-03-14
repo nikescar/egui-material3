@@ -298,7 +298,12 @@ impl Widget for MaterialCard2<'_> {
         };
 
         // Calculate total height based on content
-        let header_height = if header_title.is_some() { 72.0 } else { 0.0 };
+        let header_height = if header_title.is_some() {
+            // Reduced height for tighter spacing between header and content
+            if header_subtitle.is_some() { 60.0 } else { 44.0 }
+        } else {
+            0.0
+        };
         let media_height_actual = if media_content.is_some() {
             media_height
         } else {
@@ -377,7 +382,7 @@ impl Widget for MaterialCard2<'_> {
                 );
 
                 // Title
-                let title_pos = egui::pos2(rect.min.x + 16.0, current_y + 16.0);
+                let title_pos = egui::pos2(rect.min.x + 16.0, current_y + 12.0);
                 ui.painter().text(
                     title_pos,
                     egui::Align2::LEFT_TOP,
@@ -388,7 +393,7 @@ impl Widget for MaterialCard2<'_> {
 
                 // Subtitle if present
                 if let Some(subtitle) = &header_subtitle {
-                    let subtitle_pos = egui::pos2(rect.min.x + 16.0, current_y + 44.0);
+                    let subtitle_pos = egui::pos2(rect.min.x + 16.0, current_y + 36.0);
                     ui.painter().text(
                         subtitle_pos,
                         egui::Align2::LEFT_TOP,

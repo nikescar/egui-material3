@@ -230,6 +230,8 @@
 //! accessible, and beautiful user interfaces.
 
 pub mod actionsheet;
+pub mod badge;
+pub mod breadcrumbs;
 pub mod button;
 pub mod card2;
 pub mod carousel;
@@ -250,6 +252,7 @@ pub mod imagelist;
 pub mod layoutgrid;
 pub mod list;
 pub mod menu;
+pub mod notification;
 pub mod progress;
 pub mod radio;
 pub mod select;
@@ -260,10 +263,15 @@ pub mod switch;
 pub mod tabs;
 pub mod theme;
 pub mod timeline;
+pub mod toolbar;
+pub mod tooltip;
 pub mod topappbar;
+pub mod treeview;
 
 pub use {
     actionsheet::{action_sheet, ActionButton, ActionGroup, MaterialActionSheet},
+    badge::{badge, badge_dot, BadgeColor, BadgePosition, BadgeSize, MaterialBadge},
+    breadcrumbs::{breadcrumbs, MaterialBreadcrumbs},
     button::{MaterialButton, MaterialButtonVariant},
     card2::{elevated_card2, filled_card2, outlined_card2, Card2Variant, MaterialCard2},
     carousel::{carousel, CarouselItem, MaterialCarousel},
@@ -299,6 +307,7 @@ pub use {
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData,
         MenuButtonThemeData, MenuItem, MenuStyle, MenuThemeData, Positioning,
     },
+    notification::{notification, MaterialNotification, MaterialNotificationWithOffset, NotificationAlign},
     progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},
     radio::{radio, radio_group, radio_list_tile, MaterialRadio, MaterialRadioGroup, RadioListTile, ListTileControlAffinity},
     select::{select, MaterialSelect, SelectVariant, MenuAlignment},
@@ -314,10 +323,13 @@ pub use {
         timeline, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant,
         TimelineItem, TimelinePosition,
     },
+    toolbar::{toolbar, MaterialToolbar},
+    tooltip::{show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip, MaterialTooltip, TooltipPosition},
     topappbar::{
         center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar,
         MaterialTopAppBar, TopAppBarVariant,
     },
+    treeview::{tree_view, MaterialTreeView, TreeViewItem, TreeViewState},
 };
 
 #[cfg(feature = "spreadsheet")]

@@ -96,6 +96,8 @@ pub struct MaterialTimeline<'a> {
 pub struct TimelineItem<'a> {
     /// Main content text
     content: Option<String>,
+    /// Custom content renderer (takes precedence over content text)
+    content_custom: Option<Box<dyn Fn(&mut Ui) + 'a>>,
     /// Optional opposite side content
     opposite_content: Option<String>,
     /// Timeline dot configuration
@@ -108,6 +110,8 @@ pub struct TimelineItem<'a> {
     content_color: Option<Color32>,
     /// Optional custom opposite content color
     opposite_content_color: Option<Color32>,
+    /// Custom min height for this item (useful for cards/complex content)
+    min_height: Option<f32>,
 }
 
 /// Timeline dot/indicator configuration.
@@ -195,12 +199,14 @@ impl<'a> TimelineItem<'a> {
     pub fn new() -> Self {
         Self {
             content: None,
+            content_custom: None,
             opposite_content: None,
             dot: None,
             show_connector: true,
             action: None,
             content_color: None,
             opposite_content_color: None,
+            min_height: None,
         }
     }
 
@@ -216,6 +222,37 @@ impl<'a> TimelineItem<'a> {
     /// ```
     pub fn content(mut self, text: impl Into<String>) -> Self {
         self.content = Some(text.into());
+        self
+    }
+
+    /// Set custom content renderer with a closure.
+    ///
+    /// This takes precedence over the text-based `content()` method.
+    ///
+    /// # Arguments
+    /// * `render` - Closure that renders custom UI
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = TimelineItem::new()
+    ///     .content_custom(|ui| {
+    ///         ui.label("Custom content");
+    ///         ui.button("Click me");
+    ///     });
+    /// ```
+    pub fn content_custom<F: Fn(&mut Ui) + 'a>(mut self, render: F) -> Self {
+        self.content_custom = Some(Box::new(render));
+        self
+    }
+
+    /// Set minimum height for this timeline item.
+    ///
+    /// Useful when using custom content that needs more vertical space.
+    ///
+    /// # Arguments
+    /// * `height` - Minimum height in pixels
+    pub fn min_height(mut self, height: f32) -> Self {
+        self.min_height = Some(height);
         self
     }
 
@@ -415,7 +452,7 @@ impl<'a> Default for MaterialTimeline<'a> {
 const DOT_SIZE: f32 = 12.0;
 const DOT_ICON_SIZE: f32 = 16.0;
 const CONNECTOR_WIDTH: f32 = 2.0;
-const CONTENT_PADDING: f32 = 16.0;
+const CONTENT_PADDING: f32 = 32.0;  // Increased padding to prevent icon overlap with text
 const MIN_ITEM_SPACING: f32 = 24.0;  // Minimum spacing between items
 const OPPOSITE_CONTENT_WIDTH: f32 = 80.0;
 
@@ -479,8 +516,11 @@ impl<'a> Widget for MaterialTimeline<'a> {
             // Calculate dot size and spacing early for use throughout
             let dot_config = item.dot.as_ref();
             let dot_size = dot_config.and_then(|d| d.size).unwrap_or(DOT_SIZE);
-            let icon_size = dot_size * 1.2;
-            let item_spacing = (dot_size + CONTENT_PADDING).max(MIN_ITEM_SPACING);
+            // Icon size should be smaller than dot for better fit
+            let icon_size = (dot_size * 0.7).max(10.0);
+            // Use custom min_height if provided, otherwise calculate from dot size
+            let base_spacing = (dot_size + CONTENT_PADDING).max(MIN_ITEM_SPACING);
+            let item_spacing = item.min_height.unwrap_or(base_spacing).max(base_spacing);
 
             // Calculate layout positions
             let (opposite_x, separator_x, content_x, is_content_right) = if is_alternate_mode {
@@ -706,8 +746,8 @@ impl<'a> Widget for MaterialTimeline<'a> {
                 );
             }
 
-            // Draw content
-            if let Some(content_text) = &item.content {
+            // Draw content (custom or text-based)
+            if item.content_custom.is_some() || item.content.is_some() {
                 let content_color = item.content_color.unwrap_or(on_surface);
                 let content_width = if is_alternate_mode {
                     // For alternate mode, content takes up half the width minus padding and dot
@@ -732,7 +772,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                     Vec2::new(content_width, item_spacing),
                 );
 
-                // Use allocate_ui_at_rect for proper text rendering with interaction
+                // Use allocate_ui_at_rect for proper rendering with interaction
                 let content_inner = ui.allocate_ui_at_rect(content_rect, |ui| {
                     // Properly clip to both the rect and parent's clip rect
                     let parent_clip = ui.clip_rect();
@@ -755,23 +795,36 @@ impl<'a> Widget for MaterialTimeline<'a> {
                         ui.painter().rect_filled(content_rect, 4.0, hover_color);
                     }
 
-                    // Render text label with proper alignment and wrapping
-                    // Right-align for left-positioned items, left-align for right-positioned
-                    // Use Center for vertical alignment with dot
-                    let layout = if is_content_right {
-                        egui::Layout::left_to_right(egui::Align::Center)
-                    } else {
-                        egui::Layout::right_to_left(egui::Align::Center)
-                    };
+                    // Render custom content or text label
+                    if let Some(custom_render) = &item.content_custom {
+                        // Custom content rendering - use vertical layout for cards/complex content
+                        let align = if is_content_right {
+                            egui::Align::LEFT
+                        } else {
+                            egui::Align::RIGHT
+                        };
+                        let layout = egui::Layout::top_down(align);
 
-                    ui.with_layout(layout, |ui| {
-                        let label = egui::Label::new(
-                            egui::RichText::new(content_text)
-                                .size(16.0)
-                                .color(content_color)
-                        ).wrap_mode(egui::TextWrapMode::Wrap);
-                        ui.add(label);
-                    });
+                        ui.with_layout(layout, |ui| {
+                            custom_render(ui);
+                        });
+                    } else if let Some(content_text) = &item.content {
+                        // Text-based content rendering - use center alignment
+                        let layout = if is_content_right {
+                            egui::Layout::left_to_right(egui::Align::Center)
+                        } else {
+                            egui::Layout::right_to_left(egui::Align::Center)
+                        };
+
+                        ui.with_layout(layout, |ui| {
+                            let label = egui::Label::new(
+                                egui::RichText::new(content_text)
+                                    .size(16.0)
+                                    .color(content_color)
+                            ).wrap_mode(egui::TextWrapMode::Wrap);
+                            ui.add(label);
+                        });
+                    }
 
                     (interact_response, has_action)
                 });

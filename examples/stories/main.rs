@@ -12,6 +12,8 @@ use std::path::PathBuf;
 
 // Import window modules - reorganized from src/ to examples/stories/ directory structure
 mod actionsheet_window;
+mod badge_window;
+mod breadcrumbs_window;
 mod button_window;
 mod card2_window;
 mod carousel_window;
@@ -26,6 +28,7 @@ mod imagelist_window;
 mod layoutgrid_window;
 mod list_window;
 mod menu_window;
+mod notification_window;
 mod progress_window;
 mod radio_window;
 mod select_window;
@@ -37,9 +40,14 @@ mod svgemoji_window;
 mod symbol_window;
 mod tabs_window;
 mod timeline_window;
+mod toolbar_window;
+mod tooltip_window;
 mod topappbar_window;
+mod treeview_window;
 
 use actionsheet_window::ActionSheetWindow;
+use badge_window::BadgeWindow;
+use breadcrumbs_window::BreadcrumbsWindow;
 use button_window::ButtonWindow;
 use card2_window::Card2Window;
 use carousel_window::CarouselWindow;
@@ -54,6 +62,7 @@ use imagelist_window::ImageListWindow;
 use layoutgrid_window::LayoutGridWindow;
 use list_window::ListWindow;
 use menu_window::MenuWindow;
+use notification_window::NotificationWindow;
 use progress_window::ProgressWindow;
 use radio_window::RadioWindow;
 use select_window::SelectWindow;
@@ -65,6 +74,9 @@ use svgemoji_window::SvgEmojiWindow;
 use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
 use timeline_window::TimelineWindow;
+use toolbar_window::ToolbarWindow;
+use tooltip_window::TooltipWindow;
+use treeview_window::TreeViewWindow;
 use topappbar_window::TopAppBarWindow;
 
 fn main() -> Result<(), eframe::Error> {
@@ -122,6 +134,8 @@ struct MaterialApp {
     color_pickers_open: HashMap<String, bool>,
     // Demo windows
     actionsheet_window: ActionSheetWindow,
+    badge_window: BadgeWindow,
+    breadcrumbs_window: BreadcrumbsWindow,
     button_window: ButtonWindow,
     checkbox_window: CheckboxWindow,
     chips_window: ChipsWindow,
@@ -130,6 +144,7 @@ struct MaterialApp {
     iconbutton_window: IconButtonWindow,
     list_window: ListWindow,
     menu_window: MenuWindow,
+    notification_window: NotificationWindow,
     progress_window: ProgressWindow,
     radio_window: RadioWindow,
     select_window: SelectWindow,
@@ -147,6 +162,9 @@ struct MaterialApp {
     carousel_window: CarouselWindow,
     symbol_window: SymbolWindow,
     timeline_window: TimelineWindow,
+    toolbar_window: ToolbarWindow,
+    tooltip_window: TooltipWindow,
+    treeview_window: TreeViewWindow,
     svgemoji_window: SvgEmojiWindow,
 }
 
@@ -170,6 +188,8 @@ impl Default for MaterialApp {
             selected_file_path: None,
             color_pickers_open: HashMap::new(),
             actionsheet_window: ActionSheetWindow::default(),
+            badge_window: BadgeWindow::default(),
+            breadcrumbs_window: BreadcrumbsWindow::default(),
             button_window: ButtonWindow::default(),
             checkbox_window: CheckboxWindow::default(),
             chips_window: ChipsWindow::default(),
@@ -178,6 +198,7 @@ impl Default for MaterialApp {
             iconbutton_window: IconButtonWindow::default(),
             list_window: ListWindow::default(),
             menu_window: MenuWindow::default(),
+            notification_window: NotificationWindow::default(),
             progress_window: ProgressWindow::default(),
             radio_window: RadioWindow::default(),
             select_window: SelectWindow::default(),
@@ -195,6 +216,9 @@ impl Default for MaterialApp {
             carousel_window: CarouselWindow::default(),
             symbol_window: SymbolWindow::default(),
             timeline_window: TimelineWindow::default(),
+            toolbar_window: ToolbarWindow::default(),
+            tooltip_window: TooltipWindow::default(),
+            treeview_window: TreeViewWindow::default(),
             svgemoji_window: SvgEmojiWindow::default(),
         }
     }
@@ -377,6 +401,8 @@ impl MaterialApp {
     /// Close all open demo windows
     fn close_all_windows(&mut self) {
         self.actionsheet_window.open = false;
+        self.badge_window.open = false;
+        self.breadcrumbs_window.open = false;
         self.button_window.open = false;
         self.checkbox_window.open = false;
         self.chips_window.open = false;
@@ -401,6 +427,7 @@ impl MaterialApp {
         self.card2_window.open = false;
         self.carousel_window.open = false;
         self.timeline_window.open = false;
+        self.toolbar_window.open = false;
         self.svgemoji_window.open = false;
         self.symbol_window.open = false;
         self.color_pickers_open.clear(); // Also close all color pickers
@@ -644,6 +671,14 @@ impl eframe::App for MaterialApp {
                     self.actionsheet_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Badge Stories")).clicked() {
+                    self.badge_window.open = true;
+                }
+
+                if ui.add(MaterialButton::filled("Breadcrumbs Stories")).clicked() {
+                    self.breadcrumbs_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("Button Stories")).clicked() {
                     self.button_window.open = true;
                 }
@@ -715,6 +750,10 @@ impl eframe::App for MaterialApp {
                     self.menu_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Notification Stories")).clicked() {
+                    self.notification_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("Progress Stories")).clicked() {
                     self.progress_window.open = true;
                 }
@@ -759,6 +798,18 @@ impl eframe::App for MaterialApp {
                     self.timeline_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Toolbar Stories")).clicked() {
+                    self.toolbar_window.open = true;
+                }
+
+                if ui.add(MaterialButton::filled("Tooltip Stories")).clicked() {
+                    self.tooltip_window.open = true;
+                }
+
+                if ui.add(MaterialButton::filled("TreeView Stories")).clicked() {
+                    self.treeview_window.open = true;
+                }
+
                 if ui
                     .add(MaterialButton::filled("Top App Bar Stories"))
                     .clicked()
@@ -772,6 +823,8 @@ impl eframe::App for MaterialApp {
 
         // Show demo windows
         self.actionsheet_window.show(ctx);
+        self.badge_window.show(ctx);
+        self.breadcrumbs_window.show(ctx);
         self.button_window.show(ctx);
         self.checkbox_window.show(ctx);
         self.chips_window.show(ctx);
@@ -780,6 +833,7 @@ impl eframe::App for MaterialApp {
         self.iconbutton_window.show(ctx);
         self.list_window.show(ctx);
         self.menu_window.show(ctx);
+        self.notification_window.show(ctx);
         self.progress_window.show(ctx);
         self.radio_window.show(ctx);
         self.select_window.show(ctx);
@@ -796,6 +850,9 @@ impl eframe::App for MaterialApp {
         self.card2_window.show(ctx);
         self.carousel_window.show(ctx);
         self.timeline_window.show(ctx);
+        self.toolbar_window.show(ctx);
+        self.tooltip_window.show(ctx);
+        self.treeview_window.show(ctx);
         self.svgemoji_window.show(ctx);
         self.symbol_window.show(ctx);
 

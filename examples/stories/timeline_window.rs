@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{timeline, MaterialButton, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant, TimelineItem, TimelinePosition};
+use crate::{timeline, MaterialButton, MaterialCard2, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant, TimelineItem, TimelinePosition};
 use eframe::egui::{self, Color32, Window};
 
 #[doc(hidden)]
@@ -39,6 +39,10 @@ impl TimelineWindow {
                     self.render_color_variants(ui);
                     ui.add_space(20.0);
                     self.render_interactive_timeline(ui);
+                    ui.add_space(20.0);
+                    self.render_timeline_with_buttons(ui);
+                    ui.add_space(20.0);
+                    self.render_timeline_with_cards(ui);
                 });
             });
         self.open = open;
@@ -441,5 +445,233 @@ impl TimelineWindow {
 
         ui.add_space(10.0);
         ui.label("💡 Tip: Check your console for click events");
+    }
+
+    fn render_timeline_with_buttons(&self, ui: &mut egui::Ui) {
+        ui.heading("Timeline with Action Buttons");
+        ui.label("Timeline items with small action buttons for interactive content");
+
+        ui.add_space(10.0);
+
+        ui.add(
+            timeline()
+                .position(TimelinePosition::Right)
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("2024-03-10")
+                        .content_custom(|ui| {
+                            ui.label("Task Created: Review Pull Request");
+                            ui.add_space(5.0);
+                            ui.horizontal(|ui| {
+                                if ui.add(MaterialButton::filled("Approve").small()).clicked() {
+                                    println!("Approved!");
+                                }
+                                if ui.add(MaterialButton::outlined("Comment").small()).clicked() {
+                                    println!("Adding comment...");
+                                }
+                                if ui.add(MaterialButton::text("Dismiss").small()).clicked() {
+                                    println!("Dismissed");
+                                }
+                            });
+                        })
+                        .min_height(80.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Primary).icon("📝").size(48.0)),
+                )
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("2024-03-11")
+                        .content_custom(|ui| {
+                            ui.label("Meeting Invitation: Sprint Planning");
+                            ui.add_space(5.0);
+                            ui.horizontal(|ui| {
+                                if ui.add(MaterialButton::filled("Accept").small()).clicked() {
+                                    println!("Meeting accepted!");
+                                }
+                                if ui.add(MaterialButton::outlined("Tentative").small()).clicked() {
+                                    println!("Marked as tentative");
+                                }
+                                if ui.add(MaterialButton::text("Decline").small()).clicked() {
+                                    println!("Meeting declined");
+                                }
+                            });
+                        })
+                        .min_height(80.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Info).icon("📅").size(48.0)),
+                )
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("2024-03-12")
+                        .content_custom(|ui| {
+                            ui.label("Deploy Request: Version 2.0.1");
+                            ui.add_space(5.0);
+                            ui.horizontal(|ui| {
+                                if ui.add(MaterialButton::filled("Deploy").small()).clicked() {
+                                    println!("Deploying...");
+                                }
+                                if ui.add(MaterialButton::outlined("Rollback").small()).clicked() {
+                                    println!("Rolling back...");
+                                }
+                                if ui.add(MaterialButton::text("Details").small()).clicked() {
+                                    println!("Showing details...");
+                                }
+                            });
+                        })
+                        .min_height(80.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Success).icon("🚀").size(48.0)),
+                )
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("2024-03-13")
+                        .content_custom(|ui| {
+                            ui.label("Alert: High CPU Usage Detected");
+                            ui.add_space(5.0);
+                            ui.horizontal(|ui| {
+                                if ui.add(MaterialButton::filled("Investigate").small()).clicked() {
+                                    println!("Opening monitoring dashboard...");
+                                }
+                                if ui.add(MaterialButton::outlined("Acknowledge").small()).clicked() {
+                                    println!("Alert acknowledged");
+                                }
+                                if ui.add(MaterialButton::text("Snooze").small()).clicked() {
+                                    println!("Alert snoozed");
+                                }
+                            });
+                        })
+                        .min_height(80.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Warning).icon("⚠️").size(48.0)),
+                ),
+        );
+    }
+
+    fn render_timeline_with_cards(&self, ui: &mut egui::Ui) {
+        ui.heading("Timeline with Cards");
+        ui.label("Timeline items using Material Design cards for rich content");
+
+        ui.add_space(10.0);
+
+        ui.add(
+            timeline()
+                .position(TimelinePosition::Alternate)
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("March 10, 2024")
+                        .content_custom(|ui| {
+                            let available_width = ui.available_width();
+                            ui.add(
+                                MaterialCard2::elevated()
+                                    .header("Feature Released", None::<String>)
+                                    .content(|ui| {
+                                        ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                                            ui.add(egui::Label::new("New dark mode theme is now available!").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(5.0);
+                                            ui.add(egui::Label::new("Users can now switch between light and dark themes in settings.").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(8.0);
+                                            ui.horizontal(|ui| {
+                                                if ui.add(MaterialButton::outlined("Learn More").small()).clicked() {
+                                                    println!("Opening documentation...");
+                                                }
+                                                if ui.add(MaterialButton::outlined("Share").small()).clicked() {
+                                                    println!("Sharing...");
+                                                }
+                                            });
+                                        });
+                                    })
+                                    .min_size(egui::Vec2::new(available_width.min(280.0), 0.0)),
+                            );
+                        })
+                        .min_height(180.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Primary).icon("✨").size(48.0)),
+                )
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("March 11, 2024")
+                        .content_custom(|ui| {
+                            let available_width = ui.available_width();
+                            ui.add(
+                                MaterialCard2::filled()
+                                    .header("Bug Fix", None::<String>)
+                                    .content(|ui| {
+                                        ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                                            ui.add(egui::Label::new("Fixed issue with notification sounds").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(5.0);
+                                            ui.add(egui::Label::new("Sound notifications now work correctly across all platforms.").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(8.0);
+                                            ui.horizontal(|ui| {
+                                                if ui.add(MaterialButton::outlined("View PR").small()).clicked() {
+                                                    println!("Opening pull request...");
+                                                }
+                                                if ui.add(MaterialButton::outlined("Changelog").small()).clicked() {
+                                                    println!("Opening changelog...");
+                                                }
+                                            });
+                                        });
+                                    })
+                                    .min_size(egui::Vec2::new(available_width.min(280.0), 0.0)),
+                            );
+                        })
+                        .min_height(180.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Success).icon("🐛").size(48.0)),
+                )
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("March 12, 2024")
+                        .content_custom(|ui| {
+                            let available_width = ui.available_width();
+                            ui.add(
+                                MaterialCard2::outlined()
+                                    .header("Performance Update", None::<String>)
+                                    .content(|ui| {
+                                        ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                                            ui.add(egui::Label::new("App now loads 50% faster!").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(5.0);
+                                            ui.add(egui::Label::new("Optimized rendering pipeline and reduced bundle size.").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(8.0);
+                                            ui.horizontal(|ui| {
+                                                if ui.add(MaterialButton::outlined("Benchmarks").small()).clicked() {
+                                                    println!("Showing benchmarks...");
+                                                }
+                                                if ui.add(MaterialButton::outlined("Details").small()).clicked() {
+                                                    println!("Showing technical details...");
+                                                }
+                                            });
+                                        });
+                                    })
+                                    .min_size(egui::Vec2::new(available_width.min(280.0), 0.0)),
+                            );
+                        })
+                        .min_height(180.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Info).icon("⚡").size(48.0)),
+                )
+                .item(
+                    TimelineItem::new()
+                        .opposite_content("March 13, 2024")
+                        .content_custom(|ui| {
+                            let available_width = ui.available_width();
+                            ui.add(
+                                MaterialCard2::elevated()
+                                    .header("Announcement", None::<String>)
+                                    .content(|ui| {
+                                        ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                                            ui.add(egui::Label::new("Scheduled maintenance tomorrow").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(5.0);
+                                            ui.add(egui::Label::new("System will be down from 2 AM to 4 AM UTC for upgrades.").wrap_mode(egui::TextWrapMode::Wrap));
+                                            ui.add_space(8.0);
+                                            ui.horizontal(|ui| {
+                                                if ui.add(MaterialButton::outlined("Subscribe").small()).clicked() {
+                                                    println!("Subscribed to updates");
+                                                }
+                                                if ui.add(MaterialButton::outlined("Remind Me").small()).clicked() {
+                                                    println!("Setting reminder...");
+                                                }
+                                            });
+                                        });
+                                    })
+                                    .min_size(egui::Vec2::new(available_width.min(280.0), 0.0)),
+                            );
+                        })
+                        .min_height(180.0)
+                        .dot(TimelineDot::new().color(TimelineDotColor::Warning).icon("🔧").size(48.0)),
+                ),
+        );
     }
 }
