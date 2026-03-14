@@ -93,6 +93,7 @@ pub struct MaterialSelect<'a> {
 }
 
 /// Individual option in a select component.
+#[derive(Clone)]
 pub struct SelectOption {
     /// Unique identifier for this option
     value: usize,
@@ -640,22 +641,24 @@ impl<'a> Widget for MaterialSelect<'a> {
             );
         }
 
-        // Show dropdown if open
+        // Show dropdown if open - using Area for proper z-layering like menu component
         if open {
-            // Calculate available space below and above
-            let available_space_below = ui.max_rect().max.y - rect.max.y - 4.0;
-            let available_space_above = rect.min.y - ui.max_rect().min.y - 4.0;
+            // Calculate available space below and above using viewport for accurate detection
+            // This ensures dropdown opens upward when select is at bottom of screen
+            let viewport_rect = ui.ctx().content_rect();
+            let available_space_below = viewport_rect.max.y - rect.max.y - 4.0;
+            let available_space_above = rect.min.y - viewport_rect.min.y - 4.0;
 
             let item_height = 48.0;
             let dropdown_padding = 16.0;
-            
+
             // Use menu_max_height if specified, otherwise use available space
             let effective_max_height = if let Some(max_h) = self.menu_max_height {
                 max_h
             } else {
                 available_space_below.max(available_space_above)
             };
-            
+
             let max_items_below =
                 ((available_space_below.min(effective_max_height) - dropdown_padding) / item_height).floor() as usize;
             let max_items_above =
@@ -686,234 +689,242 @@ impl<'a> Widget for MaterialSelect<'a> {
             };
 
             let dropdown_height = visible_items as f32 * item_height + dropdown_padding;
-            
+
             // Use menu_width if specified, otherwise use field width
             let menu_width = self.menu_width.unwrap_or(width);
             let menu_border_radius = self.border_radius.unwrap_or(8.0);
-            
-            let dropdown_rect = Rect::from_min_size(
-                Pos2::new(rect.min.x, dropdown_y),
-                Vec2::new(menu_width, dropdown_height),
-            );
+
+            let dropdown_pos = Pos2::new(rect.min.x, dropdown_y);
+            let dropdown_size = Vec2::new(menu_width, dropdown_height);
 
             // Use page background color as specified
             let dropdown_bg_color = ui.visuals().window_fill;
 
-            // Draw dropdown background with proper elevation
-            ui.painter()
-                .rect_filled(dropdown_rect, menu_border_radius, dropdown_bg_color);
+            // Clone/copy data needed in the Area closure
+            let ctx = ui.ctx().clone();
+            let options = self.options.clone();
+            let selected = self.selected;
+            let keep_open_on_select = self.keep_open_on_select;
 
-            // Draw dropdown border with elevation shadow
-            ui.painter().rect_stroke(
-                dropdown_rect,
-                menu_border_radius,
-                Stroke::new(1.0, outline),
-                egui::epaint::StrokeKind::Outside,
-            );
+            // Use Area widget for proper z-layering (like menu component)
+            egui::Area::new(select_id.with("dropdown"))
+                .fixed_pos(dropdown_pos)
+                .order(egui::Order::Foreground)
+                .interactable(true)
+                .show(&ctx, |ui| {
+                    let dropdown_rect = Rect::from_min_size(dropdown_pos, dropdown_size);
 
-            // Draw subtle elevation shadow
-            let shadow_color = Color32::from_rgba_premultiplied(0, 0, 0, 20);
-            ui.painter().rect_filled(
-                dropdown_rect.translate(Vec2::new(0.0, 2.0)),
-                menu_border_radius,
-                shadow_color,
-            );
+                    // Draw subtle elevation shadow
+                    let shadow_color = Color32::from_rgba_premultiplied(0, 0, 0, 30);
+                    ui.painter().rect_filled(
+                        dropdown_rect.translate(Vec2::new(0.0, 2.0)),
+                        menu_border_radius,
+                        shadow_color,
+                    );
 
-            // Render options with scrolling support and edge attachment
-            if scroll_needed && visible_items < self.options.len() {
-                // Use scroll area for overflow with edge attachment
-                let scroll_area_rect = Rect::from_min_size(
-                    Pos2::new(dropdown_rect.min.x + 8.0, dropdown_rect.min.y + 8.0),
-                    Vec2::new(menu_width - 16.0, dropdown_height - 16.0),
-                );
+                    // Draw dropdown background
+                    ui.painter().rect_filled(dropdown_rect, menu_border_radius, dropdown_bg_color);
 
-                ui.scope_builder(egui::UiBuilder::new().max_rect(scroll_area_rect), |ui| {
-                    egui::ScrollArea::vertical()
-                        .max_height(dropdown_height - 16.0)
-                        .scroll_bar_visibility(
-                            egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded,
-                        )
-                        .auto_shrink([false; 2])
-                        .show(ui, |ui| {
-                            for option in &self.options {
-                                // Create custom option layout with proper text styling
-                                let option_height = 48.0;
-                                let (option_rect, option_response) = ui.allocate_exact_size(
-                                    Vec2::new(ui.available_width(), option_height),
-                                    Sense::click(),
-                                );
+                    // Draw dropdown border
+                    ui.painter().rect_stroke(
+                        dropdown_rect,
+                        menu_border_radius,
+                        Stroke::new(1.0, outline),
+                        egui::epaint::StrokeKind::Outside,
+                    );
 
-                                // Match select field styling
-                                let is_selected = *self.selected == Some(option.value);
-                                let option_bg_color = if is_selected {
-                                    Color32::from_rgba_premultiplied(
-                                        on_surface.r(),
-                                        on_surface.g(),
-                                        on_surface.b(),
-                                        30,
-                                    )
-                                } else if option_response.hovered() {
-                                    Color32::from_rgba_premultiplied(
-                                        on_surface.r(),
-                                        on_surface.g(),
-                                        on_surface.b(),
-                                        20,
-                                    )
-                                } else {
-                                    Color32::TRANSPARENT
-                                };
+                    // Render options with scrolling support
+                    if scroll_needed && visible_items < options.len() {
+                        let scroll_area_rect = Rect::from_min_size(
+                            Pos2::new(dropdown_rect.min.x + 8.0, dropdown_rect.min.y + 8.0),
+                            Vec2::new(menu_width - 16.0, dropdown_height - 16.0),
+                        );
 
-                                if option_bg_color != Color32::TRANSPARENT {
-                                    ui.painter().rect_filled(option_rect, 4.0, option_bg_color);
-                                }
+                        ui.scope_builder(egui::UiBuilder::new().max_rect(scroll_area_rect), |ui| {
+                            egui::ScrollArea::vertical()
+                                .max_height(dropdown_height - 16.0)
+                                .scroll_bar_visibility(
+                                    egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded,
+                                )
+                                .auto_shrink([false; 2])
+                                .show(ui, |ui| {
+                                    for option in &options {
+                                        // Calculate text layout first to determine actual height needed
+                                        let available_width = ui.available_width() - 32.0;
+                                        let is_selected = *selected == Some(option.value);
+                                        let text_color = if is_selected {
+                                            get_global_color("primary")
+                                        } else {
+                                            on_surface
+                                        };
 
-                                // Use same font as select field with text wrapping
-                                let text_pos =
-                                    Pos2::new(option_rect.min.x + 16.0, option_rect.center().y);
-                                let text_color = if is_selected {
-                                    get_global_color("primary")
-                                } else {
-                                    on_surface
-                                };
+                                        let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                                            text: option.text.clone(),
+                                            sections: vec![egui::text::LayoutSection {
+                                                leading_space: 0.0,
+                                                byte_range: 0..option.text.len(),
+                                                format: egui::TextFormat {
+                                                    font_id: select_font.clone(),
+                                                    color: text_color,
+                                                    ..Default::default()
+                                                },
+                                            }],
+                                            wrap: egui::text::TextWrapping {
+                                                max_width: available_width,
+                                                ..Default::default()
+                                            },
+                                            break_on_newline: true,
+                                            halign: egui::Align::LEFT,
+                                            justify: false,
+                                            first_row_min_height: 0.0,
+                                            round_output_to_gui: true,
+                                        });
 
-                                // Handle text wrapping for long content
-                                let available_width = option_rect.width() - 32.0; // Account for padding
-                                let galley = ui.painter().layout_job(egui::text::LayoutJob {
-                                    text: option.text.clone(),
-                                    sections: vec![egui::text::LayoutSection {
-                                        leading_space: 0.0,
-                                        byte_range: 0..option.text.len(),
-                                        format: egui::TextFormat {
-                                            font_id: select_font.clone(),
-                                            color: text_color,
-                                            ..Default::default()
-                                        },
-                                    }],
-                                    wrap: egui::text::TextWrapping {
-                                        max_width: available_width,
+                                        // Use actual text height + padding, with minimum of 48.0
+                                        let min_height = 48.0;
+                                        let text_height = galley.size().y;
+                                        let vertical_padding = 12.0;
+                                        let option_height = (text_height + vertical_padding).max(min_height);
+
+                                        let (option_rect, option_response) = ui.allocate_exact_size(
+                                            Vec2::new(ui.available_width(), option_height),
+                                            Sense::click(),
+                                        );
+
+                                        let option_bg_color = if is_selected {
+                                            Color32::from_rgba_premultiplied(
+                                                on_surface.r(),
+                                                on_surface.g(),
+                                                on_surface.b(),
+                                                30,
+                                            )
+                                        } else if option_response.hovered() {
+                                            Color32::from_rgba_premultiplied(
+                                                on_surface.r(),
+                                                on_surface.g(),
+                                                on_surface.b(),
+                                                20,
+                                            )
+                                        } else {
+                                            Color32::TRANSPARENT
+                                        };
+
+                                        if option_bg_color != Color32::TRANSPARENT {
+                                            ui.painter().rect_filled(option_rect, 4.0, option_bg_color);
+                                        }
+
+                                        let text_pos = Pos2::new(option_rect.min.x + 16.0, option_rect.center().y - text_height / 2.0);
+                                        ui.painter().galley(text_pos, galley, text_color);
+
+                                        if option_response.clicked() {
+                                            *selected = Some(option.value);
+                                            if !keep_open_on_select {
+                                                open = false;
+                                                ui.memory_mut(|mem| {
+                                                    mem.data.insert_temp(select_id, open);
+                                                    mem.data.remove::<egui::Id>(global_open_select_id);
+                                                });
+                                            }
+                                            response.mark_changed();
+                                        }
+                                    }
+                                });
+                        });
+                    } else {
+                        // Draw options without scrolling
+                        let mut current_y = dropdown_rect.min.y + 8.0;
+                        let items_to_show = visible_items.min(options.len());
+
+                        for option in options.iter().take(items_to_show) {
+                            // Calculate text layout first to determine actual height needed
+                            let is_selected = *selected == Some(option.value);
+                            let text_color = if is_selected {
+                                get_global_color("primary")
+                            } else {
+                                on_surface
+                            };
+
+                            let available_width = menu_width - 16.0 - 32.0;
+                            let galley = ui.painter().layout_job(egui::text::LayoutJob {
+                                text: option.text.clone(),
+                                sections: vec![egui::text::LayoutSection {
+                                    leading_space: 0.0,
+                                    byte_range: 0..option.text.len(),
+                                    format: egui::TextFormat {
+                                        font_id: select_font.clone(),
+                                        color: text_color,
                                         ..Default::default()
                                     },
-                                    break_on_newline: true,
-                                    halign: egui::Align::LEFT,
-                                    justify: false,
-                                    first_row_min_height: 0.0,
-                                    round_output_to_gui: true,
-                                });
-
-                                ui.painter().galley(text_pos, galley, text_color);
-
-                                if option_response.clicked() {
-                                    *self.selected = Some(option.value);
-                                    if !self.keep_open_on_select {
-                                        open = false;
-                                        ui.memory_mut(|mem| {
-                                            mem.data.insert_temp(select_id, open);
-                                            mem.data.remove::<egui::Id>(global_open_select_id);
-                                        });
-                                    }
-                                    response.mark_changed();
-                                }
-                            }
-                        });
-                });
-            } else {
-                // Draw options normally without scrolling
-                let mut current_y = dropdown_rect.min.y + 8.0;
-                let items_to_show = visible_items.min(self.options.len());
-
-                for option in self.options.iter().take(items_to_show) {
-                    let option_rect = Rect::from_min_size(
-                        Pos2::new(dropdown_rect.min.x + 8.0, current_y),
-                        Vec2::new(menu_width - 16.0, item_height),
-                    );
-
-                    let option_response = ui.interact(
-                        option_rect,
-                        egui::Id::new(("select_option", option.value, option.text.clone())),
-                        Sense::click(),
-                    );
-
-                    // Highlight selected option
-                    let is_selected = *self.selected == Some(option.value);
-                    let option_bg_color = if is_selected {
-                        Color32::from_rgba_premultiplied(
-                            on_surface.r(),
-                            on_surface.g(),
-                            on_surface.b(),
-                            30,
-                        )
-                    } else if option_response.hovered() {
-                        Color32::from_rgba_premultiplied(
-                            on_surface.r(),
-                            on_surface.g(),
-                            on_surface.b(),
-                            20,
-                        )
-                    } else {
-                        Color32::TRANSPARENT
-                    };
-
-                    if option_bg_color != Color32::TRANSPARENT {
-                        ui.painter().rect_filled(option_rect, 4.0, option_bg_color);
-                    }
-
-                    if option_response.clicked() {
-                        *self.selected = Some(option.value);
-                        if !self.keep_open_on_select {
-                            open = false;
-                            ui.memory_mut(|mem| {
-                                mem.data.insert_temp(select_id, open);
-                                mem.data.remove::<egui::Id>(global_open_select_id);
+                                }],
+                                wrap: egui::text::TextWrapping {
+                                    max_width: available_width,
+                                    ..Default::default()
+                                },
+                                break_on_newline: true,
+                                halign: egui::Align::LEFT,
+                                justify: false,
+                                first_row_min_height: 0.0,
+                                round_output_to_gui: true,
                             });
+
+                            // Use actual text height + padding, with minimum of 48.0
+                            let min_height = 48.0;
+                            let text_height = galley.size().y;
+                            let vertical_padding = 12.0;
+                            let option_height = (text_height + vertical_padding).max(min_height);
+
+                            let option_rect = Rect::from_min_size(
+                                Pos2::new(dropdown_rect.min.x + 8.0, current_y),
+                                Vec2::new(menu_width - 16.0, option_height),
+                            );
+
+                            let option_response = ui.interact(
+                                option_rect,
+                                egui::Id::new(("select_option", option.value, option.text.clone())),
+                                Sense::click(),
+                            );
+
+                            let option_bg_color = if is_selected {
+                                Color32::from_rgba_premultiplied(
+                                    on_surface.r(),
+                                    on_surface.g(),
+                                    on_surface.b(),
+                                    30,
+                                )
+                            } else if option_response.hovered() {
+                                Color32::from_rgba_premultiplied(
+                                    on_surface.r(),
+                                    on_surface.g(),
+                                    on_surface.b(),
+                                    20,
+                                )
+                            } else {
+                                Color32::TRANSPARENT
+                            };
+
+                            if option_bg_color != Color32::TRANSPARENT {
+                                ui.painter().rect_filled(option_rect, 4.0, option_bg_color);
+                            }
+
+                            if option_response.clicked() {
+                                *selected = Some(option.value);
+                                if !keep_open_on_select {
+                                    open = false;
+                                    ui.memory_mut(|mem| {
+                                        mem.data.insert_temp(select_id, open);
+                                        mem.data.remove::<egui::Id>(global_open_select_id);
+                                    });
+                                }
+                                response.mark_changed();
+                            }
+
+                            let text_pos = Pos2::new(option_rect.min.x + 16.0, option_rect.center().y - text_height / 2.0);
+                            ui.painter().galley(text_pos, galley, text_color);
+
+                            current_y += option_height;
                         }
-                        response.mark_changed();
                     }
-
-                    let text_pos = Pos2::new(option_rect.min.x + 16.0, option_rect.center().y);
-                    let text_color = if is_selected {
-                        get_global_color("primary")
-                    } else {
-                        on_surface
-                    };
-
-                    // Handle text wrapping for long content
-                    let available_width = option_rect.width() - 32.0; // Account for padding
-                    let galley = ui.painter().layout_job(egui::text::LayoutJob {
-                        text: option.text.clone(),
-                        sections: vec![egui::text::LayoutSection {
-                            leading_space: 0.0,
-                            byte_range: 0..option.text.len(),
-                            format: egui::TextFormat {
-                                font_id: select_font.clone(),
-                                color: text_color,
-                                ..Default::default()
-                            },
-                        }],
-                        wrap: egui::text::TextWrapping {
-                            max_width: available_width,
-                            ..Default::default()
-                        },
-                        break_on_newline: true,
-                        halign: egui::Align::LEFT,
-                        justify: false,
-                        first_row_min_height: 0.0,
-                        round_output_to_gui: true,
-                    });
-
-                    ui.painter().galley(text_pos, galley, text_color);
-
-                    current_y += item_height;
-                }
-            }
-        }
-        
-        // Reserve space for dropdown menu when open to prevent overlap
-        if open {
-            let item_height = 48.0;
-            let dropdown_padding = 16.0;
-            let effective_max_height = self.menu_max_height.unwrap_or(300.0);
-            let estimated_dropdown_height = (self.options.len() as f32 * item_height + dropdown_padding).min(effective_max_height);
-            ui.add_space(estimated_dropdown_height + 8.0); // Add space for dropdown + margin
+                });
         }
         
         // Draw helper text or error text below the field
