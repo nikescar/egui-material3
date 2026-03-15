@@ -1,27 +1,29 @@
 //! Material Design Spreadsheet Component
 //!
-//! A spreadsheet widget with DuckDB backend for data storage and manipulation.
+//! A spreadsheet widget with DataFusion backend for data storage and manipulation.
 //! Supports importing/exporting CSV, Excel, Parquet, and Arrow formats.
 
 #[cfg(feature = "spreadsheet")]
-use crate::button::MaterialButton;
-#[cfg(feature = "spreadsheet")]
 use crate::theme::get_global_color;
-#[cfg(feature = "spreadsheet")]
-use std::collections::{HashMap, HashSet};
 #[cfg(feature = "spreadsheet")]
 use std::path::PathBuf;
 #[cfg(feature = "spreadsheet")]
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+#[cfg(feature = "spreadsheet")]
+use tokio::sync::Mutex;
 
 #[cfg(feature = "spreadsheet")]
-use duckdb::{params, Connection, Result as DuckResult};
+use datafusion::prelude::*;
 #[cfg(feature = "spreadsheet")]
-use egui::{
-    Color32, FontFamily, FontId, Id, Rect, Response, Sense, TextEdit, Ui, Vec2, Widget,
-};
+use datafusion::arrow::array::{ArrayRef, RecordBatch, StringArray};
+#[cfg(feature = "spreadsheet")]
+use datafusion::arrow::datatypes::{DataType, Field, Schema};
+#[cfg(feature = "spreadsheet")]
+use egui::{Id, Response, Sense, TextEdit, Ui, Widget};
 #[cfg(feature = "spreadsheet")]
 use egui_async::{Bind, StateWithData};
+#[cfg(feature = "spreadsheet")]
+use std::sync::Arc as StdArc;
 
 // Re-export for convenience
 #[cfg(feature = "spreadsheet")]
@@ -48,12 +50,12 @@ pub enum ColumnType {
 
 #[cfg(feature = "spreadsheet")]
 impl ColumnType {
-    fn to_sql(&self) -> &'static str {
+    fn to_arrow(&self) -> DataType {
         match self {
-            ColumnType::Text => "TEXT",
-            ColumnType::Integer => "INTEGER",
-            ColumnType::Real => "REAL",
-            ColumnType::Boolean => "BOOLEAN",
+            ColumnType::Text => DataType::Utf8,
+            ColumnType::Integer => DataType::Int64,
+            ColumnType::Real => DataType::Float64,
+            ColumnType::Boolean => DataType::Boolean,
         }
     }
 }
@@ -89,51 +91,59 @@ impl FileFormat {
     }
 }
 
-/// DuckDB-backed data model for spreadsheet
+/// DataFusion-backed data model for spreadsheet
 #[cfg(feature = "spreadsheet")]
 pub struct SpreadsheetDataModel {
-    conn: Connection,
-    table_name: String,
+    ctx: SessionContext,
     columns: Vec<ColumnDef>,
+    data: Vec<Vec<String>>, // In-memory storage for modifications
     row_count: usize,
 }
 
 #[cfg(feature = "spreadsheet")]
 impl SpreadsheetDataModel {
     /// Create a new in-memory spreadsheet data model
-    pub fn new(columns: Vec<ColumnDef>) -> DuckResult<Self> {
-        let conn = Connection::open_in_memory()?;
-        let table_name = "spreadsheet_data".to_string();
+    pub fn new(columns: Vec<ColumnDef>) -> Result<Self, String> {
+        let ctx = SessionContext::new();
 
-        let mut model = Self {
-            conn,
-            table_name: table_name.clone(),
+        let model = Self {
+            ctx,
             columns: columns.clone(),
+            data: Vec::new(),
             row_count: 0,
         };
 
-        model.create_table()?;
         Ok(model)
     }
 
-    fn create_table(&mut self) -> DuckResult<()> {
-        let mut col_defs = vec!["id INTEGER PRIMARY KEY".to_string()];
-        for (idx, col) in self.columns.iter().enumerate() {
-            col_defs.push(format!("col{} {}", idx, col.col_type.to_sql()));
+    fn data_to_record_batch(&self) -> Result<RecordBatch, String> {
+        // Build Arrow schema from columns (use column names instead of col0, col1, etc.)
+        let mut fields = vec![];
+        for col in self.columns.iter() {
+            fields.push(Field::new(&col.name, col.col_type.to_arrow(), true));
+        }
+        let schema = StdArc::new(Schema::new(fields));
+
+        if self.data.is_empty() {
+            return RecordBatch::try_new(schema, vec![])
+                .map_err(|e| format!("Failed to create empty batch: {}", e));
         }
 
-        let create_sql = format!(
-            "CREATE TABLE IF NOT EXISTS {} ({})",
-            self.table_name,
-            col_defs.join(", ")
-        );
+        // Create data columns (all as strings for now)
+        let mut columns: Vec<ArrayRef> = vec![];
+        for col_idx in 0..self.columns.len() {
+            let values: Vec<String> = self.data.iter()
+                .map(|row| row.get(col_idx).cloned().unwrap_or_default())
+                .collect();
+            columns.push(StdArc::new(StringArray::from(values)));
+        }
 
-        self.conn.execute_batch(&create_sql)?;
-        Ok(())
+        RecordBatch::try_new(schema, columns)
+            .map_err(|e| format!("Failed to create batch: {}", e))
     }
 
     /// Insert multiple rows
-    pub fn insert_rows(&mut self, rows: Vec<Vec<String>>) -> DuckResult<()> {
+    pub fn insert_rows(&mut self, rows: Vec<Vec<String>>) -> Result<(), String> {
         for row_values in rows {
             self.insert_row(row_values)?;
         }
@@ -141,74 +151,20 @@ impl SpreadsheetDataModel {
     }
 
     /// Insert a single row
-    pub fn insert_row(&mut self, values: Vec<String>) -> DuckResult<()> {
-        let placeholders: Vec<_> = (0..=self.columns.len()).map(|_| "?").collect();
-        let insert_sql = format!(
-            "INSERT INTO {} VALUES ({})",
-            self.table_name,
-            placeholders.join(", ")
-        );
-
-        let mut stmt = self.conn.prepare(&insert_sql)?;
-        let row_id = self.row_count;
+    pub fn insert_row(&mut self, values: Vec<String>) -> Result<(), String> {
+        self.data.push(values);
         self.row_count += 1;
-
-        // Build params dynamically
-        let mut params_vec: Vec<Box<dyn duckdb::ToSql>> = vec![Box::new(row_id)];
-        for value in values {
-            params_vec.push(Box::new(value));
-        }
-
-        // Convert to params slice
-        let params_refs: Vec<&dyn duckdb::ToSql> = params_vec.iter().map(|b| &**b as &dyn duckdb::ToSql).collect();
-        stmt.execute(params_refs.as_slice())?;
-
         Ok(())
     }
 
-    /// Query all rows
-    pub fn query_rows(&self) -> DuckResult<Vec<RowData>> {
-        let query_sql = format!("SELECT * FROM {} ORDER BY id", self.table_name);
-        let mut stmt = self.conn.prepare(&query_sql)?;
-
-        let col_count = self.columns.len();
-        let rows = stmt.query_map([], |row| {
-            let id: usize = row.get(0)?;
-            let mut values = Vec::new();
-            for i in 0..col_count {
-                // Convert all column types to strings for display
-                let val: String = match row.get_ref(i + 1) {
-                    Ok(val_ref) => {
-                        use duckdb::types::ValueRef;
-                        match val_ref {
-                            ValueRef::Null => String::new(),
-                            ValueRef::Boolean(b) => b.to_string(),
-                            ValueRef::TinyInt(i) => i.to_string(),
-                            ValueRef::SmallInt(i) => i.to_string(),
-                            ValueRef::Int(i) => i.to_string(),
-                            ValueRef::BigInt(i) => i.to_string(),
-                            ValueRef::HugeInt(i) => i.to_string(),
-                            ValueRef::UTinyInt(i) => i.to_string(),
-                            ValueRef::USmallInt(i) => i.to_string(),
-                            ValueRef::UInt(i) => i.to_string(),
-                            ValueRef::UBigInt(i) => i.to_string(),
-                            ValueRef::Float(f) => f.to_string(),
-                            ValueRef::Double(f) => f.to_string(),
-                            ValueRef::Text(s) => String::from_utf8_lossy(s).to_string(),
-                            ValueRef::Blob(b) => format!("<blob {} bytes>", b.len()),
-                            _ => row.get::<_, String>(i + 1).unwrap_or_default(),
-                        }
-                    }
-                    Err(_) => String::new(),
-                };
-                values.push(val);
-            }
-            Ok(RowData { id, values })
-        })?;
-
+    /// Query all rows (returns data directly from memory)
+    pub fn query_rows(&self) -> Result<Vec<RowData>, String> {
         let mut result = Vec::new();
-        for row in rows {
-            result.push(row?);
+        for (id, row) in self.data.iter().enumerate() {
+            result.push(RowData {
+                id,
+                values: row.clone(),
+            });
         }
         Ok(result)
     }
@@ -218,7 +174,7 @@ impl SpreadsheetDataModel {
         // Validate value against column type
         if col_idx < self.columns.len() {
             let col_type = &self.columns[col_idx].col_type;
-            
+
             // For numeric types, validate that the value can be parsed
             match col_type {
                 ColumnType::Integer => {
@@ -243,21 +199,24 @@ impl SpreadsheetDataModel {
                 ColumnType::Text => {} // Text accepts anything
             }
         }
-        
-        let update_sql = format!(
-            "UPDATE {} SET col{} = ? WHERE id = ?",
-            self.table_name, col_idx
-        );
-        self.conn.execute(&update_sql, params![value, row_id])
-            .map_err(|e| e.to_string())?;
-        Ok(())
+
+        // Update in memory
+        if row_id < self.data.len() && col_idx < self.columns.len() {
+            self.data[row_id][col_idx] = value;
+            Ok(())
+        } else {
+            Err("Invalid row or column index".to_string())
+        }
     }
 
     /// Delete a row
-    pub fn delete_row(&mut self, row_id: usize) -> DuckResult<()> {
-        let delete_sql = format!("DELETE FROM {} WHERE id = ?", self.table_name);
-        self.conn.execute(&delete_sql, params![row_id])?;
-        Ok(())
+    pub fn delete_row(&mut self, row_id: usize) -> Result<(), String> {
+        if row_id < self.data.len() {
+            self.data.remove(row_id);
+            Ok(())
+        } else {
+            Err("Invalid row index".to_string())
+        }
     }
 
     /// Export to CSV
@@ -347,17 +306,38 @@ impl SpreadsheetDataModel {
         let second_values: Vec<&str> = second_line.split(delimiter).collect();
         
         let col_count = first_values.len();
-        
-        // Determine if first line is a header (heuristic: check if types differ)
-        let first_line_is_header = first_values.iter().zip(second_values.iter()).any(|(v1, v2)| {
+
+        // Determine if first line is a header (improved heuristic)
+        // Check multiple conditions:
+        // 1. First line values look like column names (short, non-numeric, no special chars)
+        // 2. Type difference between first and second line
+        // 3. First line has unique values (columns should have unique names)
+        let looks_like_header = first_values.iter().all(|v| {
+            let trimmed = v.trim();
+            // Column names are typically short and don't start with numbers
+            trimmed.len() < 50 &&
+            !trimmed.is_empty() &&
+            trimmed.parse::<f64>().is_err() && // Not purely numeric
+            !trimmed.contains(|c: char| c.is_numeric() && trimmed.len() > 20) // Not long with numbers
+        });
+
+        let has_type_difference = first_values.iter().zip(second_values.iter()).any(|(v1, v2)| {
             let v1_is_num = v1.trim().parse::<f64>().is_ok();
             let v2_is_num = v2.trim().parse::<f64>().is_ok();
             v1_is_num != v2_is_num
         });
+
+        let has_unique_values = {
+            let mut seen = std::collections::HashSet::new();
+            first_values.iter().all(|v| seen.insert(v.trim()))
+        };
+
+        // First line is header if it looks like header OR has type difference
+        let first_line_is_header = looks_like_header || has_type_difference || (has_unique_values && looks_like_header);
         
         // Create new column definitions
         let new_columns: Vec<ColumnDef> = if first_line_is_header {
-            first_values.iter().enumerate().map(|(i, name)| {
+            first_values.iter().enumerate().map(|(_i, name)| {
                 ColumnDef {
                     name: name.trim().to_string(),
                     col_type: ColumnType::Text,
@@ -379,11 +359,8 @@ impl SpreadsheetDataModel {
         
         // Recreate table with new columns
         self.columns = new_columns;
-        self.conn.execute_batch(&format!("DROP TABLE IF EXISTS {}", self.table_name))
-            .map_err(|e| format!("Failed to drop table: {}", e))?;
+        self.data.clear();
         self.row_count = 0;
-        self.create_table()
-            .map_err(|e| format!("Failed to create table: {}", e))?;
         
         // Prepare data rows
         let start_idx = if first_line_is_header { 1 } else { 0 };
@@ -414,77 +391,97 @@ impl SpreadsheetDataModel {
         Ok(())
     }
 
-    /// Export to Parquet using DuckDB's built-in support
-    pub fn export_parquet(&self, path: &std::path::Path) -> Result<(), String> {
-        let export_sql = format!(
-            "COPY {} TO '{}' (FORMAT PARQUET)",
-            self.table_name,
-            path.to_string_lossy()
-        );
-        self.conn
-            .execute_batch(&export_sql)
-            .map_err(|e| e.to_string())?;
+    /// Export to Parquet using Arrow
+    pub async fn export_parquet(&self, path: &std::path::Path) -> Result<(), String> {
+        use datafusion::parquet::arrow::ArrowWriter;
+        use std::fs::File;
+
+        let batch = self.data_to_record_batch()?;
+        let file = File::create(path)
+            .map_err(|e| format!("Failed to create file: {}", e))?;
+
+        let mut writer = ArrowWriter::try_new(file, batch.schema(), None)
+            .map_err(|e| format!("Failed to create parquet writer: {}", e))?;
+
+        writer.write(&batch)
+            .map_err(|e| format!("Failed to write batch: {}", e))?;
+
+        writer.close()
+            .map_err(|e| format!("Failed to close writer: {}", e))?;
+
         Ok(())
     }
 
-    /// Import from Parquet using DuckDB's built-in support
-    pub fn import_parquet(&mut self, path: &std::path::Path) -> Result<(), String> {
-        // Clear existing data before importing
-        self.conn.execute(&format!("DELETE FROM {}", self.table_name), [])
-            .map_err(|e| format!("Failed to clear table: {}", e))?;
+    /// Import from Parquet using DataFusion SQL
+    pub async fn import_parquet(&mut self, path: &std::path::Path) -> Result<(), String> {
+        // Clear existing data
+        self.data.clear();
         self.row_count = 0;
 
-        // Read parquet data and insert row by row to handle type conversions
-        let query_sql = format!("SELECT * FROM read_parquet('{}')", path.to_string_lossy());
-        let mut stmt = self.conn.prepare(&query_sql)
-            .map_err(|e| format!("Failed to read parquet file: {}", e))?;
-        
-        let col_count = self.columns.len();
-        let rows = stmt.query_map([], |row| {
-            let mut values = Vec::new();
-            for i in 0..col_count {
-                // Convert all values to strings for compatibility
-                let val: String = match row.get_ref(i) {
-                    Ok(val_ref) => {
-                        use duckdb::types::ValueRef;
-                        match val_ref {
-                            ValueRef::Null => String::new(),
-                            ValueRef::Boolean(b) => b.to_string(),
-                            ValueRef::TinyInt(i) => i.to_string(),
-                            ValueRef::SmallInt(i) => i.to_string(),
-                            ValueRef::Int(i) => i.to_string(),
-                            ValueRef::BigInt(i) => i.to_string(),
-                            ValueRef::HugeInt(i) => i.to_string(),
-                            ValueRef::UTinyInt(i) => i.to_string(),
-                            ValueRef::USmallInt(i) => i.to_string(),
-                            ValueRef::UInt(i) => i.to_string(),
-                            ValueRef::UBigInt(i) => i.to_string(),
-                            ValueRef::Float(f) => f.to_string(),
-                            ValueRef::Double(f) => f.to_string(),
-                            ValueRef::Text(s) => String::from_utf8_lossy(s).to_string(),
-                            _ => String::new(),
-                        }
-                    }
-                    Err(_) => String::new(),
-                };
-                values.push(val);
-            }
-            Ok(values)
-        })
-        .map_err(|e| format!("Failed to query parquet data: {}", e))?;
+        // Register parquet file with DataFusion
+        let table_name = "imported_data";
+        self.ctx.register_parquet(
+            table_name,
+            path.to_str().unwrap(),
+            ParquetReadOptions::default(),
+        )
+        .await
+        .map_err(|e| format!("Failed to register parquet: {}", e))?;
 
-        // Collect all rows first to avoid borrow conflicts
-        let all_rows: Vec<Vec<String>> = rows
-            .map(|row_result| row_result.map_err(|e| format!("Failed to process row: {}", e)))
-            .collect::<Result<Vec<_>, String>>()?;
-        
-        // Drop stmt to release the borrow on self.conn
-        drop(stmt);
+        // Query all data using SQL
+        let df = self.ctx
+            .sql(&format!("SELECT * FROM {}", table_name))
+            .await
+            .map_err(|e| format!("Failed to query parquet: {}", e))?;
 
-        // Insert all rows
-        for values in all_rows {
-            self.insert_row(values).map_err(|e| format!("Failed to insert row: {}", e))?;
+        // Get schema and update columns
+        let schema = df.schema();
+        let mut new_columns = vec![];
+        for field in schema.fields() {
+            let col_type = match field.data_type() {
+                DataType::Int64 | DataType::Int32 | DataType::Int16 | DataType::Int8 => ColumnType::Integer,
+                DataType::Float64 | DataType::Float32 => ColumnType::Real,
+                DataType::Boolean => ColumnType::Boolean,
+                _ => ColumnType::Text,
+            };
+            new_columns.push(ColumnDef {
+                name: field.name().clone(),
+                col_type,
+                width: 100.0,
+            });
         }
+        self.columns = new_columns;
+
+        // Collect batches
+        let batches = df.collect()
+            .await
+            .map_err(|e| format!("Failed to collect batches: {}", e))?;
+
+        if batches.is_empty() {
+            return Ok(());
+        }
+
+        // Process each batch
+        for batch in batches {
+            let num_rows = batch.num_rows();
+
+            for row_idx in 0..num_rows {
+                let mut row_values = Vec::new();
+
+                // Get all data columns
+                for col_idx in 0..batch.num_columns() {
+                    let column = batch.column(col_idx);
+                    let value = datafusion::arrow::util::display::array_value_to_string(column, row_idx)
+                        .map_err(|e| format!("Failed to convert value: {}", e))?;
+                    row_values.push(value);
+                }
+
+                self.insert_row(row_values)?;
+            }
+        }
+
+        // Deregister table to clean up
+        let _ = self.ctx.deregister_table(table_name);
 
         Ok(())
     }
@@ -509,7 +506,6 @@ pub struct MaterialSpreadsheet {
     cached_rows: Vec<RowData>,
     editing_cell: Option<(usize, usize)>,
     edit_buffer: String,
-    selected_rows: HashSet<usize>,
     allow_editing: bool,
     allow_selection: bool,
     striped: bool,
@@ -531,7 +527,6 @@ impl MaterialSpreadsheet {
             cached_rows: Vec::new(),
             editing_cell: None,
             edit_buffer: String::new(),
-            selected_rows: HashSet::new(),
             allow_editing: true,
             allow_selection: true,
             striped: true,
@@ -540,6 +535,23 @@ impl MaterialSpreadsheet {
             save_bind: Bind::new(false),
             load_processed: false,
         })
+    }
+
+    /// Initialize spreadsheet with data (sync method for use in constructors)
+    /// This is a convenience method that doesn't require an async context
+    pub fn init_with_data(&mut self, rows: Vec<Vec<String>>) {
+        // Use try_lock in a loop to avoid needing a runtime
+        loop {
+            if let Ok(mut model) = self.data_model.try_lock() {
+                for row in rows {
+                    let _ = model.insert_row(row);
+                }
+                self.cached_rows = model.query_rows().unwrap_or_default();
+                break;
+            }
+            // Brief sleep to avoid busy waiting
+            std::thread::sleep(std::time::Duration::from_micros(10));
+        }
     }
 
     /// Set whether cells can be edited
@@ -576,8 +588,8 @@ impl MaterialSpreadsheet {
     }
 
     /// Add a new empty row
-    pub fn add_row(&mut self) -> Result<(), String> {
-        let mut model = self.data_model.lock().unwrap();
+    pub async fn add_row(&mut self) -> Result<(), String> {
+        let mut model = self.data_model.lock().await;
         let col_count = model.columns.len();
         let empty_values = vec![String::new(); col_count];
         model.insert_row(empty_values).map_err(|e| e.to_string())?;
@@ -587,15 +599,15 @@ impl MaterialSpreadsheet {
     }
 
     /// Delete a row by ID
-    pub fn delete_row(&mut self, row_id: usize) -> Result<(), String> {
-        let mut model = self.data_model.lock().unwrap();
+    pub async fn delete_row(&mut self, row_id: usize) -> Result<(), String> {
+        let mut model = self.data_model.lock().await;
         model.delete_row(row_id).map_err(|e| e.to_string())?;
         Ok(())
     }
 
     /// Refresh cached data from database
-    pub fn refresh_data(&mut self) -> Result<(), String> {
-        let model = self.data_model.lock().unwrap();
+    pub async fn refresh_data(&mut self) -> Result<(), String> {
+        let model = self.data_model.lock().await;
         self.cached_rows = model.query_rows().map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -606,17 +618,22 @@ impl MaterialSpreadsheet {
         let model = Arc::clone(&self.data_model);
         self.load_bind.refresh(async move {
             let format = FileFormat::from_path(&path).ok_or_else(|| "Unknown file format".to_string())?;
-            
-            let mut locked_model = model.lock().unwrap();
+
             match format {
-                FileFormat::Csv => locked_model.import_csv(&path)?,
-                FileFormat::Parquet => locked_model.import_parquet(&path)?,
-                FileFormat::Excel => return Err("Excel import not yet implemented".to_string()),
-                FileFormat::Arrow => return Err("Arrow import not yet implemented".to_string()),
+                FileFormat::Csv => {
+                    let mut locked_model = model.lock().await;
+                    locked_model.import_csv(&path)?;
+                    locked_model.query_rows()
+                }
+                FileFormat::Parquet => {
+                    // Import parquet asynchronously
+                    let mut locked_model = model.lock().await;
+                    locked_model.import_parquet(&path).await?;
+                    locked_model.query_rows()
+                }
+                FileFormat::Excel => Err("Excel import not yet implemented".to_string()),
+                FileFormat::Arrow => Err("Arrow import not yet implemented".to_string()),
             }
-            
-            // Return all rows after loading
-            locked_model.query_rows().map_err(|e| e.to_string())
         });
     }
 
@@ -625,22 +642,33 @@ impl MaterialSpreadsheet {
         let model = Arc::clone(&self.data_model);
         self.save_bind.refresh(async move {
             let format = FileFormat::from_path(&path).ok_or_else(|| "Unknown file format".to_string())?;
-            
-            let locked_model = model.lock().unwrap();
+
             match format {
-                FileFormat::Csv => locked_model.export_csv(&path)?,
-                FileFormat::Parquet => locked_model.export_parquet(&path)?,
-                FileFormat::Excel => return Err("Excel export not yet implemented".to_string()),
-                FileFormat::Arrow => return Err("Arrow export not yet implemented".to_string()),
+                FileFormat::Csv => {
+                    let locked_model = model.lock().await;
+                    locked_model.export_csv(&path)?;
+                    Ok(())
+                }
+                FileFormat::Parquet => {
+                    let locked_model = model.lock().await;
+                    locked_model.export_parquet(&path).await?;
+                    Ok(())
+                }
+                FileFormat::Excel => Err("Excel export not yet implemented".to_string()),
+                FileFormat::Arrow => Err("Arrow export not yet implemented".to_string()),
             }
-            
-            Ok(())
         });
     }
 
-    /// Get the column definitions
+    /// Get the column definitions (blocking version for sync context)
     pub fn columns(&self) -> Vec<ColumnDef> {
-        self.data_model.lock().unwrap().columns.clone()
+        // Use try_lock to avoid needing a runtime
+        loop {
+            if let Ok(model) = self.data_model.try_lock() {
+                return model.columns.clone();
+            }
+            std::thread::sleep(std::time::Duration::from_micros(10));
+        }
     }
 
     /// Get the current rows
@@ -677,24 +705,30 @@ impl MaterialSpreadsheet {
         match self.save_bind.state() {
             StateWithData::Pending => {
                 ui.ctx().request_repaint();
+                ui.label("Saving...");
+            }
+            StateWithData::Finished(_) => {
+                ui.label("✓ Save completed successfully");
             }
             StateWithData::Failed(err) => {
-                ui.label(format!("Save error: {}", err));
+                ui.colored_label(egui::Color32::RED, format!("Save error: {}", err));
             }
-            _ => {}
+            StateWithData::Idle => {}
         }
 
-        // Get column definitions
-        let columns = self.data_model.lock().unwrap().columns.clone();
+        // Get column definitions (using try_lock for sync UI context)
+        let columns = loop {
+            if let Ok(model) = self.data_model.try_lock() {
+                break model.columns.clone();
+            }
+            std::thread::sleep(std::time::Duration::from_micros(10));
+        };
 
         // Get theme colors
-        let surface = get_global_color("surface");
         let on_surface = get_global_color("on-surface");
-        let primary = get_global_color("primary");
         let surface_variant = get_global_color("surface-variant");
 
         // Build table
-        let text_height = ui.text_style_height(&egui::TextStyle::Body);
         let available_height = ui.available_height();
 
         let mut table = TableBuilder::new(ui)
@@ -725,7 +759,7 @@ impl MaterialSpreadsheet {
                     header.col(|ui| {
                         // Paint header background color like datatable
                         let rect = ui.max_rect();
-                        ui.painter().rect_filled(rect, egui::Rounding::ZERO, surface_variant);
+                        ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, surface_variant);
                         
                         ui.style_mut().visuals.override_text_color = Some(on_surface);
                         ui.strong(&col.name);
@@ -798,8 +832,15 @@ impl MaterialSpreadsheet {
             ui.memory_mut(|mem| {
                 mem.data.remove::<(usize, usize, String)>(pending_update_id);
             });
-            
-            let mut model = self.data_model.lock().unwrap();
+
+
+            // Use try_lock to avoid needing runtime in UI context
+            let mut model = loop {
+                if let Ok(guard) = self.data_model.try_lock() {
+                    break guard;
+                }
+                std::thread::sleep(std::time::Duration::from_micros(10));
+            };
             match model.update_cell(row_id, col_idx, new_value.clone()) {
                 Ok(_) => {
                     eprintln!("DEBUG: Cell updated in database successfully");
@@ -896,4 +937,124 @@ pub fn number_column(name: impl Into<String>, width: f32) -> ColumnDef {
 #[cfg(feature = "spreadsheet")]
 pub fn integer_column(name: impl Into<String>, width: f32) -> ColumnDef {
     column(name, ColumnType::Integer, width)
+}
+
+#[cfg(test)]
+#[cfg(feature = "spreadsheet")]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_spreadsheet_init() {
+        let columns = vec![
+            text_column("Name", 100.0),
+            text_column("Value", 100.0),
+        ];
+
+        let mut spreadsheet = MaterialSpreadsheet::new("test", columns)
+            .expect("Failed to create spreadsheet");
+
+        // Initialize with data
+        spreadsheet.init_with_data(vec![
+            vec!["Item1".to_string(), "Value1".to_string()],
+            vec!["Item2".to_string(), "Value2".to_string()],
+        ]);
+
+        // Verify rows
+        let rows = spreadsheet.rows();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].values[0], "Item1");
+        assert_eq!(rows[1].values[1], "Value2");
+    }
+
+    #[tokio::test]
+    async fn test_data_model_operations() {
+        let columns = vec![
+            ColumnDef { name: "Name".to_string(), col_type: ColumnType::Text, width: 100.0 },
+            ColumnDef { name: "Count".to_string(), col_type: ColumnType::Integer, width: 80.0 },
+        ];
+
+        let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
+
+        // Insert data
+        model.insert_row(vec!["Test".to_string(), "42".to_string()]).expect("Failed to insert");
+
+        // Query data
+        let rows = model.query_rows().expect("Failed to query");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].values[0], "Test");
+        assert_eq!(rows[0].values[1], "42");
+
+        // Update cell
+        model.update_cell(0, 0, "Updated".to_string()).expect("Failed to update");
+        let rows = model.query_rows().expect("Failed to query");
+        assert_eq!(rows[0].values[0], "Updated");
+    }
+
+    #[test]
+    fn test_csv_import_export() {
+        use std::path::Path;
+
+        let columns = vec![
+            text_column("Name", 100.0),
+            text_column("Value", 100.0),
+        ];
+
+        let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
+
+        // Add some data
+        model.insert_row(vec!["Item1".to_string(), "Value1".to_string()]).expect("Failed to insert");
+        model.insert_row(vec!["Item2".to_string(), "Value2".to_string()]).expect("Failed to insert");
+
+        // Export to CSV
+        let export_path = Path::new("/tmp/test_export.csv");
+        model.export_csv(export_path).expect("Failed to export CSV");
+
+        // Create new model and import
+        let columns2 = vec![text_column("Col1", 100.0), text_column("Col2", 100.0)];
+        let mut model2 = SpreadsheetDataModel::new(columns2).expect("Failed to create model");
+        model2.import_csv(export_path).expect("Failed to import CSV");
+
+        // Verify data
+        let rows = model2.query_rows().expect("Failed to query");
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].values[0], "Item1");
+        assert_eq!(rows[1].values[1], "Value2");
+    }
+
+    #[tokio::test]
+    async fn test_parquet_import_export() {
+        use std::path::Path;
+
+        let columns = vec![
+            text_column("Product", 100.0),
+            text_column("Price", 100.0),
+        ];
+
+        let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
+
+        // Add some data
+        model.insert_row(vec!["Laptop".to_string(), "999.99".to_string()]).expect("Failed to insert");
+        model.insert_row(vec!["Mouse".to_string(), "29.99".to_string()]).expect("Failed to insert");
+
+        // Export to Parquet
+        let export_path = Path::new("/tmp/test_export.parquet");
+        model.export_parquet(export_path).await.expect("Failed to export Parquet");
+
+        // Create new model and import using DataFusion SQL
+        let columns2 = vec![text_column("Col1", 100.0)];
+        let mut model2 = SpreadsheetDataModel::new(columns2).expect("Failed to create model");
+        model2.import_parquet(export_path).await.expect("Failed to import Parquet");
+
+        // Verify data
+        let rows = model2.query_rows().expect("Failed to query");
+        assert_eq!(rows.len(), 2, "Expected 2 rows");
+        assert_eq!(rows[0].values[0], "Laptop");
+        assert_eq!(rows[1].values[1], "29.99");
+
+        // Verify columns were updated from parquet schema
+        assert_eq!(model2.columns.len(), 2, "Should have 2 columns from parquet file");
+        assert_eq!(model2.columns[0].name, "Product");
+        assert_eq!(model2.columns[1].name, "Price");
+    }
 }

@@ -26,13 +26,17 @@ pub struct SpreadsheetWindow {
     file_dialog: egui_file_dialog::FileDialog,
     #[cfg(feature = "spreadsheet")]
     pending_action: Option<PendingAction>,
+    #[cfg(feature = "spreadsheet")]
+    last_operation: String,
 }
 
 #[cfg(feature = "spreadsheet")]
 #[derive(Clone, Debug)]
 enum PendingAction {
-    Load,
-    Save,
+    LoadCsv,
+    SaveCsv,
+    LoadParquet,
+    SaveParquet,
 }
 
 impl Default for SpreadsheetWindow {
@@ -51,8 +55,8 @@ impl Default for SpreadsheetWindow {
             let mut spreadsheet = MaterialSpreadsheet::new("demo_spreadsheet", columns)
                 .expect("Failed to create spreadsheet");
 
-            // Add sample data
-            let sample_data = vec![
+            // Add sample data - initialize with pre-populated rows
+            spreadsheet.init_with_data(vec![
                 vec!["Laptop".to_string(), "Electronics".to_string(), "999.99".to_string(), "15".to_string(), "TechCorp".to_string()],
                 vec!["Mouse".to_string(), "Electronics".to_string(), "29.99".to_string(), "150".to_string(), "TechCorp".to_string()],
                 vec!["Keyboard".to_string(), "Electronics".to_string(), "79.99".to_string(), "85".to_string(), "KeyMaster".to_string()],
@@ -61,13 +65,7 @@ impl Default for SpreadsheetWindow {
                 vec!["Desk".to_string(), "Furniture".to_string(), "349.99".to_string(), "20".to_string(), "OfficePro".to_string()],
                 vec!["Notebook".to_string(), "Stationery".to_string(), "5.99".to_string(), "500".to_string(), "PaperGoods".to_string()],
                 vec!["Pen Pack".to_string(), "Stationery".to_string(), "12.99".to_string(), "300".to_string(), "WriteWell".to_string()],
-            ];
-
-            {
-                let mut model = spreadsheet.data_model.lock().unwrap();
-                model.insert_rows(sample_data).expect("Failed to insert sample data");
-            }
-            spreadsheet.refresh_data().expect("Failed to refresh spreadsheet data");
+            ]);
 
             Self {
                 open: false,
@@ -78,6 +76,7 @@ impl Default for SpreadsheetWindow {
                 show_file_dialog: false,
                 file_dialog: egui_file_dialog::FileDialog::new(),
                 pending_action: None,
+                last_operation: String::new(),
             }
         }
         #[cfg(not(feature = "spreadsheet"))]
@@ -170,57 +169,85 @@ impl SpreadsheetWindow {
 
             ui.add_space(10.0);
 
-            // Action buttons
+            // Action buttons - CSV
             ui.horizontal(|ui| {
-                // if ui.add(MaterialButton::filled("Add Row")).clicked() {
-                //     if let Some(ref mut spreadsheet) = self.spreadsheet {
-                //         let _ = spreadsheet.add_row();
-                //         let _ = spreadsheet.refresh_data();
-                //     }
-                // }
-
-                // ui.add_space(10.0);
+                ui.label("CSV:");
 
                 if ui.add(MaterialButton::outlined("Load CSV")).clicked() {
-                    self.pending_action = Some(PendingAction::Load);
+                    self.pending_action = Some(PendingAction::LoadCsv);
                     self.file_dialog.pick_file();
                 }
 
                 ui.add_space(10.0);
 
                 if ui.add(MaterialButton::outlined("Save CSV")).clicked() {
-                    self.pending_action = Some(PendingAction::Save);
+                    self.pending_action = Some(PendingAction::SaveCsv);
                     self.file_dialog.save_file();
                 }
-
-                // ui.add_space(10.0);
-
-                // if ui.add(MaterialButton::text("Refresh")).clicked() {
-                //     if let Some(ref mut spreadsheet) = self.spreadsheet {
-                //         let _ = spreadsheet.refresh_data();
-                //     }
-                // }
             });
 
-            // Handle file dialog
-            self.file_dialog.update(ui.ctx());
-            
-            if let Some(path) = self.file_dialog.take_picked() {
+            ui.add_space(10.0);
+
+            // Action buttons - Parquet
+            ui.horizontal(|ui| {
+                ui.label("Parquet:");
+
+                if ui.add(MaterialButton::outlined("Load Parquet")).clicked() {
+                    self.pending_action = Some(PendingAction::LoadParquet);
+                    self.file_dialog.pick_file();
+                }
+
+                ui.add_space(10.0);
+
+                if ui.add(MaterialButton::outlined("Save Parquet")).clicked() {
+                    self.pending_action = Some(PendingAction::SaveParquet);
+                    self.file_dialog.save_file();
+                }
+            });
+
+            // Handle file dialog - using the correct API pattern
+            if let Some(path) = self.file_dialog.update(ui.ctx()).picked() {
                 match self.pending_action.take() {
-                    Some(PendingAction::Load) => {
+                    Some(PendingAction::LoadCsv) => {
                         if let Some(ref mut spreadsheet) = self.spreadsheet {
+                            self.last_operation = format!("Loading CSV from: {}", path.display());
+                            eprintln!("Loading CSV from: {}", path.display());
                             spreadsheet.load_from_file(path.to_path_buf());
                             ui.ctx().request_repaint();
                         }
                     }
-                    Some(PendingAction::Save) => {
+                    Some(PendingAction::LoadParquet) => {
                         if let Some(ref mut spreadsheet) = self.spreadsheet {
+                            self.last_operation = format!("Loading Parquet from: {}", path.display());
+                            eprintln!("Loading Parquet from: {}", path.display());
+                            spreadsheet.load_from_file(path.to_path_buf());
+                            ui.ctx().request_repaint();
+                        }
+                    }
+                    Some(PendingAction::SaveCsv) => {
+                        if let Some(ref mut spreadsheet) = self.spreadsheet {
+                            self.last_operation = format!("Saving CSV to: {}", path.display());
+                            eprintln!("Saving CSV to: {}", path.display());
+                            spreadsheet.save_to_file(path.to_path_buf());
+                            ui.ctx().request_repaint();
+                        }
+                    }
+                    Some(PendingAction::SaveParquet) => {
+                        if let Some(ref mut spreadsheet) = self.spreadsheet {
+                            self.last_operation = format!("Saving Parquet to: {}", path.display());
+                            eprintln!("Saving Parquet to: {}", path.display());
                             spreadsheet.save_to_file(path.to_path_buf());
                             ui.ctx().request_repaint();
                         }
                     }
                     None => {}
                 }
+            }
+
+            // Show last operation status
+            if !self.last_operation.is_empty() {
+                ui.add_space(10.0);
+                ui.label(&self.last_operation);
             }
         });
     }

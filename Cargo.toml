@@ -24,7 +24,7 @@ exclude = [
 [features]
 default = []
 ondemand = ["dep:ureq"]
-spreadsheet = ["dep:duckdb", "dep:egui_extras", "dep:egui-async", "dep:tokio", "dep:csv", "dep:calamine"]
+spreadsheet = ["dep:datafusion", "dep:arrow", "dep:egui_extras", "dep:egui-async", "dep:tokio", "dep:csv", "dep:calamine", "dep:futures"]
 svg_solar = []
 svg_noto = []
 svg_twemoji = []
@@ -45,9 +45,9 @@ hex = "0.4"
 once_cell = "1.21"
 
 ureq = { version = "2.12", features = ["json"], optional = true } # for ondemand feature
-# duckdb = { version = "1.4.4", optional = true, features = ["parquet", "json", "bundled"] } # for spreadsheet feature - requires system libduckdb
-# duckdb = { version = "=1.4.4", features = ["parquet", "json", "bundled"], optional = true }
-duckdb = { version = "=1.4.4", features = ["bundled"], optional = true  }
+datafusion = { version = "43", optional = true } # for spreadsheet feature
+arrow = { version = "53", optional = true } # for spreadsheet feature
+futures = { version = "0.3", optional = true } # for spreadsheet feature
 egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
 egui-async = { version = "0.3", optional = true } # for spreadsheet feature
 tokio = { version = "1.49", features = ["rt", "rt-multi-thread"], optional = true } # for spreadsheet feature
