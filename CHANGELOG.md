@@ -1,6 +1,19 @@
 ## What's Changed
-* feat. create svg features to reduce size for default inclusion.
+* fix. replace spreadsheet backend from duckdb to datafusion. by @nikescar
+* fix. apply m3 colors to all ui. by @nikescar
+* fix. apply m3 colors to list. by @nikescar
+* fix. theme colors to toolbar. by @nikescar
+* fix. tooltip svg buttons. by @nikescar
+* fix. selectbox box error. by @nikescar
+* fix. syntax errors for spreadsheet. by @nikescar
+* chore. cargo fix lint warnings. by @nikescar
+
+## What's Changed in 0.0.9
+* release v0.0.9 by @nikescar
+* feat. create svg features to reduce size for default inclusion. by @nikescar
 * release. v0.0.8 by @nikescar
+
+**Full Changelog**: https://github.com/nikescar/egui-material3/compare/v0.0.8...v0.0.9
 
 ## What's Changed in 0.0.8
 * chore. move svg feature to cargo config for local build. by @nikescar
