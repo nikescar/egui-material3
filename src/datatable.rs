@@ -518,6 +518,14 @@ impl<'a> MaterialDataTable<'a> {
         self
     }
 
+    /// Set a tooltip for the most recently added column
+    pub fn column_tooltip(mut self, tooltip: impl Into<String>) -> Self {
+        if let Some(column) = self.columns.last_mut() {
+            column.tooltip = Some(tooltip.into());
+        }
+        self
+    }
+
     /// Add a row using a builder pattern.
     pub fn row<F>(mut self, f: F) -> Self
     where

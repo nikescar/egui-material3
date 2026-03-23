@@ -19,6 +19,7 @@ mod card2_window;
 mod carousel_window;
 mod checkbox_window;
 mod chips_window;
+mod dashcounter_window;
 mod datatable_window;
 mod dialog_window;
 mod drawer_window;
@@ -53,6 +54,7 @@ use card2_window::Card2Window;
 use carousel_window::CarouselWindow;
 use checkbox_window::CheckboxWindow;
 use chips_window::ChipsWindow;
+use dashcounter_window::DashCounterWindow;
 use datatable_window::DataTableWindow;
 use dialog_window::DialogWindow;
 use drawer_window::DrawerWindow;
@@ -125,6 +127,7 @@ struct MaterialApp {
     button_window: ButtonWindow,
     checkbox_window: CheckboxWindow,
     chips_window: ChipsWindow,
+    dashcounter_window: DashCounterWindow,
     dialog_window: DialogWindow,
     fab_window: FabWindow,
     iconbutton_window: IconButtonWindow,
@@ -166,6 +169,7 @@ impl Default for MaterialApp {
             button_window: ButtonWindow::default(),
             checkbox_window: CheckboxWindow::default(),
             chips_window: ChipsWindow::default(),
+            dashcounter_window: DashCounterWindow::default(),
             dialog_window: DialogWindow::default(),
             fab_window: FabWindow::default(),
             iconbutton_window: IconButtonWindow::default(),
@@ -299,6 +303,7 @@ impl MaterialApp {
         self.button_window.open = false;
         self.checkbox_window.open = false;
         self.chips_window.open = false;
+        self.dashcounter_window.open = false;
         self.dialog_window.open = false;
         self.fab_window.open = false;
         self.iconbutton_window.open = false;
@@ -610,6 +615,10 @@ impl eframe::App for MaterialApp {
                     self.carousel_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Dashboard Counter Stories")).clicked() {
+                    self.dashcounter_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("FAB Stories")).clicked() {
                     self.fab_window.open = true;
                 }
@@ -742,6 +751,7 @@ impl eframe::App for MaterialApp {
         self.topappbar_window.show(ctx);
         self.card2_window.show(ctx);
         self.carousel_window.show(ctx);
+        self.dashcounter_window.show(ctx);
         self.timeline_window.show(ctx);
         self.toolbar_window.show(ctx);
         self.tooltip_window.show(ctx);

@@ -237,6 +237,7 @@ pub mod card2;
 pub mod carousel;
 pub mod checkbox;
 pub mod chips;
+pub mod dashcounter;
 pub mod datatable;
 pub mod dialog;
 pub mod drawer;
@@ -277,6 +278,7 @@ pub use {
     carousel::{carousel, CarouselItem, MaterialCarousel},
     checkbox::{checkbox, MaterialCheckbox},
     chips::{assist_chip, filter_chip, input_chip, suggestion_chip, ChipVariant, MaterialChip},
+    dashcounter::{dashcounter, CounterCard, MaterialDashCounter},
     datatable::{
         data_table, CellContent, ColumnWidth, DataTableCell, DataTableColumn, DataTableRow,
         DataTableSource, DataTableState, DataTableTheme, HAlign, MaterialDataTable, RowAction,
