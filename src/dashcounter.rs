@@ -383,7 +383,7 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                 egui::epaint::StrokeKind::Outside,
             );
 
-            // Card content layout - stack from top to bottom with equal padding
+            // Card content layout - vertically centered
             let content_padding = 12.0;
 
             // Check if this card has any descriptions
@@ -394,10 +394,26 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             let card_counter_color = card.counter_color.unwrap_or(counter_color);
             let card_description_color = card.description_color.unwrap_or(description_color);
 
-            // Position elements from top to bottom
-            let category_y = card_rect.top() + content_padding;
+            // Calculate total content height for vertical centering
+            let category_height = 15.0;  // Approximate height for 12pt font
             let gap_after_category = 10.0;  // Space between category and counter
-            let counter_y = category_y + 15.0 + gap_after_category;  // 15.0 is approx category text height
+            let counter_height = 32.0;  // Approximate height for 32pt font
+            let desc_gap = 3.0;  // Gap before descriptions
+            let desc_height = 12.0;  // Approximate height for 10pt font
+
+            let total_content_height = if has_descriptions {
+                category_height + gap_after_category + counter_height + desc_gap + desc_height
+            } else {
+                category_height + gap_after_category + counter_height
+            };
+
+            // Center content vertically within card
+            let content_start_y = card_rect.center().y - total_content_height / 2.0;
+
+            // Position elements from top to bottom, starting from centered position
+            let category_y = content_start_y;
+            // counter_y is now the BOTTOM position since we use BOTTOM alignment
+            let counter_y = category_y + category_height + gap_after_category + counter_height;
 
             // Draw category name
             painter.text(
@@ -428,19 +444,19 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             // Position for /yy
             let total_x = start_x + sub_galley.rect.width() + total_galley.rect.width() / 2.0;
 
-            // Draw larger xx (using TOP alignment to avoid overlap)
+            // Draw larger xx (using BOTTOM alignment for baseline alignment)
             painter.text(
                 Pos2::new(sub_x, counter_y),
-                egui::Align2::CENTER_TOP,
+                egui::Align2::CENTER_BOTTOM,
                 sub_text,
                 sub_font,
                 card_counter_color,
             );
 
-            // Draw smaller /yy (aligned with baseline of larger number)
+            // Draw smaller /yy (bottom-aligned with larger number for proper baseline)
             painter.text(
-                Pos2::new(total_x, counter_y + 8.0),
-                egui::Align2::CENTER_TOP,
+                Pos2::new(total_x, counter_y),
+                egui::Align2::CENTER_BOTTOM,
                 total_text,
                 total_font,
                 card_counter_color,
@@ -448,7 +464,7 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
 
             // Draw descriptions below their respective numbers (only if they exist)
             if has_descriptions {
-                let desc_y = counter_y + 35.0;  // Position below the counter text (32px counter + 3px gap)
+                let desc_y = counter_y + desc_gap;  // Position below the counter (counter_y is now bottom of counter)
                 let desc_padding = 4.0;  // Small padding between the two descriptions
 
                 // If both descriptions exist, center them as a pair
