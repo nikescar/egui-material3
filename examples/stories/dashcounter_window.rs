@@ -13,6 +13,7 @@ pub struct DashCounterWindow {
     scroll_offset_4: f32,
     scroll_offset_5: f32,
     scroll_offset_6: f32,
+    scroll_offset_7: f32,
     clicked_message: String,
 }
 
@@ -26,6 +27,7 @@ impl Default for DashCounterWindow {
             scroll_offset_4: 0.0,
             scroll_offset_5: 0.0,
             scroll_offset_6: 0.0,
+            scroll_offset_7: 0.0,
             clicked_message: String::new(),
         }
     }
@@ -48,6 +50,8 @@ impl DashCounterWindow {
                     self.render_many_cards(ui);
                     ui.add_space(20.0);
                     self.render_colored_counters(ui);
+                    ui.add_space(20.0);
+                    self.render_title_ui_example(ui);
                 });
             });
         self.open = open;
@@ -261,6 +265,80 @@ impl DashCounterWindow {
 
             ui.add_space(10.0);
             ui.label("💡 Tip: Use different color schemes to indicate status (success, warning, error)");
+        });
+    }
+
+    fn render_title_ui_example(&mut self, ui: &mut egui::Ui) {
+        ui.push_id("title_ui_example", |ui| {
+            ui.heading("Title UI with Custom Controls");
+            ui.label("Dashboard counters with custom UI controls (buttons, icons) in the title area.");
+            ui.add_space(10.0);
+
+            // Example 1: Dashboard with info button in title
+            ui.label("📌 With Info Button");
+            ui.add(
+                dashcounter("Security Metrics", &mut self.scroll_offset_7)
+                    .id_salt("title_ui_security")
+                    .title_ui(|ui| {
+                        if ui.add(MaterialButton::text("ℹ️").small()).on_hover_text("Click for more information").clicked() {
+                            self.clicked_message = "Info button clicked for Security Metrics!".to_string();
+                        }
+                    })
+                    .card_with_description("Threats", 3, 150, "active", "total")
+                    .card_with_description("Scanned", 145, 150, "files", "total")
+                    .card("Quarantined", 2, 150)
+                    .category_color(egui::Color32::from_rgb(244, 67, 54))
+                    .counter_color(egui::Color32::from_rgb(183, 28, 28))
+            );
+
+            ui.add_space(15.0);
+
+            // Example 2: Dashboard with multiple buttons in title
+            ui.label("📌 With Multiple Controls");
+            ui.add(
+                dashcounter("Server Status", &mut 0.0f32)
+                    .id_salt("title_ui_server")
+                    .title_ui(|ui| {
+                        if ui.add(MaterialButton::text("⚙️").small()).on_hover_text("Settings").clicked() {
+                            self.clicked_message = "Settings clicked!".to_string();
+                        }
+                        if ui.add(MaterialButton::text("🔄").small()).on_hover_text("Refresh").clicked() {
+                            self.clicked_message = "Refresh clicked!".to_string();
+                        }
+                    })
+                    .card("Online", 8, 10)
+                    .card("Offline", 2, 10)
+                    .card("Maintenance", 0, 10)
+                    .category_color(egui::Color32::from_rgb(76, 175, 80))
+                    .counter_color(egui::Color32::from_rgb(27, 94, 32))
+            );
+
+            ui.add_space(15.0);
+
+            // Example 3: Dashboard with clickable link in title
+            ui.label("📌 With External Link");
+            ui.add(
+                dashcounter("Documentation", &mut 0.0f32)
+                    .id_salt("title_ui_docs")
+                    .title_ui(|ui| {
+                        if ui.add(MaterialButton::text("🔗").small()).on_hover_text("Open documentation").clicked() {
+                            let _ = webbrowser::open("https://m3.material.io/components/cards/overview");
+                        }
+                    })
+                    .card("Guides", 25, 50)
+                    .card("Examples", 40, 50)
+                    .card("API Docs", 35, 50)
+            );
+
+            ui.add_space(10.0);
+            if !self.clicked_message.is_empty() {
+                ui.colored_label(egui::Color32::GREEN, &self.clicked_message);
+            } else {
+                ui.label("Click on any title button to see the event");
+            }
+
+            ui.add_space(10.0);
+            ui.label("💡 Tip: Use .title_ui() to add custom controls alongside the dashboard title");
         });
     }
 }

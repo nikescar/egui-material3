@@ -53,6 +53,8 @@ pub struct MaterialDashCounter<'a> {
     counter_color: Option<egui::Color32>,
     /// Optional color for description text (defaults to onSurfaceVariant)
     description_color: Option<egui::Color32>,
+    /// Optional callback to add UI controls in the title area
+    title_ui: Option<Box<dyn FnMut(&mut Ui) + 'a>>,
 }
 
 /// A single counter card with category and counter display.
@@ -95,6 +97,7 @@ impl<'a> MaterialDashCounter<'a> {
             category_color: None,
             counter_color: None,
             description_color: None,
+            title_ui: None,
         }
     }
 
@@ -271,6 +274,13 @@ impl<'a> MaterialDashCounter<'a> {
         self.description_color = Some(color);
         self
     }
+
+    /// Set a callback to add custom UI controls in the title area.
+    /// The callback receives a mutable UI reference to add widgets.
+    pub fn title_ui(mut self, callback: impl FnMut(&mut Ui) + 'a) -> Self {
+        self.title_ui = Some(Box::new(callback));
+        self
+    }
 }
 
 impl<'a> egui::Widget for MaterialDashCounter<'a> {
@@ -302,15 +312,23 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
 
         let painter = ui.painter_at(outer_rect);
 
-        // Draw title
-        let title_pos = Pos2::new(outer_rect.left() + self.padding, outer_rect.top() + self.padding);
-        painter.text(
-            title_pos,
-            egui::Align2::LEFT_TOP,
-            &self.title,
-            FontId::proportional(18.0),
-            on_surface,
+        // Draw title area with optional custom UI
+        let title_rect = Rect::from_min_size(
+            Pos2::new(outer_rect.left() + self.padding, outer_rect.top() + self.padding),
+            Vec2::new(available_width - self.padding * 2.0, title_height),
         );
+
+        let mut title_ui = ui.new_child(
+            egui::UiBuilder::new()
+                .max_rect(title_rect)
+                .layout(egui::Layout::left_to_right(egui::Align::BOTTOM))
+        );
+        title_ui.label(egui::RichText::new(&self.title).size(18.0).color(on_surface));
+
+        // Call custom title UI callback if provided
+        if let Some(mut callback) = self.title_ui {
+            callback(&mut title_ui);
+        }
 
         // Card area starts below title
         let cards_top = outer_rect.top() + title_height;
