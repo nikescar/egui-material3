@@ -231,6 +231,29 @@ pub enum ContrastLevel {
     High,
 }
 
+impl std::fmt::Display for ContrastLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ContrastLevel::Normal => write!(f, "Normal"),
+            ContrastLevel::Medium => write!(f, "Medium"),
+            ContrastLevel::High => write!(f, "High"),
+        }
+    }
+}
+
+impl std::str::FromStr for ContrastLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Normal" => Ok(ContrastLevel::Normal),
+            "Medium" => Ok(ContrastLevel::Medium),
+            "High" => Ok(ContrastLevel::High),
+            _ => Ok(ContrastLevel::Normal), // Default to Normal
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[derive(Default)]
 pub enum ThemeMode {
@@ -238,6 +261,29 @@ pub enum ThemeMode {
     Dark,
     #[default]
     Auto,
+}
+
+impl std::fmt::Display for ThemeMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ThemeMode::Light => write!(f, "Light"),
+            ThemeMode::Dark => write!(f, "Dark"),
+            ThemeMode::Auto => write!(f, "Auto"),
+        }
+    }
+}
+
+impl std::str::FromStr for ThemeMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Light" => Ok(ThemeMode::Light),
+            "Dark" => Ok(ThemeMode::Dark),
+            "Auto" => Ok(ThemeMode::Auto),
+            _ => Ok(ThemeMode::Auto), // Default to Auto
+        }
+    }
 }
 
 
@@ -1253,6 +1299,42 @@ pub fn load_themes() {
     MaterialThemeContext::load_themes();
 }
 
+/// Load a Material Design theme directly from a JSON string
+///
+/// This function parses a Material Design theme JSON string and applies it to the global theme context.
+/// This is useful for loading embedded theme data or dynamically generated themes.
+///
+/// # Parameters
+/// - `json_data`: A JSON string containing the Material Design theme data
+///
+/// # Returns
+/// - `Ok(())` if the theme was successfully loaded
+/// - `Err(String)` with an error message if parsing or loading failed
+///
+/// # Example
+/// ```rust,no_run
+/// use egui_material3::theme::load_theme_from_json_str;
+///
+/// const MY_THEME: &str = include_str!("../resources/my-theme.json");
+///
+/// // Load the theme
+/// if let Err(e) = load_theme_from_json_str(MY_THEME) {
+///     eprintln!("Failed to load theme: {}", e);
+/// }
+/// ```
+pub fn load_theme_from_json_str(json_data: &str) -> Result<(), String> {
+    let theme_file = serde_json::from_str::<MaterialThemeFile>(json_data)
+        .map_err(|e| format!("Failed to parse theme JSON: {}", e))?;
+
+    if let Ok(mut global_theme) = get_global_theme().lock() {
+        global_theme.material_theme = Some(theme_file);
+        global_theme.selected_colors.clear();
+        Ok(())
+    } else {
+        Err("Failed to acquire theme lock".to_string())
+    }
+}
+
 /// Trait to provide a unified interface for accessing egui Context
 pub trait ContextRef {
     fn context_ref(&self) -> &egui::Context;
@@ -1394,5 +1476,304 @@ pub fn get_global_color(name: &str) -> Color32 {
             "onBackground" => Color32::from_rgb(28, 27, 31),
             _ => Color32::GRAY,
         }
+    }
+}
+
+/// Detect OS theme preference using the dark-light crate (desktop platforms only)
+///
+/// On Android, this function will return `ThemeMode::Light` as a fallback.
+/// Android apps should provide their own theme detection using JNI.
+///
+/// # Returns
+/// - `ThemeMode::Dark` if OS dark mode is detected
+/// - `ThemeMode::Light` if OS light mode is detected or on unsupported platforms
+pub fn detect_os_theme() -> ThemeMode {
+    #[cfg(not(target_os = "android"))]
+    {
+        match dark_light::detect() {
+            dark_light::Mode::Dark => ThemeMode::Dark,
+            dark_light::Mode::Light => ThemeMode::Light,
+            dark_light::Mode::Default => ThemeMode::Light,
+        }
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        // Default to Light on Android - apps should provide their own detector
+        ThemeMode::Light
+    }
+}
+
+/// Apply the Material Design 3 theme to the egui context
+///
+/// This function applies the current global theme to the egui visual system,
+/// comprehensively mapping Material Design 3 color roles to egui visuals.
+///
+/// # Material Design 3 Color Mappings
+///
+/// ## Widget States
+/// - **Noninteractive** (disabled): surface, surfaceVariant, outlineVariant, onSurfaceVariant
+/// - **Inactive** (default): primary with low opacity, outline, onSurface
+/// - **Hovered**: primary with medium opacity, outline, onSurface
+/// - **Active** (pressed/selected): primary, onPrimary, primaryContainer
+/// - **Open** (menus/dropdowns): primaryContainer, onPrimaryContainer, outline
+///
+/// ## Backgrounds
+/// - **window_fill**: surface
+/// - **panel_fill**: surfaceContainer
+/// - **faint_bg_color**: surfaceContainerLow
+/// - **extreme_bg_color**: surfaceContainerLowest
+/// - **code_bg_color**: surfaceContainerHighest
+///
+/// ## Text & Interaction
+/// - **override_text_color**: onSurface
+/// - **text_cursor**: primary
+/// - **hyperlink_color**: primary
+/// - **selection**: primary
+///
+/// ## Feedback Colors
+/// - **error_fg_color**: error
+/// - **warn_fg_color**: tertiary
+///
+/// ## Strokes & Shadows
+/// - **window_stroke**: outlineVariant
+/// - **window_shadow**: shadow
+/// - **popup_shadow**: shadow
+///
+/// # Parameters
+/// - `ctx`: The egui context to apply the theme to
+/// - `os_theme_detector`: Optional function to detect OS theme mode when `ThemeMode::Auto` is set.
+///   If not provided, uses the default `detect_os_theme()` function.
+///
+/// # Example
+/// ```rust,no_run
+/// use egui_material3::theme::{apply_theme, ThemeMode};
+///
+/// // Use default OS theme detection
+/// apply_theme(&egui_ctx, None);
+///
+/// // Provide custom theme detection (e.g., for Android)
+/// apply_theme(&egui_ctx, Some(|| {
+///     // Custom Android theme detection logic
+///     ThemeMode::Dark
+/// }));
+/// ```
+pub fn apply_theme<C, F>(ctx: C, os_theme_detector: Option<F>)
+where
+    C: ContextRef,
+    F: FnOnce() -> ThemeMode,
+{
+    let ctx = ctx.context_ref();
+
+    let mut theme = if let Ok(theme) = GLOBAL_THEME.lock() {
+        theme.clone()
+    } else {
+        return;
+    };
+
+    let mut visuals = match theme.theme_mode {
+        ThemeMode::Light => egui::Visuals::light(),
+        ThemeMode::Dark => egui::Visuals::dark(),
+        ThemeMode::Auto => {
+            // Detect OS theme preference
+            let detected_mode = if let Some(detector) = os_theme_detector {
+                detector()
+            } else {
+                detect_os_theme()
+            };
+            theme.theme_mode = detected_mode; // Resolve Auto to detected OS theme
+            match detected_mode {
+                ThemeMode::Dark => egui::Visuals::dark(),
+                _ => egui::Visuals::light(),
+            }
+        }
+    };
+
+    // Extract Material Design 3 color roles
+    let primary = theme.get_primary_color();
+    let on_primary = theme.get_on_primary_color();
+    let primary_container = theme.get_color_by_name("primaryContainer");
+    let on_primary_container = theme.get_color_by_name("onPrimaryContainer");
+
+    let secondary = theme.get_color_by_name("secondary");
+    let on_secondary = theme.get_color_by_name("onSecondary");
+    let secondary_container = theme.get_color_by_name("secondaryContainer");
+
+    let tertiary = theme.get_color_by_name("tertiary");
+
+    let error = theme.get_color_by_name("error");
+    let on_error = theme.get_color_by_name("onError");
+    let error_container = theme.get_color_by_name("errorContainer");
+
+    let surface = theme.get_surface_color(visuals.dark_mode);
+    let on_surface = theme.get_color_by_name("onSurface");
+    let surface_variant = theme.get_color_by_name("surfaceVariant");
+    let on_surface_variant = theme.get_color_by_name("onSurfaceVariant");
+
+    let surface_container = theme.get_color_by_name("surfaceContainer");
+    let surface_container_high = theme.get_color_by_name("surfaceContainerHigh");
+    let surface_container_highest = theme.get_color_by_name("surfaceContainerHighest");
+    let surface_container_low = theme.get_color_by_name("surfaceContainerLow");
+    let surface_container_lowest = theme.get_color_by_name("surfaceContainerLowest");
+
+    let outline = theme.get_color_by_name("outline");
+    let outline_variant = theme.get_color_by_name("outlineVariant");
+
+    let inverse_surface = theme.get_color_by_name("inverseSurface");
+    let inverse_on_surface = theme.get_color_by_name("inverseOnSurface");
+    let inverse_primary = theme.get_color_by_name("inversePrimary");
+
+    let shadow = theme.get_color_by_name("shadow");
+
+    // === Selection colors ===
+    visuals.selection.bg_fill = primary;
+    visuals.selection.stroke.color = primary;
+
+    // === Hyperlink ===
+    visuals.hyperlink_color = primary;
+
+    // === Widget colors (noninteractive, inactive, hovered, active, open) ===
+
+    // Noninteractive widgets (disabled state)
+    visuals.widgets.noninteractive.bg_fill = surface;
+    visuals.widgets.noninteractive.weak_bg_fill = surface_variant;
+    visuals.widgets.noninteractive.bg_stroke.color = outline_variant;
+    visuals.widgets.noninteractive.fg_stroke.color = on_surface_variant;
+
+    // Inactive widgets (default state)
+    visuals.widgets.inactive.weak_bg_fill = surface_container_highest;
+    visuals.widgets.inactive.bg_fill = egui::Color32::from_rgba_unmultiplied(
+        primary.r(),
+        primary.g(),
+        primary.b(),
+        20,
+    );
+    visuals.widgets.inactive.bg_stroke.color = outline;
+    visuals.widgets.inactive.fg_stroke.color = on_surface;
+
+    // Hovered widgets
+    visuals.widgets.hovered.weak_bg_fill = surface_container_high;
+    visuals.widgets.hovered.bg_fill = egui::Color32::from_rgba_unmultiplied(
+        primary.r(),
+        primary.g(),
+        primary.b(),
+        40,
+    );
+    visuals.widgets.hovered.bg_stroke.color = outline;
+    visuals.widgets.hovered.fg_stroke.color = on_surface;
+
+    // Active widgets (pressed/selected state)
+    visuals.widgets.active.weak_bg_fill = primary_container;
+    visuals.widgets.active.bg_fill = primary;
+    visuals.widgets.active.bg_stroke.color = primary;
+    visuals.widgets.active.fg_stroke.color = on_primary;
+
+    // Open widgets (menus, dropdowns)
+    visuals.widgets.open.weak_bg_fill = surface_container_low;
+    visuals.widgets.open.bg_fill = primary_container;
+    visuals.widgets.open.bg_stroke.color = outline;
+    visuals.widgets.open.fg_stroke.color = on_primary_container;
+
+    // === Background colors ===
+    visuals.window_fill = surface;
+    visuals.panel_fill = surface_container;
+    visuals.faint_bg_color = surface_container_low;
+    visuals.extreme_bg_color = surface_container_lowest;
+    visuals.code_bg_color = surface_container_highest;
+
+    // === Text colors ===
+    visuals.override_text_color = Some(on_surface);
+    visuals.text_cursor.stroke.color = primary;
+
+    // === Error and warning colors ===
+    visuals.error_fg_color = error;
+    visuals.warn_fg_color = tertiary;
+
+    // === Window stroke ===
+    visuals.window_stroke.color = outline_variant;
+    visuals.window_stroke.width = 1.0;
+
+    // === Window shadow ===
+    visuals.window_shadow.color = shadow;
+    visuals.popup_shadow.color = shadow;
+
+    ctx.set_visuals(visuals);
+}
+
+// ============================================================================
+// Theme Management Utilities
+// ============================================================================
+
+/// Get the current theme mode from the global theme
+///
+/// # Returns
+/// The current theme mode (Light, Dark, or Auto)
+///
+/// # Example
+/// ```rust,no_run
+/// use egui_material3::theme::get_theme_mode;
+///
+/// let mode = get_theme_mode();
+/// println!("Current theme mode: {}", mode);
+/// ```
+pub fn get_theme_mode() -> ThemeMode {
+    if let Ok(theme) = get_global_theme().lock() {
+        theme.theme_mode
+    } else {
+        ThemeMode::Auto
+    }
+}
+
+/// Set the theme mode in the global theme
+///
+/// # Parameters
+/// - `mode`: The theme mode to set (Light, Dark, or Auto)
+///
+/// # Example
+/// ```rust,no_run
+/// use egui_material3::theme::{set_theme_mode, ThemeMode};
+///
+/// set_theme_mode(ThemeMode::Dark);
+/// ```
+pub fn set_theme_mode(mode: ThemeMode) {
+    if let Ok(mut theme) = get_global_theme().lock() {
+        theme.theme_mode = mode;
+    }
+}
+
+/// Get the current contrast level from the global theme
+///
+/// # Returns
+/// The current contrast level (Normal, Medium, or High)
+///
+/// # Example
+/// ```rust,no_run
+/// use egui_material3::theme::get_contrast_level;
+///
+/// let level = get_contrast_level();
+/// println!("Current contrast level: {}", level);
+/// ```
+pub fn get_contrast_level() -> ContrastLevel {
+    if let Ok(theme) = get_global_theme().lock() {
+        theme.contrast_level
+    } else {
+        ContrastLevel::Normal
+    }
+}
+
+/// Set the contrast level in the global theme
+///
+/// # Parameters
+/// - `level`: The contrast level to set (Normal, Medium, or High)
+///
+/// # Example
+/// ```rust,no_run
+/// use egui_material3::theme::{set_contrast_level, ContrastLevel};
+///
+/// set_contrast_level(ContrastLevel::High);
+/// ```
+pub fn set_contrast_level(level: ContrastLevel) {
+    if let Ok(mut theme) = get_global_theme().lock() {
+        theme.contrast_level = level;
     }
 }
