@@ -171,9 +171,12 @@ impl DataTableWindow {
     fn render_data_table_examples(&mut self, ui: &mut Ui) {
         ui.push_id("datatable_examples", |ui| {
             ui.heading("Basic Data Table");
-            
+            ui.label("Performance Note: Tables use automatic caching and throttling (50ms default) for smooth scrolling.");
+            ui.add_space(5.0);
+
             let mut basic_table = data_table()
                 .id(Id::new("basic_data_table"))
+                .refresh_interval(0.05) // Optional: 50ms throttle (default). Set to 0.0 to disable.
                 .column("Dessert", 180.0, false)
                 .column("Carbs (g)", 100.0, true)
                 .column("Protein (g)", 100.0, true)
