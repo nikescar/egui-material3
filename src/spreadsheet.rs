@@ -127,13 +127,60 @@ impl SpreadsheetDataModel {
                 .map_err(|e| format!("Failed to create empty batch: {}", e));
         }
 
-        // Create data columns (all as strings for now)
+        // Create data columns with proper types
         let mut columns: Vec<ArrayRef> = vec![];
         for col_idx in 0..self.columns.len() {
-            let values: Vec<String> = self.data.iter()
-                .map(|row| row.get(col_idx).cloned().unwrap_or_default())
-                .collect();
-            columns.push(StdArc::new(StringArray::from(values)));
+            let col_type = &self.columns[col_idx].col_type;
+
+            match col_type {
+                ColumnType::Text => {
+                    let values: Vec<String> = self.data.iter()
+                        .map(|row| row.get(col_idx).cloned().unwrap_or_default())
+                        .collect();
+                    columns.push(StdArc::new(StringArray::from(values)));
+                }
+                ColumnType::Integer => {
+                    use datafusion::arrow::array::Int64Array;
+                    let values: Vec<Option<i64>> = self.data.iter()
+                        .map(|row| {
+                            row.get(col_idx)
+                                .and_then(|s| if s.is_empty() { None } else { s.parse::<i64>().ok() })
+                        })
+                        .collect();
+                    columns.push(StdArc::new(Int64Array::from(values)));
+                }
+                ColumnType::Real => {
+                    use datafusion::arrow::array::Float64Array;
+                    let values: Vec<Option<f64>> = self.data.iter()
+                        .map(|row| {
+                            row.get(col_idx)
+                                .and_then(|s| if s.is_empty() { None } else { s.parse::<f64>().ok() })
+                        })
+                        .collect();
+                    columns.push(StdArc::new(Float64Array::from(values)));
+                }
+                ColumnType::Boolean => {
+                    use datafusion::arrow::array::BooleanArray;
+                    let values: Vec<Option<bool>> = self.data.iter()
+                        .map(|row| {
+                            row.get(col_idx)
+                                .and_then(|s| {
+                                    if s.is_empty() {
+                                        None
+                                    } else {
+                                        s.parse::<bool>().ok()
+                                            .or_else(|| match s.to_lowercase().as_str() {
+                                                "1" | "true" => Some(true),
+                                                "0" | "false" => Some(false),
+                                                _ => None,
+                                            })
+                                    }
+                                })
+                        })
+                        .collect();
+                    columns.push(StdArc::new(BooleanArray::from(values)));
+                }
+            }
         }
 
         RecordBatch::try_new(schema, columns)
@@ -1026,14 +1073,15 @@ mod tests {
 
         let columns = vec![
             text_column("Product", 100.0),
-            text_column("Price", 100.0),
+            number_column("Price", 100.0),
+            integer_column("Stock", 80.0),
         ];
 
         let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
 
-        // Add some data
-        model.insert_row(vec!["Laptop".to_string(), "999.99".to_string()]).expect("Failed to insert");
-        model.insert_row(vec!["Mouse".to_string(), "29.99".to_string()]).expect("Failed to insert");
+        // Add some data with mixed types
+        model.insert_row(vec!["Laptop".to_string(), "999.99".to_string(), "15".to_string()]).expect("Failed to insert");
+        model.insert_row(vec!["Mouse".to_string(), "29.99".to_string(), "150".to_string()]).expect("Failed to insert");
 
         // Export to Parquet
         let export_path = Path::new("/tmp/test_export.parquet");
@@ -1048,12 +1096,19 @@ mod tests {
         let rows = model2.query_rows().expect("Failed to query");
         assert_eq!(rows.len(), 2, "Expected 2 rows");
         assert_eq!(rows[0].values[0], "Laptop");
+        assert_eq!(rows[0].values[1], "999.99");
+        assert_eq!(rows[0].values[2], "15");
+        assert_eq!(rows[1].values[0], "Mouse");
         assert_eq!(rows[1].values[1], "29.99");
+        assert_eq!(rows[1].values[2], "150");
 
         // Verify columns were updated from parquet schema
-        assert_eq!(model2.columns.len(), 2, "Should have 2 columns from parquet file");
+        assert_eq!(model2.columns.len(), 3, "Should have 3 columns from parquet file");
         assert_eq!(model2.columns[0].name, "Product");
         assert_eq!(model2.columns[1].name, "Price");
+        assert_eq!(model2.columns[2].name, "Stock");
+        assert_eq!(model2.columns[1].col_type, ColumnType::Real);
+        assert_eq!(model2.columns[2].col_type, ColumnType::Integer);
         })
     }
 }
