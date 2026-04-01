@@ -8,9 +8,7 @@ use crate::theme::get_global_color;
 #[cfg(feature = "spreadsheet")]
 use std::path::PathBuf;
 #[cfg(feature = "spreadsheet")]
-use std::sync::Arc;
-#[cfg(feature = "spreadsheet")]
-use tokio::sync::Mutex;
+use async_std::sync::{Arc, Mutex};
 
 #[cfg(feature = "spreadsheet")]
 use datafusion::prelude::*;
@@ -21,7 +19,7 @@ use datafusion::arrow::datatypes::{DataType, Field, Schema};
 #[cfg(feature = "spreadsheet")]
 use egui::{Id, Response, Sense, TextEdit, Ui, Widget};
 #[cfg(feature = "spreadsheet")]
-use egui_async::{Bind, StateWithData};
+use crate::egui_async_std::{Bind, StateWithData};
 #[cfg(feature = "spreadsheet")]
 use std::sync::Arc as StdArc;
 
@@ -542,7 +540,7 @@ impl MaterialSpreadsheet {
     pub fn init_with_data(&mut self, rows: Vec<Vec<String>>) {
         // Use try_lock in a loop to avoid needing a runtime
         loop {
-            if let Ok(mut model) = self.data_model.try_lock() {
+            if let Some(mut model) = self.data_model.try_lock() {
                 for row in rows {
                     let _ = model.insert_row(row);
                 }
@@ -664,7 +662,7 @@ impl MaterialSpreadsheet {
     pub fn columns(&self) -> Vec<ColumnDef> {
         // Use try_lock to avoid needing a runtime
         loop {
-            if let Ok(model) = self.data_model.try_lock() {
+            if let Some(model) = self.data_model.try_lock() {
                 return model.columns.clone();
             }
             std::thread::sleep(std::time::Duration::from_micros(10));
@@ -678,9 +676,6 @@ impl MaterialSpreadsheet {
 
     /// Show the spreadsheet UI (alternative to Widget trait)
     pub fn show(&mut self, ui: &mut Ui) -> Response {
-        // Register egui-async plugin (requires egui 0.33+)
-        ui.ctx().plugin_or_default::<egui_async::EguiAsyncPlugin>();
-
         // Handle async load state
         match self.load_bind.state() {
             StateWithData::Pending => {
@@ -718,7 +713,7 @@ impl MaterialSpreadsheet {
 
         // Get column definitions (using try_lock for sync UI context)
         let columns = loop {
-            if let Ok(model) = self.data_model.try_lock() {
+            if let Some(model) = self.data_model.try_lock() {
                 break model.columns.clone();
             }
             std::thread::sleep(std::time::Duration::from_micros(10));
@@ -836,7 +831,7 @@ impl MaterialSpreadsheet {
 
             // Use try_lock to avoid needing runtime in UI context
             let mut model = loop {
-                if let Ok(guard) = self.data_model.try_lock() {
+                if let Some(guard) = self.data_model.try_lock() {
                     break guard;
                 }
                 std::thread::sleep(std::time::Duration::from_micros(10));
@@ -967,8 +962,9 @@ mod tests {
         assert_eq!(rows[1].values[1], "Value2");
     }
 
-    #[tokio::test]
-    async fn test_data_model_operations() {
+    #[test]
+    fn test_data_model_operations() {
+        async_std::task::block_on(async {
         let columns = vec![
             ColumnDef { name: "Name".to_string(), col_type: ColumnType::Text, width: 100.0 },
             ColumnDef { name: "Count".to_string(), col_type: ColumnType::Integer, width: 80.0 },
@@ -989,6 +985,7 @@ mod tests {
         model.update_cell(0, 0, "Updated".to_string()).expect("Failed to update");
         let rows = model.query_rows().expect("Failed to query");
         assert_eq!(rows[0].values[0], "Updated");
+        })
     }
 
     #[test]
@@ -1022,8 +1019,9 @@ mod tests {
         assert_eq!(rows[1].values[1], "Value2");
     }
 
-    #[tokio::test]
-    async fn test_parquet_import_export() {
+    #[test]
+    fn test_parquet_import_export() {
+        async_std::task::block_on(async {
         use std::path::Path;
 
         let columns = vec![
@@ -1056,5 +1054,6 @@ mod tests {
         assert_eq!(model2.columns.len(), 2, "Should have 2 columns from parquet file");
         assert_eq!(model2.columns[0].name, "Product");
         assert_eq!(model2.columns[1].name, "Price");
+        })
     }
 }

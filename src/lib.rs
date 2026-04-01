@@ -259,6 +259,8 @@ pub mod radio;
 pub mod select;
 pub mod slider;
 pub mod snackbar;
+#[cfg(feature = "spreadsheet")]
+pub mod egui_async_std;
 pub mod spreadsheet;
 pub mod switch;
 pub mod tabs;

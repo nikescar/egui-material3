@@ -24,7 +24,7 @@ exclude = [
 [features]
 default = []
 ondemand = ["dep:ureq"]
-spreadsheet = ["dep:datafusion", "dep:arrow", "dep:egui_extras", "dep:egui-async", "dep:tokio", "dep:csv", "dep:calamine", "dep:futures"]
+spreadsheet = ["dep:datafusion", "dep:arrow", "dep:egui_extras", "dep:async-std", "dep:csv", "dep:calamine", "dep:futures"]
 svg_solar = []
 svg_noto = []
 svg_twemoji = []
@@ -50,8 +50,7 @@ datafusion = { version = "43", optional = true } # for spreadsheet feature
 arrow = { version = "53", optional = true } # for spreadsheet feature
 futures = { version = "0.3", optional = true } # for spreadsheet feature
 egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
-egui-async = { version = "0.3", optional = true } # for spreadsheet feature
-tokio = { version = "1.49", features = ["rt", "rt-multi-thread"], optional = true } # for spreadsheet feature
+async-std = { version = "1.13", features = ["attributes"], optional = true } # for spreadsheet feature
 csv = { version = "1.4", optional = true } # for spreadsheet feature
 calamine = { version = "0.26", optional = true } # for spreadsheet feature (xls/xlsx)
 # arrow = { version = "53.3", optional = true } # for spreadsheet feature - temporarily disabled due to version conflicts
@@ -62,10 +61,9 @@ egui_extras = { version = "0.33", default-features = false, features = ["image",
 
 ureq = { version = "2.12", features = ["json"] }
 egui-file-dialog = "0.12"
-webbrowser = { version = "1.1.0", default-features = false }
+webbrowser = { version = "1.2.0", default-features = false }
 glob = "0.3"
-egui-async = "0.3"
-tokio = { version = "1.49", features = ["rt", "rt-multi-thread"] }
+async-std = { version = "1.13", features = ["attributes"] }
 
 # Android specific dependencies
 [target.'cfg(target_os = "android")'.dependencies]

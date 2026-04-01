@@ -82,6 +82,10 @@ use treeview_window::TreeViewWindow;
 use topappbar_window::TopAppBarWindow;
 
 fn main() -> Result<(), eframe::Error> {
+    // Initialize async-std executor for async operations (spreadsheet feature)
+    #[cfg(feature = "spreadsheet")]
+    egui_material3::egui_async_std::init_executor();
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 1200.0]),
         ..Default::default()
