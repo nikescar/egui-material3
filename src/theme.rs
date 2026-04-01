@@ -1491,9 +1491,10 @@ pub fn detect_os_theme() -> ThemeMode {
     #[cfg(not(target_os = "android"))]
     {
         match dark_light::detect() {
-            dark_light::Mode::Dark => ThemeMode::Dark,
-            dark_light::Mode::Light => ThemeMode::Light,
-            dark_light::Mode::Default => ThemeMode::Light,
+            Ok(dark_light::Mode::Dark) => ThemeMode::Dark,
+            Ok(dark_light::Mode::Light) => ThemeMode::Light,
+            Ok(dark_light::Mode::Unspecified) => ThemeMode::Light, // Default to Light when unspecified
+            Err(_) => ThemeMode::Light, // Default to Light on detection error
         }
     }
 
