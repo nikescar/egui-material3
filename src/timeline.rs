@@ -123,6 +123,8 @@ pub struct TimelineDot {
     color: TimelineDotColor,
     /// Optional icon text to display in the dot
     icon: Option<String>,
+    /// Optional texture icon to display in the dot
+    texture_icon: Option<egui::TextureId>,
     /// Optional custom color
     custom_color: Option<Color32>,
     /// Optional custom dot size (defaults to DOT_SIZE constant)
@@ -355,6 +357,7 @@ impl TimelineDot {
             variant: TimelineDotVariant::default(),
             color: TimelineDotColor::default(),
             icon: None,
+            texture_icon: None,
             custom_color: None,
             size: None,
         }
@@ -402,6 +405,21 @@ impl TimelineDot {
     /// ```
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
         self.icon = Some(icon.into());
+        self
+    }
+
+    /// Set a texture icon to display in the dot.
+    ///
+    /// # Arguments
+    /// * `texture` - Texture ID from egui's texture manager
+    ///
+    /// # Example
+    /// ```rust
+    /// let dot = TimelineDot::new()
+    ///     .texture_icon(texture_id);
+    /// ```
+    pub fn texture_icon(mut self, texture: egui::TextureId) -> Self {
+        self.texture_icon = Some(texture);
         self
     }
 
@@ -677,8 +695,21 @@ impl<'a> Widget for MaterialTimeline<'a> {
                     TimelineDotVariant::Filled => {
                         ui.painter().circle_filled(dot_center, dot_size / 2.0, dot_color);
 
-                        // Draw icon if present - use allocate_at_rect for unique ID
-                        if let Some(icon_text) = &dot.icon {
+                        // Draw texture icon if present (takes precedence over text icon)
+                        if let Some(texture_id) = dot.texture_icon {
+                            let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
+                            ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
+                                // Clip icon to parent's clip rect
+                                let parent_clip = ui.clip_rect();
+                                let clipped = icon_rect.intersect(parent_clip);
+                                ui.set_clip_rect(clipped);
+
+                                ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
+                                    ui.add(egui::Image::new(egui::load::SizedTexture::new(texture_id, Vec2::splat(icon_size))));
+                                });
+                            });
+                        } else if let Some(icon_text) = &dot.icon {
+                            // Draw text icon if no texture
                             let icon_color = if dot_color.r() as u32 + dot_color.g() as u32 + dot_color.b() as u32 > 384 {
                                 Color32::BLACK
                             } else {
@@ -710,8 +741,21 @@ impl<'a> Widget for MaterialTimeline<'a> {
                             Stroke::new(stroke_width, dot_color),
                         );
 
-                        // Draw icon if present - use allocate_at_rect for unique ID
-                        if let Some(icon_text) = &dot.icon {
+                        // Draw texture icon if present (takes precedence over text icon)
+                        if let Some(texture_id) = dot.texture_icon {
+                            let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
+                            ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
+                                // Clip icon to parent's clip rect
+                                let parent_clip = ui.clip_rect();
+                                let clipped = icon_rect.intersect(parent_clip);
+                                ui.set_clip_rect(clipped);
+
+                                ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
+                                    ui.add(egui::Image::new(egui::load::SizedTexture::new(texture_id, Vec2::splat(icon_size))));
+                                });
+                            });
+                        } else if let Some(icon_text) = &dot.icon {
+                            // Draw text icon if no texture
                             let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
                             ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                                 // Clip icon to parent's clip rect
