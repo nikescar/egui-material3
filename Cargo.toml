@@ -24,7 +24,7 @@ exclude = [
 [features]
 default = []
 ondemand = ["dep:ureq"]
-spreadsheet = ["dep:datafusion", "dep:arrow", "dep:egui_extras", "dep:async-std", "dep:csv", "dep:calamine", "dep:futures"]
+spreadsheet = ["dep:diesel", "dep:rusqlite", "dep:egui_extras", "dep:async-std", "dep:csv", "dep:calamine"]
 svg_solar = []
 svg_noto = []
 svg_twemoji = []
@@ -45,15 +45,17 @@ hex = "0.4"
 once_cell = "1.21"
 dark-light = "2.0"
 
+# For spreadsheet feature - SQLite (desktop/native)
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+rusqlite = { version = "0.38", default-features = false, features = ["bundled"], optional = true }
+libsqlite3-hotbundle = { version = "1.510300", optional = true, path = "reference/libsqlite3-hotbundle" }
+# diesel = { version = "2.3", default-features = false, features = ["sqlite"], optional = true }
+
 ureq = { version = "2.12", features = ["json"], optional = true } # for ondemand feature
-datafusion = { version = "43", optional = true } # for spreadsheet feature
-arrow = { version = "53", optional = true } # for spreadsheet feature
-futures = { version = "0.3", optional = true } # for spreadsheet feature
 egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
 async-std = { version = "1.13", features = ["attributes"], optional = true } # for spreadsheet feature
 csv = { version = "1.4", optional = true } # for spreadsheet feature
 calamine = { version = "0.26", optional = true } # for spreadsheet feature (xls/xlsx)
-# arrow = { version = "53.3", optional = true } # for spreadsheet feature - temporarily disabled due to version conflicts
 
 [dev-dependencies]
 egui_extras = { version = "0.33", default-features = false, features = ["image", "svg", "svg_text"] }
@@ -76,6 +78,9 @@ eframe = { version = "0.33", features = ["default_fonts", "glow", "x11", "waylan
 # Wasm specific dependencies
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 # eframe = { version = "0.32.3", features = ["default_fonts", "glow", "web_screen_reader"] }
+diesel = { version = "2.3", default-features = false, features = ["sqlite", "returning_clauses_for_sqlite_3_35"], optional = true }
+sqlite-wasm-vfs = { version = "0.2.0", optional = true }
+sqlite-wasm-rs = { version = "0.5.2", optional = true }
 
 [[example]]
 name = "nobel_prizes_example"

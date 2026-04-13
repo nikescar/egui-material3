@@ -21,6 +21,8 @@ pub struct SpreadsheetWindow {
     #[cfg(feature = "spreadsheet")]
     striped: bool,
     #[cfg(feature = "spreadsheet")]
+    row_selection_enabled: bool,
+    #[cfg(feature = "spreadsheet")]
     show_file_dialog: bool,
     #[cfg(feature = "spreadsheet")]
     file_dialog: egui_file_dialog::FileDialog,
@@ -35,8 +37,6 @@ pub struct SpreadsheetWindow {
 enum PendingAction {
     LoadCsv,
     SaveCsv,
-    LoadParquet,
-    SaveParquet,
 }
 
 impl Default for SpreadsheetWindow {
@@ -73,6 +73,7 @@ impl Default for SpreadsheetWindow {
                 allow_editing: true,
                 allow_selection: true,
                 striped: true,
+                row_selection_enabled: false,
                 show_file_dialog: false,
                 file_dialog: egui_file_dialog::FileDialog::new(),
                 pending_action: None,
@@ -165,6 +166,16 @@ impl SpreadsheetWindow {
                         }
                     }
                 });
+
+                ui.add_space(10.0);
+
+                ui.push_id("row_selection_control", |ui| {
+                    if ui.add(MaterialCheckbox::new(&mut self.row_selection_enabled, "Enable Row Selection")).changed() {
+                        if let Some(ref mut spreadsheet) = self.spreadsheet {
+                            spreadsheet.set_row_selection_enabled(self.row_selection_enabled);
+                        }
+                    }
+                });
             });
 
             ui.add_space(10.0);
@@ -188,23 +199,6 @@ impl SpreadsheetWindow {
 
             ui.add_space(10.0);
 
-            // Action buttons - Parquet
-            ui.horizontal(|ui| {
-                ui.label("Parquet:");
-
-                if ui.add(MaterialButton::outlined("Load Parquet")).clicked() {
-                    self.pending_action = Some(PendingAction::LoadParquet);
-                    self.file_dialog.pick_file();
-                }
-
-                ui.add_space(10.0);
-
-                if ui.add(MaterialButton::outlined("Save Parquet")).clicked() {
-                    self.pending_action = Some(PendingAction::SaveParquet);
-                    self.file_dialog.save_file();
-                }
-            });
-
             // Handle file dialog - using the correct API pattern
             if let Some(path) = self.file_dialog.update(ui.ctx()).picked() {
                 match self.pending_action.take() {
@@ -216,26 +210,10 @@ impl SpreadsheetWindow {
                             ui.ctx().request_repaint();
                         }
                     }
-                    Some(PendingAction::LoadParquet) => {
-                        if let Some(ref mut spreadsheet) = self.spreadsheet {
-                            self.last_operation = format!("Loading Parquet from: {}", path.display());
-                            eprintln!("Loading Parquet from: {}", path.display());
-                            spreadsheet.load_from_file(path.to_path_buf());
-                            ui.ctx().request_repaint();
-                        }
-                    }
                     Some(PendingAction::SaveCsv) => {
                         if let Some(ref mut spreadsheet) = self.spreadsheet {
                             self.last_operation = format!("Saving CSV to: {}", path.display());
                             eprintln!("Saving CSV to: {}", path.display());
-                            spreadsheet.save_to_file(path.to_path_buf());
-                            ui.ctx().request_repaint();
-                        }
-                    }
-                    Some(PendingAction::SaveParquet) => {
-                        if let Some(ref mut spreadsheet) = self.spreadsheet {
-                            self.last_operation = format!("Saving Parquet to: {}", path.display());
-                            eprintln!("Saving Parquet to: {}", path.display());
                             spreadsheet.save_to_file(path.to_path_buf());
                             ui.ctx().request_repaint();
                         }

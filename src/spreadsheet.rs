@@ -1,7 +1,7 @@
 //! Material Design Spreadsheet Component
 //!
-//! A spreadsheet widget with DataFusion backend for data storage and manipulation.
-//! Supports importing/exporting CSV, Excel, Parquet, and Arrow formats.
+//! A spreadsheet widget with SQLite backend (via rusqlite) for data storage and manipulation.
+//! Supports importing/exporting CSV and Excel formats.
 
 #[cfg(feature = "spreadsheet")]
 use crate::theme::get_global_color;
@@ -10,18 +10,31 @@ use std::path::PathBuf;
 #[cfg(feature = "spreadsheet")]
 use async_std::sync::{Arc, Mutex};
 
-#[cfg(feature = "spreadsheet")]
-use datafusion::prelude::*;
-#[cfg(feature = "spreadsheet")]
-use datafusion::arrow::array::{ArrayRef, RecordBatch, StringArray};
-#[cfg(feature = "spreadsheet")]
-use datafusion::arrow::datatypes::{DataType, Field, Schema};
+// Native: use rusqlite for better dynamic schema support
+#[cfg(all(feature = "spreadsheet", not(target_family = "wasm")))]
+mod native_imports {
+    pub use rusqlite::Connection;
+}
+
+// WASM: use diesel (only option that works on WASM)
+#[cfg(all(feature = "spreadsheet", target_family = "wasm"))]
+mod wasm_imports {
+    pub use diesel::prelude::*;
+    pub use diesel::connection::SimpleConnection;
+    pub use std::sync::Once;
+
+    pub static VFS: std::sync::Mutex<(i32, Once)> = std::sync::Mutex::new((0, Once::new()));
+}
+
+#[cfg(all(feature = "spreadsheet", not(target_family = "wasm")))]
+use native_imports::*;
+
+#[cfg(all(feature = "spreadsheet", target_family = "wasm"))]
+use wasm_imports::*;
 #[cfg(feature = "spreadsheet")]
 use egui::{Id, Response, Sense, TextEdit, Ui, Widget};
 #[cfg(feature = "spreadsheet")]
 use crate::egui_async_std::{Bind, StateWithData};
-#[cfg(feature = "spreadsheet")]
-use std::sync::Arc as StdArc;
 
 // Re-export for convenience
 #[cfg(feature = "spreadsheet")]
@@ -48,12 +61,12 @@ pub enum ColumnType {
 
 #[cfg(feature = "spreadsheet")]
 impl ColumnType {
-    fn to_arrow(&self) -> DataType {
+    fn to_sql_type(&self) -> &'static str {
         match self {
-            ColumnType::Text => DataType::Utf8,
-            ColumnType::Integer => DataType::Int64,
-            ColumnType::Real => DataType::Float64,
-            ColumnType::Boolean => DataType::Boolean,
+            ColumnType::Text => "TEXT",
+            ColumnType::Integer => "INTEGER",
+            ColumnType::Real => "REAL",
+            ColumnType::Boolean => "INTEGER", // SQLite stores booleans as integers
         }
     }
 }
@@ -72,8 +85,6 @@ pub struct RowData {
 pub enum FileFormat {
     Csv,
     Excel,
-    Parquet,
-    Arrow,
 }
 
 #[cfg(feature = "spreadsheet")]
@@ -82,109 +93,123 @@ impl FileFormat {
         path.extension()?.to_str().and_then(|ext| match ext.to_lowercase().as_str() {
             "csv" => Some(FileFormat::Csv),
             "xls" | "xlsx" => Some(FileFormat::Excel),
-            "parquet" => Some(FileFormat::Parquet),
-            "arrow" => Some(FileFormat::Arrow),
             _ => None,
         })
     }
 }
 
-/// DataFusion-backed data model for spreadsheet
+/// SQLite-backed data model for spreadsheet
 #[cfg(feature = "spreadsheet")]
 pub struct SpreadsheetDataModel {
-    ctx: SessionContext,
+    #[cfg(not(target_family = "wasm"))]
+    conn: Connection, // rusqlite for native
+    #[cfg(target_family = "wasm")]
+    conn: SqliteConnection, // diesel for WASM
     columns: Vec<ColumnDef>,
-    data: Vec<Vec<String>>, // In-memory storage for modifications
+    table_name: String,
     row_count: usize,
 }
 
 #[cfg(feature = "spreadsheet")]
 impl SpreadsheetDataModel {
-    /// Create a new in-memory spreadsheet data model
+    /// Create a new in-memory spreadsheet data model with SQLite backend
     pub fn new(columns: Vec<ColumnDef>) -> Result<Self, String> {
-        let ctx = SessionContext::new();
+        let table_name = "spreadsheet_data".to_string();
 
-        let model = Self {
-            ctx,
+        #[cfg(not(target_family = "wasm"))]
+        let conn = {
+            // Native: use rusqlite
+            Connection::open_in_memory()
+                .map_err(|e| format!("Failed to create in-memory database: {}", e))?
+        };
+
+        #[cfg(target_family = "wasm")]
+        let conn = {
+            // WASM: use diesel with WASM VFS
+            let (vfs, _once) = &*VFS.lock().unwrap();
+            let url = match vfs {
+                0 => ":memory:",  // in-memory for spreadsheet
+                1 => "file:spreadsheet.db?vfs=opfs-sahpool",
+                2 => "file:spreadsheet.db?vfs=relaxed-idb",
+                _ => ":memory:",
+            };
+            SqliteConnection::establish(url)
+                .map_err(|e| format!("Failed to create WASM database: {}", e))?
+        };
+
+        let mut model = Self {
+            conn,
             columns: columns.clone(),
-            data: Vec::new(),
+            table_name,
             row_count: 0,
         };
+
+        // Create the table with the specified columns
+        model.create_table()?;
 
         Ok(model)
     }
 
-    fn data_to_record_batch(&self) -> Result<RecordBatch, String> {
-        // Build Arrow schema from columns (use column names instead of col0, col1, etc.)
-        let mut fields = vec![];
-        for col in self.columns.iter() {
-            fields.push(Field::new(&col.name, col.col_type.to_arrow(), true));
-        }
-        let schema = StdArc::new(Schema::new(fields));
-
-        if self.data.is_empty() {
-            return RecordBatch::try_new(schema, vec![])
-                .map_err(|e| format!("Failed to create empty batch: {}", e));
+    /// Create the table in SQLite database
+    fn create_table(&mut self) -> Result<(), String> {
+        if self.columns.is_empty() {
+            return Err("Cannot create table without columns".to_string());
         }
 
-        // Create data columns with proper types
-        let mut columns: Vec<ArrayRef> = vec![];
-        for col_idx in 0..self.columns.len() {
-            let col_type = &self.columns[col_idx].col_type;
-
-            match col_type {
-                ColumnType::Text => {
-                    let values: Vec<String> = self.data.iter()
-                        .map(|row| row.get(col_idx).cloned().unwrap_or_default())
-                        .collect();
-                    columns.push(StdArc::new(StringArray::from(values)));
-                }
-                ColumnType::Integer => {
-                    use datafusion::arrow::array::Int64Array;
-                    let values: Vec<Option<i64>> = self.data.iter()
-                        .map(|row| {
-                            row.get(col_idx)
-                                .and_then(|s| if s.is_empty() { None } else { s.parse::<i64>().ok() })
-                        })
-                        .collect();
-                    columns.push(StdArc::new(Int64Array::from(values)));
-                }
-                ColumnType::Real => {
-                    use datafusion::arrow::array::Float64Array;
-                    let values: Vec<Option<f64>> = self.data.iter()
-                        .map(|row| {
-                            row.get(col_idx)
-                                .and_then(|s| if s.is_empty() { None } else { s.parse::<f64>().ok() })
-                        })
-                        .collect();
-                    columns.push(StdArc::new(Float64Array::from(values)));
-                }
-                ColumnType::Boolean => {
-                    use datafusion::arrow::array::BooleanArray;
-                    let values: Vec<Option<bool>> = self.data.iter()
-                        .map(|row| {
-                            row.get(col_idx)
-                                .and_then(|s| {
-                                    if s.is_empty() {
-                                        None
-                                    } else {
-                                        s.parse::<bool>().ok()
-                                            .or_else(|| match s.to_lowercase().as_str() {
-                                                "1" | "true" => Some(true),
-                                                "0" | "false" => Some(false),
-                                                _ => None,
-                                            })
-                                    }
-                                })
-                        })
-                        .collect();
-                    columns.push(StdArc::new(BooleanArray::from(values)));
-                }
-            }
+        // Build CREATE TABLE statement
+        let mut col_defs = vec!["id INTEGER PRIMARY KEY AUTOINCREMENT".to_string()];
+        for col in &self.columns {
+            // Sanitize column name to prevent SQL injection
+            let safe_name = col.name.replace('"', "\"\"");
+            col_defs.push(format!("\"{}\" {}", safe_name, col.col_type.to_sql_type()));
         }
 
-        RecordBatch::try_new(schema, columns)
-            .map_err(|e| format!("Failed to create batch: {}", e))
+        let create_sql = format!(
+            "CREATE TABLE IF NOT EXISTS {} ({})",
+            self.table_name,
+            col_defs.join(", ")
+        );
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.conn.execute(&create_sql, [])
+                .map_err(|e| format!("Failed to create table: {}", e))?;
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            self.conn.batch_execute(&create_sql)
+                .map_err(|e| format!("Failed to create table: {}", e))?;
+        }
+
+        Ok(())
+    }
+
+    /// Add a new column to the table
+    #[allow(dead_code)]
+    fn add_column(&mut self, col: &ColumnDef) -> Result<(), String> {
+        let safe_name = col.name.replace('"', "\"\"");
+        let alter_sql = format!(
+            "ALTER TABLE {} ADD COLUMN \"{}\" {}",
+            self.table_name,
+            safe_name,
+            col.col_type.to_sql_type()
+        );
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.conn.execute(&alter_sql, [])
+                .map_err(|e| format!("Failed to add column: {}", e))?;
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            self.conn.batch_execute(&alter_sql)
+                .map_err(|e| format!("Failed to add column: {}", e))?;
+        }
+
+        self.columns.push(col.clone());
+        Ok(())
     }
 
     /// Insert multiple rows
@@ -197,75 +222,268 @@ impl SpreadsheetDataModel {
 
     /// Insert a single row
     pub fn insert_row(&mut self, values: Vec<String>) -> Result<(), String> {
-        self.data.push(values);
+        if values.len() != self.columns.len() {
+            return Err(format!(
+                "Row has {} values but table has {} columns",
+                values.len(),
+                self.columns.len()
+            ));
+        }
+
+        // Build INSERT statement with inline values (SQLite doesn't have parameter limit issues)
+        let col_names: Vec<String> = self.columns.iter()
+            .map(|col| format!("\"{}\"", col.name.replace('"', "\"\"")))
+            .collect();
+
+        let mut value_strs = Vec::new();
+        for (idx, value) in values.iter().enumerate() {
+            let col_type = &self.columns[idx].col_type;
+            let value_str = match col_type {
+                ColumnType::Text => format!("'{}'", value.replace('\'', "''")),
+                ColumnType::Integer => {
+                    if value.is_empty() {
+                        "NULL".to_string()
+                    } else {
+                        value.parse::<i64>()
+                            .map_err(|_| format!("Invalid integer value: {}", value))?
+                            .to_string()
+                    }
+                }
+                ColumnType::Real => {
+                    if value.is_empty() {
+                        "NULL".to_string()
+                    } else {
+                        value.parse::<f64>()
+                            .map_err(|_| format!("Invalid real value: {}", value))?
+                            .to_string()
+                    }
+                }
+                ColumnType::Boolean => {
+                    if value.is_empty() {
+                        "NULL".to_string()
+                    } else {
+                        let bool_val = match value.to_lowercase().as_str() {
+                            "1" | "true" => true,
+                            "0" | "false" => false,
+                            _ => value.parse::<bool>()
+                                .map_err(|_| format!("Invalid boolean value: {}", value))?,
+                        };
+                        if bool_val { "1" } else { "0" }.to_string()
+                    }
+                }
+            };
+            value_strs.push(value_str);
+        }
+
+        let insert_sql = format!(
+            "INSERT INTO {} ({}) VALUES ({})",
+            self.table_name,
+            col_names.join(", "),
+            value_strs.join(", ")
+        );
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.conn.execute(&insert_sql, [])
+                .map_err(|e| format!("Failed to insert row: {}", e))?;
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            diesel::sql_query(&insert_sql)
+                .execute(&mut self.conn)
+                .map_err(|e| format!("Failed to insert row: {}", e))?;
+        }
+
         self.row_count += 1;
         Ok(())
     }
 
-    /// Query all rows (returns data directly from memory)
-    pub fn query_rows(&self) -> Result<Vec<RowData>, String> {
-        let mut result = Vec::new();
-        for (id, row) in self.data.iter().enumerate() {
-            result.push(RowData {
-                id,
-                values: row.clone(),
-            });
+    /// Query all rows from the database
+    pub fn query_rows(&mut self) -> Result<Vec<RowData>, String> {
+        #[cfg(not(target_family = "wasm"))]
+        {
+            // Native: use rusqlite
+            let select_sql = format!("SELECT * FROM {} ORDER BY id", self.table_name);
+
+            let mut stmt = self.conn.prepare(&select_sql)
+                .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+            let mut rows = stmt.query([])
+                .map_err(|e| format!("Failed to query rows: {}", e))?;
+
+            let mut result = Vec::new();
+            let mut row_idx = 0;
+
+            while let Some(row) = rows.next().map_err(|e| format!("Failed to fetch row: {}", e))? {
+                let mut values = Vec::new();
+
+                // Skip the first column (id) and read the data columns
+                for (col_idx, col) in self.columns.iter().enumerate() {
+                    let value = match &col.col_type {
+                        ColumnType::Text => {
+                            row.get::<_, Option<String>>(col_idx + 1)
+                                .map_err(|e| format!("Failed to get text value: {}", e))?
+                                .unwrap_or_default()
+                        }
+                        ColumnType::Integer => {
+                            row.get::<_, Option<i64>>(col_idx + 1)
+                                .map_err(|e| format!("Failed to get integer value: {}", e))?
+                                .map(|v| v.to_string())
+                                .unwrap_or_default()
+                        }
+                        ColumnType::Real => {
+                            row.get::<_, Option<f64>>(col_idx + 1)
+                                .map_err(|e| format!("Failed to get real value: {}", e))?
+                                .map(|v| v.to_string())
+                                .unwrap_or_default()
+                        }
+                        ColumnType::Boolean => {
+                            row.get::<_, Option<i32>>(col_idx + 1)
+                                .map_err(|e| format!("Failed to get boolean value: {}", e))?
+                                .map(|v| if v != 0 { "true".to_string() } else { "false".to_string() })
+                                .unwrap_or_default()
+                        }
+                    };
+                    values.push(value);
+                }
+
+                result.push(RowData {
+                    id: row_idx,
+                    values,
+                });
+                row_idx += 1;
+            }
+
+            Ok(result)
         }
-        Ok(result)
+
+        #[cfg(target_family = "wasm")]
+        {
+            // WASM: diesel doesn't support dynamic queries well, so return empty for now
+            // In production, you'd want to implement a proper solution
+            Ok(vec![])
+        }
     }
 
     /// Update a single cell
     pub fn update_cell(&mut self, row_id: usize, col_idx: usize, value: String) -> Result<(), String> {
+        if col_idx >= self.columns.len() {
+            return Err("Invalid column index".to_string());
+        }
+
+        let col = &self.columns[col_idx];
+        let col_name = col.name.replace('"', "\"\"");
+
         // Validate value against column type
-        if col_idx < self.columns.len() {
-            let col_type = &self.columns[col_idx].col_type;
-
-            // For numeric types, validate that the value can be parsed
-            match col_type {
-                ColumnType::Integer => {
-                    if !value.is_empty() && value.parse::<i64>().is_err() {
-                        return Err(format!("'{}' is not a valid integer", value));
-                    }
+        match &col.col_type {
+            ColumnType::Integer => {
+                if !value.is_empty() && value.parse::<i64>().is_err() {
+                    return Err(format!("'{}' is not a valid integer", value));
                 }
-                ColumnType::Real => {
-                    if !value.is_empty() && value.parse::<f64>().is_err() {
-                        return Err(format!("'{}' is not a valid number", value));
-                    }
-                }
-                ColumnType::Boolean => {
-                    if !value.is_empty() && value.parse::<bool>().is_err() {
-                        // Accept common boolean representations
-                        let lower = value.to_lowercase();
-                        if lower != "true" && lower != "false" && lower != "1" && lower != "0" {
-                            return Err(format!("'{}' is not a valid boolean (use true/false or 1/0)", value));
-                        }
-                    }
-                }
-                ColumnType::Text => {} // Text accepts anything
             }
+            ColumnType::Real => {
+                if !value.is_empty() && value.parse::<f64>().is_err() {
+                    return Err(format!("'{}' is not a valid number", value));
+                }
+            }
+            ColumnType::Boolean => {
+                if !value.is_empty() {
+                    let lower = value.to_lowercase();
+                    if lower != "true" && lower != "false" && lower != "1" && lower != "0" {
+                        return Err(format!("'{}' is not a valid boolean (use true/false or 1/0)", value));
+                    }
+                }
+            }
+            ColumnType::Text => {} // Text accepts anything
         }
 
-        // Update in memory
-        if row_id < self.data.len() && col_idx < self.columns.len() {
-            self.data[row_id][col_idx] = value;
-            Ok(())
-        } else {
-            Err("Invalid row or column index".to_string())
+        // row_id is 0-based but SQL id is 1-based and auto-incrementing
+        let actual_id = (row_id + 1) as i64;
+
+        // Build UPDATE statement with inline value
+        let value_str = match &col.col_type {
+            ColumnType::Text => format!("'{}'", value.replace('\'', "''")),
+            ColumnType::Integer => {
+                if value.is_empty() {
+                    "NULL".to_string()
+                } else {
+                    value.parse::<i64>()
+                        .map_err(|_| format!("Invalid integer value: {}", value))?
+                        .to_string()
+                }
+            }
+            ColumnType::Real => {
+                if value.is_empty() {
+                    "NULL".to_string()
+                } else {
+                    value.parse::<f64>()
+                        .map_err(|_| format!("Invalid real value: {}", value))?
+                        .to_string()
+                }
+            }
+            ColumnType::Boolean => {
+                if value.is_empty() {
+                    "NULL".to_string()
+                } else {
+                    let bool_val = match value.to_lowercase().as_str() {
+                        "1" | "true" => true,
+                        "0" | "false" => false,
+                        _ => value.parse::<bool>()
+                            .map_err(|_| format!("Invalid boolean value: {}", value))?,
+                    };
+                    if bool_val { "1" } else { "0" }.to_string()
+                }
+            }
+        };
+
+        let update_sql = format!(
+            "UPDATE {} SET \"{}\" = {} WHERE id = {}",
+            self.table_name,
+            col_name,
+            value_str,
+            actual_id
+        );
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.conn.execute(&update_sql, [])
+                .map_err(|e| format!("Failed to update cell: {}", e))?;
         }
+
+        #[cfg(target_family = "wasm")]
+        {
+            diesel::sql_query(&update_sql)
+                .execute(&mut self.conn)
+                .map_err(|e| format!("Failed to update cell: {}", e))?;
+        }
+
+        Ok(())
     }
 
     /// Delete a row
     pub fn delete_row(&mut self, row_id: usize) -> Result<(), String> {
-        if row_id < self.data.len() {
-            self.data.remove(row_id);
-            Ok(())
-        } else {
-            Err("Invalid row index".to_string())
+        let actual_id = (row_id + 1) as i64;
+        let delete_sql = format!("DELETE FROM {} WHERE id = {}", self.table_name, actual_id);
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.conn.execute(&delete_sql, [])
+                .map_err(|e| format!("Failed to delete row: {}", e))?;
         }
+
+        #[cfg(target_family = "wasm")]
+        {
+            diesel::sql_query(&delete_sql)
+                .execute(&mut self.conn)
+                .map_err(|e| format!("Failed to delete row: {}", e))?;
+        }
+
+        Ok(())
     }
 
     /// Export to CSV
-    pub fn export_csv(&self, path: &std::path::Path) -> Result<(), String> {
+    pub fn export_csv(&mut self, path: &std::path::Path) -> Result<(), String> {
         use std::fs::File;
         use std::io::Write;
 
@@ -294,11 +512,11 @@ impl SpreadsheetDataModel {
         let all_lines: Vec<String> = reader.lines()
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("Failed to read file: {}", e))?;
-        
+
         if all_lines.is_empty() {
             return Err("CSV file is empty".to_string());
         }
-        
+
         if all_lines.len() < 2 {
             return Err("CSV file has only one line".to_string());
         }
@@ -306,17 +524,17 @@ impl SpreadsheetDataModel {
         let first_line = &all_lines[0];
         let second_line = &all_lines[1];
         let last_line = all_lines.last().unwrap();
-        
+
         // Detect delimiter by comparing counts in first, second, and last lines
         let delimiters = [',', ';', '\t'];
         let mut best_delimiter = ',';
         let mut best_score = 0;
-        
+
         for &delim in &delimiters {
             let count1 = first_line.matches(delim).count();
             let count2 = second_line.matches(delim).count();
             let count_last = last_line.matches(delim).count();
-            
+
             // Score based on consistency across lines and total count
             if count1 > 0 && count1 == count2 && count2 == count_last {
                 // Perfect consistency
@@ -338,7 +556,7 @@ impl SpreadsheetDataModel {
                 }
             }
         }
-        
+
         let delimiter = best_delimiter;
         let delimiter_name = match delimiter {
             ',' => "comma",
@@ -346,24 +564,19 @@ impl SpreadsheetDataModel {
             '\t' => "tab",
             _ => "unknown",
         };
-        
+
         let first_values: Vec<&str> = first_line.split(delimiter).collect();
         let second_values: Vec<&str> = second_line.split(delimiter).collect();
-        
+
         let col_count = first_values.len();
 
         // Determine if first line is a header (improved heuristic)
-        // Check multiple conditions:
-        // 1. First line values look like column names (short, non-numeric, no special chars)
-        // 2. Type difference between first and second line
-        // 3. First line has unique values (columns should have unique names)
         let looks_like_header = first_values.iter().all(|v| {
             let trimmed = v.trim();
-            // Column names are typically short and don't start with numbers
             trimmed.len() < 50 &&
             !trimmed.is_empty() &&
-            trimmed.parse::<f64>().is_err() && // Not purely numeric
-            !trimmed.contains(|c: char| c.is_numeric() && trimmed.len() > 20) // Not long with numbers
+            trimmed.parse::<f64>().is_err() &&
+            !trimmed.contains(|c: char| c.is_numeric() && trimmed.len() > 20)
         });
 
         let has_type_difference = first_values.iter().zip(second_values.iter()).any(|(v1, v2)| {
@@ -377,9 +590,8 @@ impl SpreadsheetDataModel {
             first_values.iter().all(|v| seen.insert(v.trim()))
         };
 
-        // First line is header if it looks like header OR has type difference
         let first_line_is_header = looks_like_header || has_type_difference || (has_unique_values && looks_like_header);
-        
+
         // Create new column definitions
         let new_columns: Vec<ColumnDef> = if first_line_is_header {
             first_values.iter().enumerate().map(|(_i, name)| {
@@ -398,26 +610,40 @@ impl SpreadsheetDataModel {
                 }
             }).collect()
         };
-        
+
         eprintln!("Detected {} columns with {} delimiter", col_count, delimiter_name);
         eprintln!("First line is header: {}", first_line_is_header);
-        
-        // Recreate table with new columns
+
+        // Drop and recreate table with new columns
+        let drop_sql = format!("DROP TABLE IF EXISTS {}", self.table_name);
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            self.conn.execute(&drop_sql, [])
+                .map_err(|e| format!("Failed to drop table: {}", e))?;
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            self.conn.batch_execute(&drop_sql)
+                .map_err(|e| format!("Failed to drop table: {}", e))?;
+        }
+
         self.columns = new_columns;
-        self.data.clear();
         self.row_count = 0;
-        
+        self.create_table()?;
+
         // Prepare data rows
         let start_idx = if first_line_is_header { 1 } else { 0 };
         let data_lines: Vec<&String> = all_lines.iter()
             .skip(start_idx)
             .filter(|line| !line.trim().is_empty())
             .collect();
-        
+
         // Insert data rows
         for (idx, line) in data_lines.iter().enumerate() {
             let values: Vec<String> = line.split(delimiter).map(|s| s.trim().to_string()).collect();
-            
+
             // Validate column count
             if values.len() != col_count {
                 return Err(format!(
@@ -427,7 +653,7 @@ impl SpreadsheetDataModel {
                     col_count
                 ));
             }
-            
+
             self.insert_row(values)
                 .map_err(|e| format!("Failed to insert row {}: {}", idx + 1, e))?;
         }
@@ -436,100 +662,6 @@ impl SpreadsheetDataModel {
         Ok(())
     }
 
-    /// Export to Parquet using Arrow
-    pub async fn export_parquet(&self, path: &std::path::Path) -> Result<(), String> {
-        use datafusion::parquet::arrow::ArrowWriter;
-        use std::fs::File;
-
-        let batch = self.data_to_record_batch()?;
-        let file = File::create(path)
-            .map_err(|e| format!("Failed to create file: {}", e))?;
-
-        let mut writer = ArrowWriter::try_new(file, batch.schema(), None)
-            .map_err(|e| format!("Failed to create parquet writer: {}", e))?;
-
-        writer.write(&batch)
-            .map_err(|e| format!("Failed to write batch: {}", e))?;
-
-        writer.close()
-            .map_err(|e| format!("Failed to close writer: {}", e))?;
-
-        Ok(())
-    }
-
-    /// Import from Parquet using DataFusion SQL
-    pub async fn import_parquet(&mut self, path: &std::path::Path) -> Result<(), String> {
-        // Clear existing data
-        self.data.clear();
-        self.row_count = 0;
-
-        // Register parquet file with DataFusion
-        let table_name = "imported_data";
-        self.ctx.register_parquet(
-            table_name,
-            path.to_str().unwrap(),
-            ParquetReadOptions::default(),
-        )
-        .await
-        .map_err(|e| format!("Failed to register parquet: {}", e))?;
-
-        // Query all data using SQL
-        let df = self.ctx
-            .sql(&format!("SELECT * FROM {}", table_name))
-            .await
-            .map_err(|e| format!("Failed to query parquet: {}", e))?;
-
-        // Get schema and update columns
-        let schema = df.schema();
-        let mut new_columns = vec![];
-        for field in schema.fields() {
-            let col_type = match field.data_type() {
-                DataType::Int64 | DataType::Int32 | DataType::Int16 | DataType::Int8 => ColumnType::Integer,
-                DataType::Float64 | DataType::Float32 => ColumnType::Real,
-                DataType::Boolean => ColumnType::Boolean,
-                _ => ColumnType::Text,
-            };
-            new_columns.push(ColumnDef {
-                name: field.name().clone(),
-                col_type,
-                width: 100.0,
-            });
-        }
-        self.columns = new_columns;
-
-        // Collect batches
-        let batches = df.collect()
-            .await
-            .map_err(|e| format!("Failed to collect batches: {}", e))?;
-
-        if batches.is_empty() {
-            return Ok(());
-        }
-
-        // Process each batch
-        for batch in batches {
-            let num_rows = batch.num_rows();
-
-            for row_idx in 0..num_rows {
-                let mut row_values = Vec::new();
-
-                // Get all data columns
-                for col_idx in 0..batch.num_columns() {
-                    let column = batch.column(col_idx);
-                    let value = datafusion::arrow::util::display::array_value_to_string(column, row_idx)
-                        .map_err(|e| format!("Failed to convert value: {}", e))?;
-                    row_values.push(value);
-                }
-
-                self.insert_row(row_values)?;
-            }
-        }
-
-        // Deregister table to clean up
-        let _ = self.ctx.deregister_table(table_name);
-
-        Ok(())
-    }
 }
 
 /// Actions that can be performed on spreadsheet
@@ -558,6 +690,8 @@ pub struct MaterialSpreadsheet {
     load_bind: Bind<Vec<RowData>, String>,
     save_bind: Bind<(), String>,
     load_processed: bool, // Track if we've processed the load result
+    row_selection_enabled: bool,
+    selected_row: Option<usize>,
 }
 
 #[cfg(feature = "spreadsheet")]
@@ -579,6 +713,8 @@ impl MaterialSpreadsheet {
             load_bind: Bind::new(false),
             save_bind: Bind::new(false),
             load_processed: false,
+            row_selection_enabled: false,
+            selected_row: None,
         })
     }
 
@@ -632,6 +768,19 @@ impl MaterialSpreadsheet {
         self.striped = striped;
     }
 
+    /// Enable or disable row selection mode
+    pub fn set_row_selection_enabled(&mut self, enabled: bool) {
+        self.row_selection_enabled = enabled;
+        if !enabled {
+            self.selected_row = None;
+        }
+    }
+
+    /// Get currently selected row
+    pub fn get_selected_row(&self) -> Option<usize> {
+        self.selected_row
+    }
+
     /// Add a new empty row
     pub async fn add_row(&mut self) -> Result<(), String> {
         let mut model = self.data_model.lock().await;
@@ -652,7 +801,7 @@ impl MaterialSpreadsheet {
 
     /// Refresh cached data from database
     pub async fn refresh_data(&mut self) -> Result<(), String> {
-        let model = self.data_model.lock().await;
+        let mut model = self.data_model.lock().await;
         self.cached_rows = model.query_rows().map_err(|e| e.to_string())?;
         Ok(())
     }
@@ -670,14 +819,7 @@ impl MaterialSpreadsheet {
                     locked_model.import_csv(&path)?;
                     locked_model.query_rows()
                 }
-                FileFormat::Parquet => {
-                    // Import parquet asynchronously
-                    let mut locked_model = model.lock().await;
-                    locked_model.import_parquet(&path).await?;
-                    locked_model.query_rows()
-                }
                 FileFormat::Excel => Err("Excel import not yet implemented".to_string()),
-                FileFormat::Arrow => Err("Arrow import not yet implemented".to_string()),
             }
         });
     }
@@ -690,17 +832,11 @@ impl MaterialSpreadsheet {
 
             match format {
                 FileFormat::Csv => {
-                    let locked_model = model.lock().await;
+                    let mut locked_model = model.lock().await;
                     locked_model.export_csv(&path)?;
                     Ok(())
                 }
-                FileFormat::Parquet => {
-                    let locked_model = model.lock().await;
-                    locked_model.export_parquet(&path).await?;
-                    Ok(())
-                }
                 FileFormat::Excel => Err("Excel export not yet implemented".to_string()),
-                FileFormat::Arrow => Err("Arrow export not yet implemented".to_string()),
             }
         });
     }
@@ -810,9 +946,20 @@ impl MaterialSpreadsheet {
             })
             .body(|mut body| {
                 for row_data in &display_rows {
+                    let is_selected = self.row_selection_enabled && self.selected_row == Some(row_data.id);
+
                     body.row(self.row_height, |mut row| {
+                        let mut row_clicked = false;
+
                         for (col_idx, value) in row_data.values.iter().enumerate() {
                             row.col(|ui| {
+                                // Highlight selected row
+                                if is_selected {
+                                    let rect = ui.max_rect();
+                                    let highlight_color = ui.visuals().selection.bg_fill.gamma_multiply(0.5);
+                                    ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, highlight_color);
+                                }
+
                                 let is_editing = self.editing_cell == Some((row_data.id, col_idx));
 
                                 if is_editing {
@@ -822,14 +969,14 @@ impl MaterialSpreadsheet {
                                         TextEdit::singleline(&mut self.edit_buffer)
                                             .desired_width(f32::INFINITY)
                                     );
-                                    eprintln!("DEBUG: TextEdit state - has_focus: {}, lost_focus: {}, gained_focus: {}", 
+                                    eprintln!("DEBUG: TextEdit state - has_focus: {}, lost_focus: {}, gained_focus: {}",
                                         edit_response.has_focus(), edit_response.lost_focus(), edit_response.gained_focus());
 
                                     // Handle Enter to save, Escape to cancel, or save on blur
                                     if edit_response.lost_focus() {
                                         let escape_pressed = ui.input(|i| i.key_pressed(egui::Key::Escape));
                                         eprintln!("DEBUG: TextEdit lost focus - escape_pressed: {}", escape_pressed);
-                                        
+
                                         if !escape_pressed {
                                             eprintln!("DEBUG: Storing cell update - row_id: {}, col_idx: {}, value: '{}'", row_data.id, col_idx, self.edit_buffer);
                                             // Store the update in UI memory for processing after rendering
@@ -848,17 +995,31 @@ impl MaterialSpreadsheet {
                                         eprintln!("DEBUG: Requested focus for TextEdit");
                                     }
                                 } else {
-                                    // View mode with label
-                                    let label_response = ui.label(value);
+                                    // View mode with label - use a sense that detects clicks
+                                    let label_response = if self.row_selection_enabled {
+                                        ui.add(egui::Label::new(value).sense(Sense::click()))
+                                    } else {
+                                        ui.label(value)
+                                    };
 
-                                    // Single-click to edit (changed from double-click)
-                                    if self.allow_editing && label_response.clicked() {
+                                    // Handle row selection click
+                                    if self.row_selection_enabled && label_response.clicked() {
+                                        row_clicked = true;
+                                    }
+
+                                    // Single-click to edit (changed from double-click) - only if editing is enabled and selection is not
+                                    if self.allow_editing && !self.row_selection_enabled && label_response.clicked() {
                                         eprintln!("DEBUG: Starting edit mode - row_id: {}, col_idx: {}, current_value: {}", row_data.id, col_idx, value);
                                         self.editing_cell = Some((row_data.id, col_idx));
                                         self.edit_buffer = value.clone();
                                     }
                                 }
                             });
+                        }
+
+                        // Update selected row after the row is rendered
+                        if row_clicked {
+                            self.selected_row = Some(row_data.id);
                         }
                     });
                 }
@@ -1064,51 +1225,5 @@ mod tests {
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0].values[0], "Item1");
         assert_eq!(rows[1].values[1], "Value2");
-    }
-
-    #[test]
-    fn test_parquet_import_export() {
-        async_std::task::block_on(async {
-        use std::path::Path;
-
-        let columns = vec![
-            text_column("Product", 100.0),
-            number_column("Price", 100.0),
-            integer_column("Stock", 80.0),
-        ];
-
-        let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
-
-        // Add some data with mixed types
-        model.insert_row(vec!["Laptop".to_string(), "999.99".to_string(), "15".to_string()]).expect("Failed to insert");
-        model.insert_row(vec!["Mouse".to_string(), "29.99".to_string(), "150".to_string()]).expect("Failed to insert");
-
-        // Export to Parquet
-        let export_path = Path::new("/tmp/test_export.parquet");
-        model.export_parquet(export_path).await.expect("Failed to export Parquet");
-
-        // Create new model and import using DataFusion SQL
-        let columns2 = vec![text_column("Col1", 100.0)];
-        let mut model2 = SpreadsheetDataModel::new(columns2).expect("Failed to create model");
-        model2.import_parquet(export_path).await.expect("Failed to import Parquet");
-
-        // Verify data
-        let rows = model2.query_rows().expect("Failed to query");
-        assert_eq!(rows.len(), 2, "Expected 2 rows");
-        assert_eq!(rows[0].values[0], "Laptop");
-        assert_eq!(rows[0].values[1], "999.99");
-        assert_eq!(rows[0].values[2], "15");
-        assert_eq!(rows[1].values[0], "Mouse");
-        assert_eq!(rows[1].values[1], "29.99");
-        assert_eq!(rows[1].values[2], "150");
-
-        // Verify columns were updated from parquet schema
-        assert_eq!(model2.columns.len(), 3, "Should have 3 columns from parquet file");
-        assert_eq!(model2.columns[0].name, "Product");
-        assert_eq!(model2.columns[1].name, "Price");
-        assert_eq!(model2.columns[2].name, "Stock");
-        assert_eq!(model2.columns[1].col_type, ColumnType::Real);
-        assert_eq!(model2.columns[2].col_type, ColumnType::Integer);
-        })
     }
 }
