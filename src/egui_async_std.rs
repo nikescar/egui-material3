@@ -1,9 +1,11 @@
-//! Simple async binding for egui using async-std runtime
+//! Simple async binding for egui using async runtime
 //!
-//! Provides async state management for egui UI, replacing egui-async with async-std-based implementation.
+//! Provides async state management for egui UI.
+//! Uses async-std for native and wasm-bindgen-futures for WASM.
 
 use std::future::Future;
-use async_std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use futures::lock::Mutex;
 
 /// State of an async operation
 #[derive(Clone, Debug)]
@@ -55,15 +57,30 @@ impl<T: Clone + Send + 'static, E: Clone + Send + 'static> Bind<T, E> {
             *s = StateWithData::Pending;
         }
 
-        // Spawn the async task using async-std
-        async_std::task::spawn(async move {
-            let result = future.await;
-            let mut s = state.lock().await;
-            *s = match result {
-                Ok(data) => StateWithData::Finished(data),
-                Err(err) => StateWithData::Failed(err),
-            };
-        });
+        // Spawn the async task - platform specific
+        #[cfg(not(target_family = "wasm"))]
+        {
+            async_std::task::spawn(async move {
+                let result = future.await;
+                let mut s = state.lock().await;
+                *s = match result {
+                    Ok(data) => StateWithData::Finished(data),
+                    Err(err) => StateWithData::Failed(err),
+                };
+            });
+        }
+
+        #[cfg(target_family = "wasm")]
+        {
+            wasm_bindgen_futures::spawn_local(async move {
+                let result = future.await;
+                let mut s = state.lock().await;
+                *s = match result {
+                    Ok(data) => StateWithData::Finished(data),
+                    Err(err) => StateWithData::Failed(err),
+                };
+            });
+        }
     }
 
     /// Get the current state (blocking)
@@ -84,10 +101,11 @@ impl<T: Clone + Send + 'static, E: Clone + Send + 'static> Bind<T, E> {
     }
 }
 
-/// Initialize async-std executor for egui integration
-/// async-std uses a global executor that starts automatically,
-/// so this function is a no-op but kept for API compatibility
+/// Initialize async executor for egui integration
+/// async-std (native) uses a global executor that starts automatically.
+/// WASM uses wasm-bindgen-futures which also doesn't need initialization.
+/// This function is a no-op but kept for API compatibility.
 pub fn init_executor() {
-    // async-std's global executor starts automatically when tasks are spawned
+    // Executor starts automatically on both platforms
     // No explicit initialization needed
 }

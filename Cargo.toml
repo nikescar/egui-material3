@@ -1,5 +1,5 @@
-[workspace]
-exclude = ["reference/**"]
+# [workspace]  #- commented out when used as path dependency in dure project
+# exclude = ["reference/**"]
 
 [package]
 name = "egui-material3"
@@ -24,7 +24,7 @@ exclude = [
 [features]
 default = []
 ondemand = ["dep:ureq"]
-spreadsheet = ["dep:diesel", "dep:rusqlite", "dep:egui_extras", "dep:async-std", "dep:csv", "dep:calamine"]
+spreadsheet = ["dep:diesel", "dep:egui_extras", "dep:csv", "dep:calamine", "dep:futures", "dep:async-std", "dep:wasm-bindgen-futures", "dep:rusqlite"]
 svg_solar = []
 svg_noto = []
 svg_twemoji = []
@@ -49,13 +49,15 @@ dark-light = "2.0"
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 rusqlite = { version = "0.38", default-features = false, features = ["bundled"], optional = true }
 libsqlite3-hotbundle = { version = "1.510300", optional = true, path = "reference/libsqlite3-hotbundle" }
+async-std = { version = "1.13", features = ["attributes"], optional = true } # for spreadsheet feature
 # diesel = { version = "2.3", default-features = false, features = ["sqlite"], optional = true }
 
 ureq = { version = "2.12", features = ["json"], optional = true } # for ondemand feature
 egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
-async-std = { version = "1.13", features = ["attributes"], optional = true } # for spreadsheet feature
 csv = { version = "1.4", optional = true } # for spreadsheet feature
 calamine = { version = "0.26", optional = true } # for spreadsheet feature (xls/xlsx)
+futures = { version = "0.3", optional = true } # for spreadsheet feature (async Mutex)
+# async-std for native spreadsheet feature - moved to target-specific section below
 
 [dev-dependencies]
 egui_extras = { version = "0.33", default-features = false, features = ["image", "svg", "svg_text"] }
@@ -81,6 +83,11 @@ eframe = { version = "0.33", features = ["default_fonts", "glow", "x11", "waylan
 diesel = { version = "2.3", default-features = false, features = ["sqlite", "returning_clauses_for_sqlite_3_35"], optional = true }
 sqlite-wasm-vfs = { version = "0.2.0", optional = true }
 sqlite-wasm-rs = { version = "0.5.2", optional = true }
+egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+csv = { version = "1.4", optional = true }
+calamine = { version = "0.26", optional = true }
+futures = { version = "0.3", optional = true }
 
 [[example]]
 name = "nobel_prizes_example"

@@ -4,11 +4,13 @@
 //! Supports importing/exporting CSV and Excel formats.
 
 #[cfg(feature = "spreadsheet")]
-use crate::theme::get_global_color;
+use crate::theme::{get_global_color, set_theme_mode, ThemeMode};
 #[cfg(feature = "spreadsheet")]
 use std::path::PathBuf;
 #[cfg(feature = "spreadsheet")]
-use async_std::sync::{Arc, Mutex};
+use std::sync::Arc;
+#[cfg(feature = "spreadsheet")]
+use futures::lock::Mutex;
 
 // Native: use rusqlite for better dynamic schema support
 #[cfg(all(feature = "spreadsheet", not(target_family = "wasm")))]
@@ -38,7 +40,7 @@ use crate::egui_async_std::{Bind, StateWithData};
 
 // Re-export for convenience
 #[cfg(feature = "spreadsheet")]
-pub use egui_extras::{Column, TableBuilder};
+pub use egui_extras::TableBuilder;
 
 /// Column definition for spreadsheet
 #[cfg(feature = "spreadsheet")]
@@ -611,9 +613,6 @@ impl SpreadsheetDataModel {
             }).collect()
         };
 
-        eprintln!("Detected {} columns with {} delimiter", col_count, delimiter_name);
-        eprintln!("First line is header: {}", first_line_is_header);
-
         // Drop and recreate table with new columns
         let drop_sql = format!("DROP TABLE IF EXISTS {}", self.table_name);
 
@@ -658,7 +657,6 @@ impl SpreadsheetDataModel {
                 .map_err(|e| format!("Failed to insert row {}: {}", idx + 1, e))?;
         }
 
-        eprintln!("Successfully imported {} rows from CSV", data_lines.len());
         Ok(())
     }
 
@@ -699,6 +697,9 @@ impl MaterialSpreadsheet {
     /// Create a new spreadsheet with the given columns
     pub fn new(id: &str, columns: Vec<ColumnDef>) -> Result<Self, String> {
         let data_model = SpreadsheetDataModel::new(columns).map_err(|e| e.to_string())?;
+
+        // Set light theme on first load
+        set_theme_mode(ThemeMode::Light);
 
         Ok(Self {
             id: Id::new(id),
@@ -868,7 +869,6 @@ impl MaterialSpreadsheet {
             StateWithData::Finished(rows) => {
                 // Only update cached_rows once when load completes
                 if !self.load_processed {
-                    eprintln!("DEBUG: Load finished, updating cached_rows with {} rows", rows.len());
                     self.cached_rows = rows.clone();
                     self.load_processed = true;
                 }
@@ -903,8 +903,8 @@ impl MaterialSpreadsheet {
         };
 
         // Get theme colors
-        let on_surface = get_global_color("on-surface");
-        let surface_variant = get_global_color("surface-variant");
+        let primary = get_global_color("primary");
+        let on_primary = get_global_color("on-primary");
 
         // Build table
         let available_height = ui.available_height();
@@ -918,15 +918,11 @@ impl MaterialSpreadsheet {
 
         // Add columns
         for col in columns.iter() {
-            table = table.column(Column::initial(col.width).at_least(50.0).resizable(true));
+            table = table.column(egui_extras::Column::initial(col.width).at_least(50.0).resizable(true));
         }
 
         // Clone cached rows for rendering to avoid borrow issues
         let display_rows = self.cached_rows.clone();
-        eprintln!("DEBUG: Rendering table with {} cached rows", display_rows.len());
-        if !display_rows.is_empty() && display_rows.len() > 4 {
-            eprintln!("DEBUG: Row 4 data: {:?}", display_rows[4].values);
-        }
 
         // Use UI memory to store pending cell updates
         let pending_update_id = self.id.with("pending_cell_update");
@@ -935,11 +931,11 @@ impl MaterialSpreadsheet {
             .header(30.0, |mut header| {
                 for col in columns.iter() {
                     header.col(|ui| {
-                        // Paint header background color like datatable
+                        // Paint header background color with primary color
                         let rect = ui.max_rect();
-                        ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, surface_variant);
-                        
-                        ui.style_mut().visuals.override_text_color = Some(on_surface);
+                        ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, primary);
+
+                        ui.style_mut().visuals.override_text_color = Some(on_primary);
                         ui.strong(&col.name);
                     });
                 }
@@ -949,7 +945,7 @@ impl MaterialSpreadsheet {
                     let is_selected = self.row_selection_enabled && self.selected_row == Some(row_data.id);
 
                     body.row(self.row_height, |mut row| {
-                        let mut row_clicked = false;
+                        let mut text_clicked = false;
 
                         for (col_idx, value) in row_data.values.iter().enumerate() {
                             row.col(|ui| {
@@ -964,27 +960,20 @@ impl MaterialSpreadsheet {
 
                                 if is_editing {
                                     // Edit mode with TextEdit
-                                    eprintln!("DEBUG: Rendering TextEdit - row_id: {}, col_idx: {}, buffer: '{}'", row_data.id, col_idx, self.edit_buffer);
                                     let edit_response = ui.add(
                                         TextEdit::singleline(&mut self.edit_buffer)
                                             .desired_width(f32::INFINITY)
                                     );
-                                    eprintln!("DEBUG: TextEdit state - has_focus: {}, lost_focus: {}, gained_focus: {}",
-                                        edit_response.has_focus(), edit_response.lost_focus(), edit_response.gained_focus());
 
                                     // Handle Enter to save, Escape to cancel, or save on blur
                                     if edit_response.lost_focus() {
                                         let escape_pressed = ui.input(|i| i.key_pressed(egui::Key::Escape));
-                                        eprintln!("DEBUG: TextEdit lost focus - escape_pressed: {}", escape_pressed);
 
                                         if !escape_pressed {
-                                            eprintln!("DEBUG: Storing cell update - row_id: {}, col_idx: {}, value: '{}'", row_data.id, col_idx, self.edit_buffer);
                                             // Store the update in UI memory for processing after rendering
                                             ui.memory_mut(|mem| {
                                                 mem.data.insert_temp(pending_update_id, (row_data.id, col_idx, self.edit_buffer.clone()));
                                             });
-                                        } else {
-                                            eprintln!("DEBUG: Edit cancelled with Escape");
                                         }
                                         // Always exit edit mode when losing focus
                                         self.editing_cell = None;
@@ -992,24 +981,18 @@ impl MaterialSpreadsheet {
 
                                     if edit_response.gained_focus() {
                                         edit_response.request_focus();
-                                        eprintln!("DEBUG: Requested focus for TextEdit");
                                     }
                                 } else {
-                                    // View mode with label - use a sense that detects clicks
-                                    let label_response = if self.row_selection_enabled {
-                                        ui.add(egui::Label::new(value).sense(Sense::click()))
-                                    } else {
-                                        ui.label(value)
-                                    };
+                                    // View mode with label
+                                    let label_response = ui.label(value);
 
-                                    // Handle row selection click
+                                    // Track text clicks for row selection
                                     if self.row_selection_enabled && label_response.clicked() {
-                                        row_clicked = true;
+                                        text_clicked = true;
                                     }
 
                                     // Single-click to edit (changed from double-click) - only if editing is enabled and selection is not
                                     if self.allow_editing && !self.row_selection_enabled && label_response.clicked() {
-                                        eprintln!("DEBUG: Starting edit mode - row_id: {}, col_idx: {}, current_value: {}", row_data.id, col_idx, value);
                                         self.editing_cell = Some((row_data.id, col_idx));
                                         self.edit_buffer = value.clone();
                                     }
@@ -1017,9 +1000,12 @@ impl MaterialSpreadsheet {
                             });
                         }
 
-                        // Update selected row after the row is rendered
-                        if row_clicked {
-                            self.selected_row = Some(row_data.id);
+                        // Handle row selection: select if text clicked OR row area clicked (including padding)
+                        if self.row_selection_enabled {
+                            let row_area_clicked = row.response().interact(Sense::click()).clicked();
+                            if text_clicked || row_area_clicked {
+                                self.selected_row = Some(row_data.id);
+                            }
                         }
                     });
                 }
@@ -1029,8 +1015,6 @@ impl MaterialSpreadsheet {
         if let Some((row_id, col_idx, new_value)) = ui.memory(|mem| {
             mem.data.get_temp::<(usize, usize, String)>(pending_update_id)
         }) {
-            eprintln!("DEBUG: Retrieved cell update - row_id: {}, col_idx: {}, value: {}", row_id, col_idx, new_value);
-            
             // Clear the pending update
             ui.memory_mut(|mem| {
                 mem.data.remove::<(usize, usize, String)>(pending_update_id);
@@ -1046,27 +1030,18 @@ impl MaterialSpreadsheet {
             };
             match model.update_cell(row_id, col_idx, new_value.clone()) {
                 Ok(_) => {
-                    eprintln!("DEBUG: Cell updated in database successfully");
                     // Refresh cached rows to show the update
                     match model.query_rows() {
                         Ok(rows) => {
-                            eprintln!("DEBUG: Refreshed {} rows from database", rows.len());
-                            if rows.len() > 4 {
-                                eprintln!("DEBUG: After query, row 4 data: {:?}", rows[4].values);
-                            }
                             self.cached_rows = rows;
                             // Request repaint so the updated data appears immediately
                             ui.ctx().request_repaint();
-                            eprintln!("DEBUG: Requested repaint");
                         }
-                        Err(e) => {
-                            eprintln!("DEBUG: Failed to query rows: {}", e);
+                        Err(_e) => {
                         }
                     }
                 }
                 Err(e) => {
-                    eprintln!("DEBUG: Failed to update cell: {}", e);
-                    
                     // Show error to user - store in temp memory for display
                     ui.memory_mut(|mem| {
                         mem.data.insert_temp(
@@ -1077,8 +1052,6 @@ impl MaterialSpreadsheet {
                     ui.ctx().request_repaint();
                 }
             }
-        } else {
-            eprintln!("DEBUG: No pending cell update found");
         }
 
         // Display error message if there's a cell error
