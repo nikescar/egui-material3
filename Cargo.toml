@@ -48,7 +48,7 @@ dark-light = "2.0"
 # For spreadsheet feature - SQLite (desktop/native)
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 rusqlite = { version = "0.38", default-features = false, features = ["bundled"], optional = true }
-libsqlite3-hotbundle = { version = "1.510300", optional = true, path = "reference/libsqlite3-hotbundle" }
+libsqlite3-hotbundle = { version = "1.510300", optional = true, git = "https://github.com/nikescar/libsqlite3-hotbundle" }
 async-std = { version = "1.13", features = ["attributes"], optional = true } # for spreadsheet feature
 # diesel = { version = "2.3", default-features = false, features = ["sqlite"], optional = true }
 
