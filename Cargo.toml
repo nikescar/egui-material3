@@ -73,8 +73,8 @@ async-std = { version = "1.13", features = ["attributes"] }
 [target.'cfg(target_os = "android")'.dependencies]
 eframe = { version = "0.33", default-features = false, features = ["default_fonts", "glow", "android-native-activity"] }
 
-# Linux-specific dependencies for proper windowing support
-[target.'cfg(target_os = "linux")'.dependencies]
+# Linux/BSD-specific dependencies for proper windowing support
+[target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 eframe = { version = "0.33", features = ["default_fonts", "glow", "x11", "wayland"] }
 
 # Wasm specific dependencies
