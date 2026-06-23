@@ -139,6 +139,7 @@
 //! - [`MaterialDataTable`] - Data tables with sorting and selection
 //!
 //! ### Navigation Components
+//! - [`MaterialNavigation`] - Nala sidebar / nav menu (Leo Navigation)
 //! - [`MaterialTabs`] - Tab navigation
 //! - [`MaterialDrawer`] - Navigation drawers
 //! - [`MaterialTopAppBar`] - App bars and toolbars
@@ -253,6 +254,7 @@ pub mod imagelist;
 pub mod layoutgrid;
 pub mod list;
 pub mod menu;
+pub mod navigation;
 pub mod notification;
 pub mod progress;
 pub mod radio;
@@ -275,10 +277,10 @@ pub use {
     actionsheet::{action_sheet, ActionButton, ActionGroup, MaterialActionSheet},
     badge::{badge, badge_dot, BadgeColor, BadgePosition, BadgeSize, MaterialBadge},
     breadcrumbs::{breadcrumbs, MaterialBreadcrumbs},
-    button::{MaterialButton, MaterialButtonVariant},
+    button::{ButtonSize, ButtonVariant, MaterialButton, MaterialButtonSize, MaterialButtonVariant},
     card2::{elevated_card2, filled_card2, outlined_card2, Card2Variant, MaterialCard2},
     carousel::{carousel, CarouselItem, MaterialCarousel},
-    checkbox::{checkbox, MaterialCheckbox},
+    checkbox::{checkbox, MaterialCheckbox, MaterialCheckboxSize, CheckboxSize},
     chips::{assist_chip, filter_chip, input_chip, suggestion_chip, ChipVariant, MaterialChip},
     dashcounter::{dashcounter, CounterCard, MaterialDashCounter},
     datatable::{
@@ -311,13 +313,17 @@ pub use {
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData,
         MenuButtonThemeData, MenuItem, MenuStyle, MenuThemeData, Positioning,
     },
+    navigation::{
+        navigation, MaterialNavigation, NavigationEntry, NavigationHeader, NavigationItem,
+        NavigationKind,
+    },
     notification::{notification, MaterialNotification, MaterialNotificationWithOffset, NotificationAlign},
     progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},
     radio::{radio, radio_group, radio_list_tile, MaterialRadio, MaterialRadioGroup, RadioListTile, ListTileControlAffinity},
     select::{select, MaterialSelect, SelectVariant, MenuAlignment},
     slider::{slider, range_slider, MaterialSlider, MaterialRangeSlider, RangeValues, SliderInteraction, ThumbShape},
     snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition, SnackBarBehavior},
-    switch::{switch, MaterialSwitch},
+    switch::{switch, MaterialSwitch, MaterialSwitchSize, SwitchSize},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
     theme::{
         get_global_color, get_global_theme, update_global_theme, ContrastLevel,

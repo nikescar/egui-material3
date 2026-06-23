@@ -1,7 +1,7 @@
 use eframe::egui;
 use egui_material3::{
     theme::{
-        load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme,
+        apply_nala_text_styles, load_fonts, load_themes, setup_local_theme, setup_nala_fonts,
         update_global_theme, update_window_background, ContrastLevel, MaterialThemeContext,
         MaterialThemeFile, ThemeMode,
     },
@@ -22,11 +22,11 @@ fn main() -> Result<(), eframe::Error> {
         options,
         Box::new(|cc| {
             // Setup Material Design fonts and themes
-            // setup_google_fonts(Some("Roboto"));
-            // setup_local_fonts(Some("resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"));
+            setup_nala_fonts();
             setup_local_theme(Some("resources/material-theme6.json"));
 
             load_fonts(&cc.egui_ctx);
+            apply_nala_text_styles(&cc.egui_ctx);
             load_themes();
 
             // Apply initial window background based on loaded theme

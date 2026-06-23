@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::MaterialButton;
+use crate::{MaterialButton, MaterialButtonSize};
 #[cfg(feature = "svg_emoji")]
 use crate::svg_emoji::SOLAR_ICONS;
 use eframe::egui::{self, epaint::Stroke, Ui, Vec2, Window};
@@ -29,12 +29,14 @@ impl ButtonWindow {
         let mut open = self.open;
         Window::new("Button Stories")
             .open(&mut open)
-            .default_size([800.0, 600.0])
+            .default_size([920.0, 720.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     self.render_button_variants(ui);
+                    ui.add_space(20.0);
+                    self.render_button_sizes(ui);
                     ui.add_space(20.0);
                     self.render_buttons_with_leading_icons(ui);
                     ui.add_space(20.0);
@@ -101,6 +103,59 @@ impl ButtonWindow {
                 }
             }
         });
+    }
+
+    fn render_button_sizes(&mut self, ui: &mut Ui) {
+        ui.heading("Button Sizes");
+        ui.label("Nala size scale — each row is a size, each column is a kind.");
+
+        let disabled = self.is_disabled();
+
+        const SIZES: [(MaterialButtonSize, &str); 5] = [
+            (MaterialButtonSize::Jumbo, "Jumbo"),
+            (MaterialButtonSize::Large, "Large"),
+            (MaterialButtonSize::Medium, "Medium"),
+            (MaterialButtonSize::Small, "Small"),
+            (MaterialButtonSize::Tiny, "Tiny"),
+        ];
+
+        let kinds = [
+            "Hero",
+            "Filled",
+            "Outline",
+            "Plain",
+            "Plain Faint",
+        ];
+        let row_label_width = 52.0;
+
+        ui.add_space(4.0);
+
+        for (size, size_label) in SIZES {
+            ui.vertical(|ui| {
+                ui.allocate_ui_with_layout(
+                    Vec2::new(row_label_width, ui.spacing().interact_size.y),
+                    egui::Layout::left_to_right(egui::Align::Center),
+                    |ui| {
+                        ui.label(format!("{}:", size_label));
+                    },
+                );
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                for kind_name in kinds {
+                    let button = Self::nala_kind_button(kind_name).size(size);
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
+                    if ui.add(button).clicked() && !disabled {
+                        println!("{size_label} {kind_name} button clicked!");
+                    }
+                }
+                });
+            });
+            ui.add_space(8.0);
+        }
     }
 
     fn render_buttons_with_leading_icons(&mut self, ui: &mut Ui) {
@@ -358,13 +413,26 @@ impl ButtonWindow {
         });
     }
 
+    fn nala_kind_button(kind: &str) -> MaterialButton<'static> {
+        match kind {
+            "Hero" => MaterialButton::hero("Hero"),
+            "Filled" => MaterialButton::filled("Filled"),
+            "Outline" => MaterialButton::outlined("Outline"),
+            "Plain" => MaterialButton::plain("Plain"),
+            "Plain Faint" => MaterialButton::plain_faint("Plain Faint"),
+            _ => MaterialButton::filled(kind),
+        }
+    }
+
     fn all_variants(&self) -> Vec<(&str, MaterialButton<'_>)> {
         vec![
             ("Filled", MaterialButton::filled(self.label_or("Filled"))),
-            ("Outlined", MaterialButton::outlined(self.label_or("Outlined"))),
+            ("Outline", MaterialButton::outlined(self.label_or("Outline"))),
+            ("Plain", MaterialButton::plain(self.label_or("Plain"))),
+            ("Plain Faint", MaterialButton::plain_faint(self.label_or("Plain Faint"))),
+            ("Hero", MaterialButton::hero(self.label_or("Hero"))),
             ("Elevated", MaterialButton::elevated(self.label_or("Elevated"))),
             ("Tonal", MaterialButton::filled_tonal(self.label_or("Tonal"))),
-            ("Text", MaterialButton::text(self.label_or("Text"))),
         ]
     }
 }

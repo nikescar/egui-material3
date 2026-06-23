@@ -1,46 +1,17 @@
-//! Material Design 3 Button Components
+//! Nala / Leo button components
 //!
-//! This module implements button controls following Material Design 3 color system.
-//!
-//! # M3 Color Role Usage
-//!
-//! ## Filled Button (High Emphasis)
-//! - **primary**: Button background
-//! - **onPrimary**: Text and icon color on primary background
-//! - **State layers**: onPrimary @ 8% (hover), 12% (press)
-//! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
-//!
-//! ## Outlined Button (Medium Emphasis)
-//! - **Transparent background**: Shows parent surface
-//! - **outline**: Border stroke color
-//! - **onSurface**: Text and icon color
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
-//! - **Disabled**: onSurface @ 12% outline, onSurface @ 38% content
-//!
-//! ## Text Button (Low Emphasis)
-//! - **Transparent background**: No border, shows parent surface
-//! - **onSurface**: Text and icon color
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
-//! - **Disabled**: onSurface @ 38% content
-//!
-//! ## Elevated Button (Medium Emphasis with Shadow)
-//! - **surface**: Button background (elevated surface)
-//! - **onSurface**: Text and icon color
-//! - **Shadow**: 1dp elevation, increases to 3dp on hover
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
-//! - **Disabled**: surface background, onSurface @ 38% content
-//!
-//! ## Filled Tonal Button (Medium Emphasis, Toned Down)
-//! - **secondaryContainer**: Tinted container background
-//! - **onSecondaryContainer**: Text and icon color on tinted background
-//! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
-//! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
+//! Implements the Nala button kinds from Leo (`filled`, `outline`, `plain`, `plain-faint`, `hero`)
+//! with legacy Material Design variant names kept for compatibility.
 
-use crate::{get_global_color, material_symbol::material_symbol_text};
+use crate::{
+    get_global_color,
+    material_symbol::material_symbol_text,
+    theme::{get_global_theme, ThemeMode},
+};
 use egui::{
     ecolor::Color32,
     emath::NumExt,
-    epaint::{CornerRadius, Shadow, Stroke},
+    epaint::{CornerRadius, Galley, Shadow, Stroke},
     Align, Image, Rect, Response, Sense, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo,
     WidgetText, WidgetType,
 };
@@ -91,19 +62,138 @@ use egui::{
 /// }
 /// # });
 /// ```
-/// Material Design button variants following Material Design 3 specifications
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// Nala button kind (Leo component API)
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum MaterialButtonVariant {
-    /// Filled button - High emphasis, filled background with primary color
+    /// Filled — primary background, on-primary text
+    #[default]
     Filled,
-    /// Outlined button - Medium emphasis, transparent background with outline
+    /// Outlined — interactive text, interactive divider border
     Outlined,
-    /// Text button - Low emphasis, transparent background, no outline  
+    /// Plain text — interactive text, subtle hover fill
     Text,
-    /// Elevated button - Medium emphasis, filled background with shadow elevation
+    /// Plain faint — low-emphasis icon/text button
+    PlainFaint,
+    /// Hero — Brave CTA gradient-style button
+    Hero,
+    /// Elevated — legacy M3 elevated surface button
     Elevated,
-    /// Filled tonal button - Medium emphasis, filled background with secondary container color
+    /// Filled tonal — legacy toned container button
     FilledTonal,
+}
+
+/// Nala button size (Leo component API)
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+pub enum MaterialButtonSize {
+    Tiny,
+    Small,
+    #[default]
+    Medium,
+    Large,
+    Jumbo,
+}
+
+pub type ButtonVariant = MaterialButtonVariant;
+pub type ButtonSize = MaterialButtonSize;
+
+const NALA_PILL_RADIUS: CornerRadius = CornerRadius::same(255);
+
+struct NalaButtonLayout {
+    min_height: f32,
+    padding_x: f32,
+    padding_y: f32,
+    font_size: f32,
+    icon_size: f32,
+    icon_gap: f32,
+}
+
+impl MaterialButtonSize {
+    fn layout(self) -> NalaButtonLayout {
+        match self {
+            MaterialButtonSize::Tiny => NalaButtonLayout {
+                min_height: 28.0,
+                padding_x: 8.0,
+                padding_y: 4.0,
+                font_size: 12.0,
+                icon_size: 16.0,
+                icon_gap: 4.0,
+            },
+            MaterialButtonSize::Small => NalaButtonLayout {
+                min_height: 36.0,
+                padding_x: 12.0,
+                padding_y: 8.0,
+                font_size: 12.0,
+                icon_size: 18.0,
+                icon_gap: 4.0,
+            },
+            MaterialButtonSize::Medium => NalaButtonLayout {
+                min_height: 44.0,
+                padding_x: 12.0,
+                padding_y: 12.0,
+                font_size: 14.0,
+                icon_size: 20.0,
+                icon_gap: 4.0,
+            },
+            MaterialButtonSize::Large => NalaButtonLayout {
+                min_height: 52.0,
+                padding_x: 16.0,
+                padding_y: 12.0,
+                font_size: 16.0,
+                icon_size: 24.0,
+                icon_gap: 4.0,
+            },
+            MaterialButtonSize::Jumbo => NalaButtonLayout {
+                min_height: 60.0,
+                padding_x: 16.0,
+                padding_y: 16.0,
+                font_size: 18.0,
+                icon_size: 28.0,
+                icon_gap: 8.0,
+            },
+        }
+    }
+}
+
+fn is_dark_theme() -> bool {
+    get_global_theme()
+        .lock()
+        .map(|theme| matches!(theme.theme_mode, ThemeMode::Dark))
+        .unwrap_or(false)
+}
+
+fn nala_hover_shadow() -> Shadow {
+    Shadow {
+        offset: [0, 1],
+        blur: 3,
+        spread: 0,
+        color: Color32::from_black_alpha(40),
+    }
+}
+
+fn with_opacity(color: Color32, opacity: f32) -> Color32 {
+    color.linear_multiply(opacity)
+}
+
+/// Vertical position for a galley so glyph bounds are centered in `rect`.
+///
+/// egui galleys include font line-box space above the visible glyphs; centering
+/// on `galley.size()` makes labels look shifted down inside buttons.
+fn center_galley_y(galley: &Galley, rect: Rect) -> f32 {
+    rect.center().y - galley.mesh_bounds.center().y
+}
+
+fn galley_visual_height(galley: &Galley) -> f32 {
+    galley.mesh_bounds.height()
+}
+
+/// Leo `color-mix(in srgb, primary N%, transparent)` for hover fills on plain-faint.
+fn primary_tint(primary: Color32, amount: f32) -> Color32 {
+    Color32::from_rgba_unmultiplied(
+        primary.r(),
+        primary.g(),
+        primary.b(),
+        (amount * 255.0).round() as u8,
+    )
 }
 
 /// Material Design button widget implementing Material Design 3 button specifications
@@ -133,8 +223,10 @@ pub struct MaterialButton<'a> {
     stroke: Option<Stroke>,
     /// Mouse/touch interaction sensitivity settings
     sense: Sense,
-    /// Whether to render as a smaller compact button
+    /// Whether to render as a smaller compact button (deprecated — prefer [`Self::size`])
     small: bool,
+    /// Nala button size
+    size: MaterialButtonSize,
     /// Whether to show the button frame/background (None uses variant default)
     frame: Option<bool>,
     /// Minimum size constraints for the button
@@ -207,6 +299,26 @@ impl<'a> MaterialButton<'a> {
     /// - Corner radius: 20dp
     pub fn text(text: impl Into<WidgetText>) -> Self {
         Self::new_with_variant(MaterialButtonVariant::Text, text)
+    }
+
+    /// Plain text button (Nala `plain` kind — alias of [`Self::text`])
+    pub fn plain(text: impl Into<WidgetText>) -> Self {
+        Self::text(text)
+    }
+
+    /// Plain faint button (Nala `plain-faint` kind)
+    pub fn plain_faint(text: impl Into<WidgetText>) -> Self {
+        Self::new_with_variant(MaterialButtonVariant::PlainFaint, text)
+    }
+
+    /// Hero CTA button (Nala `hero` kind)
+    pub fn hero(text: impl Into<WidgetText>) -> Self {
+        Self::new_with_variant(MaterialButtonVariant::Hero, text)
+    }
+
+    /// Outlined button (Nala `outline` kind — alias of [`Self::outlined`])
+    pub fn outline(text: impl Into<WidgetText>) -> Self {
+        Self::outlined(text)
     }
 
     /// Create an elevated Material Design button with medium emphasis
@@ -297,6 +409,7 @@ impl<'a> MaterialButton<'a> {
             stroke: None,
             sense: Sense::click(),
             small: false,
+            size: MaterialButtonSize::Medium,
             frame: None,
             min_size: Vec2::ZERO,
             corner_radius: None,
@@ -365,10 +478,23 @@ impl<'a> MaterialButton<'a> {
     /// Make this a small button, suitable for embedding into text.
     #[inline]
     pub fn small(mut self) -> Self {
-        if let Some(text) = self.text {
-            self.text = Some(text.text_style(TextStyle::Body));
-        }
+        self.size = MaterialButtonSize::Small;
         self.small = true;
+        self
+    }
+
+    /// Set the Nala button size.
+    #[inline]
+    pub fn size(mut self, size: MaterialButtonSize) -> Self {
+        self.size = size;
+        self.small = matches!(size, MaterialButtonSize::Small | MaterialButtonSize::Tiny);
+        self
+    }
+
+    /// Set the button variant.
+    #[inline]
+    pub fn variant(mut self, variant: MaterialButtonVariant) -> Self {
+        self.variant = variant;
         self
     }
 
@@ -513,7 +639,8 @@ impl Widget for MaterialButton<'_> {
             fill,
             stroke,
             sense,
-            small,
+            small: _legacy_small,
+            size,
             frame,
             min_size,
             corner_radius,
@@ -528,50 +655,90 @@ impl Widget for MaterialButton<'_> {
             text_color: custom_text_color,
         } = self;
 
-        // M3 Color Roles - Button Variants
-        let primary = get_global_color("primary"); // Filled button background
-        let on_primary = get_global_color("onPrimary"); // Content on primary background
-        let secondary_container = get_global_color("secondaryContainer"); // Tonal button background
-        let on_secondary_container = get_global_color("onSecondaryContainer"); // Content on tonal background
-        let surface = get_global_color("surface"); // Elevated button background, disabled button background
-        let on_surface = get_global_color("onSurface"); // Content on surface, disabled content @ 38%
-        let outline = get_global_color("outline"); // Outlined button border
+        let layout = if _legacy_small && size == MaterialButtonSize::Medium {
+            MaterialButtonSize::Small.layout()
+        } else {
+            size.layout()
+        };
 
-        // Material Design button defaults based on variant
-        let (default_fill, default_stroke, default_corner_radius, _has_elevation) = match variant {
+        let dark = is_dark_theme();
+        let primary = get_global_color("primary");
+        let on_primary = get_global_color("onPrimary");
+        let _secondary_container = get_global_color("secondaryContainer");
+        let on_secondary_container = get_global_color("onSecondaryContainer");
+        let surface = get_global_color("surface");
+        let on_surface = get_global_color("onSurface");
+
+        // Leo semantic colors
+        let interactive = primary;
+        let divider_interactive = if dark {
+            Color32::from_rgb(118, 134, 236) // primary.60 dark
+        } else {
+            Color32::from_rgb(188, 198, 243) // primary.80 light
+        };
+        let hover_surface = if dark {
+            Color32::from_rgb(70, 70, 73) // neutral.30 dark
+        } else {
+            Color32::from_rgb(228, 228, 229) // neutral.20 light
+        };
+        let disabled_bg = if dark {
+            Color32::from_rgba_unmultiplied(235, 238, 240, 51) // rgba(235,238,240,0.2)
+        } else {
+            Color32::from_rgba_unmultiplied(70, 70, 74, 51) // rgba(70,70,74,0.2)
+        };
+        let disabled_text = if dark {
+            Color32::from_rgba_unmultiplied(235, 238, 240, 128)
+        } else {
+            Color32::from_rgba_unmultiplied(33, 39, 42, 128)
+        };
+        let hero_fill = Color32::from_rgb(255, 64, 0);
+
+        let (default_fill, default_stroke, default_corner_radius, hover_shadow) = match variant {
             MaterialButtonVariant::Filled => (
-                Some(primary), // Use primary for high-emphasis filled button background
+                Some(primary),
                 Some(Stroke::NONE),
-                CornerRadius::from(20),
-                false,
+                NALA_PILL_RADIUS,
+                Some(nala_hover_shadow()),
             ),
             MaterialButtonVariant::Outlined => (
-                Some(Color32::TRANSPARENT), // Transparent to show parent surface
-                Some(Stroke::new(1.0, outline)), // Use outline for medium-emphasis border
-                CornerRadius::from(20),
-                false,
+                Some(Color32::TRANSPARENT),
+                Some(Stroke::new(1.0, divider_interactive)),
+                NALA_PILL_RADIUS,
+                Some(nala_hover_shadow()),
             ),
             MaterialButtonVariant::Text => (
-                Some(Color32::TRANSPARENT), // Transparent to show parent surface
-                Some(Stroke::NONE), // No border for low-emphasis text button
-                CornerRadius::from(20),
-                false,
+                Some(blend_overlay(surface, primary, 0.05)),
+                Some(Stroke::NONE),
+                NALA_PILL_RADIUS,
+                None,
+            ),
+            MaterialButtonVariant::PlainFaint => (
+                Some(Color32::TRANSPARENT),
+                Some(Stroke::NONE),
+                NALA_PILL_RADIUS,
+                None,
+            ),
+            MaterialButtonVariant::Hero => (
+                Some(hero_fill),
+                Some(Stroke::NONE),
+                NALA_PILL_RADIUS,
+                None,
             ),
             MaterialButtonVariant::Elevated => (
-                Some(surface), // Use surface for elevated container background
+                Some(surface),
                 Some(Stroke::NONE),
-                CornerRadius::from(20),
-                true,
+                NALA_PILL_RADIUS,
+                Some(nala_hover_shadow()),
             ),
             MaterialButtonVariant::FilledTonal => (
-                Some(secondary_container), // Use secondaryContainer for toned-down emphasis
+                Some(blend_overlay(surface, primary, 0.05)),
                 Some(Stroke::NONE),
-                CornerRadius::from(20),
-                false,
+                NALA_PILL_RADIUS,
+                None,
             ),
         };
 
-        let frame = frame.unwrap_or(!matches!(variant, MaterialButtonVariant::Text));
+        let frame = frame.unwrap_or(!matches!(variant, MaterialButtonVariant::PlainFaint));
 
         // Load SVG textures early if provided (takes precedence over font icons)
         let leading_svg_texture = leading_svg.and_then(|svg_data| {
@@ -581,11 +748,25 @@ impl Widget for MaterialButton<'_> {
             crate::image_utils::create_texture_from_svg(ui.ctx(), &svg_data, &format!("btn_trail_{}", svg_data.len())).ok()
         });
 
+        let button_text_style = match size {
+            MaterialButtonSize::Tiny | MaterialButtonSize::Small => {
+                TextStyle::Name("ButtonSmall".into())
+            }
+            MaterialButtonSize::Large => TextStyle::Name("ButtonLarge".into()),
+            MaterialButtonSize::Jumbo => TextStyle::Name("ButtonJumbo".into()),
+            MaterialButtonSize::Medium => TextStyle::Name("Button".into()),
+        };
+
         // Build icon galleys early (only if no SVG provided)
         let leading_icon_galley = if leading_svg_texture.is_none() {
             leading_icon.map(|name| {
                 let icon_str: WidgetText = material_symbol_text(&name).into();
-                icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
+                icon_str.into_galley(
+                    ui,
+                    Some(TextWrapMode::Extend),
+                    f32::INFINITY,
+                    button_text_style.clone(),
+                )
             })
         } else {
             None
@@ -593,60 +774,45 @@ impl Widget for MaterialButton<'_> {
         let trailing_icon_galley = if trailing_svg_texture.is_none() {
             trailing_icon.map(|name| {
                 let icon_str: WidgetText = material_symbol_text(&name).into();
-                icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
+                icon_str.into_galley(
+                    ui,
+                    Some(TextWrapMode::Extend),
+                    f32::INFINITY,
+                    button_text_style.clone(),
+                )
             })
         } else {
             None
         };
 
-        // Material Design button padding
-        // With leading icon: 16px left, 24px right
-        // With trailing icon: 24px left, 16px right
-        // With both icons: 16px left, 16px right
-        // No icons: 24px left, 24px right
-        // For small buttons: 4px (with icon) or 6px (without icon)
-        let has_leading = leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some();
-        let has_trailing = trailing_icon_galley.is_some() || trailing_svg_texture.is_some();
-        let padding_multiplier = if small { 0.25 } else { 1.0 };
-        let padding_left = if has_leading { 16.0 } else { 24.0 } * padding_multiplier;
-        let padding_right = if has_trailing { 16.0 } else { 24.0 } * padding_multiplier;
-        let button_padding_left;
-        let button_padding_right;
-        let button_padding_y;
-        if frame || variant == MaterialButtonVariant::Text {
-            button_padding_left = padding_left;
-            button_padding_right = padding_right;
-            button_padding_y = if small { 4.0 } else { 10.0 };
-        } else {
-            button_padding_left = 0.0;
-            button_padding_right = 0.0;
-            button_padding_y = 0.0;
-        }
+        let button_padding_left = layout.padding_x;
+        let button_padding_right = layout.padding_x;
+        let button_padding_y = layout.padding_y;
+        let min_button_height = layout.min_height;
+        let icon_spacing = layout.icon_gap;
+        let svg_icon_size = layout.icon_size;
 
-        // Material Design minimum button height
-        let min_button_height = if small { 32.0 } else { 40.0 };
-        let icon_spacing = if small { 4.0 } else { 8.0 }; // Material Design icon-to-text gap
-        let svg_icon_size = 18.0; // Size for SVG icons
-
-        // Resolve the variant-based text color (used for text and icons)
+        // Nala text colors per kind
         let resolved_text_color = if disabled {
-            // Disabled state: use onSurface @ 38% opacity (M3 spec)
-            on_surface.linear_multiply(0.38)
+            match variant {
+                MaterialButtonVariant::Text => on_surface,
+                MaterialButtonVariant::PlainFaint => disabled_text,
+                _ => disabled_text,
+            }
         } else if let Some(custom) = custom_text_color {
             custom
         } else {
             match variant {
-                MaterialButtonVariant::Filled => on_primary, // Use onPrimary for content on primary background
-                MaterialButtonVariant::Outlined => on_surface, // Use onSurface for content on transparent surface
-                MaterialButtonVariant::Text => on_surface, // Use onSurface for content on transparent surface
-                MaterialButtonVariant::Elevated => on_surface, // Use onSurface for content on elevated surface
-                MaterialButtonVariant::FilledTonal => on_secondary_container, // Use onSecondaryContainer for content on tinted background
+                MaterialButtonVariant::Filled | MaterialButtonVariant::Hero => on_primary,
+                MaterialButtonVariant::Outlined | MaterialButtonVariant::Text => interactive,
+                MaterialButtonVariant::PlainFaint => on_surface,
+                MaterialButtonVariant::Elevated => on_surface,
+                MaterialButtonVariant::FilledTonal => on_secondary_container,
             }
         };
 
         let space_available_for_image = if let Some(_text) = &text {
-            let font_height = ui.text_style_height(&TextStyle::Body);
-            Vec2::splat(font_height)
+            Vec2::splat(layout.font_size)
         } else {
             let total_h_padding = button_padding_left + button_padding_right;
             ui.available_size() - Vec2::new(total_h_padding, 2.0 * button_padding_y)
@@ -685,7 +851,7 @@ impl Widget for MaterialButton<'_> {
                 ui,
                 Some(TextWrapMode::Extend),
                 f32::INFINITY,
-                TextStyle::Body,
+                button_text_style.clone(),
             )
         });
 
@@ -693,15 +859,21 @@ impl Widget for MaterialButton<'_> {
             text_wrap_width -= gap_before_shortcut_text + shortcut_galley.size().x;
         }
 
-        let galley =
-            text.map(|text| text.into_galley(ui, wrap_mode, text_wrap_width, TextStyle::Body));
+        let galley = text.map(|text| {
+            text.into_galley(
+                ui,
+                wrap_mode,
+                text_wrap_width,
+                button_text_style.clone(),
+            )
+        });
 
         let mut desired_size = Vec2::ZERO;
 
         // Leading icon (font or SVG)
         if let Some(lg) = &leading_icon_galley {
             desired_size.x += lg.size().x;
-            desired_size.y = desired_size.y.max(lg.size().y);
+            desired_size.y = desired_size.y.max(galley_visual_height(lg));
         }
         if leading_svg_texture.is_some() {
             desired_size.x += svg_icon_size;
@@ -724,7 +896,7 @@ impl Widget for MaterialButton<'_> {
 
         if let Some(galley) = &galley {
             desired_size.x += galley.size().x;
-            desired_size.y = desired_size.y.max(galley.size().y);
+            desired_size.y = desired_size.y.max(galley_visual_height(galley));
         }
 
         // Trailing icon (font or SVG)
@@ -733,7 +905,7 @@ impl Widget for MaterialButton<'_> {
                 desired_size.x += icon_spacing;
             }
             desired_size.x += tg.size().x;
-            desired_size.y = desired_size.y.max(tg.size().y);
+            desired_size.y = desired_size.y.max(galley_visual_height(tg));
         }
         if trailing_svg_texture.is_some() {
             if galley.is_some() || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
@@ -745,14 +917,12 @@ impl Widget for MaterialButton<'_> {
 
         if let Some(shortcut_galley) = &shortcut_galley {
             desired_size.x += gap_before_shortcut_text + shortcut_galley.size().x;
-            desired_size.y = desired_size.y.max(shortcut_galley.size().y);
+            desired_size.y = desired_size.y.max(galley_visual_height(shortcut_galley));
         }
 
         desired_size.x += button_padding_left + button_padding_right;
         desired_size.y += 2.0 * button_padding_y;
-        if !small {
-            desired_size.y = desired_size.y.at_least(min_button_height);
-        }
+        desired_size.y = desired_size.y.at_least(min_button_height);
         desired_size = desired_size.at_least(min_size);
 
         let (rect, response) = ui.allocate_at_least(desired_size, sense);
@@ -789,47 +959,71 @@ impl Widget for MaterialButton<'_> {
             let frame_cr = corner_radius.unwrap_or(default_corner_radius);
             let mut frame_fill = fill.unwrap_or(default_fill.unwrap_or(frame_fill));
             let mut frame_stroke = stroke.unwrap_or(default_stroke.unwrap_or(frame_stroke));
+            let mut text_paint_color = resolved_text_color;
 
-            // Apply disabled styling (M3 spec: 38% opacity content, 12% opacity outline)
             if disabled {
-                frame_fill = surface; // Use surface for disabled button background
-                frame_stroke.color = on_surface.linear_multiply(0.12); // 12% opacity for disabled outline
-                frame_stroke.width = if matches!(variant, MaterialButtonVariant::Outlined) {
-                    1.0 // Keep 1dp border for outlined variant
-                } else {
-                    0.0 // No border for other variants
+                frame_fill = match variant {
+                    MaterialButtonVariant::Filled
+                    | MaterialButtonVariant::Hero
+                    | MaterialButtonVariant::Elevated
+                    | MaterialButtonVariant::FilledTonal => disabled_bg,
+                    _ => frame_fill,
                 };
-            }
-
-            // M3 state layers: interactive overlay on hover/press
-            if !disabled {
-                let state_layer_color = resolved_text_color;
-                if response.is_pointer_button_down_on() {
-                    // Pressed state: 12% opacity overlay (M3 interaction state)
-                    frame_fill = blend_overlay(frame_fill, state_layer_color, 0.12);
-                } else if response.hovered() {
-                    // Hover state: 8% opacity overlay (M3 interaction state)
-                    frame_fill = blend_overlay(frame_fill, state_layer_color, 0.08);
+                frame_stroke.color = disabled_bg;
+                frame_stroke.width = if matches!(variant, MaterialButtonVariant::Outlined) {
+                    1.0
+                } else {
+                    0.0
+                };
+            } else if response.hovered() {
+                match variant {
+                    MaterialButtonVariant::Filled | MaterialButtonVariant::Hero => {}
+                    MaterialButtonVariant::Outlined => {
+                        frame_fill = hover_surface;
+                        frame_stroke.color = if dark {
+                            Color32::from_rgb(91, 103, 232)
+                        } else {
+                            Color32::from_rgb(21, 25, 45)
+                        };
+                    }
+                    MaterialButtonVariant::Text => {
+                        frame_fill = blend_overlay(surface, primary, 0.10);
+                    }
+                    MaterialButtonVariant::PlainFaint => {
+                        frame_fill = primary_tint(primary, if dark { 0.10 } else { 0.05 });
+                    }
+                    MaterialButtonVariant::Elevated => {
+                        frame_fill = hover_surface;
+                    }
+                    MaterialButtonVariant::FilledTonal => {
+                        frame_fill = blend_overlay(frame_fill, primary, 0.10);
+                    }
                 }
             }
 
-            // Draw elevation shadow if present
-            if let Some(shadow) = &elevation {
-                // Hover elevation boost for elevated buttons
-                let shadow = if !disabled && response.hovered() {
-                    Shadow {
-                        offset: [shadow.offset[0], shadow.offset[1] + 2],
-                        blur: shadow.blur + 4,
+            if !disabled && response.is_pointer_button_down_on() {
+                text_paint_color = with_opacity(text_paint_color, 0.75);
+                frame_fill = with_opacity(frame_fill, 0.75);
+                frame_stroke.color = with_opacity(frame_stroke.color, 0.75);
+            }
+
+            if !disabled && response.hovered() {
+                if let Some(shadow) = hover_shadow {
+                    let shadow = Shadow {
+                        offset: [shadow.offset[0], shadow.offset[1] + 1],
+                        blur: shadow.blur + 2,
                         spread: shadow.spread,
                         color: shadow.color,
-                    }
-                } else {
-                    *shadow
-                };
+                    };
+                    let shadow_offset =
+                        Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32);
+                    let shadow_rect = rect.expand2(frame_expansion).translate(shadow_offset);
+                    ui.painter().rect_filled(shadow_rect, frame_cr, shadow.color);
+                }
+            } else if let Some(shadow) = &elevation {
                 let shadow_offset = Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32);
                 let shadow_rect = rect.expand2(frame_expansion).translate(shadow_offset);
-                ui.painter()
-                    .rect_filled(shadow_rect, frame_cr, shadow.color);
+                ui.painter().rect_filled(shadow_rect, frame_cr, shadow.color);
             }
 
             ui.painter().rect(
@@ -841,23 +1035,23 @@ impl Widget for MaterialButton<'_> {
             );
 
             let mut cursor_x = rect.min.x + button_padding_left;
-            let content_rect_y_min = rect.min.y + button_padding_y;
-            let content_rect_y_max = rect.max.y - button_padding_y;
-            let content_height = content_rect_y_max - content_rect_y_min;
+            let content_rect = Rect::from_min_max(
+                egui::pos2(rect.min.x + button_padding_left, rect.min.y + button_padding_y),
+                egui::pos2(rect.max.x - button_padding_right, rect.max.y - button_padding_y),
+            );
 
             // Draw leading icon (font icon)
             if let Some(leading_galley) = &leading_icon_galley {
-                let icon_y =
-                    content_rect_y_min + (content_height - leading_galley.size().y) / 2.0;
+                let icon_y = center_galley_y(leading_galley, content_rect);
                 let icon_pos = egui::pos2(cursor_x, icon_y);
                 ui.painter()
-                    .galley(icon_pos, leading_galley.clone(), resolved_text_color);
+                    .galley(icon_pos, leading_galley.clone(), text_paint_color);
                 cursor_x += leading_galley.size().x + icon_spacing;
             }
 
             // Draw leading icon (SVG texture)
             if let Some(texture) = &leading_svg_texture {
-                let icon_y = content_rect_y_min + (content_height - svg_icon_size) / 2.0;
+                let icon_y = content_rect.center().y - svg_icon_size / 2.0;
                 let icon_rect = Rect::from_min_size(
                     egui::pos2(cursor_x, icon_y),
                     Vec2::splat(svg_icon_size),
@@ -881,10 +1075,7 @@ impl Widget for MaterialButton<'_> {
                     .layout()
                     .align_size_within_rect(
                         image_size,
-                        Rect::from_min_max(
-                            egui::pos2(cursor_x, content_rect_y_min),
-                            egui::pos2(rect.max.x - button_padding_right, content_rect_y_max),
-                        ),
+                        content_rect,
                     )
                     .min;
                 if galley.is_some() || shortcut_galley.is_some() || trailing_icon_galley.is_some() {
@@ -902,8 +1093,7 @@ impl Widget for MaterialButton<'_> {
             // Draw main text
             let has_text = galley.is_some();
             if let Some(galley) = galley {
-                let text_y = content_rect_y_min + (content_height - galley.size().y) / 2.0 + if small { 1.0 } else { 0.0 };
-                let mut text_pos = egui::pos2(cursor_x, text_y);
+                let mut text_pos = egui::pos2(cursor_x, center_galley_y(&galley, content_rect));
                 // Center text if no leading/trailing elements
                 if leading_icon_galley.is_none()
                     && leading_svg_texture.is_none()
@@ -914,34 +1104,22 @@ impl Widget for MaterialButton<'_> {
                 {
                     text_pos = ui
                         .layout()
-                        .align_size_within_rect(
-                            galley.size(),
-                            Rect::from_min_max(
-                                egui::pos2(
-                                    rect.min.x + button_padding_left,
-                                    content_rect_y_min,
-                                ),
-                                egui::pos2(
-                                    rect.max.x - button_padding_right,
-                                    content_rect_y_max,
-                                ),
-                            ),
-                        )
+                        .align_size_within_rect(galley.size(), content_rect)
                         .min;
+                    text_pos.y = center_galley_y(&galley, content_rect);
                 }
 
                 cursor_x = text_pos.x + galley.size().x;
-                ui.painter().galley(text_pos, galley, resolved_text_color);
+                ui.painter().galley(text_pos, galley, text_paint_color);
             }
 
             // Draw trailing icon (font icon)
             if let Some(trailing_galley) = &trailing_icon_galley {
                 cursor_x += icon_spacing;
-                let icon_y =
-                    content_rect_y_min + (content_height - trailing_galley.size().y) / 2.0;
+                let icon_y = center_galley_y(trailing_galley, content_rect);
                 let icon_pos = egui::pos2(cursor_x, icon_y);
                 ui.painter()
-                    .galley(icon_pos, trailing_galley.clone(), resolved_text_color);
+                    .galley(icon_pos, trailing_galley.clone(), text_paint_color);
             }
 
             // Draw trailing icon (SVG texture)
@@ -950,7 +1128,7 @@ impl Widget for MaterialButton<'_> {
                 if has_text || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
                     cursor_x += icon_spacing;
                 }
-                let icon_y = content_rect_y_min + (content_height - svg_icon_size) / 2.0;
+                let icon_y = content_rect.center().y - svg_icon_size / 2.0;
                 let icon_rect = Rect::from_min_size(
                     egui::pos2(cursor_x, icon_y),
                     Vec2::splat(svg_icon_size),
@@ -970,15 +1148,10 @@ impl Widget for MaterialButton<'_> {
                 } else {
                     ui.layout().with_cross_align(Align::Max)
                 };
-                let shortcut_text_pos = layout
-                    .align_size_within_rect(
-                        shortcut_galley.size(),
-                        Rect::from_min_max(
-                            egui::pos2(rect.min.x + button_padding_left, content_rect_y_min),
-                            egui::pos2(rect.max.x - button_padding_right, content_rect_y_max),
-                        ),
-                    )
+                let mut shortcut_text_pos = layout
+                    .align_size_within_rect(shortcut_galley.size(), content_rect)
                     .min;
+                shortcut_text_pos.y = center_galley_y(&shortcut_galley, content_rect);
                 ui.painter().galley(
                     shortcut_text_pos,
                     shortcut_galley,
