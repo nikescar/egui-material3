@@ -1,61 +1,35 @@
 #![doc(hidden)]
 
-use crate::{checkbox, MaterialButton, MaterialCheckbox};
+use crate::{checkbox, MaterialButton, MaterialCheckboxSize};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
 pub struct CheckboxWindow {
     pub open: bool,
-    checked: bool,
     disabled: bool,
+    normal_unchecked: bool,
+    normal_checked: bool,
+    small_unchecked: bool,
+    small_checked: bool,
     indeterminate: bool,
-    error: bool,
-    // For labeled checkboxes
     option1_checked: bool,
     option2_checked: bool,
     option3_checked: bool,
-    // For state demonstration
-    state_checked: bool,
-    state_unchecked: bool,
-    state_indeterminate: bool,
-    // For enabled/disabled comparison
-    enabled_unchecked: bool,
-    enabled_checked: bool,
-    enabled_indeterminate: bool,
-    disabled_unchecked: bool,
-    disabled_checked: bool,
-    disabled_indeterminate: bool,
-    // For error state examples
-    error_normal: bool,
-    error_error: bool,
-    error_error_checked: bool,
 }
 
 impl Default for CheckboxWindow {
     fn default() -> Self {
         Self {
             open: false,
-            checked: false,
             disabled: false,
+            normal_unchecked: false,
+            normal_checked: true,
+            small_unchecked: false,
+            small_checked: true,
             indeterminate: false,
-            error: false,
             option1_checked: true,
             option2_checked: false,
             option3_checked: false,
-            state_checked: true,
-            state_unchecked: false,
-            state_indeterminate: false,
-            // Enabled/disabled comparison states
-            enabled_unchecked: false,
-            enabled_checked: true,
-            enabled_indeterminate: false,
-            disabled_unchecked: false,
-            disabled_checked: true,
-            disabled_indeterminate: false,
-            // Error state example states
-            error_normal: false,
-            error_error: false,
-            error_error_checked: true,
         }
     }
 }
@@ -65,33 +39,16 @@ impl CheckboxWindow {
         let mut open = self.open;
         Window::new("Checkbox Stories")
             .open(&mut open)
-            .default_size([700.0, 600.0])
+            .default_size([640.0, 520.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.heading("Material Design Checkbox Component");
-                    ui.add_space(10.0);
-                    
                     self.render_controls(ui);
                     ui.add_space(20.0);
-                    ui.separator();
+                    self.render_sizes(ui);
                     ui.add_space(20.0);
-                    
-                    self.render_checkbox_states(ui);
+                    self.render_indeterminate(ui);
                     ui.add_space(20.0);
-                    ui.separator();
-                    ui.add_space(20.0);
-                    
-                    self.render_enabled_disabled(ui);
-                    ui.add_space(20.0);
-                    ui.separator();
-                    ui.add_space(20.0);
-                    
-                    self.render_error_state(ui);
-                    ui.add_space(20.0);
-                    ui.separator();
-                    ui.add_space(20.0);
-                    
-                    self.render_interactive_example(ui);
+                    self.render_labeled_checkboxes(ui);
                 });
             });
         self.open = open;
@@ -99,150 +56,118 @@ impl CheckboxWindow {
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.heading("Controls");
-            ui.label("(Apply to examples below)");
-
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.add(MaterialButton::filled("📖 Material Design Spec").small()).clicked() {
-                    let _ = webbrowser::open("https://m3.material.io/components/checkbox/overview");
-                }
-            });
+            ui.heading("Checkbox Controls");
+            if ui.add(MaterialButton::filled("Leo Checkbox").small()).clicked() {
+                let _ = webbrowser::open(
+                    "https://github.com/brave/leo/tree/main/src/components/checkbox",
+                );
+            }
         });
-        ui.add_space(10.0);
-
-        ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.checked, "Checked"));
-            ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
-            ui.add(MaterialCheckbox::new(&mut self.indeterminate, "Indeterminate"));
-            ui.add(MaterialCheckbox::new(&mut self.error, "Error"));
-        });
+        ui.checkbox(&mut self.disabled, "Disabled");
     }
 
-    fn render_checkbox_states(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Checkbox States");
-        ui.label("Checkboxes support three states: checked, unchecked, and indeterminate.");
-        ui.add_space(10.0);
+    fn render_sizes(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Checkbox Sizes");
+        ui.label("Nala checkbox scale — normal (20px) and small (16px).");
 
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                ui.label("Checked");
-                ui.add(checkbox(&mut self.state_checked, ""));
-            });
-            ui.add_space(20.0);
-            ui.vertical(|ui| {
-                ui.label("Unchecked");
-                ui.add(checkbox(&mut self.state_unchecked, ""));
-            });
-            ui.add_space(20.0);
-            ui.vertical(|ui| {
-                ui.label("Indeterminate");
-                ui.add(checkbox(&mut self.state_indeterminate, "").indeterminate(true));
-            });
-        });
-    }
+        let disabled = self.disabled;
 
-    fn render_enabled_disabled(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Enabled vs Disabled");
-        ui.label("Disabled checkboxes cannot be interacted with and appear dimmed.");
-        ui.add_space(10.0);
-
-        egui::Grid::new("enabled_disabled_grid")
-            .num_columns(2)
-            .spacing([40.0, 10.0])
+        egui::Grid::new("checkbox_sizes")
+            .num_columns(3)
+            .spacing([24.0, 12.0])
             .show(ui, |ui| {
-                ui.label("State");
-                ui.label("Enabled");
-                ui.label("Disabled");
+                ui.label("");
+                ui.label("Unchecked");
+                ui.label("Checked");
                 ui.end_row();
 
-                ui.label("Unchecked:");
-                ui.add(checkbox(&mut self.enabled_unchecked, ""));
-                ui.add(checkbox(&mut self.disabled_unchecked, "").enabled(false));
-                ui.end_row();
-
-                ui.label("Checked:");
-                ui.add(checkbox(&mut self.enabled_checked, ""));
-                ui.add(checkbox(&mut self.disabled_checked, "").enabled(false));
-                ui.end_row();
-
-                ui.label("Indeterminate:");
-                ui.add(checkbox(&mut self.enabled_indeterminate, "").indeterminate(true));
-                ui.add(checkbox(&mut self.disabled_indeterminate, "").indeterminate(true).enabled(false));
-                ui.end_row();
-            });
-    }
-
-    fn render_error_state(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Error State");
-        ui.label("Error state indicates validation failure or invalid selection.");
-        ui.add_space(10.0);
-
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
                 ui.label("Normal");
-                ui.add(checkbox(&mut self.error_normal, "Regular checkbox"));
+                ui.add(nala_checkbox(
+                    &mut self.normal_unchecked,
+                    MaterialCheckboxSize::Normal,
+                    disabled,
+                    "",
+                ));
+                ui.add(nala_checkbox(
+                    &mut self.normal_checked,
+                    MaterialCheckboxSize::Normal,
+                    disabled,
+                    "",
+                ));
+                ui.end_row();
+
+                ui.label("Small");
+                ui.add(nala_checkbox(
+                    &mut self.small_unchecked,
+                    MaterialCheckboxSize::Small,
+                    disabled,
+                    "",
+                ));
+                ui.add(nala_checkbox(
+                    &mut self.small_checked,
+                    MaterialCheckboxSize::Small,
+                    disabled,
+                    "",
+                ));
+                ui.end_row();
             });
-            ui.add_space(20.0);
-            ui.vertical(|ui| {
-                ui.label("Error");
-                ui.add(checkbox(&mut self.error_error, "Error checkbox").is_error(true));
-            });
-            ui.add_space(20.0);
-            ui.vertical(|ui| {
-                ui.label("Error (Checked)");
-                ui.add(checkbox(&mut self.error_error_checked, "Error checked").is_error(true));
-            });
-        });
     }
 
-    fn render_interactive_example(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Interactive Example");
-        ui.label("Toggle checkboxes with labels (affected by controls above).");
-        ui.add_space(10.0);
+    fn render_indeterminate(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Indeterminate");
+        ui.label("Extension for select-all patterns (Leo icon, not in the base component).");
+
+        let disabled = self.disabled;
+        ui.add(
+            nala_checkbox(
+                &mut self.indeterminate,
+                MaterialCheckboxSize::Normal,
+                disabled,
+                "Select all",
+            )
+            .indeterminate(true),
+        );
+    }
+
+    fn render_labeled_checkboxes(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Labeled Checkboxes");
+
+        let disabled = self.disabled;
 
         ui.vertical(|ui| {
-            let mut option1 = checkbox(&mut self.option1_checked, "Option 1");
-            let mut option2 = checkbox(&mut self.option2_checked, "Option 2");
-            let mut option3 = checkbox(&mut self.option3_checked, "Option 3");
-
-            // Apply controls
-            if self.disabled {
-                option1 = option1.enabled(false);
-                option2 = option2.enabled(false);
-                option3 = option3.enabled(false);
-            }
-            if self.indeterminate {
-                option1 = option1.indeterminate(true);
-            }
-            if self.error {
-                option1 = option1.is_error(true);
-                option2 = option2.is_error(true);
-                option3 = option3.is_error(true);
-            }
-
-            ui.add(option1);
-            ui.add(option2);
-            ui.add(option3);
-        });
-
-        ui.add_space(10.0);
-        ui.horizontal(|ui| {
-            ui.label("Selected:");
-            let mut selected = Vec::new();
-            if self.option1_checked {
-                selected.push("Option 1");
-            }
-            if self.option2_checked {
-                selected.push("Option 2");
-            }
-            if self.option3_checked {
-                selected.push("Option 3");
-            }
-            if selected.is_empty() {
-                ui.label("None");
-            } else {
-                ui.label(selected.join(", "));
-            }
+            ui.add(nala_checkbox(
+                &mut self.option1_checked,
+                MaterialCheckboxSize::Normal,
+                disabled,
+                "Option 1",
+            ));
+            ui.add_space(8.0);
+            ui.add(nala_checkbox(
+                &mut self.option2_checked,
+                MaterialCheckboxSize::Normal,
+                disabled,
+                "Option 2",
+            ));
+            ui.add_space(8.0);
+            ui.add(nala_checkbox(
+                &mut self.option3_checked,
+                MaterialCheckboxSize::Normal,
+                disabled,
+                "Option 3",
+            ));
         });
     }
+}
+
+fn nala_checkbox<'a>(
+    value: &'a mut bool,
+    size: MaterialCheckboxSize,
+    disabled: bool,
+    label: &str,
+) -> crate::MaterialCheckbox<'a> {
+    let mut control = checkbox(value, label).size(size);
+    if disabled {
+        control = control.enabled(false);
+    }
+    control
 }

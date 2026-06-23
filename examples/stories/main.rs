@@ -3,8 +3,8 @@
 use eframe::egui::{self, Color32};
 use egui_file_dialog::FileDialog;
 use egui_material3::theme::{
-    load_fonts, load_themes, setup_google_fonts,
-    setup_local_fonts_from_bytes, setup_local_theme,
+    apply_nala_text_styles, load_fonts, load_themes, setup_local_fonts_from_bytes,
+    setup_local_theme, setup_nala_fonts,
 };
 use egui_material3::*;
 use std::collections::HashMap;
@@ -29,6 +29,7 @@ mod imagelist_window;
 mod layoutgrid_window;
 mod list_window;
 mod menu_window;
+mod navigation_window;
 mod notification_window;
 mod progress_window;
 mod radio_window;
@@ -64,6 +65,7 @@ use imagelist_window::ImageListWindow;
 use layoutgrid_window::LayoutGridWindow;
 use list_window::ListWindow;
 use menu_window::MenuWindow;
+use navigation_window::NavigationWindow;
 use notification_window::NotificationWindow;
 use progress_window::ProgressWindow;
 use radio_window::RadioWindow;
@@ -100,19 +102,11 @@ fn main() -> Result<(), eframe::Error> {
                 "MaterialSymbolsOutlined",
                 include_bytes!("../../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"),
             );
-            setup_local_fonts_from_bytes(
-                "Nanum Gothic",
-                include_bytes!("../../resources/nanum-gothic.ttf"),
-            );
-            // Prepare Google Sans Code font for Material Design (default)
-            setup_google_fonts(Some("Google Sans Code"));
-            setup_google_fonts(Some("Nanum Gothic"));
-            // Prepare themes from build-time constants
+            setup_nala_fonts();
             setup_local_theme(None);
-            // Install image loaders
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            // Load all prepared fonts and themes
             load_fonts(&cc.egui_ctx);
+            apply_nala_text_styles(&cc.egui_ctx);
             load_themes();
             Ok(Box::<MaterialApp>::default())
         }),
@@ -137,6 +131,7 @@ struct MaterialApp {
     iconbutton_window: IconButtonWindow,
     list_window: ListWindow,
     menu_window: MenuWindow,
+    navigation_window: NavigationWindow,
     notification_window: NotificationWindow,
     progress_window: ProgressWindow,
     radio_window: RadioWindow,
@@ -179,6 +174,7 @@ impl Default for MaterialApp {
             iconbutton_window: IconButtonWindow::default(),
             list_window: ListWindow::default(),
             menu_window: MenuWindow::default(),
+            navigation_window: NavigationWindow::default(),
             notification_window: NotificationWindow::default(),
             progress_window: ProgressWindow::default(),
             radio_window: RadioWindow::default(),
@@ -656,6 +652,10 @@ impl eframe::App for MaterialApp {
                     self.menu_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Navigation Stories")).clicked() {
+                    self.navigation_window.open = true;
+                }
+
                 if ui.add(MaterialButton::filled("Notification Stories")).clicked() {
                     self.notification_window.open = true;
                 }
@@ -739,6 +739,7 @@ impl eframe::App for MaterialApp {
         self.iconbutton_window.show(ctx);
         self.list_window.show(ctx);
         self.menu_window.show(ctx);
+        self.navigation_window.show(ctx);
         self.notification_window.show(ctx);
         self.progress_window.show(ctx);
         self.radio_window.show(ctx);

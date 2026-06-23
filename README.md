@@ -1,6 +1,21 @@
-# egui-material3
+# nala-egui-material3
 
-A Material Design component library for egui, providing Material Design 3 components with theme support.
+A [Nala](https://github.com/brave-experiments) fork of [egui-material3](https://github.com/nikescar/egui-material3) — Material Design components for [egui](https://github.com/emilk/egui), extended with **Leo / Nala design tokens** and component styling from the [Leo component library](https://github.com/brave/leo).
+
+This crate keeps the full upstream component set while aligning key controls with Nala’s visual language: color tokens, typography, buttons, toggles, checkboxes, and navigation.
+
+## Fork highlights
+
+| Area | What changed |
+|------|----------------|
+| **Theme** | Default theme is `resources/nala-material-theme.json`, derived from Leo universal color tokens |
+| **Typography** | Inter (body), Poppins (display), Roboto Mono — via `setup_nala_fonts()` / `apply_nala_text_styles()` |
+| **Buttons** | Nala kinds: `filled`, `outline`, `plain`, `plain-faint`, `hero` + sizes `tiny` → `jumbo` |
+| **Switch** | Leo toggle styling (pill track, two sizes, animated thumb) |
+| **Checkbox** | Leo SVG icons, normal/small sizes, interactive colors |
+| **Navigation** | New `MaterialNavigation` sidebar matching Leo `Navigation` + nested items |
+
+Upstream components (drawer, tabs, data table, chips, etc.) are unchanged unless noted in stories.
 
 ## Screenshots
 
@@ -8,39 +23,46 @@ A Material Design component library for egui, providing Material Design 3 compon
 
 ## Installation
 
-Add egui-material3 to your project:
-
-```bash
-# Basic installation
-cargo add egui-material3
-
-# With optional features
-cargo add egui-material3 --features ondemand
-cargo add egui-material3 --features "svg_solar,spreadsheet"
-cargo add egui-material3 --features svg_emoji  # All icon collections
-```
-
-Or manually in `Cargo.toml`:
+### From this fork (recommended)
 
 ```toml
 [dependencies]
-egui-material3 = "..."
+egui-material3 = { git = "https://github.com/brave-experiments/nala-egui-material3.git", branch = "main" }
 
-# With features
-egui-material3 = { version = "...", features = ["ondemand", "svg_solar"] }
+# Optional: download Nala fonts from Google Fonts at runtime
+# egui-material3 = { git = "...", features = ["ondemand"] }
+```
+
+After updating the dependency:
+
+```bash
+cargo update -p egui-material3
+cargo build
+```
+
+### From crates.io (upstream)
+
+The crates.io package is the original upstream library and does **not** include these Nala customizations:
+
+```bash
+cargo add egui-material3
 ```
 
 ## Usage
 
-### Quick Start Example
+### Nala quick start
+
+Initialize the Nala theme and fonts in your app startup (same pattern as the `stories` example):
 
 ```rust
 use eframe::egui;
 use egui_material3::{
-    MaterialButton, MaterialCheckbox, MaterialSlider, MaterialChip,
-    MaterialBadge, MaterialSwitch, ButtonVariant,
-    theme::{setup_google_fonts, setup_local_fonts, setup_local_theme,
-           load_fonts, load_themes, update_window_background}
+    MaterialButton, MaterialButtonSize, MaterialCheckbox, MaterialNavigation,
+    MaterialSwitch, NavigationHeader, NavigationItem, navigation,
+    theme::{
+        apply_nala_text_styles, load_fonts, load_themes, setup_local_fonts_from_bytes,
+        setup_local_theme, setup_nala_fonts, update_window_background,
+    },
 };
 
 fn main() -> Result<(), eframe::Error> {
@@ -50,19 +72,22 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        "Material Design App",
+        "Nala App",
         options,
         Box::new(|cc| {
-            // Setup Material Design fonts and themes
-            setup_google_fonts(Some("Roboto"));
-            setup_local_fonts(Some("resources/MaterialSymbolsOutlined.ttf"));
-            setup_local_theme(None); // Use default theme
+            // Material Symbols (icons)
+            setup_local_fonts_from_bytes(
+                "MaterialSymbolsOutlined",
+                include_bytes!("resources/MaterialSymbolsOutlined.ttf"),
+            );
 
-            // Load fonts and themes
+            // Nala fonts + theme (see "Fonts" below)
+            setup_nala_fonts();
+            setup_local_theme(None); // loads bundled nala-material-theme.json
+
             load_fonts(&cc.egui_ctx);
+            apply_nala_text_styles(&cc.egui_ctx);
             load_themes();
-
-            // Apply theme background
             update_window_background(&cc.egui_ctx);
 
             Ok(Box::<MyApp>::default())
@@ -74,39 +99,72 @@ fn main() -> Result<(), eframe::Error> {
 struct MyApp {
     checked: bool,
     switch_on: bool,
-    slider_value: f32,
-    chip_selected: bool,
+    nav_selected: String,
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::SidePanel::left("nav").show(ctx, |ui| {
+            navigation(&mut self.nav_selected)
+                .header(NavigationHeader {
+                    highlight: Some("Nala".into()),
+                    title: "App".into(),
+                    icon: Some("shield".into()),
+                    ..Default::default()
+                })
+                .item(NavigationItem::new("home", "Home").icon("home"))
+                .item(NavigationItem::new("settings", "Settings").icon("settings"))
+                .show(ui);
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Material Design Components");
+            ui.heading("Nala components");
 
-            // Buttons with different variants
             ui.horizontal(|ui| {
-                ui.add(MaterialButton::new("Filled").variant(ButtonVariant::Filled));
-                ui.add(MaterialButton::new("Outlined").variant(ButtonVariant::Outlined));
-                ui.add(MaterialButton::new("Text").variant(ButtonVariant::Text));
+                ui.add(MaterialButton::filled("Filled"));
+                ui.add(MaterialButton::outline("Outline"));
+                ui.add(MaterialButton::plain("Plain"));
+                ui.add(MaterialButton::hero("Hero").size(MaterialButtonSize::Small));
             });
 
-            // Input controls
-            ui.add(MaterialCheckbox::new(&mut self.checked, "Check me"));
-            ui.add(MaterialSwitch::new(&mut self.switch_on, "Enable feature"));
-            ui.add(MaterialSlider::new(&mut self.slider_value, 0.0..=100.0));
-
-            // Chips and badges
-            ui.horizontal(|ui| {
-                ui.add(MaterialChip::new("Filter chip")
-                    .selected(&mut self.chip_selected));
-                ui.add(MaterialBadge::new().value(5).show(ui, |ui| {
-                    ui.add(MaterialButton::new("Inbox"));
-                }));
-            });
+            ui.add(MaterialCheckbox::new(&mut self.checked, "Accept terms"));
+            ui.add(MaterialSwitch::new(&mut self.switch_on).text("Enable feature"));
         });
     }
 }
 ```
+
+### Fonts
+
+Nala body/display fonts are **not** committed to git (license/size). Either:
+
+1. Place `inter.ttf`, `poppins.ttf`, and `roboto-mono.ttf` in your app’s `resources/` directory, or  
+2. Enable the `ondemand` feature so they download from Google Fonts at runtime.
+
+Material Symbols (`MaterialSymbolsOutlined.ttf`) is still required for icon glyphs.
+
+### Quick start (upstream Material theme)
+
+<details>
+<summary>Using the original Material theme and Roboto instead of Nala</summary>
+
+```rust
+use egui_material3::{
+    MaterialButton, MaterialCheckbox, MaterialSlider,
+    theme::{setup_google_fonts, setup_local_fonts, setup_local_theme,
+           load_fonts, load_themes, update_window_background},
+};
+
+// In eframe startup:
+setup_google_fonts(Some("Roboto"));
+setup_local_fonts(Some("resources/MaterialSymbolsOutlined.ttf"));
+setup_local_theme(Some("resources/material-theme.json")); // custom M3 JSON
+load_fonts(&cc.egui_ctx);
+load_themes();
+update_window_background(&cc.egui_ctx);
+```
+
+</details>
 
 ### Advanced Example
 
@@ -176,9 +234,25 @@ impl eframe::App for MyApp {
 
 ## Theme System
 
-The library provides comprehensive Material Design 3 theming capabilities:
+The library provides Material Design 3 theming. **In this fork, `setup_local_theme(None)` loads the bundled Nala theme** (`resources/nala-material-theme.json`) derived from Leo color tokens. Light/dark and contrast variants are included.
 
-### Build-time Theme Inclusion
+### Nala theme (default in this fork)
+
+```rust
+use egui_material3::theme::{
+    apply_nala_text_styles, load_fonts, load_themes,
+    setup_local_theme, setup_nala_fonts, update_window_background,
+};
+
+setup_nala_fonts();
+setup_local_theme(None); // nala-material-theme.json
+load_fonts(ctx);
+apply_nala_text_styles(ctx);
+load_themes();
+update_window_background(ctx);
+```
+
+### Build-time theme inclusion
 
 Themes are automatically included from JSON files during compilation:
 
@@ -228,31 +302,46 @@ if ui.add(MaterialButton::new("Toggle Dark Mode")).clicked() {
 }
 ```
 
-### Component Size Variants
+### Component size variants (Nala)
 
-Many components support size variants for different design needs:
+Nala-aligned components support Leo size scales:
 
 ```rust
-use egui_material3::{MaterialButton, MaterialChip, ButtonSize, ChipSize};
+use egui_material3::{
+    MaterialButton, MaterialButtonSize, MaterialCheckbox, MaterialCheckboxSize,
+    MaterialSwitch, MaterialSwitchSize,
+};
 
-// Small button for compact UIs
-ui.add(MaterialButton::new("Compact").size(ButtonSize::Small));
+// Buttons: tiny, small, medium, large, jumbo
+ui.add(MaterialButton::filled("Save").size(MaterialButtonSize::Large));
+ui.add(MaterialButton::plain("Cancel").size(MaterialButtonSize::Small));
 
-// Standard size (default)
-ui.add(MaterialButton::new("Standard"));
+// Checkbox: normal (20px), small (16px)
+ui.add(MaterialCheckbox::new(&mut checked, "Label").size(MaterialCheckboxSize::Small));
 
-// Small chips for tags
-ui.add(MaterialChip::new("Tag").size(ChipSize::Small));
+// Switch / toggle: medium (52×32), small (40×24)
+ui.add(MaterialSwitch::new(&mut on).size(MaterialSwitchSize::Small).text("Wi-Fi"));
 ```
+
+### Component size variants (upstream)
+
+Other components (chips, badges, etc.) may use upstream Material size APIs — see individual story windows.
 
 ## Available Components
 
+### Nala-aligned (Leo styling)
+
+- **MaterialButton** — `filled`, `outline`, `plain`, `plain-faint`, `hero` (+ legacy M3 variants). Sizes: `tiny` → `jumbo`
+- **MaterialSwitch** — Leo toggle; sizes `medium` / `small`
+- **MaterialCheckbox** — Leo SVG icons; sizes `normal` / `small`; indeterminate supported
+- **MaterialNavigation** — Vertical sidebar with header, dividers, nested subnav, animated active indicator
+
 ### Input & Selection
 
-- **MaterialButton** - Material Design buttons with multiple variants (filled, outlined, text, elevated, tonal) and size options
+- **MaterialButton** — See Nala-aligned section above; also `elevated`, `filled_tonal` for legacy M3
 - **MaterialIconButton** - Icon buttons (standard, filled, filled tonal, outlined, toggle)
-- **MaterialCheckbox** - Checkboxes following Material Design guidelines
-- **MaterialSwitch** - Toggle switches
+- **MaterialCheckbox** - See Nala-aligned section above
+- **MaterialSwitch** - See Nala-aligned section above
 - **MaterialRadio** / **MaterialRadioGroup** - Radio button groups with list tile support
 - **MaterialSlider** / **MaterialRangeSlider** - Sliders with Material Design styling
 - **MaterialSelect** - Dropdown selection components with menu alignment options
@@ -260,6 +349,7 @@ ui.add(MaterialChip::new("Tag").size(ChipSize::Small));
 
 ### Navigation & Layout
 
+- **MaterialNavigation** - Nala sidebar navigation (Leo `Navigation`)
 - **MaterialTabs** - Tab navigation (primary and secondary variants)
 - **MaterialDrawer** - Navigation drawers (permanent, dismissible, modal, standard)
 - **MaterialTopAppBar** - App bars and toolbars (standard, center-aligned, medium, large)
@@ -572,13 +662,13 @@ cargo run --example svg_icon_demo --features svg_solar
 
 The `stories` example provides an interactive gallery with individual showcases for each component:
 
-**Input & Selection**: actionsheet, button, checkbox, chips, iconbutton, radio, select, slider, switch
-**Navigation**: breadcrumbs, drawer, menu, tabs, toolbar, topappbar, treeview
+**Input & Selection**: actionsheet, button, checkbox, chips, iconbutton, radio, select, slider, switch  
+**Navigation**: breadcrumbs, drawer, **navigation**, menu, tabs, toolbar, topappbar, treeview
 **Feedback**: badge, dialog, notification, progress, snackbar, tooltip
 **Data Display**: card2, datatable, list, spreadsheet, timeline
 **Media**: carousel, imagelist, layoutgrid, svgemoji, symbol
 
-Each story window demonstrates component variants, states, and common usage patterns.
+Each story window demonstrates component variants, states, and common usage patterns. **Start with `button`, `checkbox`, `switch`, and `navigation` stories to preview Nala styling.**
 
 ### Standalone Examples
 
@@ -605,13 +695,16 @@ cargo run --example stories --features "ondemand,svg_solar"
 
 ## Documentation
 
-- [API Documentation](https://docs.rs/egui-material3)
+- [API Documentation](https://docs.rs/egui-material3) (upstream; fork APIs may differ until published)
+- [Leo design system](https://github.com/brave/leo)
 - [Material Design 3 Guidelines](https://m3.material.io/)
 - [Examples](./examples/)
 
 ## Contributing
 
-Contributions are welcome! Please check the [issues](https://github.com/nikescar/egui-material3/issues) for open tasks or create a new one.
+This fork is maintained at [brave-experiments/nala-egui-material3](https://github.com/brave-experiments/nala-egui-material3). Contributions welcome via issues and pull requests.
+
+Upstream egui-material3: [nikescar/egui-material3](https://github.com/nikescar/egui-material3)
 
 ## License
 
@@ -627,11 +720,15 @@ at your option.
 <details markdown>
 <summary>Development Notes</summary>
 
+## Upstream
+
+Based on [egui-material3](https://github.com/nikescar/egui-material3) by Woojae Park. Nala customizations live alongside upstream components.
+
 ## Todos
 
+* Align more components with Leo (radio, tabs, segmented control, …)
 * SVG sprite support
 * Bump egui_extras to match resvg version (currently using patched 0.47)
-* Additional component variants
 * Performance optimizations for large datasets
 
 </details>

@@ -23,7 +23,7 @@
 //! };
 //!
 //! // Setup fonts and themes (typically during app initialization)
-//! setup_google_fonts(Some("Roboto"));
+//! setup_google_fonts(Some("Inter"));
 //! setup_local_fonts(Some("path/to/MaterialSymbols.ttf"));
 //! setup_local_theme(None); // Use build-time included themes
 //!
@@ -73,7 +73,7 @@
 //! }
 //! ```
 
-use egui::{Color32, FontData, FontDefinitions, FontFamily};
+use egui::{Color32, FontData, FontDefinitions, FontFamily, FontId, TextStyle};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -94,6 +94,24 @@ pub struct PreparedFont {
 }
 
 static PREPARED_FONTS: Mutex<Vec<PreparedFont>> = Mutex::new(Vec::new());
+
+/// Nala body font (maps to Leo `Inter Variable` / desktop `SF Pro Text`)
+pub const NALA_BODY_FONT: &str = "Inter";
+/// Nala display font (maps to Leo `Poppins` / desktop `SF Pro Display`)
+pub const NALA_DISPLAY_FONT: &str = "Poppins";
+/// Nala monospace font (maps to Leo `SF Mono`)
+pub const NALA_MONOSPACE_FONT: &str = "Roboto Mono";
+
+fn font_resource_path(font_name: &str) -> String {
+    format!(
+        "resources/{}.ttf",
+        font_name.replace(' ', "-").to_lowercase()
+    )
+}
+
+fn font_registration_name(font_name: &str) -> String {
+    font_name.replace(' ', "")
+}
 
 /// A prepared Material Design theme ready for loading
 ///
@@ -308,364 +326,37 @@ impl Default for MaterialThemeContext {
 }
 
 fn get_default_material_theme() -> MaterialThemeFile {
-    // Create default Material theme programmatically using colors from material-theme4.json
-    let light_scheme = MaterialScheme {
-        primary: "#48672F".to_string(),
-        surface_tint: "#48672F".to_string(),
-        on_primary: "#FFFFFF".to_string(),
-        primary_container: "#C8EEA8".to_string(),
-        on_primary_container: "#314F19".to_string(),
-        secondary: "#56624B".to_string(),
-        on_secondary: "#FFFFFF".to_string(),
-        secondary_container: "#DAE7C9".to_string(),
-        on_secondary_container: "#3F4A34".to_string(),
-        tertiary: "#386665".to_string(),
-        on_tertiary: "#FFFFFF".to_string(),
-        tertiary_container: "#BBECEA".to_string(),
-        on_tertiary_container: "#1E4E4D".to_string(),
-        error: "#BA1A1A".to_string(),
-        on_error: "#FFFFFF".to_string(),
-        error_container: "#FFDAD6".to_string(),
-        on_error_container: "#93000A".to_string(),
-        background: "#F9FAEF".to_string(),
-        on_background: "#191D16".to_string(),
-        surface: "#F9FAEF".to_string(),
-        on_surface: "#191D16".to_string(),
-        surface_variant: "#E0E4D6".to_string(),
-        on_surface_variant: "#44483E".to_string(),
-        outline: "#74796D".to_string(),
-        outline_variant: "#C4C8BA".to_string(),
-        shadow: "#000000".to_string(),
-        scrim: "#000000".to_string(),
-        inverse_surface: "#2E312A".to_string(),
-        inverse_on_surface: "#F0F2E7".to_string(),
-        inverse_primary: "#ADD28E".to_string(),
-        primary_fixed: "#C8EEA8".to_string(),
-        on_primary_fixed: "#0B2000".to_string(),
-        primary_fixed_dim: "#ADD28E".to_string(),
-        on_primary_fixed_variant: "#314F19".to_string(),
-        secondary_fixed: "#DAE7C9".to_string(),
-        on_secondary_fixed: "#141E0C".to_string(),
-        secondary_fixed_dim: "#BECBAE".to_string(),
-        on_secondary_fixed_variant: "#3F4A34".to_string(),
-        tertiary_fixed: "#BBECEA".to_string(),
-        on_tertiary_fixed: "#00201F".to_string(),
-        tertiary_fixed_dim: "#A0CFCE".to_string(),
-        on_tertiary_fixed_variant: "#1E4E4D".to_string(),
-        surface_dim: "#D9DBD1".to_string(),
-        surface_bright: "#F9FAEF".to_string(),
-        surface_container_lowest: "#FFFFFF".to_string(),
-        surface_container_low: "#F3F5EA".to_string(),
-        surface_container: "#EDEFE4".to_string(),
-        surface_container_high: "#E7E9DE".to_string(),
-        surface_container_highest: "#E2E3D9".to_string(),
-    };
-
-    let dark_scheme = MaterialScheme {
-        primary: "#ADD28E".to_string(),
-        surface_tint: "#ADD28E".to_string(),
-        on_primary: "#1B3704".to_string(),
-        primary_container: "#314F19".to_string(),
-        on_primary_container: "#C8EEA8".to_string(),
-        secondary: "#BECBAE".to_string(),
-        on_secondary: "#29341F".to_string(),
-        secondary_container: "#3F4A34".to_string(),
-        on_secondary_container: "#DAE7C9".to_string(),
-        tertiary: "#A0CFCE".to_string(),
-        on_tertiary: "#003736".to_string(),
-        tertiary_container: "#1E4E4D".to_string(),
-        on_tertiary_container: "#BBECEA".to_string(),
-        error: "#FFB4AB".to_string(),
-        on_error: "#690005".to_string(),
-        error_container: "#93000A".to_string(),
-        on_error_container: "#FFDAD6".to_string(),
-        background: "#11140E".to_string(),
-        on_background: "#E2E3D9".to_string(),
-        surface: "#11140E".to_string(),
-        on_surface: "#E2E3D9".to_string(),
-        surface_variant: "#44483E".to_string(),
-        on_surface_variant: "#C4C8BA".to_string(),
-        outline: "#8E9286".to_string(),
-        outline_variant: "#44483E".to_string(),
-        shadow: "#000000".to_string(),
-        scrim: "#000000".to_string(),
-        inverse_surface: "#E2E3D9".to_string(),
-        inverse_on_surface: "#2E312A".to_string(),
-        inverse_primary: "#48672F".to_string(),
-        primary_fixed: "#C8EEA8".to_string(),
-        on_primary_fixed: "#0B2000".to_string(),
-        primary_fixed_dim: "#ADD28E".to_string(),
-        on_primary_fixed_variant: "#314F19".to_string(),
-        secondary_fixed: "#DAE7C9".to_string(),
-        on_secondary_fixed: "#141E0C".to_string(),
-        secondary_fixed_dim: "#BECBAE".to_string(),
-        on_secondary_fixed_variant: "#3F4A34".to_string(),
-        tertiary_fixed: "#BBECEA".to_string(),
-        on_tertiary_fixed: "#00201F".to_string(),
-        tertiary_fixed_dim: "#A0CFCE".to_string(),
-        on_tertiary_fixed_variant: "#1E4E4D".to_string(),
-        surface_dim: "#11140E".to_string(),
-        surface_bright: "#373A33".to_string(),
-        surface_container_lowest: "#0C0F09".to_string(),
-        surface_container_low: "#191D16".to_string(),
-        surface_container: "#1E211A".to_string(),
-        surface_container_high: "#282B24".to_string(),
-        surface_container_highest: "#33362F".to_string(),
-    };
-
-    let light_medium_contrast_scheme = MaterialScheme {
-        primary: "#253D05".to_string(),
-        surface_tint: "#4C662B".to_string(),
-        on_primary: "#FFFFFF".to_string(),
-        primary_container: "#5A7539".to_string(),
-        on_primary_container: "#FFFFFF".to_string(),
-        secondary: "#303924".to_string(),
-        on_secondary: "#FFFFFF".to_string(),
-        secondary_container: "#667157".to_string(),
-        on_secondary_container: "#FFFFFF".to_string(),
-        tertiary: "#083D3A".to_string(),
-        on_tertiary: "#FFFFFF".to_string(),
-        tertiary_container: "#477572".to_string(),
-        on_tertiary_container: "#FFFFFF".to_string(),
-        error: "#740006".to_string(),
-        on_error: "#FFFFFF".to_string(),
-        error_container: "#CF2C27".to_string(),
-        on_error_container: "#FFFFFF".to_string(),
-        background: "#F9FAEF".to_string(),
-        on_background: "#1A1C16".to_string(),
-        surface: "#F9FAEF".to_string(),
-        on_surface: "#0F120C".to_string(),
-        surface_variant: "#E1E4D5".to_string(),
-        on_surface_variant: "#34382D".to_string(),
-        outline: "#505449".to_string(),
-        outline_variant: "#6B6F62".to_string(),
-        shadow: "#000000".to_string(),
-        scrim: "#000000".to_string(),
-        inverse_surface: "#2F312A".to_string(),
-        inverse_on_surface: "#F1F2E6".to_string(),
-        inverse_primary: "#B1D18A".to_string(),
-        primary_fixed: "#5A7539".to_string(),
-        on_primary_fixed: "#FFFFFF".to_string(),
-        primary_fixed_dim: "#425C23".to_string(),
-        on_primary_fixed_variant: "#FFFFFF".to_string(),
-        secondary_fixed: "#667157".to_string(),
-        on_secondary_fixed: "#FFFFFF".to_string(),
-        secondary_fixed_dim: "#4E5840".to_string(),
-        on_secondary_fixed_variant: "#FFFFFF".to_string(),
-        tertiary_fixed: "#477572".to_string(),
-        on_tertiary_fixed: "#FFFFFF".to_string(),
-        tertiary_fixed_dim: "#2E5C59".to_string(),
-        on_tertiary_fixed_variant: "#FFFFFF".to_string(),
-        surface_dim: "#C6C7BD".to_string(),
-        surface_bright: "#F9FAEF".to_string(),
-        surface_container_lowest: "#FFFFFF".to_string(),
-        surface_container_low: "#F3F4E9".to_string(),
-        surface_container: "#E8E9DE".to_string(),
-        surface_container_high: "#DCDED3".to_string(),
-        surface_container_highest: "#D1D3C8".to_string(),
-    };
-
-    let light_high_contrast_scheme = MaterialScheme {
-        primary: "#1C3200".to_string(),
-        surface_tint: "#4C662B".to_string(),
-        on_primary: "#FFFFFF".to_string(),
-        primary_container: "#375018".to_string(),
-        on_primary_container: "#FFFFFF".to_string(),
-        secondary: "#262F1A".to_string(),
-        on_secondary: "#FFFFFF".to_string(),
-        secondary_container: "#434C35".to_string(),
-        on_secondary_container: "#FFFFFF".to_string(),
-        tertiary: "#003230".to_string(),
-        on_tertiary: "#FFFFFF".to_string(),
-        tertiary_container: "#21504E".to_string(),
-        on_tertiary_container: "#FFFFFF".to_string(),
-        error: "#600004".to_string(),
-        on_error: "#FFFFFF".to_string(),
-        error_container: "#98000A".to_string(),
-        on_error_container: "#FFFFFF".to_string(),
-        background: "#F9FAEF".to_string(),
-        on_background: "#1A1C16".to_string(),
-        surface: "#F9FAEF".to_string(),
-        on_surface: "#000000".to_string(),
-        surface_variant: "#E1E4D5".to_string(),
-        on_surface_variant: "#000000".to_string(),
-        outline: "#2A2D24".to_string(),
-        outline_variant: "#474B40".to_string(),
-        shadow: "#000000".to_string(),
-        scrim: "#000000".to_string(),
-        inverse_surface: "#2F312A".to_string(),
-        inverse_on_surface: "#FFFFFF".to_string(),
-        inverse_primary: "#B1D18A".to_string(),
-        primary_fixed: "#375018".to_string(),
-        on_primary_fixed: "#FFFFFF".to_string(),
-        primary_fixed_dim: "#213903".to_string(),
-        on_primary_fixed_variant: "#FFFFFF".to_string(),
-        secondary_fixed: "#434C35".to_string(),
-        on_secondary_fixed: "#FFFFFF".to_string(),
-        secondary_fixed_dim: "#2C3620".to_string(),
-        on_secondary_fixed_variant: "#FFFFFF".to_string(),
-        tertiary_fixed: "#21504E".to_string(),
-        on_tertiary_fixed: "#FFFFFF".to_string(),
-        tertiary_fixed_dim: "#033937".to_string(),
-        on_tertiary_fixed_variant: "#FFFFFF".to_string(),
-        surface_dim: "#B8BAAF".to_string(),
-        surface_bright: "#F9FAEF".to_string(),
-        surface_container_lowest: "#FFFFFF".to_string(),
-        surface_container_low: "#F1F2E6".to_string(),
-        surface_container: "#E2E3D8".to_string(),
-        surface_container_high: "#D4D5CA".to_string(),
-        surface_container_highest: "#C6C7BD".to_string(),
-    };
-
-    let dark_medium_contrast_scheme = MaterialScheme {
-        primary: "#C7E79E".to_string(),
-        surface_tint: "#B1D18A".to_string(),
-        on_primary: "#172B00".to_string(),
-        primary_container: "#7D9A59".to_string(),
-        on_primary_container: "#000000".to_string(),
-        secondary: "#D5E1C2".to_string(),
-        on_secondary: "#1F2814".to_string(),
-        secondary_container: "#8A9579".to_string(),
-        on_secondary_container: "#000000".to_string(),
-        tertiary: "#B5E6E1".to_string(),
-        on_tertiary: "#002B29".to_string(),
-        tertiary_container: "#6B9995".to_string(),
-        on_tertiary_container: "#000000".to_string(),
-        error: "#FFD2CC".to_string(),
-        on_error: "#540003".to_string(),
-        error_container: "#FF5449".to_string(),
-        on_error_container: "#000000".to_string(),
-        background: "#12140E".to_string(),
-        on_background: "#E2E3D8".to_string(),
-        surface: "#12140E".to_string(),
-        on_surface: "#FFFFFF".to_string(),
-        surface_variant: "#44483D".to_string(),
-        on_surface_variant: "#DBDECF".to_string(),
-        outline: "#B0B3A6".to_string(),
-        outline_variant: "#8E9285".to_string(),
-        shadow: "#000000".to_string(),
-        scrim: "#000000".to_string(),
-        inverse_surface: "#E2E3D8".to_string(),
-        inverse_on_surface: "#282B24".to_string(),
-        inverse_primary: "#364F17".to_string(),
-        primary_fixed: "#CDEDA3".to_string(),
-        on_primary_fixed: "#081400".to_string(),
-        primary_fixed_dim: "#B1D18A".to_string(),
-        on_primary_fixed_variant: "#253D05".to_string(),
-        secondary_fixed: "#DCE7C8".to_string(),
-        on_secondary_fixed: "#0B1403".to_string(),
-        secondary_fixed_dim: "#BFCBAD".to_string(),
-        on_secondary_fixed_variant: "#303924".to_string(),
-        tertiary_fixed: "#BCECE7".to_string(),
-        on_tertiary_fixed: "#001413".to_string(),
-        tertiary_fixed_dim: "#A0D0CB".to_string(),
-        on_tertiary_fixed_variant: "#083D3A".to_string(),
-        surface_dim: "#12140E".to_string(),
-        surface_bright: "#43453D".to_string(),
-        surface_container_lowest: "#060804".to_string(),
-        surface_container_low: "#1C1E18".to_string(),
-        surface_container: "#262922".to_string(),
-        surface_container_high: "#31342C".to_string(),
-        surface_container_highest: "#3C3F37".to_string(),
-    };
-
-    let dark_high_contrast_scheme = MaterialScheme {
-        primary: "#DAFBB0".to_string(),
-        surface_tint: "#B1D18A".to_string(),
-        on_primary: "#000000".to_string(),
-        primary_container: "#ADCD86".to_string(),
-        on_primary_container: "#050E00".to_string(),
-        secondary: "#E9F4D5".to_string(),
-        on_secondary: "#000000".to_string(),
-        secondary_container: "#BCC7A9".to_string(),
-        on_secondary_container: "#060D01".to_string(),
-        tertiary: "#C9F9F5".to_string(),
-        on_tertiary: "#000000".to_string(),
-        tertiary_container: "#9CCCC7".to_string(),
-        on_tertiary_container: "#000E0D".to_string(),
-        error: "#FFECE9".to_string(),
-        on_error: "#000000".to_string(),
-        error_container: "#FFAEA4".to_string(),
-        on_error_container: "#220001".to_string(),
-        background: "#12140E".to_string(),
-        on_background: "#E2E3D8".to_string(),
-        surface: "#12140E".to_string(),
-        on_surface: "#FFFFFF".to_string(),
-        surface_variant: "#44483D".to_string(),
-        on_surface_variant: "#FFFFFF".to_string(),
-        outline: "#EEF2E2".to_string(),
-        outline_variant: "#C1C4B6".to_string(),
-        shadow: "#000000".to_string(),
-        scrim: "#000000".to_string(),
-        inverse_surface: "#E2E3D8".to_string(),
-        inverse_on_surface: "#000000".to_string(),
-        inverse_primary: "#364F17".to_string(),
-        primary_fixed: "#CDEDA3".to_string(),
-        on_primary_fixed: "#000000".to_string(),
-        primary_fixed_dim: "#B1D18A".to_string(),
-        on_primary_fixed_variant: "#081400".to_string(),
-        secondary_fixed: "#DCE7C8".to_string(),
-        on_secondary_fixed: "#000000".to_string(),
-        secondary_fixed_dim: "#BFCBAD".to_string(),
-        on_secondary_fixed_variant: "#0B1403".to_string(),
-        tertiary_fixed: "#BCECE7".to_string(),
-        on_tertiary_fixed: "#000000".to_string(),
-        tertiary_fixed_dim: "#A0D0CB".to_string(),
-        on_tertiary_fixed_variant: "#001413".to_string(),
-        surface_dim: "#12140E".to_string(),
-        surface_bright: "#4F5149".to_string(),
-        surface_container_lowest: "#000000".to_string(),
-        surface_container_low: "#1E201A".to_string(),
-        surface_container: "#2F312A".to_string(),
-        surface_container_high: "#3A3C35".to_string(),
-        surface_container_highest: "#454840".to_string(),
-    };
-
-    let mut schemes = HashMap::new();
-    schemes.insert("light".to_string(), light_scheme);
-    schemes.insert(
-        "light-medium-contrast".to_string(),
-        light_medium_contrast_scheme,
-    );
-    schemes.insert(
-        "light-high-contrast".to_string(),
-        light_high_contrast_scheme,
-    );
-    schemes.insert("dark".to_string(), dark_scheme);
-    schemes.insert(
-        "dark-medium-contrast".to_string(),
-        dark_medium_contrast_scheme,
-    );
-    schemes.insert("dark-high-contrast".to_string(), dark_high_contrast_scheme);
-
-    let mut core_colors = HashMap::new();
-    core_colors.insert("primary".to_string(), "#5C883A".to_string());
-
-    MaterialThemeFile {
-        description: "TYPE: CUSTOM Material Theme Builder export 2025-08-21 11:51:45".to_string(),
-        seed: "#5C883A".to_string(),
-        core_colors,
-        extended_colors: Vec::new(),
-        schemes,
-        palettes: HashMap::new(),
-    }
+    const NALA_THEME_JSON: &str = include_str!("../resources/nala-material-theme.json");
+    serde_json::from_str(NALA_THEME_JSON)
+        .expect("Failed to parse embedded nala-material-theme.json")
 }
 
 impl MaterialThemeContext {
-    pub fn setup_fonts(font_name: Option<&str>) {
-        let font_name = font_name.unwrap_or("Google Sans Code");
+    fn prepare_font(name: &str, data: Vec<u8>, families: Vec<FontFamily>) {
+        let prepared_font = PreparedFont {
+            name: name.to_owned(),
+            data: Arc::new(FontData::from_owned(data)),
+            families,
+        };
 
-        // Check if font exists in resources directory first
-        let font_file_path = format!(
-            "resources/{}.ttf",
-            font_name.replace(" ", "-").to_lowercase()
-        );
+        if let Ok(mut fonts) = PREPARED_FONTS.lock() {
+            fonts.retain(|f| f.name != name);
+            fonts.push(prepared_font);
+        }
+    }
+
+    pub fn setup_fonts(font_name: Option<&str>) {
+        Self::setup_fonts_with_families(font_name, None);
+    }
+
+    pub fn setup_fonts_with_families(font_name: Option<&str>, families: Option<Vec<FontFamily>>) {
+        let font_name = font_name.unwrap_or(NALA_BODY_FONT);
+        let families = families.unwrap_or_else(|| vec![FontFamily::Proportional]);
+        let font_file_path = font_resource_path(font_name);
 
         let font_data = if std::path::Path::new(&font_file_path).exists() {
-            // Use local font file with include_bytes!
             Self::load_local_font(&font_file_path)
         } else {
-            // Download font from Google Fonts at runtime (only if ondemand feature is enabled)
             #[cfg(feature = "ondemand")]
             {
                 Self::download_google_font(font_name)
@@ -673,27 +364,15 @@ impl MaterialThemeContext {
             #[cfg(not(feature = "ondemand"))]
             {
                 eprintln!(
-                    "Font '{}' not found locally and ondemand feature is not enabled",
-                    font_name
+                    "Font '{}' not found at {} and ondemand feature is not enabled",
+                    font_name, font_file_path
                 );
                 None
             }
         };
 
         if let Some(data) = font_data {
-            let font_family_name = font_name.replace(" ", "");
-
-            let prepared_font = PreparedFont {
-                name: font_family_name.clone(),
-                data: Arc::new(FontData::from_owned(data)),
-                families: vec![FontFamily::Proportional, FontFamily::Monospace],
-            };
-
-            if let Ok(mut fonts) = PREPARED_FONTS.lock() {
-                // Remove any existing font with the same name
-                fonts.retain(|f| f.name != font_family_name);
-                fonts.push(prepared_font);
-            }
+            Self::prepare_font(&font_registration_name(font_name), data, families);
         }
     }
 
@@ -709,7 +388,7 @@ impl MaterialThemeContext {
 
         // First, get the CSS file to find the actual font URL
         let css_url = format!(
-            "https://fonts.googleapis.com/css2?family={}:wght@400&display=swap",
+            "https://fonts.googleapis.com/css2?family={}:wght@400;600&display=swap",
             font_url_name
         );
 
@@ -736,10 +415,7 @@ impl MaterialThemeContext {
                             .is_ok()
                         {
                             // Save font to resources directory for future use
-                            let target_path = format!(
-                                "resources/{}.ttf",
-                                font_name.replace(" ", "-").to_lowercase()
-                            );
+                            let target_path = font_resource_path(font_name);
                             if let Ok(()) = std::fs::write(&target_path, &font_data) {
                                 eprintln!(
                                     "Font '{}' downloaded and saved to {}",
@@ -845,17 +521,19 @@ impl MaterialThemeContext {
         // }
     }
 
-    pub fn setup_local_fonts_from_bytes(font_name: &str, font_data: &[u8]) {
-        let prepared_font = PreparedFont {
-            name: font_name.to_owned(),
-            data: Arc::new(FontData::from_owned(font_data.to_vec())),
-            families: vec![FontFamily::Proportional, FontFamily::Monospace],
-        };
-
-        if let Ok(mut fonts) = PREPARED_FONTS.lock() {
-            fonts.retain(|f| f.name != font_name);
-            fonts.push(prepared_font);
-        }
+    pub fn setup_local_fonts_from_bytes(
+        font_name: &str,
+        font_data: &[u8],
+        families: Option<Vec<FontFamily>>,
+    ) {
+        let families = families.unwrap_or_else(|| {
+            if font_name.contains("MaterialSymbols") {
+                vec![FontFamily::Proportional]
+            } else {
+                vec![FontFamily::Proportional]
+            }
+        });
+        Self::prepare_font(font_name, font_data.to_vec(), families);
     }
 
 
@@ -886,8 +564,10 @@ impl MaterialThemeContext {
             }
         } else {
             // Use embedded theme data first, then fall back to default
-            Self::get_embedded_theme_data("resources/material-theme1.json").or_else(|| {
-                Some(serde_json::to_string(&get_default_material_theme()).unwrap_or_default())
+            Self::get_embedded_theme_data("resources/nala-material-theme.json").or_else(|| {
+                Self::get_embedded_theme_data("resources/material-theme1.json").or_else(|| {
+                    Some(serde_json::to_string(&get_default_material_theme()).unwrap_or_default())
+                })
             })
         };
 
@@ -962,19 +642,14 @@ impl MaterialThemeContext {
                 for family in &prepared_font.families {
                     match family {
                         FontFamily::Proportional => {
-                            // Google fonts go to the front, icon fonts go to the back
+                            let family_fonts = fonts
+                                .families
+                                .entry(FontFamily::Proportional)
+                                .or_default();
                             if prepared_font.name.contains("MaterialSymbols") {
-                                fonts
-                                    .families
-                                    .entry(FontFamily::Proportional)
-                                    .or_default()
-                                    .push(prepared_font.name.clone());
+                                family_fonts.push(prepared_font.name.clone());
                             } else {
-                                fonts
-                                    .families
-                                    .entry(FontFamily::Proportional)
-                                    .or_default()
-                                    .insert(0, prepared_font.name.clone());
+                                family_fonts.insert(0, prepared_font.name.clone());
                             }
                         }
                         FontFamily::Monospace => {
@@ -982,9 +657,15 @@ impl MaterialThemeContext {
                                 .families
                                 .entry(FontFamily::Monospace)
                                 .or_default()
-                                .push(prepared_font.name.clone());
+                                .insert(0, prepared_font.name.clone());
                         }
-                        _ => {}
+                        FontFamily::Name(_) => {
+                            fonts
+                                .families
+                                .entry(family.clone())
+                                .or_default()
+                                .insert(0, prepared_font.name.clone());
+                        }
                     }
                 }
             }
@@ -1095,57 +776,57 @@ impl MaterialThemeContext {
 
             Self::hex_to_color32(hex).unwrap_or(Color32::GRAY)
         } else {
-            // Fallback colors when no theme is loaded (using material-theme4.json light values)
+            // Fallback colors when no theme is loaded (Nala light scheme)
             match name {
-                "primary" => Color32::from_rgb(72, 103, 47), // #48672F
-                "surfaceTint" => Color32::from_rgb(72, 103, 47), // #48672F
+                "primary" => Color32::from_rgb(67, 79, 207), // #434FCF
+                "surfaceTint" => Color32::from_rgb(67, 79, 207), // #434FCF
                 "onPrimary" => Color32::WHITE,               // #FFFFFF
-                "primaryContainer" => Color32::from_rgb(200, 238, 168), // #C8EEA8
-                "onPrimaryContainer" => Color32::from_rgb(49, 79, 25), // #314F19
-                "secondary" => Color32::from_rgb(86, 98, 75), // #56624B
+                "primaryContainer" => Color32::from_rgb(223, 228, 246), // #DFE4F6
+                "onPrimaryContainer" => Color32::from_rgb(21, 25, 45), // #15192D
+                "secondary" => Color32::from_rgb(65, 67, 121), // #414379
                 "onSecondary" => Color32::WHITE,             // #FFFFFF
-                "secondaryContainer" => Color32::from_rgb(218, 231, 201), // #DAE7C9
-                "onSecondaryContainer" => Color32::from_rgb(63, 74, 52), // #3F4A34
-                "tertiary" => Color32::from_rgb(56, 102, 101), // #386665
-                "onTertiary" => Color32::WHITE,              // #FFFFFF
-                "tertiaryContainer" => Color32::from_rgb(187, 236, 234), // #BBECEA
-                "onTertiaryContainer" => Color32::from_rgb(30, 78, 77), // #1E4E4D
-                "error" => Color32::from_rgb(186, 26, 26),   // #BA1A1A
+                "secondaryContainer" => Color32::from_rgb(215, 219, 255), // #D7DBFF
+                "onSecondaryContainer" => Color32::from_rgb(24, 24, 44), // #18182C
+                "tertiary" => Color32::from_rgb(108, 53, 91), // #6C355B
+                "onTertiary" => Color32::from_rgb(252, 251, 252), // #FCFBFC
+                "tertiaryContainer" => Color32::from_rgb(248, 210, 234), // #F8D2EA
+                "onTertiaryContainer" => Color32::from_rgb(40, 20, 33), // #281421
+                "error" => Color32::from_rgb(158, 0, 9),       // #9E0009
                 "onError" => Color32::WHITE,                 // #FFFFFF
-                "errorContainer" => Color32::from_rgb(255, 218, 214), // #FFDAD6
-                "onErrorContainer" => Color32::from_rgb(147, 0, 10), // #93000A
-                "background" => Color32::from_rgb(249, 250, 239), // #F9FAEF
-                "onBackground" => Color32::from_rgb(25, 29, 22), // #191D16
-                "surface" => Color32::from_rgb(249, 250, 239), // #F9FAEF
-                "onSurface" => Color32::from_rgb(25, 29, 22), // #191D16
-                "surfaceVariant" => Color32::from_rgb(224, 228, 214), // #E0E4D6
-                "onSurfaceVariant" => Color32::from_rgb(68, 72, 62), // #44483E
-                "outline" => Color32::from_rgb(116, 121, 109), // #74796D
-                "outlineVariant" => Color32::from_rgb(196, 200, 186), // #C4C8BA
+                "errorContainer" => Color32::from_rgb(251, 221, 216), // #FBDDD8
+                "onErrorContainer" => Color32::from_rgb(44, 19, 18), // #2C1312
+                "background" => Color32::from_rgb(250, 250, 251), // #FAFAFB
+                "onBackground" => Color32::from_rgb(28, 28, 29), // #1C1C1D
+                "surface" => Color32::from_rgb(250, 250, 251), // #FAFAFB
+                "onSurface" => Color32::from_rgb(28, 28, 29), // #1C1C1D
+                "surfaceVariant" => Color32::from_rgb(228, 228, 229), // #E4E4E5
+                "onSurfaceVariant" => Color32::from_rgb(70, 70, 73), // #464649
+                "outline" => Color32::from_rgb(120, 120, 124), // #78787C
+                "outlineVariant" => Color32::from_rgb(201, 201, 202), // #C9C9CA
                 "shadow" => Color32::BLACK,                  // #000000
                 "scrim" => Color32::BLACK,                   // #000000
-                "inverseSurface" => Color32::from_rgb(46, 49, 42), // #2E312A
-                "inverseOnSurface" => Color32::from_rgb(240, 242, 231), // #F0F2E7
-                "inversePrimary" => Color32::from_rgb(173, 210, 142), // #ADD28E
-                "primaryFixed" => Color32::from_rgb(200, 238, 168), // #C8EEA8
-                "onPrimaryFixed" => Color32::from_rgb(11, 32, 0), // #0B2000
-                "primaryFixedDim" => Color32::from_rgb(173, 210, 142), // #ADD28E
-                "onPrimaryFixedVariant" => Color32::from_rgb(49, 79, 25), // #314F19
-                "secondaryFixed" => Color32::from_rgb(218, 231, 201), // #DAE7C9
-                "onSecondaryFixed" => Color32::from_rgb(20, 30, 12), // #141E0C
-                "secondaryFixedDim" => Color32::from_rgb(190, 203, 174), // #BECBAE
-                "onSecondaryFixedVariant" => Color32::from_rgb(63, 74, 52), // #3F4A34
-                "tertiaryFixed" => Color32::from_rgb(187, 236, 234), // #BBECEA
-                "onTertiaryFixed" => Color32::from_rgb(0, 32, 31), // #00201F
-                "tertiaryFixedDim" => Color32::from_rgb(160, 207, 206), // #A0CFCE
-                "onTertiaryFixedVariant" => Color32::from_rgb(30, 78, 77), // #1E4E4D
-                "surfaceDim" => Color32::from_rgb(217, 219, 209), // #D9DBD1
-                "surfaceBright" => Color32::from_rgb(249, 250, 239), // #F9FAEF
+                "inverseSurface" => Color32::from_rgb(48, 48, 50), // #303032
+                "inverseOnSurface" => Color32::from_rgb(242, 242, 243), // #F2F2F3
+                "inversePrimary" => Color32::from_rgb(188, 198, 243), // #BCC6F3
+                "primaryFixed" => Color32::from_rgb(223, 228, 246), // #DFE4F6
+                "onPrimaryFixed" => Color32::from_rgb(21, 25, 45), // #15192D
+                "primaryFixedDim" => Color32::from_rgb(188, 198, 243), // #BCC6F3
+                "onPrimaryFixedVariant" => Color32::from_rgb(48, 58, 104), // #303A68
+                "secondaryFixed" => Color32::from_rgb(215, 219, 255), // #D7DBFF
+                "onSecondaryFixed" => Color32::from_rgb(24, 24, 44), // #18182C
+                "secondaryFixedDim" => Color32::from_rgb(187, 193, 255), // #BBC1FF
+                "onSecondaryFixedVariant" => Color32::from_rgb(55, 57, 103), // #373967
+                "tertiaryFixed" => Color32::from_rgb(248, 210, 234), // #F8D2EA
+                "onTertiaryFixed" => Color32::from_rgb(40, 20, 33), // #281421
+                "tertiaryFixedDim" => Color32::from_rgb(242, 177, 219), // #F2B1DB
+                "onTertiaryFixedVariant" => Color32::from_rgb(93, 46, 78), // #5D2E4E
+                "surfaceDim" => Color32::from_rgb(228, 228, 229), // #E4E4E5
+                "surfaceBright" => Color32::from_rgb(250, 250, 251), // #FAFAFB
                 "surfaceContainerLowest" => Color32::WHITE,  // #FFFFFF
-                "surfaceContainerLow" => Color32::from_rgb(243, 245, 234), // #F3F5EA
-                "surfaceContainer" => Color32::from_rgb(237, 239, 228), // #EDEFE4
-                "surfaceContainerHigh" => Color32::from_rgb(231, 233, 222), // #E7E9DE
-                "surfaceContainerHighest" => Color32::from_rgb(226, 227, 217), // #E2E3D9
+                "surfaceContainerLow" => Color32::from_rgb(250, 250, 251), // #FAFAFB
+                "surfaceContainer" => Color32::from_rgb(242, 242, 243), // #F2F2F3
+                "surfaceContainerHigh" => Color32::from_rgb(232, 232, 235), // #E8E8EB
+                "surfaceContainerHighest" => Color32::from_rgb(228, 228, 229), // #E4E4E5
                 _ => Color32::GRAY,
             }
         }
@@ -1212,10 +893,93 @@ pub fn update_global_theme(theme: MaterialThemeContext) {
 }
 
 /// Helper function to prepare Material Design fonts for the application
-/// Default font is "Google Sans Code" if not specified
+/// Default font is [`NALA_BODY_FONT`] (`Inter`) if not specified
 /// Note: Fonts are only prepared, call load_fonts() to actually load them
 pub fn setup_google_fonts(font_name: Option<&str>) {
     MaterialThemeContext::setup_fonts(font_name);
+}
+
+/// Prepare Nala default fonts from Leo design tokens:
+/// Inter (body), Poppins (display/headings), Roboto Mono (monospace)
+///
+/// Place `inter.ttf`, `poppins.ttf`, and `roboto-mono.ttf` in `resources/`,
+/// or enable the `ondemand` feature to download from Google Fonts at runtime.
+pub fn setup_nala_fonts() {
+    MaterialThemeContext::setup_fonts_with_families(
+        Some(NALA_BODY_FONT),
+        Some(vec![FontFamily::Proportional]),
+    );
+    MaterialThemeContext::setup_fonts_with_families(
+        Some(NALA_DISPLAY_FONT),
+        Some(vec![FontFamily::Name(NALA_DISPLAY_FONT.into())]),
+    );
+    MaterialThemeContext::setup_fonts_with_families(
+        Some(NALA_MONOSPACE_FONT),
+        Some(vec![FontFamily::Monospace]),
+    );
+}
+
+/// Apply Nala typography text styles to the egui context (Leo universal desktop tokens)
+pub fn apply_nala_text_styles(ctx: &egui::Context) {
+    let display = FontFamily::Name(NALA_DISPLAY_FONT.into());
+    let mut style = (*ctx.style()).clone();
+
+    // Heading sizes from Leo universal desktop tokens (SF Pro Display → Poppins)
+    style
+        .text_styles
+        .insert(TextStyle::Heading, FontId::new(28.0, display.clone())); // h1
+    style.text_styles.insert(
+        TextStyle::Name("H2".into()),
+        FontId::new(22.0, display.clone()),
+    );
+    style.text_styles.insert(
+        TextStyle::Name("H3".into()),
+        FontId::new(20.0, display.clone()),
+    );
+    style.text_styles.insert(
+        TextStyle::Name("H4".into()),
+        FontId::new(16.0, display),
+    );
+
+    // Body sizes from Leo universal desktop tokens (SF Pro Text → Inter)
+    style
+        .text_styles
+        .insert(TextStyle::Body, FontId::new(14.0, FontFamily::Proportional));
+    style.text_styles.insert(
+        TextStyle::Button,
+        FontId::new(14.0, FontFamily::Proportional),
+    );
+    style
+        .text_styles
+        .insert(TextStyle::Small, FontId::new(12.0, FontFamily::Proportional));
+    style.text_styles.insert(
+        TextStyle::Name("Large".into()),
+        FontId::new(16.0, FontFamily::Proportional),
+    );
+    style.text_styles.insert(
+        TextStyle::Monospace,
+        FontId::new(14.0, FontFamily::Monospace),
+    );
+
+    // Nala component button typography (semibold Inter)
+    style.text_styles.insert(
+        TextStyle::Name("Button".into()),
+        FontId::new(14.0, FontFamily::Proportional),
+    );
+    style.text_styles.insert(
+        TextStyle::Name("ButtonSmall".into()),
+        FontId::new(12.0, FontFamily::Proportional),
+    );
+    style.text_styles.insert(
+        TextStyle::Name("ButtonLarge".into()),
+        FontId::new(16.0, FontFamily::Proportional),
+    );
+    style.text_styles.insert(
+        TextStyle::Name("ButtonJumbo".into()),
+        FontId::new(18.0, FontFamily::Proportional),
+    );
+
+    ctx.set_style(style);
 }
 
 /// Helper function to prepare local fonts from the resources directory
@@ -1236,7 +1000,7 @@ pub fn setup_local_fonts(font_path: Option<&str>) {
 ///
 /// Note: Fonts are only prepared, call load_fonts() to actually load them
 pub fn setup_local_fonts_from_bytes(font_name: &str, font_data: &[u8]) {
-    MaterialThemeContext::setup_local_fonts_from_bytes(font_name, font_data);
+    MaterialThemeContext::setup_local_fonts_from_bytes(font_name, font_data, None);
 }
 
 /// Prepare local Material Design themes for the application from JSON files

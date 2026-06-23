@@ -77,6 +77,10 @@ eframe = { version = "0.33", default-features = false, features = ["default_font
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 eframe = { version = "0.33", features = ["default_fonts", "glow", "x11", "wayland"] }
 
+# macOS/Windows desktop dependencies for examples
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+eframe = { version = "0.33", features = ["default_fonts", "glow"] }
+
 # Wasm specific dependencies
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 # eframe = { version = "0.32.3", features = ["default_fonts", "glow", "web_screen_reader"] }
