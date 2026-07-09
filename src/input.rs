@@ -157,6 +157,7 @@ pub struct MaterialInput<'a> {
     extra_text: Option<String>,
     width: Option<f32>,
     max_chars: Option<usize>,
+    password: bool,
 }
 
 /// Alias for README / legacy naming.
@@ -179,6 +180,7 @@ impl<'a> MaterialInput<'a> {
             extra_text: None,
             width: None,
             max_chars: None,
+            password: false,
         }
     }
 
@@ -244,6 +246,12 @@ impl<'a> MaterialInput<'a> {
 
     pub fn max_chars(mut self, max_chars: usize) -> Self {
         self.max_chars = Some(max_chars);
+        self
+    }
+
+    /// Mask input characters (for password fields).
+    pub fn password(mut self, password: bool) -> Self {
+        self.password = password;
         self
     }
 }
@@ -475,6 +483,9 @@ impl Widget for MaterialInput<'_> {
             }
             if let Some(max_chars) = self.max_chars {
                 text_edit = text_edit.char_limit(max_chars);
+            }
+            if self.password {
+                text_edit = text_edit.password(true);
             }
 
             let text_response = ui.put(text_rect, text_edit);

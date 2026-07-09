@@ -17,6 +17,7 @@ pub struct InputWindow {
     error_value: String,
     helper_value: String,
     char_count_value: String,
+    password_value: String,
 }
 
 impl Default for InputWindow {
@@ -34,6 +35,7 @@ impl Default for InputWindow {
             error_value: String::new(),
             helper_value: String::new(),
             char_count_value: String::new(),
+            password_value: String::new(),
         }
     }
 }
@@ -202,6 +204,17 @@ impl InputWindow {
                 .label("Username")
                 .placeholder("Choose a username")
                 .helper_text("Must be 3–20 characters")
+                .width(width)
+                .enabled(!disabled),
+        );
+        ui.add_space(12.0);
+
+        ui.add(
+            MaterialInput::new(&mut self.password_value)
+                .label("Password")
+                .placeholder("Enter password")
+                .password(true)
+                .leading_icon("lock")
                 .width(width)
                 .enabled(!disabled),
         );
