@@ -245,6 +245,7 @@ pub mod drawer;
 pub mod fab;
 pub mod icon;
 pub mod iconbutton;
+pub mod input;
 pub mod material_symbol;
 pub mod noto_emoji;
 #[cfg(feature = "svg_emoji")]
@@ -303,6 +304,7 @@ pub use {
         icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
         icon_button_toggle, IconButtonVariant, MaterialIconButton,
     },
+    input::{input, InputMode, InputSize, MaterialInput, MaterialTextField, MaterialTextFieldMode, MaterialTextFieldSize},
     imagelist::{
         image_list, masonry_image_list, woven_image_list, ImageListItem, ImageListVariant,
         MaterialImageList,
