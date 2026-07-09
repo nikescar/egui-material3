@@ -26,6 +26,7 @@ mod drawer_window;
 mod fab_window;
 mod iconbutton_window;
 mod imagelist_window;
+mod input_window;
 mod layoutgrid_window;
 mod list_window;
 mod menu_window;
@@ -62,6 +63,7 @@ use drawer_window::DrawerWindow;
 use fab_window::FabWindow;
 use iconbutton_window::IconButtonWindow;
 use imagelist_window::ImageListWindow;
+use input_window::InputWindow;
 use layoutgrid_window::LayoutGridWindow;
 use list_window::ListWindow;
 use menu_window::MenuWindow;
@@ -129,6 +131,7 @@ struct MaterialApp {
     dialog_window: DialogWindow,
     fab_window: FabWindow,
     iconbutton_window: IconButtonWindow,
+    input_window: InputWindow,
     list_window: ListWindow,
     menu_window: MenuWindow,
     navigation_window: NavigationWindow,
@@ -172,6 +175,7 @@ impl Default for MaterialApp {
             dialog_window: DialogWindow::default(),
             fab_window: FabWindow::default(),
             iconbutton_window: IconButtonWindow::default(),
+            input_window: InputWindow::default(),
             list_window: ListWindow::default(),
             menu_window: MenuWindow::default(),
             navigation_window: NavigationWindow::default(),
@@ -307,6 +311,7 @@ impl MaterialApp {
         self.dialog_window.open = false;
         self.fab_window.open = false;
         self.iconbutton_window.open = false;
+        self.input_window.open = false;
         self.list_window.open = false;
         self.menu_window.open = false;
         self.progress_window.open = false;
@@ -630,6 +635,10 @@ impl eframe::App for MaterialApp {
                     self.iconbutton_window.open = true;
                 }
 
+                if ui.add(MaterialButton::filled("Input Stories")).clicked() {
+                    self.input_window.open = true;
+                }
+
                 if ui
                     .add(MaterialButton::filled("Image List Stories"))
                     .clicked()
@@ -737,6 +746,7 @@ impl eframe::App for MaterialApp {
         self.dialog_window.show(ctx);
         self.fab_window.show(ctx);
         self.iconbutton_window.show(ctx);
+        self.input_window.show(ctx);
         self.list_window.show(ctx);
         self.menu_window.show(ctx);
         self.navigation_window.show(ctx);
