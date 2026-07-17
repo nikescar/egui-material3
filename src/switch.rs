@@ -89,6 +89,10 @@ pub struct MaterialSwitch<'a> {
     unselected_icon: Option<char>,
     /// Legacy M3 track outline (off by default — Nala toggles have no outline)
     show_track_outline: bool,
+    /// Override for the checked ("on") track color. When `None`, the theme
+    /// `primary` token is used (default). Set this to render an alternate on
+    /// state, e.g. a warning tint for a partial/mixed selection.
+    track_color: Option<Color32>,
 }
 
 impl<'a> MaterialSwitch<'a> {
@@ -101,6 +105,7 @@ impl<'a> MaterialSwitch<'a> {
             selected_icon: None,
             unselected_icon: None,
             show_track_outline: false,
+            track_color: None,
         }
     }
 
@@ -137,6 +142,14 @@ impl<'a> MaterialSwitch<'a> {
 
     pub fn show_track_outline(mut self, show: bool) -> Self {
         self.show_track_outline = show;
+        self
+    }
+
+    /// Override the checked ("on") track color. Pass `None` (the default) to
+    /// use the theme `primary` token, or `Some(color)` to render an alternate
+    /// on state such as a warning tint for a partial/mixed selection.
+    pub fn track_color(mut self, color: impl Into<Option<Color32>>) -> Self {
+        self.track_color = color.into();
         self
     }
 }
@@ -211,7 +224,7 @@ impl<'a> Widget for MaterialSwitch<'a> {
             switch_rect.center().y,
         );
 
-        let checked_track = primary;
+        let checked_track = self.track_color.unwrap_or(primary);
         let unchecked_track = outline_variant;
 
         let mut track_color = Color32::from_rgba_unmultiplied(
