@@ -25,6 +25,13 @@ exclude = [
 default = []
 ondemand = ["dep:ureq"]
 spreadsheet = ["dep:diesel", "dep:egui_extras", "dep:csv", "dep:calamine", "dep:futures", "dep:async-std", "dep:wasm-bindgen-futures", "dep:rusqlite"]
+
+# SVG icon/emoji features - embed SVG assets at compile time
+# Binary size impact (measured on release build with LTO):
+# - svg_solar: ~5 MB (1,205 UI/UX icons)
+# - svg_noto: ~36 MB (3,583 Google emoji with variants)
+# - svg_twemoji: ~17 MB (3,689 Twitter emoji)
+# - svg_emoji (all three): ~39 MB total increase
 svg_solar = []
 svg_noto = []
 svg_twemoji = []

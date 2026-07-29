@@ -2,9 +2,20 @@
 //!
 //! This module provides three comprehensive SVG collections available as optional features:
 //!
-//! - **Solar Icons** (~1200 icons): UI/UX icon set with variants (feature: `svg_solar`)
-//! - **Noto Emoji** (~3600 emoji): Google's emoji collection with skin tone and gender variants (feature: `svg_noto`)
-//! - **Twemoji** (~3700 emoji): Twitter's emoji collection (feature: `svg_twemoji`)
+//! - **Solar Icons** (~1,205 icons): UI/UX icon set with variants (feature: `svg_solar`)
+//! - **Noto Emoji** (~3,583 emoji): Google's emoji collection with skin tone and gender variants (feature: `svg_noto`)
+//! - **Twemoji** (~3,689 emoji): Twitter's emoji collection (feature: `svg_twemoji`)
+//!
+//! ## Binary Size Impact
+//!
+//! SVG assets are embedded at compile time. Binary size increase (release build with LTO):
+//!
+//! - `svg_solar`: ~5 MB
+//! - `svg_noto`: ~36 MB
+//! - `svg_twemoji`: ~17 MB
+//! - `svg_emoji` (all): ~39 MB total
+//!
+//! Only enable the features you actually need to minimize binary size.
 //!
 //! ## Features
 //!
@@ -43,7 +54,7 @@
 //!
 //! - SVG files are embedded at compile time when features are enabled
 //! - Files are downloaded automatically during build if not in local checkout
-//! - Each collection is ~5-40 MiB when embedded, so only enable what you need
+//! - See "Binary Size Impact" section above for specific size measurements
 
 // Include generated constants and HashMaps from build script
 include!(concat!(env!("OUT_DIR"), "/svg_emoji_generated.rs"));
