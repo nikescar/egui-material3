@@ -36,7 +36,7 @@ use wasm_imports::*;
 #[cfg(feature = "spreadsheet")]
 use egui::{Id, Response, Sense, TextEdit, Ui, Widget};
 #[cfg(feature = "spreadsheet")]
-use crate::egui_async_std::{Bind, StateWithData};
+use crate::egui_smol::{Bind, StateWithData};
 
 // Re-export for convenience
 #[cfg(feature = "spreadsheet")]

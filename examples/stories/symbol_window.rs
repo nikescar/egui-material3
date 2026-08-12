@@ -2,9 +2,10 @@
 
 use crate::{
     assist_chip, fab_primary, fab_secondary, filter_chip, icon, icon_button_filled,
-    icon_button_filled_tonal, icon_button_outlined, icon_button_standard, input_chip, list,
-    list_item, suggestion_chip, MaterialButton,
+    icon_button_filled_tonal, icon_button_outlined, icon_button_standard, input_chip,
+    suggestion_chip, MaterialButton,
 };
+use egui_material3::{MaterialList, ListItem};
 use egui_material3::material_symbol::{
     ICON_ADD, ICON_BOOKMARK, ICON_DELETE, ICON_EDIT, ICON_FAVORITE, ICON_HOME, ICON_NOTIFICATIONS, ICON_PERSON, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
     ICON_SHOPPING_CART, ICON_STAR,
@@ -261,23 +262,23 @@ impl SymbolWindow {
 
         // List with material symbol icons
         ui.label("List:");
-        let symbol_list = list()
+        let symbol_list = MaterialList::new()
             .id("material_symbol_list")
             .item(
-                list_item("Home")
+                ListItem::new("Home")
                     .leading_icon("home")
                     .trailing_icon("notifications")
                     .on_click(|| println!("Home item clicked")),
             )
             .item(
-                list_item("Favorites")
+                ListItem::new("Favorites")
                     .secondary_text("Your saved items")
                     .leading_icon("favorite")
                     .trailing_icon("star")
                     .on_click(|| println!("Favorites item clicked")),
             )
             .item(
-                list_item("Settings")
+                ListItem::new("Settings")
                     .secondary_text("App configuration\nAdvanced options")
                     .leading_icon("settings")
                     .trailing_icon("person")

@@ -1,7 +1,8 @@
 #![doc(hidden)]
 
 use crate::datatable::{RowAction, SortDirection as DataTableSortDirection};
-use crate::{data_table, list, list_item, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton, MaterialCheckbox};
+use crate::{data_table, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton, MaterialCheckbox};
+use egui_material3::{MaterialList, ListItem};
 use eframe::egui::{self, Color32, Id, Ui, Window};
 use std::collections::{HashMap, HashSet};
 
@@ -977,16 +978,16 @@ impl DataTableWindow {
                    .cell("Ultra-Narrow List")
                    .drawer(|ui| {
                        ui.add_space(4.0);
-                       use crate::{list, list_item};
-                       let ultra_list = list()
+                       use egui_material3::{MaterialList, ListItem};
+                       let ultra_list = MaterialList::new()
                            .id("drawer_ultra_list")
-                           .item(list_item("Home").leading_icon("home".to_string())
+                           .item(ListItem::new("Home").leading_icon("home".to_string())
                                .min_leading_width(28.0).horizontal_title_gap(4.0)
                                .min_vertical_padding(4.0).min_tile_height(36.0))
-                           .item(list_item("Work").leading_icon("work".to_string())
+                           .item(ListItem::new("Work").leading_icon("work".to_string())
                                .min_leading_width(28.0).horizontal_title_gap(4.0)
                                .min_vertical_padding(4.0).min_tile_height(36.0))
-                           .item(list_item("Profile").leading_icon("person".to_string())
+                           .item(ListItem::new("Profile").leading_icon("person".to_string())
                                .min_leading_width(28.0).horizontal_title_gap(4.0)
                                .min_vertical_padding(4.0).min_tile_height(36.0));
                        ui.add(ultra_list);

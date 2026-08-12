@@ -24,7 +24,7 @@ exclude = [
 [features]
 default = []
 ondemand = ["dep:ureq"]
-spreadsheet = ["dep:diesel", "dep:egui_extras", "dep:csv", "dep:calamine", "dep:futures", "dep:async-std", "dep:wasm-bindgen-futures", "dep:rusqlite"]
+spreadsheet = ["dep:diesel", "dep:egui_extras", "dep:csv", "dep:calamine", "dep:futures", "dep:smol", "dep:async-channel", "dep:wasm-bindgen-futures", "dep:rusqlite"]
 
 # SVG icon/emoji features - embed SVG assets at compile time
 # Binary size impact (measured on release build with LTO):
@@ -56,7 +56,8 @@ dark-light = "2.0"
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 rusqlite = { version = "0.38", default-features = false, features = ["bundled"], optional = true }
 libsqlite3-hotbundle = { version = "1.510300", optional = true, git = "https://github.com/nikescar/libsqlite3-hotbundle" }
-async-std = { version = "1.13", features = ["attributes"], optional = true } # for spreadsheet feature
+smol = { version = "2.0", optional = true } # for spreadsheet feature
+async-channel = { version = "2.3", optional = true } # for spreadsheet feature
 # diesel = { version = "2.3", default-features = false, features = ["sqlite"], optional = true }
 
 ureq = { version = "2.12", features = ["json"], optional = true } # for ondemand feature
@@ -74,7 +75,8 @@ ureq = { version = "2.12", features = ["json"] }
 egui-file-dialog = "0.12"
 webbrowser = { version = "1.2.0", default-features = false }
 glob = "0.3"
-async-std = { version = "1.13", features = ["attributes"] }
+smol = { version = "2.0" }
+async-channel = { version = "2.3" }
 
 # Android specific dependencies
 [target.'cfg(target_os = "android")'.dependencies]
@@ -107,6 +109,14 @@ path = "examples/widget_gallery_example.rs"
 [[example]]
 name = "stories"
 path = "examples/stories/main.rs"
+
+[[example]]
+name = "mvvm_counter_example"
+path = "examples/mvvm_counter_example.rs"
+
+[[example]]
+name = "mvvm_todo_example"
+path = "examples/mvvm_todo_example.rs"
 
 [package.metadata.docs.rs]
 all-features = true

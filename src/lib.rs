@@ -260,7 +260,7 @@ pub mod select;
 pub mod slider;
 pub mod snackbar;
 #[cfg(feature = "spreadsheet")]
-pub mod egui_async_std;
+pub mod egui_smol;
 pub mod spreadsheet;
 pub mod switch;
 pub mod tabs;
@@ -270,6 +270,9 @@ pub mod toolbar;
 pub mod tooltip;
 pub mod topappbar;
 pub mod treeview;
+
+// MVVM support module
+pub mod mvvm;
 
 pub use {
     actionsheet::{action_sheet, ActionButton, ActionGroup, MaterialActionSheet},
@@ -306,7 +309,7 @@ pub use {
         MaterialImageList,
     },
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
-    list::{list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, VisualDensity},
+    list::{ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, VisualDensity},
     menu::{
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData,
         MenuButtonThemeData, MenuItem, MenuStyle, MenuThemeData, Positioning,
