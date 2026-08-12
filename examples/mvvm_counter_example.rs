@@ -8,7 +8,10 @@
 use eframe::egui;
 use egui_material3::mvvm::{ValState, ViewModel};
 use egui_material3::{
-    theme::{load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme, update_window_background},
+    theme::{
+        load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme,
+        update_window_background,
+    },
     MaterialButton, MaterialCheckbox,
 };
 
@@ -134,14 +137,14 @@ impl eframe::App for MyApp {
 
             // Display current count
             ui.vertical_centered(|ui| {
-                ui.label(egui::RichText::new(
-                    format!("Count: {}", self.view_model.count.get())
-                ).size(48.0).strong());
+                ui.label(
+                    egui::RichText::new(format!("Count: {}", self.view_model.count.get()))
+                        .size(48.0)
+                        .strong(),
+                );
 
                 ui.add_space(10.0);
-                ui.label(egui::RichText::new(
-                    &self.view_model.message.get()
-                ).size(20.0));
+                ui.label(egui::RichText::new(&self.view_model.message.get()).size(20.0));
             });
 
             ui.add_space(30.0);
@@ -202,7 +205,10 @@ impl eframe::App for MyApp {
             // Auto-update toggle
             ui.horizontal(|ui| {
                 let mut auto_update = self.view_model.auto_update.get();
-                if ui.add(MaterialCheckbox::new(&mut auto_update, "Auto increment")).changed() {
+                if ui
+                    .add(MaterialCheckbox::new(&mut auto_update, "Auto increment"))
+                    .changed()
+                {
                     self.view_model.toggle_auto_update();
                     ctx.request_repaint();
                 }

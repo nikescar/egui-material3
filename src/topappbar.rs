@@ -174,7 +174,8 @@ impl<'a> MaterialTopAppBar<'a> {
     where
         F: Fn() + Send + Sync + 'a,
     {
-        self.action_icons.push((icon.to_string(), Box::new(callback)));
+        self.action_icons
+            .push((icon.to_string(), Box::new(callback)));
         self
     }
 
@@ -307,7 +308,12 @@ impl Widget for MaterialTopAppBar<'_> {
                     ui.painter().rect_filled(
                         shadow_rect,
                         corner_radius,
-                        Color32::from_rgba_unmultiplied(0, 0, 0, (scrolled_under_elevation * 7.0) as u8),
+                        Color32::from_rgba_unmultiplied(
+                            0,
+                            0,
+                            0,
+                            (scrolled_under_elevation * 7.0) as u8,
+                        ),
                     );
                 }
             }
@@ -353,7 +359,9 @@ impl Widget for MaterialTopAppBar<'_> {
                 let nav_icon_text = if nav_icon.chars().count() == 1 {
                     // If it's a single character, check if it's in Material Symbols range
                     let ch = nav_icon.chars().next().unwrap();
-                    if ('\u{e000}'..='\u{f8ff}').contains(&ch) || ('\u{ea00}'..='\u{eb8d}').contains(&ch) {
+                    if ('\u{e000}'..='\u{f8ff}').contains(&ch)
+                        || ('\u{ea00}'..='\u{eb8d}').contains(&ch)
+                    {
                         // It's already a Material Symbol character, use it directly
                         nav_icon.clone()
                     } else {
@@ -411,9 +419,7 @@ impl Widget for MaterialTopAppBar<'_> {
                     );
                     rect.center().x - title_galley.size().x / 2.0
                 }
-                TopAppBarVariant::Medium | TopAppBarVariant::Large => {
-                    rect.min.x + title_spacing
-                }
+                TopAppBarVariant::Medium | TopAppBarVariant::Large => rect.min.x + title_spacing,
                 _ => left_x + title_spacing,
             };
 
@@ -461,7 +467,9 @@ impl Widget for MaterialTopAppBar<'_> {
                 let action_icon_text = if action_icon.chars().count() == 1 {
                     // If it's a single character, check if it's in Material Symbols range
                     let ch = action_icon.chars().next().unwrap();
-                    if ('\u{e000}'..='\u{f8ff}').contains(&ch) || ('\u{ea00}'..='\u{eb8d}').contains(&ch) {
+                    if ('\u{e000}'..='\u{f8ff}').contains(&ch)
+                        || ('\u{ea00}'..='\u{eb8d}').contains(&ch)
+                    {
                         // It's already a Material Symbol character, use it directly
                         action_icon.clone()
                     } else {

@@ -70,27 +70,27 @@ impl CheckboxWindow {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.heading("Material Design Checkbox Component");
                     ui.add_space(10.0);
-                    
+
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     ui.separator();
                     ui.add_space(20.0);
-                    
+
                     self.render_checkbox_states(ui);
                     ui.add_space(20.0);
                     ui.separator();
                     ui.add_space(20.0);
-                    
+
                     self.render_enabled_disabled(ui);
                     ui.add_space(20.0);
                     ui.separator();
                     ui.add_space(20.0);
-                    
+
                     self.render_error_state(ui);
                     ui.add_space(20.0);
                     ui.separator();
                     ui.add_space(20.0);
-                    
+
                     self.render_interactive_example(ui);
                 });
             });
@@ -103,7 +103,10 @@ impl CheckboxWindow {
             ui.label("(Apply to examples below)");
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.add(MaterialButton::filled("📖 Material Design Spec").small()).clicked() {
+                if ui
+                    .add(MaterialButton::filled("📖 Material Design Spec").small())
+                    .clicked()
+                {
                     let _ = webbrowser::open("https://m3.material.io/components/checkbox/overview");
                 }
             });
@@ -113,7 +116,10 @@ impl CheckboxWindow {
         ui.horizontal(|ui| {
             ui.add(MaterialCheckbox::new(&mut self.checked, "Checked"));
             ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
-            ui.add(MaterialCheckbox::new(&mut self.indeterminate, "Indeterminate"));
+            ui.add(MaterialCheckbox::new(
+                &mut self.indeterminate,
+                "Indeterminate",
+            ));
             ui.add(MaterialCheckbox::new(&mut self.error, "Error"));
         });
     }
@@ -167,7 +173,11 @@ impl CheckboxWindow {
 
                 ui.label("Indeterminate:");
                 ui.add(checkbox(&mut self.enabled_indeterminate, "").indeterminate(true));
-                ui.add(checkbox(&mut self.disabled_indeterminate, "").indeterminate(true).enabled(false));
+                ui.add(
+                    checkbox(&mut self.disabled_indeterminate, "")
+                        .indeterminate(true)
+                        .enabled(false),
+                );
                 ui.end_row();
             });
     }

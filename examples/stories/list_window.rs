@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
 use crate::MaterialButton;
-use egui_material3::{ListItem, MaterialList, VisualDensity};
 use eframe::egui::{self, Window};
+use egui_material3::{ListItem, MaterialList, VisualDensity};
 
 #[doc(hidden)]
 pub struct ListWindow {
@@ -15,7 +15,7 @@ pub struct ListWindow {
     leading_icon: bool,
     trailing_icon: bool,
     visual_density_mode: usize, // 0=Standard, 1=Comfortable, 2=Compact
-    selected_items: Vec<bool>, // For selection demo
+    selected_items: Vec<bool>,  // For selection demo
 }
 
 impl Default for ListWindow {
@@ -562,7 +562,11 @@ impl ListWindow {
             let is_selected = self.selected_items[i];
 
             let item = ListItem::new(&item_text)
-                .leading_icon(if is_selected { "check_box".to_string() } else { "check_box_outline_blank".to_string() })
+                .leading_icon(if is_selected {
+                    "check_box".to_string()
+                } else {
+                    "check_box_outline_blank".to_string()
+                })
                 .selected(is_selected)
                 .on_click({
                     let _items = &mut self.selected_items;
@@ -577,7 +581,10 @@ impl ListWindow {
             selection_list = selection_list.item(item);
 
             // Handle selection toggle via UI interaction
-            if ui.add(MaterialButton::filled(format!("Toggle Item {}", i + 1)).small()).clicked() {
+            if ui
+                .add(MaterialButton::filled(format!("Toggle Item {}", i + 1)).small())
+                .clicked()
+            {
                 self.selected_items[i] = !self.selected_items[i];
             }
         }

@@ -1,10 +1,8 @@
 #![doc(hidden)]
 
-use crate::{
-    icon_button_filled, icon_button_standard, toolbar, MaterialButton,
-};
-use egui_material3::material_symbol::material_symbol_text;
+use crate::{icon_button_filled, icon_button_standard, toolbar, MaterialButton};
 use eframe::egui::{self, Ui, Window};
+use egui_material3::material_symbol::material_symbol_text;
 
 #[doc(hidden)]
 pub struct ToolbarWindow {
@@ -152,7 +150,11 @@ impl ToolbarWindow {
                 .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("explore"))))
                 .item_fn(|ui| ui.add(icon_button_filled(&material_symbol_text("add"))))
                 .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("notifications"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("account_circle"))))
+                .item_fn(|ui| {
+                    ui.add(icon_button_standard(&material_symbol_text(
+                        "account_circle",
+                    )))
+                })
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -180,10 +182,18 @@ impl ToolbarWindow {
         ui.add(
             toolbar()
                 .tabbar(true)
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("home")).size(32.0)))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("search")).size(32.0)))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("favorite")).size(32.0)))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("person")).size(32.0)))
+                .item_fn(|ui| {
+                    ui.add(icon_button_standard(&material_symbol_text("home")).size(32.0))
+                })
+                .item_fn(|ui| {
+                    ui.add(icon_button_standard(&material_symbol_text("search")).size(32.0))
+                })
+                .item_fn(|ui| {
+                    ui.add(icon_button_standard(&material_symbol_text("favorite")).size(32.0))
+                })
+                .item_fn(|ui| {
+                    ui.add(icon_button_standard(&material_symbol_text("person")).size(32.0))
+                })
                 .min_height(self.min_height)
                 .outline(self.show_outline),
         );

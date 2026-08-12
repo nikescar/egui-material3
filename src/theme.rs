@@ -254,8 +254,7 @@ impl std::str::FromStr for ContrastLevel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum ThemeMode {
     Light,
     Dark,
@@ -285,7 +284,6 @@ impl std::str::FromStr for ThemeMode {
         }
     }
 }
-
 
 /// Global theme context that can be shared across all Material components
 #[derive(Clone, Debug)]
@@ -857,7 +855,6 @@ impl MaterialThemeContext {
             fonts.push(prepared_font);
         }
     }
-
 
     /// Internal implementation for preparing local themes from JSON files
     ///
@@ -1643,23 +1640,15 @@ where
 
     // Inactive widgets (default state)
     visuals.widgets.inactive.weak_bg_fill = surface_container_highest;
-    visuals.widgets.inactive.bg_fill = egui::Color32::from_rgba_unmultiplied(
-        primary.r(),
-        primary.g(),
-        primary.b(),
-        20,
-    );
+    visuals.widgets.inactive.bg_fill =
+        egui::Color32::from_rgba_unmultiplied(primary.r(), primary.g(), primary.b(), 20);
     visuals.widgets.inactive.bg_stroke.color = outline;
     visuals.widgets.inactive.fg_stroke.color = on_surface;
 
     // Hovered widgets
     visuals.widgets.hovered.weak_bg_fill = surface_container_high;
-    visuals.widgets.hovered.bg_fill = egui::Color32::from_rgba_unmultiplied(
-        primary.r(),
-        primary.g(),
-        primary.b(),
-        40,
-    );
+    visuals.widgets.hovered.bg_fill =
+        egui::Color32::from_rgba_unmultiplied(primary.r(), primary.g(), primary.b(), 40);
     visuals.widgets.hovered.bg_stroke.color = outline;
     visuals.widgets.hovered.fg_stroke.color = on_surface;
 

@@ -2,8 +2,10 @@
 
 use super::{types::*, MaterialList};
 use crate::{get_global_color, material_symbol::material_symbol_text};
-use egui::{ecolor::Color32, epaint::Stroke, pos2, Align, FontFamily, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget, WidgetText};
-
+use egui::{
+    ecolor::Color32, epaint::Stroke, pos2, Align, FontFamily, FontId, Pos2, Rect, Response, Sense,
+    Ui, Vec2, Widget, WidgetText,
+};
 
 impl<'a> Widget for MaterialList<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
@@ -95,7 +97,8 @@ impl<'a> Widget for MaterialList<'a> {
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
         // Draw list background using surfaceContainerLowest (lowest emphasis surface container)
-        ui.painter().rect_filled(rect, 8.0, surface_container_lowest);
+        ui.painter()
+            .rect_filled(rect, 8.0, surface_container_lowest);
         // Draw border using outlineVariant (less emphasized outline for structure)
         ui.painter().rect_stroke(
             rect,
@@ -214,11 +217,11 @@ impl<'a> Widget for MaterialList<'a> {
             };
 
             // Layout constants
-            let horizontal_title_gap = item.horizontal_title_gap.unwrap_or(16.0)
-                + visual_density.horizontal * 2.0;
+            let horizontal_title_gap =
+                item.horizontal_title_gap.unwrap_or(16.0) + visual_density.horizontal * 2.0;
             let _min_vertical_padding = item.min_vertical_padding.unwrap_or(8.0);
             let min_leading_width = item.min_leading_width.unwrap_or(40.0);
-            
+
             let mut content_x = item_rect.min.x + 16.0;
             let content_y = item_rect.center().y;
 

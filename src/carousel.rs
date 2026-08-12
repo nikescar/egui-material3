@@ -9,8 +9,8 @@
 //! - **onSurfaceVariant**: Inactive indicator dots
 
 use crate::get_global_color;
-use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
 use egui::epaint::CornerRadius;
+use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
 
 /// A Material Design 3 Carousel component.
 ///
@@ -141,7 +141,6 @@ impl<'a> MaterialCarousel<'a> {
         self.id_salt = Some(salt.into());
         self
     }
-
 }
 
 impl<'a> egui::Widget for MaterialCarousel<'a> {
@@ -219,10 +218,12 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
 
         // Determine visible item range
         let first_visible = ((scroll / item_step).floor() as i32).max(0) as usize;
-        let last_visible = (((scroll + available_width) / item_step).ceil() as usize).min(item_count);
+        let last_visible =
+            (((scroll + available_width) / item_step).ceil() as usize).min(item_count);
 
         // We need to consume items, so iterate with index tracking
-        let mut items_vec: Vec<Option<CarouselItem<'a>>> = self.items.into_iter().map(Some).collect();
+        let mut items_vec: Vec<Option<CarouselItem<'a>>> =
+            self.items.into_iter().map(Some).collect();
 
         #[allow(clippy::needless_range_loop)]
         for i in first_visible..last_visible {
@@ -280,11 +281,10 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
             // Render content
             if let Some(item) = items_vec[i].take() {
                 // Create a child UI clipped to the item rect
-                let mut child_ui = ui.new_child(
-                    egui::UiBuilder::new()
-                        .max_rect(clipped_rect)
-                        .layout(egui::Layout::centered_and_justified(egui::Direction::TopDown)),
-                );
+                let mut child_ui =
+                    ui.new_child(egui::UiBuilder::new().max_rect(clipped_rect).layout(
+                        egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                    ));
                 child_ui.set_clip_rect(clipped_rect);
                 (item.content)(&mut child_ui, clipped_rect);
             }

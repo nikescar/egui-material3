@@ -1,6 +1,9 @@
 #![doc(hidden)]
 
-use crate::{badge, badge_dot, BadgeColor, BadgePosition, BadgeSize, MaterialButton, MaterialIconButton, MaterialFab, FabSize, noto_emoji};
+use crate::{
+    badge, badge_dot, noto_emoji, BadgeColor, BadgePosition, BadgeSize, FabSize, MaterialButton,
+    MaterialFab, MaterialIconButton,
+};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -71,9 +74,21 @@ impl BadgeWindow {
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.selected_color, BadgeColor::Primary, "Primary");
                     ui.selectable_value(&mut self.selected_color, BadgeColor::Error, "Error (Red)");
-                    ui.selectable_value(&mut self.selected_color, BadgeColor::Success, "Success (Green)");
-                    ui.selectable_value(&mut self.selected_color, BadgeColor::Warning, "Warning (Yellow)");
-                    ui.selectable_value(&mut self.selected_color, BadgeColor::Neutral, "Neutral (Gray)");
+                    ui.selectable_value(
+                        &mut self.selected_color,
+                        BadgeColor::Success,
+                        "Success (Green)",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_color,
+                        BadgeColor::Warning,
+                        "Warning (Yellow)",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_color,
+                        BadgeColor::Neutral,
+                        "Neutral (Gray)",
+                    );
                 });
         });
 
@@ -90,12 +105,32 @@ impl BadgeWindow {
         ui.heading("Standalone Badges");
         ui.horizontal_wrapped(|ui| {
             ui.add(badge("5").color(BadgeColor::Error).size(BadgeSize::Small));
-            ui.add(badge("NEW").color(BadgeColor::Success).size(BadgeSize::Regular));
-            ui.add(badge("CEO").color(BadgeColor::Primary).size(BadgeSize::Regular));
-            ui.add(badge("99+").color(BadgeColor::Warning).size(BadgeSize::Regular));
-            ui.add(badge("0").color(BadgeColor::Neutral).size(BadgeSize::Regular));
+            ui.add(
+                badge("NEW")
+                    .color(BadgeColor::Success)
+                    .size(BadgeSize::Regular),
+            );
+            ui.add(
+                badge("CEO")
+                    .color(BadgeColor::Primary)
+                    .size(BadgeSize::Regular),
+            );
+            ui.add(
+                badge("99+")
+                    .color(BadgeColor::Warning)
+                    .size(BadgeSize::Regular),
+            );
+            ui.add(
+                badge("0")
+                    .color(BadgeColor::Neutral)
+                    .size(BadgeSize::Regular),
+            );
             ui.add(badge_dot().color(BadgeColor::Error).size(BadgeSize::Small));
-            ui.add(badge_dot().color(BadgeColor::Success).size(BadgeSize::Regular));
+            ui.add(
+                badge_dot()
+                    .color(BadgeColor::Success)
+                    .size(BadgeSize::Regular),
+            );
         });
 
         ui.add_space(20.0);
@@ -121,7 +156,8 @@ impl BadgeWindow {
         ui.heading("Badges on Icon Buttons");
         ui.horizontal_wrapped(|ui| {
             // Icon button with badge overlay
-            let icon_response = ui.add(MaterialIconButton::standard(noto_emoji::ENVELOPE).size(48.0));
+            let icon_response =
+                ui.add(MaterialIconButton::standard(noto_emoji::ENVELOPE).size(48.0));
             badge("5")
                 .color(BadgeColor::Success)
                 .size(BadgeSize::Small)
@@ -133,13 +169,15 @@ impl BadgeWindow {
                 .size(BadgeSize::Small)
                 .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
 
-            let icon_response = ui.add(MaterialIconButton::outlined(noto_emoji::UPWARDS_BLACK_ARROW).size(48.0));
+            let icon_response =
+                ui.add(MaterialIconButton::outlined(noto_emoji::UPWARDS_BLACK_ARROW).size(48.0));
             badge("1")
                 .color(BadgeColor::Error)
                 .size(BadgeSize::Small)
                 .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
 
-            let icon_response = ui.add(MaterialIconButton::filled_tonal(noto_emoji::BELL).size(48.0));
+            let icon_response =
+                ui.add(MaterialIconButton::filled_tonal(noto_emoji::BELL).size(48.0));
             badge_dot()
                 .color(BadgeColor::Error)
                 .size(BadgeSize::Small)
@@ -151,21 +189,13 @@ impl BadgeWindow {
         // Badges on FABs
         ui.heading("Badges on FABs");
         ui.horizontal_wrapped(|ui| {
-            let fab_response = ui.add(
-                MaterialFab::primary()
-                    .icon("add")
-                    .size(FabSize::Regular),
-            );
+            let fab_response = ui.add(MaterialFab::primary().icon("add").size(FabSize::Regular));
             badge("3")
                 .color(BadgeColor::Error)
                 .size(BadgeSize::Small)
                 .draw_on(ui, fab_response.rect, BadgePosition::TopRight);
 
-            let fab_response = ui.add(
-                MaterialFab::secondary()
-                    .icon("edit")
-                    .size(FabSize::Small),
-            );
+            let fab_response = ui.add(MaterialFab::secondary().icon("edit").size(FabSize::Small));
             badge_dot()
                 .color(BadgeColor::Success)
                 .size(BadgeSize::Small)
@@ -183,7 +213,11 @@ impl BadgeWindow {
             ui.horizontal(|ui| {
                 ui.label("📧 Foo Bar");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.add(badge("0").color(BadgeColor::Neutral).size(BadgeSize::Regular));
+                    ui.add(
+                        badge("0")
+                            .color(BadgeColor::Neutral)
+                            .size(BadgeSize::Regular),
+                    );
                 });
             });
             ui.separator();
@@ -192,7 +226,11 @@ impl BadgeWindow {
             ui.horizontal(|ui| {
                 ui.label("👤 Ivan Petrov");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.add(badge("CEO").color(BadgeColor::Primary).size(BadgeSize::Regular));
+                    ui.add(
+                        badge("CEO")
+                            .color(BadgeColor::Primary)
+                            .size(BadgeSize::Regular),
+                    );
                 });
             });
             ui.separator();
@@ -201,7 +239,11 @@ impl BadgeWindow {
             ui.horizontal(|ui| {
                 ui.label("📧 John Doe");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.add(badge("5").color(BadgeColor::Success).size(BadgeSize::Regular));
+                    ui.add(
+                        badge("5")
+                            .color(BadgeColor::Success)
+                            .size(BadgeSize::Regular),
+                    );
                 });
             });
             ui.separator();
@@ -210,7 +252,11 @@ impl BadgeWindow {
             ui.horizontal(|ui| {
                 ui.label("📧 Jane Doe");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.add(badge("NEW").color(BadgeColor::Warning).size(BadgeSize::Regular));
+                    ui.add(
+                        badge("NEW")
+                            .color(BadgeColor::Warning)
+                            .size(BadgeSize::Regular),
+                    );
                 });
             });
         });
@@ -223,46 +269,60 @@ impl BadgeWindow {
             ui.group(|ui| {
                 ui.set_width(ui.available_width() - 20.0);
                 ui.horizontal(|ui| {
-                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center).with_main_justify(true), |ui| {
-                        // Tab 1 - Inbox
-                        ui.vertical(|ui| {
-                            ui.set_width(100.0);
-                            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                                let icon_response = ui.add(MaterialIconButton::standard(noto_emoji::E_MAIL_SYMBOL).size(32.0));
-                                badge(&format!("{}", self.inbox_count))
-                                    .color(BadgeColor::Success)
-                                    .size(BadgeSize::Small)
-                                    .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
-                                ui.small("Inbox");
+                    ui.with_layout(
+                        egui::Layout::left_to_right(egui::Align::Center).with_main_justify(true),
+                        |ui| {
+                            // Tab 1 - Inbox
+                            ui.vertical(|ui| {
+                                ui.set_width(100.0);
+                                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                    let icon_response = ui.add(
+                                        MaterialIconButton::standard(noto_emoji::E_MAIL_SYMBOL)
+                                            .size(32.0),
+                                    );
+                                    badge(&format!("{}", self.inbox_count))
+                                        .color(BadgeColor::Success)
+                                        .size(BadgeSize::Small)
+                                        .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
+                                    ui.small("Inbox");
+                                });
                             });
-                        });
 
-                        // Tab 2 - Calendar
-                        ui.vertical(|ui| {
-                            ui.set_width(100.0);
-                            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                                let icon_response = ui.add(MaterialIconButton::standard(noto_emoji::CALENDAR).size(32.0));
-                                badge(&format!("{}", self.calendar_count))
-                                    .color(BadgeColor::Error)
-                                    .size(BadgeSize::Small)
-                                    .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
-                                ui.small("Calendar");
+                            // Tab 2 - Calendar
+                            ui.vertical(|ui| {
+                                ui.set_width(100.0);
+                                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                    let icon_response = ui.add(
+                                        MaterialIconButton::standard(noto_emoji::CALENDAR)
+                                            .size(32.0),
+                                    );
+                                    badge(&format!("{}", self.calendar_count))
+                                        .color(BadgeColor::Error)
+                                        .size(BadgeSize::Small)
+                                        .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
+                                    ui.small("Calendar");
+                                });
                             });
-                        });
 
-                        // Tab 3 - Upload
-                        ui.vertical(|ui| {
-                            ui.set_width(100.0);
-                            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                                let icon_response = ui.add(MaterialIconButton::standard(noto_emoji::UPWARDS_BLACK_ARROW).size(32.0));
-                                badge(&format!("{}", self.upload_count))
-                                    .color(BadgeColor::Error)
-                                    .size(BadgeSize::Small)
-                                    .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
-                                ui.small("Upload");
+                            // Tab 3 - Upload
+                            ui.vertical(|ui| {
+                                ui.set_width(100.0);
+                                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                    let icon_response = ui.add(
+                                        MaterialIconButton::standard(
+                                            noto_emoji::UPWARDS_BLACK_ARROW,
+                                        )
+                                        .size(32.0),
+                                    );
+                                    badge(&format!("{}", self.upload_count))
+                                        .color(BadgeColor::Error)
+                                        .size(BadgeSize::Small)
+                                        .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
+                                    ui.small("Upload");
+                                });
                             });
-                        });
-                    });
+                        },
+                    );
                 });
             });
         });
@@ -274,7 +334,11 @@ impl BadgeWindow {
         ui.horizontal_wrapped(|ui| {
             ui.vertical(|ui| {
                 ui.label("Primary");
-                ui.add(badge("5").color(BadgeColor::Primary).size(BadgeSize::Regular));
+                ui.add(
+                    badge("5")
+                        .color(BadgeColor::Primary)
+                        .size(BadgeSize::Regular),
+                );
             });
             ui.vertical(|ui| {
                 ui.label("Error");
@@ -282,15 +346,27 @@ impl BadgeWindow {
             });
             ui.vertical(|ui| {
                 ui.label("Success");
-                ui.add(badge("5").color(BadgeColor::Success).size(BadgeSize::Regular));
+                ui.add(
+                    badge("5")
+                        .color(BadgeColor::Success)
+                        .size(BadgeSize::Regular),
+                );
             });
             ui.vertical(|ui| {
                 ui.label("Warning");
-                ui.add(badge("5").color(BadgeColor::Warning).size(BadgeSize::Regular));
+                ui.add(
+                    badge("5")
+                        .color(BadgeColor::Warning)
+                        .size(BadgeSize::Regular),
+                );
             });
             ui.vertical(|ui| {
                 ui.label("Neutral");
-                ui.add(badge("5").color(BadgeColor::Neutral).size(BadgeSize::Regular));
+                ui.add(
+                    badge("5")
+                        .color(BadgeColor::Neutral)
+                        .size(BadgeSize::Regular),
+                );
             });
         });
 
@@ -319,10 +395,26 @@ impl BadgeWindow {
         ui.heading("Dot Badges (Indicators)");
         ui.horizontal_wrapped(|ui| {
             ui.add(badge_dot().color(BadgeColor::Error).size(BadgeSize::Small));
-            ui.add(badge_dot().color(BadgeColor::Success).size(BadgeSize::Small));
-            ui.add(badge_dot().color(BadgeColor::Warning).size(BadgeSize::Small));
-            ui.add(badge_dot().color(BadgeColor::Primary).size(BadgeSize::Regular));
-            ui.add(badge_dot().color(BadgeColor::Neutral).size(BadgeSize::Regular));
+            ui.add(
+                badge_dot()
+                    .color(BadgeColor::Success)
+                    .size(BadgeSize::Small),
+            );
+            ui.add(
+                badge_dot()
+                    .color(BadgeColor::Warning)
+                    .size(BadgeSize::Small),
+            );
+            ui.add(
+                badge_dot()
+                    .color(BadgeColor::Primary)
+                    .size(BadgeSize::Regular),
+            );
+            ui.add(
+                badge_dot()
+                    .color(BadgeColor::Neutral)
+                    .size(BadgeSize::Regular),
+            );
         });
     }
 }

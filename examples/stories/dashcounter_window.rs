@@ -71,7 +71,9 @@ impl DashCounterWindow {
             });
 
             ui.add_space(8.0);
-            ui.label("Dashboard Counter - displays a title and horizontally scrollable counter cards.");
+            ui.label(
+                "Dashboard Counter - displays a title and horizontally scrollable counter cards.",
+            );
             ui.label("Each card shows a category name and counters in xx/yy format.");
             ui.label("Click on counter numbers to trigger events.");
         });
@@ -89,14 +91,11 @@ impl DashCounterWindow {
                     .card("Apps", 5, 10)
                     .card("Updates", 2, 8)
                     .card("Alerts", 0, 3)
-                    .card("Storage", 45, 100)
+                    .card("Storage", 45, 100),
             );
 
             ui.add_space(10.0);
-            ui.label(format!(
-                "Scroll offset: {:.0}px",
-                self.scroll_offset_1
-            ));
+            ui.label(format!("Scroll offset: {:.0}px", self.scroll_offset_1));
         });
     }
 
@@ -271,7 +270,9 @@ impl DashCounterWindow {
     fn render_title_ui_example(&mut self, ui: &mut egui::Ui) {
         ui.push_id("title_ui_example", |ui| {
             ui.heading("Title UI with Custom Controls");
-            ui.label("Dashboard counters with custom UI controls (buttons, icons) in the title area.");
+            ui.label(
+                "Dashboard counters with custom UI controls (buttons, icons) in the title area.",
+            );
             ui.add_space(10.0);
 
             // Example 1: Dashboard with info button in title
@@ -280,15 +281,20 @@ impl DashCounterWindow {
                 dashcounter("Security Metrics", &mut self.scroll_offset_7)
                     .id_salt("title_ui_security")
                     .title_ui(|ui| {
-                        if ui.add(MaterialButton::text("ℹ️").small()).on_hover_text("Click for more information").clicked() {
-                            self.clicked_message = "Info button clicked for Security Metrics!".to_string();
+                        if ui
+                            .add(MaterialButton::text("ℹ️").small())
+                            .on_hover_text("Click for more information")
+                            .clicked()
+                        {
+                            self.clicked_message =
+                                "Info button clicked for Security Metrics!".to_string();
                         }
                     })
                     .card_with_description("Threats", 3, 150, "active", "total")
                     .card_with_description("Scanned", 145, 150, "files", "total")
                     .card("Quarantined", 2, 150)
                     .category_color(egui::Color32::from_rgb(244, 67, 54))
-                    .counter_color(egui::Color32::from_rgb(183, 28, 28))
+                    .counter_color(egui::Color32::from_rgb(183, 28, 28)),
             );
 
             ui.add_space(15.0);
@@ -299,10 +305,18 @@ impl DashCounterWindow {
                 dashcounter("Server Status", &mut 0.0f32)
                     .id_salt("title_ui_server")
                     .title_ui(|ui| {
-                        if ui.add(MaterialButton::text("⚙️").small()).on_hover_text("Settings").clicked() {
+                        if ui
+                            .add(MaterialButton::text("⚙️").small())
+                            .on_hover_text("Settings")
+                            .clicked()
+                        {
                             self.clicked_message = "Settings clicked!".to_string();
                         }
-                        if ui.add(MaterialButton::text("🔄").small()).on_hover_text("Refresh").clicked() {
+                        if ui
+                            .add(MaterialButton::text("🔄").small())
+                            .on_hover_text("Refresh")
+                            .clicked()
+                        {
                             self.clicked_message = "Refresh clicked!".to_string();
                         }
                     })
@@ -310,7 +324,7 @@ impl DashCounterWindow {
                     .card("Offline", 2, 10)
                     .card("Maintenance", 0, 10)
                     .category_color(egui::Color32::from_rgb(76, 175, 80))
-                    .counter_color(egui::Color32::from_rgb(27, 94, 32))
+                    .counter_color(egui::Color32::from_rgb(27, 94, 32)),
             );
 
             ui.add_space(15.0);
@@ -321,13 +335,19 @@ impl DashCounterWindow {
                 dashcounter("Documentation", &mut 0.0f32)
                     .id_salt("title_ui_docs")
                     .title_ui(|ui| {
-                        if ui.add(MaterialButton::text("🔗").small()).on_hover_text("Open documentation").clicked() {
-                            let _ = webbrowser::open("https://m3.material.io/components/cards/overview");
+                        if ui
+                            .add(MaterialButton::text("🔗").small())
+                            .on_hover_text("Open documentation")
+                            .clicked()
+                        {
+                            let _ = webbrowser::open(
+                                "https://m3.material.io/components/cards/overview",
+                            );
                         }
                     })
                     .card("Guides", 25, 50)
                     .card("Examples", 40, 50)
-                    .card("API Docs", 35, 50)
+                    .card("API Docs", 35, 50),
             );
 
             ui.add_space(10.0);
@@ -338,7 +358,9 @@ impl DashCounterWindow {
             }
 
             ui.add_space(10.0);
-            ui.label("💡 Tip: Use .title_ui() to add custom controls alongside the dashboard title");
+            ui.label(
+                "💡 Tip: Use .title_ui() to add custom controls alongside the dashboard title",
+            );
         });
     }
 }

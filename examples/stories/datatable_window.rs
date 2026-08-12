@@ -1,9 +1,11 @@
 #![doc(hidden)]
 
 use crate::datatable::{RowAction, SortDirection as DataTableSortDirection};
-use crate::{data_table, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton, MaterialCheckbox};
-use egui_material3::{MaterialList, ListItem};
+use crate::{
+    data_table, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton, MaterialCheckbox,
+};
 use eframe::egui::{self, Color32, Id, Ui, Window};
+use egui_material3::{ListItem, MaterialList};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -231,9 +233,9 @@ impl DataTableWindow {
             ui.add(basic_table);
 
             ui.add_space(20.0);
-            
+
             ui.heading("Data Table with Sortable Columns");
-            
+
             let sortable_table = data_table()
                 .id(Id::new("sortable_data_table"))
                 .sortable_column("Signal name", 200.0, false)
@@ -283,13 +285,13 @@ impl DataTableWindow {
                        .cell("Angelina Cheng")
                        .id("sortable_row_3")
                 });
-                
+
             ui.add(sortable_table);
 
             ui.add_space(20.0);
-            
+
             ui.heading("Compact Data Table");
-            
+
             let compact_table = data_table()
                 .id(Id::new("compact_data_table"))
                 .column("ID", 60.0, true)
@@ -321,9 +323,9 @@ impl DataTableWindow {
             ui.add(compact_table);
 
             ui.add_space(20.0);
-        
+
         ui.heading("Interactive Data Table Demo");
-        
+
         ui.horizontal(|ui| {
             if ui.add(MaterialButton::filled("Add Row")).clicked() {
                 // Add a new row with sample data
@@ -338,23 +340,23 @@ impl DataTableWindow {
                 self.interactive_selection.push(false);
                 println!("Added new row");
             }
-            
+
             if ui.add(MaterialButton::outlined("Delete Selected")).clicked() {
                 // Remove selected rows based on our tracked selection
                 let selected_count = self.interactive_selection.iter().filter(|&&sel| sel).count();
-                
+
                 if selected_count > 0 {
                     // Create new vectors without selected items
                     let mut new_rows = Vec::new();
                     let mut new_selection = Vec::new();
-                    
+
                     for (_idx, (row, &selected)) in self.interactive_rows.iter().zip(self.interactive_selection.iter()).enumerate() {
                         if !selected {
                             new_rows.push(row.clone());
                             new_selection.push(false);
                         }
                     }
-                    
+
                     self.interactive_rows = new_rows;
                     self.interactive_selection = new_selection;
                     self.editing_rows.clear(); // Cancel any ongoing edits
@@ -363,14 +365,14 @@ impl DataTableWindow {
                     println!("No rows selected for deletion");
                 }
             }
-            
+
             if ui.add(MaterialButton::text("Export")).clicked() {
                 // Export data (in real implementation, this could save to CSV, etc.)
                 let export_data: Vec<String> = self.interactive_rows
                     .iter()
                     .map(|row| format!("{},{},{},{}", row.product, row.category, row.price, row.stock))
                     .collect();
-                
+
                 println!("Exported data:");
                 println!("Product,Category,Price,Stock");
                 for line in export_data {
@@ -380,7 +382,7 @@ impl DataTableWindow {
         });
 
         ui.add_space(10.0);
-        
+
         // The data table will now handle sorting internally, but we keep our local sorting for reference
         let sorted_rows = &self.interactive_rows; // Use reference to original data
 
@@ -397,21 +399,21 @@ impl DataTableWindow {
         // Add rows dynamically from our data
         for (idx, row) in sorted_rows.iter().enumerate() {
             let original_idx = idx; // Use direct index since sorting is handled by the data table
-            
+
             let is_selected = self.interactive_selection.get(original_idx).copied().unwrap_or(false);
-            
+
             // Check if this row is being edited
             let is_editing = self.editing_rows.contains(&original_idx);
-            
+
             // Create cell content - use actual values, let the data table handle edit mode rendering
             let (product_text, category_text, price_text, stock_text, actions_text) = (
-                row.product.clone(), 
-                row.category.clone(), 
-                row.price.clone(), 
+                row.product.clone(),
+                row.category.clone(),
+                row.price.clone(),
                 row.stock.clone(),
                 if is_editing { "Submit | Cancel".to_string() } else { "Edit | Delete".to_string() }
             );
-            
+
             interactive_table = interactive_table.row(|table_row| {
                 let mut row_builder = table_row
                     .cell(&product_text)
@@ -420,24 +422,24 @@ impl DataTableWindow {
                     .cell(&stock_text)
                     .cell(&actions_text)  // Add actions cell
                     .id(format!("interactive_table_row_{}", original_idx));
-                
+
                 if is_selected {
                     row_builder = row_builder.selected(true);
                 }
-                
+
                 row_builder
             });
         }
 
         // Set external editing state for the data table to use
         ui.memory_mut(|mem| {
-            mem.data.insert_temp(Id::new("interactive_data_table").with("external_edit_state"), 
+            mem.data.insert_temp(Id::new("interactive_data_table").with("external_edit_state"),
                 (self.editing_rows.clone(), self.edit_data.clone()));
         });
-        
+
         // Show the table and get the selection state back
         let table_response = interactive_table.show(ui);
-        
+
         // Retrieve updated editing state from the data table
         if let Some((updated_editing_rows, updated_edit_data)) = ui.memory(|mem| {
             mem.data.get_temp::<(HashSet<usize>, HashMap<usize, Vec<String>>)>(Id::new("interactive_data_table").with("external_edit_state"))
@@ -445,7 +447,7 @@ impl DataTableWindow {
             self.editing_rows = updated_editing_rows;
             self.edit_data = updated_edit_data;
         }
-        
+
         // Process row actions from the data table
         for action in &table_response.row_actions {
             match action {
@@ -493,12 +495,12 @@ impl DataTableWindow {
                         if self.interactive_selection.len() > *row_idx {
                             self.interactive_selection.remove(*row_idx);
                         }
-                        
+
                         // Update editing state - remove any references to this row
                         // and adjust indices for rows that come after
                         let mut new_editing_rows = HashSet::new();
                         let mut new_edit_data = HashMap::new();
-                        
+
                         for (&editing_idx, data) in &self.edit_data {
                             if editing_idx < *row_idx {
                                 // Keep rows before the deleted one
@@ -511,7 +513,7 @@ impl DataTableWindow {
                             }
                             // Skip the deleted row (editing_idx == *row_idx)
                         }
-                        
+
                         self.editing_rows = new_editing_rows;
                         self.edit_data = new_edit_data;
                         println!("Deleted row {}", row_idx);
@@ -519,10 +521,10 @@ impl DataTableWindow {
                 },
             }
         }
-        
+
         // Get current sort state from the data table response
         let (current_sort_col, current_sort_dir) = table_response.sort_state;
-        
+
         // Update our local sort state to match the data table's internal state
         if let Some(sort_col_idx) = current_sort_col {
             let new_sort_column = match sort_col_idx {
@@ -540,7 +542,7 @@ impl DataTableWindow {
         } else {
             self.sort_column = None;
         }
-        
+
         // Sync the selection state back to our window state
         if table_response.selected_rows.len() == self.interactive_selection.len() {
             self.interactive_selection = table_response.selected_rows;
@@ -557,7 +559,7 @@ impl DataTableWindow {
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Text Wrapping Example");
-        
+
         let long_text_table = data_table()
             .id(Id::new("long_text_table"))
             .column("Short", 80.0, false)
@@ -579,9 +581,9 @@ impl DataTableWindow {
                    .cell("Short text")
                    .cell("75")
             });
-            
+
         ui.add(long_text_table);
-        
+
         // Display current sorting state
         ui.add_space(10.0);
         ui.horizontal(|ui| {
@@ -589,7 +591,7 @@ impl DataTableWindow {
             if let Some(col) = &self.sort_column {
                 let col_name = match col {
                     SortColumn::Product => "Product",
-                    SortColumn::Category => "Category", 
+                    SortColumn::Category => "Category",
                     SortColumn::Price => "Price",
                     SortColumn::Stock => "Stock",
                 };
@@ -602,13 +604,13 @@ impl DataTableWindow {
                 ui.label("None");
             }
         });
-        
+
         // New Feature Examples
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Themed Data Table");
         ui.label("Custom theme override with specific colors");
-        
+
         let custom_theme = DataTableTheme {
             heading_row_color: Some(Color32::from_rgb(100, 150, 200)),
             heading_row_height: Some(64.0),
@@ -618,7 +620,7 @@ impl DataTableWindow {
             selected_row_color: Some(Color32::from_rgb(200, 220, 240)),
             ..Default::default()
         };
-        
+
         let themed_table = data_table()
             .id(Id::new("themed_table"))
             .column("Name", 150.0, false)
@@ -635,21 +637,21 @@ impl DataTableWindow {
             .row(|row| {
                 row.cell("Gamma").cell("75").cell("Complete")
             });
-        
+
         ui.add(themed_table);
-        
+
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Data Table with Tooltips");
         ui.label("Hover over column headers to see tooltips");
-        
+
         // Create a custom table with tooltip columns by manually building the table
         // Since we can't access private fields, we'll use a workaround with helper function
         let mut tooltip_rows = Vec::new();
         tooltip_rows.push(vec!["001", "Laptop Pro", "$1299", "15"]);
         tooltip_rows.push(vec!["002", "Mouse Wireless", "$29", "150"]);
         tooltip_rows.push(vec!["003", "Keyboard Mechanical", "$89", "45"]);
-        
+
         // For now, create a basic table (full tooltip support requires API enhancement)
         let tooltip_table = data_table()
             .id(Id::new("tooltip_table"))
@@ -660,15 +662,15 @@ impl DataTableWindow {
             .row(|row| row.cell("001").cell("Laptop Pro").cell("$1299").cell("15"))
             .row(|row| row.cell("002").cell("Mouse Wireless").cell("$29").cell("150"))
             .row(|row| row.cell("003").cell("Keyboard Mechanical").cell("$89").cell("45"));
-        
+
         ui.add(tooltip_table);
         ui.label("Note: Tooltip feature is available via DataTableColumn struct but requires builder pattern enhancement");
-        
+
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Placeholder Cells & Edit Icons");
         ui.label("Dimmed placeholder text and edit indicators");
-        
+
         let placeholder_table = data_table()
             .id(Id::new("placeholder_table"))
             .column("Field", 120.0, false)
@@ -689,14 +691,14 @@ impl DataTableWindow {
                    .custom_cell(DataTableCell::text("Not provided").placeholder(true))
                    .cell("Optional field")
             });
-        
+
         ui.add(placeholder_table);
-        
+
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Custom Row Colors");
         ui.label("Per-row color overrides for status highlighting");
-        
+
         let color_table = data_table()
             .id(Id::new("color_table"))
             .column("Task", 180.0, false)
@@ -726,14 +728,14 @@ impl DataTableWindow {
                    .cell("Low")
                    // No custom color, uses default
             });
-        
+
         ui.add(color_table);
-        
+
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Custom Row Height");
         ui.label("Using default_row_height() to set custom row heights");
-        
+
         ui.label("Compact (30px rows):");
         let compact_height_table = data_table()
             .id(Id::new("compact_height_table"))
@@ -749,9 +751,9 @@ impl DataTableWindow {
             .row(|row| {
                 row.cell("Compact C").cell("300")
             });
-        
+
         ui.add(compact_height_table);
-        
+
         ui.add_space(10.0);
         ui.label("Standard (52px rows - default):");
         let standard_height_table = data_table()
@@ -767,9 +769,9 @@ impl DataTableWindow {
             .row(|row| {
                 row.cell("Standard C").cell("300")
             });
-        
+
         ui.add(standard_height_table);
-        
+
         ui.add_space(10.0);
         ui.label("Spacious (80px rows):");
         let spacious_height_table = data_table()
@@ -786,14 +788,14 @@ impl DataTableWindow {
             .row(|row| {
                 row.cell("Spacious C").cell("300")
             });
-        
+
         ui.add(spacious_height_table);
-        
+
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Auto Row Height by Content");
         ui.label("Rows automatically adjust height based on their content length");
-        
+
         let auto_height_table = data_table()
             .id(Id::new("auto_height_table"))
             .column("Category", 100.0, false)
@@ -826,20 +828,20 @@ impl DataTableWindow {
                    .cell("Some rows have more content than others, and the auto height feature ensures each row is exactly as tall as it needs to be - no more, no less.")
                    .cell("Pending")
             });
-        
+
         ui.add(auto_height_table);
-        
+
         ui.add_space(10.0);
         ui.label("Notice how each row has a different height based on its content length!");
-        
+
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Show/Hide Checkbox Column");
         ui.label("Selection enabled but checkbox column hidden");
-        
+
         let mut no_checkbox_theme = DataTableTheme::default();
         no_checkbox_theme.show_checkbox_column = false;
-        
+
         let no_checkbox_table = data_table()
             .id(Id::new("no_checkbox_table"))
             .column("Item", 150.0, false)
@@ -855,7 +857,7 @@ impl DataTableWindow {
             .row(|row| {
                 row.cell("Item C").cell("300")
             });
-        
+
         ui.add(no_checkbox_table);
 
         ui.add_space(20.0);

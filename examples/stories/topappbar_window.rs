@@ -4,13 +4,13 @@ use crate::{
     center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, menu, menu_item,
     top_app_bar, MaterialButton, MaterialCheckbox, MaterialTopAppBar,
 };
+use eframe::egui::{self, Color32, Rect, Ui, Window};
 use egui_material3::material_symbol::{
-    ICON_ACCOUNT_CIRCLE, ICON_ARROW_BACK, ICON_CLOSE, ICON_CLOUD_UPLOAD,
-    ICON_DELETE, ICON_DOWNLOAD, ICON_EDIT, ICON_FAVORITE, ICON_FILTER_LIST, ICON_INFO, ICON_MENU, ICON_MORE_VERT,
-    ICON_NOTIFICATIONS, ICON_REFRESH, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
+    ICON_ACCOUNT_CIRCLE, ICON_ARROW_BACK, ICON_CLOSE, ICON_CLOUD_UPLOAD, ICON_DELETE,
+    ICON_DOWNLOAD, ICON_EDIT, ICON_FAVORITE, ICON_FILTER_LIST, ICON_INFO, ICON_MENU,
+    ICON_MORE_VERT, ICON_NOTIFICATIONS, ICON_REFRESH, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
     ICON_SORT, ICON_UPLOAD,
 };
-use eframe::egui::{self, Color32, Rect, Ui, Window};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 // Atomic flags for cross-callback state toggling
@@ -89,10 +89,7 @@ impl TopAppBarWindow {
         ui.push_id("topappbar_controls", |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Top App Bar Controls");
-                if ui
-                    .add(MaterialButton::filled("Target").small())
-                    .clicked()
-                {
+                if ui.add(MaterialButton::filled("Target").small()).clicked() {
                     let _ =
                         webbrowser::open("https://m3.material.io/components/top-app-bar/overview");
                 }
@@ -124,9 +121,7 @@ impl TopAppBarWindow {
                     "Custom Height",
                 ));
                 if self.use_custom_height {
-                    ui.add(
-                        egui::Slider::new(&mut self.custom_height, 48.0..=200.0).suffix("px"),
-                    );
+                    ui.add(egui::Slider::new(&mut self.custom_height, 48.0..=200.0).suffix("px"));
                 }
             });
 
@@ -159,7 +154,8 @@ impl TopAppBarWindow {
         }
 
         if self.show_navigation {
-            regular_bar = regular_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
+            regular_bar =
+                regular_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
         }
 
         if self.show_actions {
@@ -187,7 +183,8 @@ impl TopAppBarWindow {
         }
 
         if self.show_navigation {
-            center_bar = center_bar.navigation_icon_char(ICON_ARROW_BACK, || println!("Back clicked!"));
+            center_bar =
+                center_bar.navigation_icon_char(ICON_ARROW_BACK, || println!("Back clicked!"));
         }
 
         if self.show_actions {
@@ -212,7 +209,8 @@ impl TopAppBarWindow {
             .scrolled(self.is_scrolled);
 
         if self.show_navigation {
-            medium_bar = medium_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
+            medium_bar =
+                medium_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
         }
 
         if self.show_actions {
@@ -237,7 +235,8 @@ impl TopAppBarWindow {
             .scrolled(self.is_scrolled);
 
         if self.show_navigation {
-            large_bar = large_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
+            large_bar =
+                large_bar.navigation_icon_char(ICON_MENU, || println!("Navigation clicked!"));
         }
 
         if self.show_actions {
@@ -305,7 +304,9 @@ impl TopAppBarWindow {
             .action_icon_char(ICON_SEARCH, || {
                 SEARCH_TOGGLE.store(true, Ordering::Relaxed);
             })
-            .action_icon_char(ICON_NOTIFICATIONS, || println!("Interactive: Notifications"))
+            .action_icon_char(ICON_NOTIFICATIONS, || {
+                println!("Interactive: Notifications")
+            })
             .action_icon_char(ICON_ACCOUNT_CIRCLE, || println!("Interactive: Account"))
             .action_icon_char(ICON_MORE_VERT, || println!("Interactive: More"))
             .scrolled(self.is_scrolled);
@@ -341,10 +342,7 @@ impl TopAppBarWindow {
 
         // Buttons that affect the bars above
         ui.horizontal(|ui| {
-            if ui
-                .add(MaterialButton::filled("Simulate Scroll"))
-                .clicked()
-            {
+            if ui.add(MaterialButton::filled("Simulate Scroll")).clicked() {
                 self.is_scrolled = !self.is_scrolled;
             }
             if ui.add(MaterialButton::outlined("Reset Title")).clicked() {
@@ -377,9 +375,7 @@ impl TopAppBarWindow {
 
         // --- Mail App Demo ---
         ui.heading("Mail App Example");
-        ui.label(
-            "Email/Mail application with compose, refresh, and search actions.",
-        );
+        ui.label("Email/Mail application with compose, refresh, and search actions.");
 
         let mail_bar = top_app_bar("Inbox")
             .id_salt("mail_topappbar")
@@ -394,9 +390,7 @@ impl TopAppBarWindow {
 
         // --- Photo Gallery Demo ---
         ui.heading("Photo Gallery Example");
-        ui.label(
-            "Photo gallery app with upload, filter, and sort capabilities.",
-        );
+        ui.label("Photo gallery app with upload, filter, and sort capabilities.");
 
         let photo_bar = top_app_bar("Photos")
             .id_salt("photo_topappbar")
@@ -412,9 +406,7 @@ impl TopAppBarWindow {
 
         // --- Music Player Demo ---
         ui.heading("Music Player Example");
-        ui.label(
-            "Music player with search and favorite actions.",
-        );
+        ui.label("Music player with search and favorite actions.");
 
         let music_bar = top_app_bar("Now Playing")
             .id_salt("music_topappbar")
@@ -430,9 +422,7 @@ impl TopAppBarWindow {
 
         // --- Editor Demo ---
         ui.heading("Document Editor Example");
-        ui.label(
-            "Document editor with edit, upload, and download actions.",
-        );
+        ui.label("Document editor with edit, upload, and download actions.");
 
         let editor_bar = top_app_bar("Document.txt")
             .id_salt("editor_topappbar")
@@ -448,9 +438,7 @@ impl TopAppBarWindow {
 
         // --- Detail View Demo ---
         ui.heading("Detail View Example");
-        ui.label(
-            "Detail view with edit, delete, and info actions.",
-        );
+        ui.label("Detail view with edit, delete, and info actions.");
 
         let detail_bar = top_app_bar("Item Details")
             .id_salt("detail_topappbar")
@@ -465,9 +453,7 @@ impl TopAppBarWindow {
 
         // --- Help Page Demo ---
         ui.heading("Help Page Example");
-        ui.label(
-            "Help page with back navigation and search.",
-        );
+        ui.label("Help page with back navigation and search.");
 
         let help_bar = center_aligned_top_app_bar("Help & Support")
             .id_salt("help_topappbar")

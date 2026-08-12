@@ -130,55 +130,111 @@ impl DialogWindow {
             ui.label("Supporting text:");
             ui.text_edit_singleline(&mut self.supporting_text);
         });
-        
+
         ui.separator();
-        
+
         ui.label("Advanced Customization:");
-        
+
         ui.horizontal(|ui| {
             ui.label("Dialog Width:");
             ui.add(egui::DragValue::new(&mut self.dialog_width).range(280.0..=800.0));
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Dialog Height:");
             ui.add(egui::DragValue::new(&mut self.dialog_height).range(200.0..=800.0));
         });
-        
+
         ui.horizontal(|ui| {
             ui.label("Actions Spacing:");
             ui.add(egui::DragValue::new(&mut self.actions_spacing).range(0.0..=24.0));
         });
-        
+
         egui::CollapsingHeader::new("Padding Settings").show(ui, |ui| {
             ui.label("Title Padding [L, R, T, B]:");
             ui.horizontal(|ui| {
-                ui.add(egui::DragValue::new(&mut self.title_padding[0]).range(0.0..=48.0).prefix("L:"));
-                ui.add(egui::DragValue::new(&mut self.title_padding[1]).range(0.0..=48.0).prefix("R:"));
-                ui.add(egui::DragValue::new(&mut self.title_padding[2]).range(0.0..=48.0).prefix("T:"));
-                ui.add(egui::DragValue::new(&mut self.title_padding[3]).range(0.0..=48.0).prefix("B:"));
+                ui.add(
+                    egui::DragValue::new(&mut self.title_padding[0])
+                        .range(0.0..=48.0)
+                        .prefix("L:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.title_padding[1])
+                        .range(0.0..=48.0)
+                        .prefix("R:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.title_padding[2])
+                        .range(0.0..=48.0)
+                        .prefix("T:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.title_padding[3])
+                        .range(0.0..=48.0)
+                        .prefix("B:"),
+                );
             });
-            
+
             ui.label("Content Padding [L, R, T, B]:");
             ui.horizontal(|ui| {
-                ui.add(egui::DragValue::new(&mut self.content_padding[0]).range(0.0..=48.0).prefix("L:"));
-                ui.add(egui::DragValue::new(&mut self.content_padding[1]).range(0.0..=48.0).prefix("R:"));
-                ui.add(egui::DragValue::new(&mut self.content_padding[2]).range(0.0..=48.0).prefix("T:"));
-                ui.add(egui::DragValue::new(&mut self.content_padding[3]).range(0.0..=48.0).prefix("B:"));
+                ui.add(
+                    egui::DragValue::new(&mut self.content_padding[0])
+                        .range(0.0..=48.0)
+                        .prefix("L:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.content_padding[1])
+                        .range(0.0..=48.0)
+                        .prefix("R:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.content_padding[2])
+                        .range(0.0..=48.0)
+                        .prefix("T:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.content_padding[3])
+                        .range(0.0..=48.0)
+                        .prefix("B:"),
+                );
             });
-            
+
             ui.label("Actions Padding [L, R, T, B]:");
             ui.horizontal(|ui| {
-                ui.add(egui::DragValue::new(&mut self.actions_padding[0]).range(0.0..=48.0).prefix("L:"));
-                ui.add(egui::DragValue::new(&mut self.actions_padding[1]).range(0.0..=48.0).prefix("R:"));
-                ui.add(egui::DragValue::new(&mut self.actions_padding[2]).range(0.0..=48.0).prefix("T:"));
-                ui.add(egui::DragValue::new(&mut self.actions_padding[3]).range(0.0..=48.0).prefix("B:"));
+                ui.add(
+                    egui::DragValue::new(&mut self.actions_padding[0])
+                        .range(0.0..=48.0)
+                        .prefix("L:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.actions_padding[1])
+                        .range(0.0..=48.0)
+                        .prefix("R:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.actions_padding[2])
+                        .range(0.0..=48.0)
+                        .prefix("T:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.actions_padding[3])
+                        .range(0.0..=48.0)
+                        .prefix("B:"),
+                );
             });
-            
+
             ui.label("Button Padding [H, V]:");
             ui.horizontal(|ui| {
-                ui.add(egui::DragValue::new(&mut self.button_padding[0]).range(0.0..=32.0).prefix("H:"));
-                ui.add(egui::DragValue::new(&mut self.button_padding[1]).range(0.0..=32.0).prefix("V:"));
+                ui.add(
+                    egui::DragValue::new(&mut self.button_padding[0])
+                        .range(0.0..=32.0)
+                        .prefix("H:"),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.button_padding[1])
+                        .range(0.0..=32.0)
+                        .prefix("V:"),
+                );
             });
         });
     }
@@ -207,36 +263,57 @@ impl DialogWindow {
                 self.form_dialog_open = true;
             }
         });
-        
+
         ui.add_space(10.0);
         ui.heading("Advanced Examples");
-        
+
         ui.horizontal_wrapped(|ui| {
-            if ui.add(MaterialButton::filled_tonal("Icon Dialog")).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Icon Dialog"))
+                .clicked()
+            {
                 self.icon_dialog_open = true;
             }
-            
-            if ui.add(MaterialButton::filled_tonal("Scrollable Content")).clicked() {
+
+            if ui
+                .add(MaterialButton::filled_tonal("Scrollable Content"))
+                .clicked()
+            {
                 self.scrollable_dialog_open = true;
             }
-            
-            if ui.add(MaterialButton::filled_tonal("Long Content")).clicked() {
+
+            if ui
+                .add(MaterialButton::filled_tonal("Long Content"))
+                .clicked()
+            {
                 self.long_content_dialog_open = true;
             }
-            
-            if ui.add(MaterialButton::filled_tonal("Custom Padding")).clicked() {
+
+            if ui
+                .add(MaterialButton::filled_tonal("Custom Padding"))
+                .clicked()
+            {
                 self.custom_padding_dialog_open = true;
             }
-            
-            if ui.add(MaterialButton::filled_tonal("Multi-Action")).clicked() {
+
+            if ui
+                .add(MaterialButton::filled_tonal("Multi-Action"))
+                .clicked()
+            {
                 self.multi_action_dialog_open = true;
             }
 
-            if ui.add(MaterialButton::filled_tonal("Floating Sheet")).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Floating Sheet"))
+                .clicked()
+            {
                 self.floating_sheet_open = true;
             }
 
-            if ui.add(MaterialButton::filled_tonal("Scrollable Settings")).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Scrollable Settings"))
+                .clicked()
+            {
                 self.settings_dialog_open = true;
             }
         });
@@ -366,7 +443,7 @@ impl DialogWindow {
             })
             .show(ctx);
         }
-        
+
         // Icon Dialog - demonstrates centered icon above title
         if self.icon_dialog_open {
             dialog(
@@ -390,7 +467,7 @@ impl DialogWindow {
             })
             .show(ctx);
         }
-        
+
         // Scrollable Dialog - demonstrates scrollable content
         if self.scrollable_dialog_open {
             dialog(
@@ -417,7 +494,7 @@ impl DialogWindow {
             })
             .show(ctx);
         }
-        
+
         // Long Content Dialog
         if self.long_content_dialog_open {
             dialog(
@@ -440,7 +517,7 @@ impl DialogWindow {
             })
             .show(ctx);
         }
-        
+
         // Custom Padding Dialog - uses user-defined padding
         if self.custom_padding_dialog_open {
             dialog(
@@ -464,7 +541,7 @@ impl DialogWindow {
             })
             .show(ctx);
         }
-        
+
         // Multi-Action Dialog - demonstrates many action buttons
         if self.multi_action_dialog_open {
             dialog(

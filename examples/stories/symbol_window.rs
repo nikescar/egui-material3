@@ -5,13 +5,13 @@ use crate::{
     icon_button_filled_tonal, icon_button_outlined, icon_button_standard, input_chip,
     suggestion_chip, MaterialButton,
 };
-use egui_material3::{MaterialList, ListItem};
+use eframe::egui::{self, Window};
 use egui_material3::material_symbol::{
-    ICON_ADD, ICON_BOOKMARK, ICON_DELETE, ICON_EDIT, ICON_FAVORITE, ICON_HOME, ICON_NOTIFICATIONS, ICON_PERSON, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
-    ICON_SHOPPING_CART, ICON_STAR,
+    ICON_ADD, ICON_BOOKMARK, ICON_DELETE, ICON_EDIT, ICON_FAVORITE, ICON_HOME, ICON_NOTIFICATIONS,
+    ICON_PERSON, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE, ICON_SHOPPING_CART, ICON_STAR,
 };
 use egui_material3::noto_emoji;
-use eframe::egui::{self, Window};
+use egui_material3::{ListItem, MaterialList};
 
 #[doc(hidden)]
 pub struct SymbolWindow {
@@ -56,13 +56,13 @@ impl SymbolWindow {
         ui.heading("Loaded Fonts");
         ui.add_space(4.0);
 
-        let families = ui.ctx().fonts(|fonts| {
-            fonts.families()
-        });
-        
+        let families = ui.ctx().fonts(|fonts| fonts.families());
+
         // Note: In egui 0.33, glyph checking requires mutable access which isn't available in the fonts closure
         // For now, we'll assume fonts are available if they're in the family list
-        let has_material_symbols = families.iter().any(|f| f.to_string().contains("MaterialSymbols"));
+        let has_material_symbols = families
+            .iter()
+            .any(|f| f.to_string().contains("MaterialSymbols"));
         let has_noto_emoji = families.iter().any(|f| f.to_string().contains("NotoEmoji"));
 
         // Display status
@@ -95,8 +95,6 @@ impl SymbolWindow {
     }
 
     fn render_material_symbol_basic(&self, ui: &mut egui::Ui) {
-        
-
         ui.heading("Material Symbol Icons");
         ui.label("Using constants from material_symbol module (char type, rendered via MaterialSymbolsOutlined font)");
         ui.add_space(8.0);
@@ -159,22 +157,10 @@ impl SymbolWindow {
         // not Unicode char constants, because it uses material_symbol_text() internally.
         ui.label("Buttons:");
         ui.horizontal_wrapped(|ui| {
-            ui.add(
-                MaterialButton::filled("Favorite")
-                    .leading_icon("favorite"),
-            );
-            ui.add(
-                MaterialButton::outlined("Search")
-                    .leading_icon("search"),
-            );
-            ui.add(
-                MaterialButton::elevated("Settings")
-                    .leading_icon("settings"),
-            );
-            ui.add(
-                MaterialButton::text("Share")
-                    .leading_icon("share"),
-            );
+            ui.add(MaterialButton::filled("Favorite").leading_icon("favorite"));
+            ui.add(MaterialButton::outlined("Search").leading_icon("search"));
+            ui.add(MaterialButton::elevated("Settings").leading_icon("settings"));
+            ui.add(MaterialButton::text("Share").leading_icon("share"));
         });
 
         ui.add_space(12.0);
@@ -188,8 +174,10 @@ impl SymbolWindow {
                     .on_click(|| println!("Home chip clicked")),
             );
             ui.add_space(4.0);
-            ui.add(filter_chip("Bookmarks", &mut self.filter_selected_1)
-                .leading_icon(ICON_BOOKMARK.to_string()));
+            ui.add(
+                filter_chip("Bookmarks", &mut self.filter_selected_1)
+                    .leading_icon(ICON_BOOKMARK.to_string()),
+            );
             ui.add_space(4.0);
             ui.add(
                 input_chip("Shopping")
@@ -238,10 +226,7 @@ impl SymbolWindow {
             {
                 println!("Standard icon button clicked");
             }
-            if ui
-                .add(icon_button_filled(ICON_ADD.to_string()))
-                .clicked()
-            {
+            if ui.add(icon_button_filled(ICON_ADD.to_string())).clicked() {
                 println!("Filled icon button clicked");
             }
             if ui
@@ -289,7 +274,9 @@ impl SymbolWindow {
 
     fn render_noto_emoji_basic(&self, ui: &mut egui::Ui) {
         ui.heading("Noto Emoji Icons");
-        ui.label("Using constants from noto_emoji module (&str type, rendered via Noto Emoji font)");
+        ui.label(
+            "Using constants from noto_emoji module (&str type, rendered via Noto Emoji font)",
+        );
         ui.add_space(8.0);
 
         ui.horizontal_wrapped(|ui| {
@@ -359,8 +346,10 @@ impl SymbolWindow {
                     .on_click(|| println!("Weather chip clicked")),
             );
             ui.add_space(4.0);
-            ui.add(filter_chip("Favorites", &mut self.filter_selected_3)
-                .leading_icon(noto_emoji::WHITE_MEDIUM_STAR));
+            ui.add(
+                filter_chip("Favorites", &mut self.filter_selected_3)
+                    .leading_icon(noto_emoji::WHITE_MEDIUM_STAR),
+            );
             ui.add_space(4.0);
             ui.add(
                 input_chip("Hot")

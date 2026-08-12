@@ -8,11 +8,9 @@
 //! - **onSurface**: Selected node text
 //! - **State layers**: onSurface @ 8% (hover), 12% (press)
 
-use crate::theme::get_global_color;
 use crate::material_symbol::material_symbol_text;
-use egui::{
-    Response, Sense, Ui, Vec2, Widget,
-};
+use crate::theme::get_global_color;
+use egui::{Response, Sense, Ui, Vec2, Widget};
 use std::collections::HashMap;
 
 /// A tree view item that can contain child items
@@ -205,12 +203,7 @@ impl<'a> MaterialTreeView<'a> {
     }
 
     /// Render a single tree item and its children
-    fn render_item(
-        &mut self,
-        ui: &mut Ui,
-        item: &TreeViewItem,
-        depth: usize,
-    ) -> Response {
+    fn render_item(&mut self, ui: &mut Ui, item: &TreeViewItem, depth: usize) -> Response {
         let indent = depth as f32 * self.indent_width;
         let is_expanded = self.state.is_expanded(&item.id);
         let is_selected = self.state.is_selected(&item.id);
@@ -250,14 +243,20 @@ impl<'a> MaterialTreeView<'a> {
             // Icon if present
             if let Some(icon_name) = &item.icon {
                 let icon_text = material_symbol_text(icon_name);
-                ui.label(egui::RichText::new(icon_text).size(20.0).color(on_surface_variant));
+                ui.label(
+                    egui::RichText::new(icon_text)
+                        .size(20.0)
+                        .color(on_surface_variant),
+                );
                 ui.add_space(8.0);
             }
 
             // Label
             let label_color = if is_selected { primary } else { on_surface };
-            let label_response = ui.selectable_label(is_selected,
-                egui::RichText::new(&item.label).color(label_color));
+            let label_response = ui.selectable_label(
+                is_selected,
+                egui::RichText::new(&item.label).color(label_color),
+            );
 
             if label_response.clicked() && item.selectable {
                 self.state.toggle_selected(&item.id);
@@ -291,6 +290,9 @@ impl<'a> Widget for MaterialTreeView<'a> {
 }
 
 /// Convenience function to create a tree view
-pub fn tree_view<'a>(items: &'a [TreeViewItem], state: &'a mut TreeViewState) -> MaterialTreeView<'a> {
+pub fn tree_view<'a>(
+    items: &'a [TreeViewItem],
+    state: &'a mut TreeViewState,
+) -> MaterialTreeView<'a> {
     MaterialTreeView::new(items, state)
 }

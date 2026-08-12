@@ -11,8 +11,7 @@ use crate::get_global_color;
 use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Position where timeline content appears relative to the timeline axis.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TimelinePosition {
     /// Content appears on the left side of the timeline
     Left,
@@ -25,10 +24,8 @@ pub enum TimelinePosition {
     AlternateReverse,
 }
 
-
 /// Variant for timeline dot appearance.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TimelineDotVariant {
     /// Filled solid dot
     #[default]
@@ -38,8 +35,7 @@ pub enum TimelineDotVariant {
 }
 
 /// Color scheme for timeline dot.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TimelineDotColor {
     /// Grey color (default)
     #[default]
@@ -59,8 +55,6 @@ pub enum TimelineDotColor {
     /// Warning color
     Warning,
 }
-
-
 
 /// Material Design timeline component.
 ///
@@ -470,8 +464,8 @@ impl<'a> Default for MaterialTimeline<'a> {
 // Constants for Material Design 3 timeline styling
 const DOT_SIZE: f32 = 12.0;
 const CONNECTOR_WIDTH: f32 = 2.0;
-const CONTENT_PADDING: f32 = 32.0;  // Increased padding to prevent icon overlap with text
-const MIN_ITEM_SPACING: f32 = 24.0;  // Minimum spacing between items
+const CONTENT_PADDING: f32 = 32.0; // Increased padding to prevent icon overlap with text
+const MIN_ITEM_SPACING: f32 = 24.0; // Minimum spacing between items
 const OPPOSITE_CONTENT_WIDTH: f32 = 80.0;
 
 impl<'a> Widget for MaterialTimeline<'a> {
@@ -506,7 +500,10 @@ impl<'a> Widget for MaterialTimeline<'a> {
         let mut current_y = rect.min.y;
 
         // Check if we're in alternate mode - if so, center the separator
-        let is_alternate_mode = matches!(self.position, TimelinePosition::Alternate | TimelinePosition::AlternateReverse);
+        let is_alternate_mode = matches!(
+            self.position,
+            TimelinePosition::Alternate | TimelinePosition::AlternateReverse
+        );
 
         for (index, item) in self.items.iter().enumerate() {
             // Determine position for this item
@@ -549,7 +546,10 @@ impl<'a> Widget for MaterialTimeline<'a> {
                     TimelinePosition::Right => {
                         if has_opposite {
                             (
-                                center_x - OPPOSITE_CONTENT_WIDTH - CONTENT_PADDING - DOT_SIZE / 2.0,
+                                center_x
+                                    - OPPOSITE_CONTENT_WIDTH
+                                    - CONTENT_PADDING
+                                    - DOT_SIZE / 2.0,
                                 center_x,
                                 center_x + DOT_SIZE / 2.0 + CONTENT_PADDING,
                                 true,
@@ -568,11 +568,15 @@ impl<'a> Widget for MaterialTimeline<'a> {
                         // so the content rect ends near the separator
                         let half_width = available_width / 2.0;
                         let left_content_width = if has_opposite {
-                            half_width - OPPOSITE_CONTENT_WIDTH - CONTENT_PADDING * 2.0 - DOT_SIZE / 2.0
+                            half_width
+                                - OPPOSITE_CONTENT_WIDTH
+                                - CONTENT_PADDING * 2.0
+                                - DOT_SIZE / 2.0
                         } else {
                             half_width - CONTENT_PADDING - DOT_SIZE / 2.0
                         };
-                        let content_start_x = center_x - DOT_SIZE / 2.0 - CONTENT_PADDING - left_content_width;
+                        let content_start_x =
+                            center_x - DOT_SIZE / 2.0 - CONTENT_PADDING - left_content_width;
 
                         if has_opposite {
                             (
@@ -582,12 +586,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                                 false,
                             )
                         } else {
-                            (
-                                center_x + DOT_SIZE / 2.0,
-                                center_x,
-                                content_start_x,
-                                false,
-                            )
+                            (center_x + DOT_SIZE / 2.0, center_x, content_start_x, false)
                         }
                     }
                     _ => unreachable!(),
@@ -600,11 +599,19 @@ impl<'a> Widget for MaterialTimeline<'a> {
                             (
                                 rect.min.x,
                                 rect.min.x + OPPOSITE_CONTENT_WIDTH + CONTENT_PADDING,
-                                rect.min.x + OPPOSITE_CONTENT_WIDTH + CONTENT_PADDING * 2.0 + DOT_SIZE,
+                                rect.min.x
+                                    + OPPOSITE_CONTENT_WIDTH
+                                    + CONTENT_PADDING * 2.0
+                                    + DOT_SIZE,
                                 true,
                             )
                         } else {
-                            (rect.min.x, rect.min.x, rect.min.x + DOT_SIZE + CONTENT_PADDING, true)
+                            (
+                                rect.min.x,
+                                rect.min.x,
+                                rect.min.x + DOT_SIZE + CONTENT_PADDING,
+                                true,
+                            )
                         }
                     }
                     TimelinePosition::Left => {
@@ -660,11 +667,14 @@ impl<'a> Widget for MaterialTimeline<'a> {
                         let label = egui::Label::new(
                             egui::RichText::new(opposite_text)
                                 .size(14.0)
-                                .color(opposite_color)
-                        ).wrap_mode(egui::TextWrapMode::Truncate);
+                                .color(opposite_color),
+                        )
+                        .wrap_mode(egui::TextWrapMode::Truncate);
                         ui.add(label);
                     });
-                }).response.context_menu(|_ui| {});  // Add context menu to force unique ID
+                })
+                .response
+                .context_menu(|_ui| {}); // Add context menu to force unique ID
             }
 
             // Draw dot
@@ -693,43 +703,59 @@ impl<'a> Widget for MaterialTimeline<'a> {
             if let Some(dot) = dot_config {
                 match dot.variant {
                     TimelineDotVariant::Filled => {
-                        ui.painter().circle_filled(dot_center, dot_size / 2.0, dot_color);
+                        ui.painter()
+                            .circle_filled(dot_center, dot_size / 2.0, dot_color);
 
                         // Draw texture icon if present (takes precedence over text icon)
                         if let Some(texture_id) = dot.texture_icon {
-                            let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
+                            let icon_rect =
+                                Rect::from_center_size(dot_center, Vec2::splat(icon_size));
                             ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                                 // Clip icon to parent's clip rect
                                 let parent_clip = ui.clip_rect();
                                 let clipped = icon_rect.intersect(parent_clip);
                                 ui.set_clip_rect(clipped);
 
-                                ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
-                                    ui.add(egui::Image::new(egui::load::SizedTexture::new(texture_id, Vec2::splat(icon_size))));
-                                });
+                                ui.with_layout(
+                                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                                    |ui| {
+                                        ui.add(egui::Image::new(egui::load::SizedTexture::new(
+                                            texture_id,
+                                            Vec2::splat(icon_size),
+                                        )));
+                                    },
+                                );
                             });
                         } else if let Some(icon_text) = &dot.icon {
                             // Draw text icon if no texture
-                            let icon_color = if dot_color.r() as u32 + dot_color.g() as u32 + dot_color.b() as u32 > 384 {
+                            let icon_color = if dot_color.r() as u32
+                                + dot_color.g() as u32
+                                + dot_color.b() as u32
+                                > 384
+                            {
                                 Color32::BLACK
                             } else {
                                 Color32::WHITE
                             };
-                            let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
+                            let icon_rect =
+                                Rect::from_center_size(dot_center, Vec2::splat(icon_size));
                             ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                                 // Clip icon to parent's clip rect
                                 let parent_clip = ui.clip_rect();
                                 let clipped = icon_rect.intersect(parent_clip);
                                 ui.set_clip_rect(clipped);
 
-                                ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
-                                    let label = egui::Label::new(
-                                        egui::RichText::new(icon_text)
-                                            .size(icon_size)
-                                            .color(icon_color)
-                                    );
-                                    ui.add(label);
-                                });
+                                ui.with_layout(
+                                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                                    |ui| {
+                                        let label = egui::Label::new(
+                                            egui::RichText::new(icon_text)
+                                                .size(icon_size)
+                                                .color(icon_color),
+                                        );
+                                        ui.add(label);
+                                    },
+                                );
                             });
                         }
                     }
@@ -743,41 +769,53 @@ impl<'a> Widget for MaterialTimeline<'a> {
 
                         // Draw texture icon if present (takes precedence over text icon)
                         if let Some(texture_id) = dot.texture_icon {
-                            let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
+                            let icon_rect =
+                                Rect::from_center_size(dot_center, Vec2::splat(icon_size));
                             ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                                 // Clip icon to parent's clip rect
                                 let parent_clip = ui.clip_rect();
                                 let clipped = icon_rect.intersect(parent_clip);
                                 ui.set_clip_rect(clipped);
 
-                                ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
-                                    ui.add(egui::Image::new(egui::load::SizedTexture::new(texture_id, Vec2::splat(icon_size))));
-                                });
+                                ui.with_layout(
+                                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                                    |ui| {
+                                        ui.add(egui::Image::new(egui::load::SizedTexture::new(
+                                            texture_id,
+                                            Vec2::splat(icon_size),
+                                        )));
+                                    },
+                                );
                             });
                         } else if let Some(icon_text) = &dot.icon {
                             // Draw text icon if no texture
-                            let icon_rect = Rect::from_center_size(dot_center, Vec2::splat(icon_size));
+                            let icon_rect =
+                                Rect::from_center_size(dot_center, Vec2::splat(icon_size));
                             ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                                 // Clip icon to parent's clip rect
                                 let parent_clip = ui.clip_rect();
                                 let clipped = icon_rect.intersect(parent_clip);
                                 ui.set_clip_rect(clipped);
 
-                                ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
-                                    let label = egui::Label::new(
-                                        egui::RichText::new(icon_text)
-                                            .size(icon_size)
-                                            .color(dot_color)
-                                    );
-                                    ui.add(label);
-                                });
+                                ui.with_layout(
+                                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                                    |ui| {
+                                        let label = egui::Label::new(
+                                            egui::RichText::new(icon_text)
+                                                .size(icon_size)
+                                                .color(dot_color),
+                                        );
+                                        ui.add(label);
+                                    },
+                                );
                             });
                         }
                     }
                 }
             } else {
                 // Default dot
-                ui.painter().circle_filled(dot_center, dot_size / 2.0, dot_color);
+                ui.painter()
+                    .circle_filled(dot_center, dot_size / 2.0, dot_color);
             }
 
             // Draw connector line if not the last item
@@ -817,61 +855,67 @@ impl<'a> Widget for MaterialTimeline<'a> {
                 );
 
                 // Use allocate_ui_at_rect for proper rendering with interaction
-                let content_inner = ui.scope_builder(egui::UiBuilder::new().max_rect(content_rect), |ui| {
-                    // Properly clip to both the rect and parent's clip rect
-                    let parent_clip = ui.clip_rect();
-                    let clipped = content_rect.intersect(parent_clip);
-                    ui.set_clip_rect(clipped);
+                let content_inner =
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(content_rect), |ui| {
+                        // Properly clip to both the rect and parent's clip rect
+                        let parent_clip = ui.clip_rect();
+                        let clipped = content_rect.intersect(parent_clip);
+                        ui.set_clip_rect(clipped);
 
-                    let has_action = item.action.is_some();
-                    let item_id = base_id.with(("content", index));
-                    let sense = if has_action { Sense::click() } else { Sense::hover() };
-                    let interact_response = ui.interact(content_rect, item_id, sense);
-
-                    // Draw hover effect
-                    if interact_response.hovered() && has_action {
-                        let hover_color = Color32::from_rgba_unmultiplied(
-                            on_surface.r(),
-                            on_surface.g(),
-                            on_surface.b(),
-                            10,
-                        );
-                        ui.painter().rect_filled(content_rect, 4.0, hover_color);
-                    }
-
-                    // Render custom content or text label
-                    if let Some(custom_render) = &item.content_custom {
-                        // Custom content rendering - use vertical layout for cards/complex content
-                        let align = if is_content_right {
-                            egui::Align::LEFT
+                        let has_action = item.action.is_some();
+                        let item_id = base_id.with(("content", index));
+                        let sense = if has_action {
+                            Sense::click()
                         } else {
-                            egui::Align::RIGHT
+                            Sense::hover()
                         };
-                        let layout = egui::Layout::top_down(align);
+                        let interact_response = ui.interact(content_rect, item_id, sense);
 
-                        ui.with_layout(layout, |ui| {
-                            custom_render(ui);
-                        });
-                    } else if let Some(content_text) = &item.content {
-                        // Text-based content rendering - use center alignment
-                        let layout = if is_content_right {
-                            egui::Layout::left_to_right(egui::Align::Center)
-                        } else {
-                            egui::Layout::right_to_left(egui::Align::Center)
-                        };
+                        // Draw hover effect
+                        if interact_response.hovered() && has_action {
+                            let hover_color = Color32::from_rgba_unmultiplied(
+                                on_surface.r(),
+                                on_surface.g(),
+                                on_surface.b(),
+                                10,
+                            );
+                            ui.painter().rect_filled(content_rect, 4.0, hover_color);
+                        }
 
-                        ui.with_layout(layout, |ui| {
-                            let label = egui::Label::new(
-                                egui::RichText::new(content_text)
-                                    .size(16.0)
-                                    .color(content_color)
-                            ).wrap_mode(egui::TextWrapMode::Wrap);
-                            ui.add(label);
-                        });
-                    }
+                        // Render custom content or text label
+                        if let Some(custom_render) = &item.content_custom {
+                            // Custom content rendering - use vertical layout for cards/complex content
+                            let align = if is_content_right {
+                                egui::Align::LEFT
+                            } else {
+                                egui::Align::RIGHT
+                            };
+                            let layout = egui::Layout::top_down(align);
 
-                    (interact_response, has_action)
-                });
+                            ui.with_layout(layout, |ui| {
+                                custom_render(ui);
+                            });
+                        } else if let Some(content_text) = &item.content {
+                            // Text-based content rendering - use center alignment
+                            let layout = if is_content_right {
+                                egui::Layout::left_to_right(egui::Align::Center)
+                            } else {
+                                egui::Layout::right_to_left(egui::Align::Center)
+                            };
+
+                            ui.with_layout(layout, |ui| {
+                                let label = egui::Label::new(
+                                    egui::RichText::new(content_text)
+                                        .size(16.0)
+                                        .color(content_color),
+                                )
+                                .wrap_mode(egui::TextWrapMode::Wrap);
+                                ui.add(label);
+                            });
+                        }
+
+                        (interact_response, has_action)
+                    });
 
                 // Handle click
                 if content_inner.inner.0.clicked() && content_inner.inner.1 {

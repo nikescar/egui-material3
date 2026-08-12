@@ -1,6 +1,9 @@
 #![doc(hidden)]
 
-use crate::{snackbar, snackbar_with_action, MaterialButton, MaterialCheckbox, SnackbarPosition, SnackBarBehavior};
+use crate::{
+    snackbar, snackbar_with_action, MaterialButton, MaterialCheckbox, SnackBarBehavior,
+    SnackbarPosition,
+};
 use eframe::egui::{self, Ui, Window};
 use std::time::Instant;
 
@@ -80,7 +83,10 @@ impl SnackbarWindow {
     fn render_controls(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading("Snackbar Controls");
-            if ui.add(MaterialButton::filled("Material Specs").small()).clicked() {
+            if ui
+                .add(MaterialButton::filled("Material Specs").small())
+                .clicked()
+            {
                 let _ = webbrowser::open("https://m3.material.io/components/snackbar/specs");
             }
         });
@@ -134,8 +140,9 @@ impl SnackbarWindow {
 
         ui.horizontal(|ui| {
             ui.label("Action Overflow Threshold:");
-            ui.add(egui::Slider::new(&mut self.action_overflow_threshold, 0.0..=1.0)
-                .fixed_decimals(2));
+            ui.add(
+                egui::Slider::new(&mut self.action_overflow_threshold, 0.0..=1.0).fixed_decimals(2),
+            );
         });
 
         ui.separator();
@@ -156,10 +163,7 @@ impl SnackbarWindow {
         ui.label("🎬 Quick Actions");
 
         ui.horizontal_wrapped(|ui| {
-            if ui
-                .add(MaterialButton::filled("Show Snackbar"))
-                .clicked()
-            {
+            if ui.add(MaterialButton::filled("Show Snackbar")).clicked() {
                 if self.action_text.is_empty() {
                     self.show_basic_snackbar = true;
                     self.basic_snackbar_start = Some(Instant::now());
@@ -169,10 +173,7 @@ impl SnackbarWindow {
                 }
             }
 
-            if ui
-                .add(MaterialButton::outlined("Top Position"))
-                .clicked()
-            {
+            if ui.add(MaterialButton::outlined("Top Position")).clicked() {
                 self.show_top_snackbar = true;
                 self.top_snackbar_start = Some(Instant::now());
             }
@@ -213,7 +214,7 @@ impl SnackbarWindow {
                 self.action_text = "Dismiss".to_string();
                 self.action_snackbar_start = Some(Instant::now());
             }
-            
+
             if ui.add(MaterialButton::outlined("Reset Settings")).clicked() {
                 *self = Self::default();
                 self.open = true;
@@ -231,8 +232,11 @@ impl SnackbarWindow {
                 self.show_basic_snackbar = true;
                 self.basic_snackbar_start = Some(Instant::now());
             }
-            
-            if ui.add(MaterialButton::filled("Floating Behavior")).clicked() {
+
+            if ui
+                .add(MaterialButton::filled("Floating Behavior"))
+                .clicked()
+            {
                 self.message_text = "Floating snackbar with margins".to_string();
                 self.behavior = SnackBarBehavior::Floating;
                 self.show_basic_snackbar = true;

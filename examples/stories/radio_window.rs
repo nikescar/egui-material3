@@ -1,7 +1,7 @@
 #![doc(hidden)]
 
 use crate::{radio, radio_group, radio_list_tile, ListTileControlAffinity, MaterialButton};
-use eframe::egui::{self, Window, Color32};
+use eframe::egui::{self, Color32, Window};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Animal {
@@ -210,22 +210,22 @@ impl RadioWindow {
         ui.label("Click a selected radio to deselect it:");
 
         ui.vertical(|ui| {
-            let mut radio1 = radio(&mut self.toggleable_selected, 0, "First option")
-                .toggleable(true);
+            let mut radio1 =
+                radio(&mut self.toggleable_selected, 0, "First option").toggleable(true);
             if self.disabled {
                 radio1 = radio1.enabled(false);
             }
             ui.add(radio1);
 
-            let mut radio2 = radio(&mut self.toggleable_selected, 1, "Second option")
-                .toggleable(true);
+            let mut radio2 =
+                radio(&mut self.toggleable_selected, 1, "Second option").toggleable(true);
             if self.disabled {
                 radio2 = radio2.enabled(false);
             }
             ui.add(radio2);
 
-            let mut radio3 = radio(&mut self.toggleable_selected, 2, "Third option")
-                .toggleable(true);
+            let mut radio3 =
+                radio(&mut self.toggleable_selected, 2, "Third option").toggleable(true);
             if self.disabled {
                 radio3 = radio3.enabled(false);
             }
@@ -242,7 +242,7 @@ impl RadioWindow {
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("Custom Fill Colors:");
-                
+
                 let mut radio1 = radio(&mut self.themed_selected, 0, "Red")
                     .fill_color(Color32::from_rgb(220, 50, 50));
                 if self.disabled {
@@ -269,23 +269,23 @@ impl RadioWindow {
 
             ui.vertical(|ui| {
                 ui.label("Custom Radius:");
-                
-                let mut radio1 = radio(&mut self.themed_selected, 3, "Small inner")
-                    .inner_radius(3.0);
+
+                let mut radio1 =
+                    radio(&mut self.themed_selected, 3, "Small inner").inner_radius(3.0);
                 if self.disabled {
                     radio1 = radio1.enabled(false);
                 }
                 ui.add(radio1);
 
-                let mut radio2 = radio(&mut self.themed_selected, 4, "Large inner")
-                    .inner_radius(7.0);
+                let mut radio2 =
+                    radio(&mut self.themed_selected, 4, "Large inner").inner_radius(7.0);
                 if self.disabled {
                     radio2 = radio2.enabled(false);
                 }
                 ui.add(radio2);
 
-                let mut radio3 = radio(&mut self.themed_selected, 5, "Custom splash")
-                    .splash_radius(20.0);
+                let mut radio3 =
+                    radio(&mut self.themed_selected, 5, "Custom splash").splash_radius(20.0);
                 if self.disabled {
                     radio3 = radio3.enabled(false);
                 }
@@ -299,19 +299,31 @@ impl RadioWindow {
         ui.label("Using String values instead of integers:");
 
         ui.vertical(|ui| {
-            let mut radio1 = radio(&mut self.string_selected, "option_a".to_string(), "Option A");
+            let mut radio1 = radio(
+                &mut self.string_selected,
+                "option_a".to_string(),
+                "Option A",
+            );
             if self.disabled {
                 radio1 = radio1.enabled(false);
             }
             ui.add(radio1);
 
-            let mut radio2 = radio(&mut self.string_selected, "option_b".to_string(), "Option B");
+            let mut radio2 = radio(
+                &mut self.string_selected,
+                "option_b".to_string(),
+                "Option B",
+            );
             if self.disabled {
                 radio2 = radio2.enabled(false);
             }
             ui.add(radio2);
 
-            let mut radio3 = radio(&mut self.string_selected, "option_c".to_string(), "Option C");
+            let mut radio3 = radio(
+                &mut self.string_selected,
+                "option_c".to_string(),
+                "Option C",
+            );
             if self.disabled {
                 radio3 = radio3.enabled(false);
             }
@@ -367,7 +379,7 @@ impl RadioWindow {
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("Leading (default):");
-                
+
                 let mut tile1 = radio_list_tile(&mut self.affinity_selected, 0)
                     .title("Option 1")
                     .subtitle("Radio on the left")
@@ -391,7 +403,7 @@ impl RadioWindow {
 
             ui.vertical(|ui| {
                 ui.label("Trailing:");
-                
+
                 let mut tile3 = radio_list_tile(&mut self.affinity_selected, 2)
                     .title("Option 3")
                     .subtitle("Radio on the right")
@@ -443,4 +455,5 @@ impl RadioWindow {
             }
             ui.add(tile3);
         });
-    }}
+    }
+}

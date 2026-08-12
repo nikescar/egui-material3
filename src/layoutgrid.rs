@@ -380,7 +380,8 @@ impl Widget for GridTileBar<'_> {
         // Draw background if specified
         if let Some(bg_color) = background_color {
             let bg_rect = Rect::from_min_size(start_pos, Vec2::new(available_width, height));
-            ui.painter().rect_filled(bg_rect, CornerRadius::ZERO, bg_color);
+            ui.painter()
+                .rect_filled(bg_rect, CornerRadius::ZERO, bg_color);
         }
 
         let _response = ui.horizontal(|ui| {
@@ -521,7 +522,10 @@ impl Widget for GridTile<'_> {
         if let Some(header_bar) = header {
             let header_ui = &mut ui.new_child(
                 egui::UiBuilder::new()
-                    .max_rect(Rect::from_min_size(start_pos, Vec2::new(available_width, 68.0)))
+                    .max_rect(Rect::from_min_size(
+                        start_pos,
+                        Vec2::new(available_width, 68.0),
+                    ))
                     .layout(egui::Layout::top_down(egui::Align::LEFT)),
             );
             header_ui.add(header_bar);
@@ -533,7 +537,10 @@ impl Widget for GridTile<'_> {
             let footer_pos = egui::pos2(start_pos.x, start_pos.y + content_height - footer_height);
             let footer_ui = &mut ui.new_child(
                 egui::UiBuilder::new()
-                    .max_rect(Rect::from_min_size(footer_pos, Vec2::new(available_width, footer_height)))
+                    .max_rect(Rect::from_min_size(
+                        footer_pos,
+                        Vec2::new(available_width, footer_height),
+                    ))
                     .layout(egui::Layout::top_down(egui::Align::LEFT)),
             );
             footer_ui.add(footer_bar);

@@ -178,10 +178,15 @@ impl<'a> Widget for MaterialCheckbox<'a> {
 
         // Calculate actual width needed: checkbox + spacing + text width
         let text_width = if !self.text.is_empty() {
-            let font_id = ui.style().text_styles.get(&egui::TextStyle::Body)
+            let font_id = ui
+                .style()
+                .text_styles
+                .get(&egui::TextStyle::Body)
                 .cloned()
                 .unwrap_or_else(egui::FontId::default);
-            let galley = ui.painter().layout_no_wrap(self.text.clone(), font_id, egui::Color32::WHITE);
+            let galley =
+                ui.painter()
+                    .layout_no_wrap(self.text.clone(), font_id, egui::Color32::WHITE);
             galley.size().x
         } else {
             0.0
@@ -208,8 +213,12 @@ impl<'a> Widget for MaterialCheckbox<'a> {
         );
 
         // M3 Color Roles - Checkbox States
-        let primary = self.fill_color.unwrap_or_else(|| get_global_color("primary")); // Checked container background
-        let on_primary = self.check_color.unwrap_or_else(|| get_global_color("onPrimary")); // Check mark on primary
+        let primary = self
+            .fill_color
+            .unwrap_or_else(|| get_global_color("primary")); // Checked container background
+        let on_primary = self
+            .check_color
+            .unwrap_or_else(|| get_global_color("onPrimary")); // Check mark on primary
         let error = get_global_color("error"); // Error state container/border
         let on_error = get_global_color("onError"); // Check mark on error background
         let on_surface = get_global_color("onSurface"); // Hover border, text label, disabled @ 38%
@@ -222,7 +231,12 @@ impl<'a> Widget for MaterialCheckbox<'a> {
             if *self.checked || self.indeterminate {
                 (disabled_color, Color32::TRANSPARENT, disabled_color, 0.0)
             } else {
-                (Color32::TRANSPARENT, disabled_color, disabled_color, self.border_width)
+                (
+                    Color32::TRANSPARENT,
+                    disabled_color,
+                    disabled_color,
+                    self.border_width,
+                )
             }
         } else if self.is_error {
             // Error state: use error color for container/border
@@ -238,10 +252,20 @@ impl<'a> Widget for MaterialCheckbox<'a> {
             (primary, Color32::TRANSPARENT, on_primary, 0.0)
         } else if response.hovered() {
             // Hover state unchecked: onSurface border (higher emphasis than default)
-            (Color32::TRANSPARENT, on_surface, on_surface, self.border_width)
+            (
+                Color32::TRANSPARENT,
+                on_surface,
+                on_surface,
+                self.border_width,
+            )
         } else {
             // Default unchecked state: onSurfaceVariant border (lower emphasis)
-            (Color32::TRANSPARENT, on_surface_variant, on_surface, self.border_width)
+            (
+                Color32::TRANSPARENT,
+                on_surface_variant,
+                on_surface,
+                self.border_width,
+            )
         };
 
         // Draw checkbox background

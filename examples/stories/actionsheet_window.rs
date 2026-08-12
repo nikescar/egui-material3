@@ -91,7 +91,10 @@ impl ActionSheetWindow {
                 self.many_actions_open = true;
             }
 
-            if ui.add(MaterialButton::filled_tonal("Custom Options")).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Custom Options"))
+                .clicked()
+            {
                 self.custom_open = true;
             }
         });
@@ -155,8 +158,8 @@ impl ActionSheetWindow {
 
         // Many Actions Action Sheet
         if self.many_actions_open {
-            let mut sheet = action_sheet("many_actions", &mut self.many_actions_open)
-                .label("Choose an option");
+            let mut sheet =
+                action_sheet("many_actions", &mut self.many_actions_open).label("Choose an option");
 
             // Add many buttons
             for i in 1..=10 {

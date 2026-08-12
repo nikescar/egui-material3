@@ -40,8 +40,7 @@ pub enum DrawerAlignment {
 }
 
 /// Theme data for Material Design drawers.
-#[derive(Clone, Debug)]
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct DrawerThemeData {
     pub background_color: Option<Color32>,
     pub scrim_color: Option<Color32>,
@@ -53,7 +52,6 @@ pub struct DrawerThemeData {
     pub width: Option<f32>,
     pub clip_behavior: Option<bool>,
 }
-
 
 impl DrawerThemeData {
     /// Create Material 3 defaults for drawer theming.
@@ -148,27 +146,35 @@ impl DrawerHeader {
     }
 
     pub fn show(self, ui: &mut Ui) -> Response {
-        let rect = ui.allocate_space(Vec2::new(ui.available_width(), self.height + self.margin)).1;
-        
+        let rect = ui
+            .allocate_space(Vec2::new(ui.available_width(), self.height + self.margin))
+            .1;
+
         let header_rect = Rect::from_min_size(
             rect.min + Vec2::new(0.0, 0.0),
             Vec2::new(rect.width(), self.height),
         );
 
         // Draw decoration background
-        let bg_color = self.decoration_color.unwrap_or_else(|| get_global_color("surfaceContainerHigh"));
-        ui.painter().rect_filled(header_rect, CornerRadius::ZERO, bg_color);
+        let bg_color = self
+            .decoration_color
+            .unwrap_or_else(|| get_global_color("surfaceContainerHigh"));
+        ui.painter()
+            .rect_filled(header_rect, CornerRadius::ZERO, bg_color);
 
         // Draw border at bottom
         let border_y = header_rect.max.y;
         ui.painter().line_segment(
-            [egui::pos2(header_rect.min.x, border_y), egui::pos2(header_rect.max.x, border_y)],
+            [
+                egui::pos2(header_rect.min.x, border_y),
+                egui::pos2(header_rect.max.x, border_y),
+            ],
             Stroke::new(1.0, get_global_color("outlineVariant")),
         );
 
         // Draw content with padding
         let content_rect = header_rect.shrink2(self.padding);
-        
+
         if let Some(title) = &self.title {
             let title_pos = egui::pos2(content_rect.min.x, content_rect.min.y);
             ui.painter().text(
@@ -297,7 +303,7 @@ impl<'a> MaterialDrawer<'a> {
         let width = theme.width.unwrap_or(360.0);
         let corner_radius = theme.shape.unwrap_or(CornerRadius::same(16));
         let elevation = theme.elevation;
-        
+
         Self {
             variant,
             open,
@@ -324,7 +330,7 @@ impl<'a> MaterialDrawer<'a> {
         let width = theme.width.unwrap_or(360.0);
         let corner_radius = theme.shape.unwrap_or(CornerRadius::same(16));
         let elevation = theme.elevation;
-        
+
         Self {
             variant,
             open,
@@ -471,16 +477,22 @@ impl<'a> MaterialDrawer<'a> {
     }
 
     fn get_drawer_style(&self) -> (Color32, Option<Stroke>, f32) {
-        let background_color = self.theme.background_color
+        let background_color = self
+            .theme
+            .background_color
             .unwrap_or_else(|| get_global_color("surfaceContainerLow"));
-        
+
         let elevation = self.elevation.unwrap_or(1.0);
-        
+
         match self.variant {
             DrawerVariant::Permanent => {
                 // Permanent drawer: surface with subtle border
                 let border_color = get_global_color("outlineVariant");
-                (background_color, Some(Stroke::new(1.0, border_color)), elevation)
+                (
+                    background_color,
+                    Some(Stroke::new(1.0, border_color)),
+                    elevation,
+                )
             }
             DrawerVariant::Modal => {
                 // Modal drawer: elevated surface, no border
@@ -489,7 +501,11 @@ impl<'a> MaterialDrawer<'a> {
             DrawerVariant::Dismissible => {
                 // Dismissible drawer: surface with subtle border
                 let border_color = get_global_color("outlineVariant");
-                (background_color, Some(Stroke::new(1.0, border_color)), elevation)
+                (
+                    background_color,
+                    Some(Stroke::new(1.0, border_color)),
+                    elevation,
+                )
             }
         }
     }
@@ -531,18 +547,17 @@ impl<'a> MaterialDrawer<'a> {
         if *self.open {
             // Draw scrim background
             let screen_rect = ctx.content_rect();
-            let scrim_color = self.theme.scrim_color
+            let scrim_color = self
+                .theme
+                .scrim_color
                 .unwrap_or(Color32::from_rgba_unmultiplied(0, 0, 0, 138));
-            
+
             Area::new(self.id.with("modal_scrim"))
                 .order(Order::Background)
                 .show(ctx, |ui| {
                     let scrim_response = ui.allocate_response(screen_rect.size(), Sense::click());
-                    ui.painter().rect_filled(
-                        screen_rect,
-                        CornerRadius::ZERO,
-                        scrim_color,
-                    );
+                    ui.painter()
+                        .rect_filled(screen_rect, CornerRadius::ZERO, scrim_color);
 
                     // Close drawer if scrim is clicked and barrier is dismissible
                     if scrim_response.clicked() && self.barrier_dismissible {
@@ -576,10 +591,10 @@ impl<'a> MaterialDrawer<'a> {
         if matches!(
             self.variant,
             DrawerVariant::Dismissible | DrawerVariant::Modal
-        )
-            && ui.input(|i| i.key_pressed(egui::Key::Escape)) {
-                *self.open = false;
-            }
+        ) && ui.input(|i| i.key_pressed(egui::Key::Escape))
+        {
+            *self.open = false;
+        }
 
         let available_rect = ui.available_rect_before_wrap();
         let drawer_rect = Rect::from_min_size(
@@ -731,34 +746,28 @@ impl<'a> MaterialDrawer<'a> {
             let indicator_width = item_outer_rect.width();
             let indicator_height = 32.0;
             let indicator_y = y_pos + (item_height - indicator_height) / 2.0;
-            
+
             let indicator_rect = Rect::from_min_size(
                 egui::pos2(item_outer_rect.min.x, indicator_y),
                 Vec2::new(indicator_width, indicator_height),
             );
 
             let active_color = get_global_color("secondaryContainer");
-            ui.painter().rect_filled(
-                indicator_rect,
-                CornerRadius::same(16),
-                active_color,
-            );
+            ui.painter()
+                .rect_filled(indicator_rect, CornerRadius::same(16), active_color);
         } else if item_response.hovered() && item.enabled {
             let indicator_width = item_outer_rect.width();
             let indicator_height = 32.0;
             let indicator_y = y_pos + (item_height - indicator_height) / 2.0;
-            
+
             let indicator_rect = Rect::from_min_size(
                 egui::pos2(item_outer_rect.min.x, indicator_y),
                 Vec2::new(indicator_width, indicator_height),
             );
 
             let hover_color = get_global_color("onSurface").linear_multiply(0.08);
-            ui.painter().rect_filled(
-                indicator_rect,
-                CornerRadius::same(16),
-                hover_color,
-            );
+            ui.painter()
+                .rect_filled(indicator_rect, CornerRadius::same(16), hover_color);
         }
 
         let mut current_x = item_outer_rect.min.x + 16.0;
@@ -787,11 +796,8 @@ impl<'a> MaterialDrawer<'a> {
             get_global_color("onSurfaceVariant")
         };
 
-        let text_pos = egui::pos2(
-            current_x,
-            y_pos + (item_height - 20.0) / 2.0,
-        );
-        
+        let text_pos = egui::pos2(current_x, y_pos + (item_height - 20.0) / 2.0);
+
         ui.painter().text(
             text_pos,
             egui::Align2::LEFT_CENTER,
@@ -804,14 +810,11 @@ impl<'a> MaterialDrawer<'a> {
         if let Some(badge) = &item.badge {
             let badge_x = item_outer_rect.max.x - 40.0;
             let badge_center = egui::pos2(badge_x, y_pos + item_height / 2.0);
-            
+
             // Badge background
-            ui.painter().circle_filled(
-                badge_center,
-                10.0,
-                get_global_color("error"),
-            );
-            
+            ui.painter()
+                .circle_filled(badge_center, 10.0, get_global_color("error"));
+
             // Badge text
             ui.painter().text(
                 badge_center,

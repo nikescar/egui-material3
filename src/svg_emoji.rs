@@ -77,10 +77,7 @@ impl SvgCollection {
     pub fn solar_icons() -> Self {
         let icons = SOLAR_ICONS
             .iter()
-            .map(|(name, svg_data)| SvgIcon {
-                name,
-                svg_data,
-            })
+            .map(|(name, svg_data)| SvgIcon { name, svg_data })
             .collect();
         Self { icons }
     }
@@ -90,10 +87,7 @@ impl SvgCollection {
     pub fn noto_emoji() -> Self {
         let icons = NOTO_EMOJIS
             .iter()
-            .map(|(name, svg_data)| SvgIcon {
-                name,
-                svg_data,
-            })
+            .map(|(name, svg_data)| SvgIcon { name, svg_data })
             .collect();
         Self { icons }
     }
@@ -103,10 +97,7 @@ impl SvgCollection {
     pub fn twemoji() -> Self {
         let icons = TWEMOJI
             .iter()
-            .map(|(name, svg_data)| SvgIcon {
-                name,
-                svg_data,
-            })
+            .map(|(name, svg_data)| SvgIcon { name, svg_data })
             .collect();
         Self { icons }
     }

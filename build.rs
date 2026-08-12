@@ -44,7 +44,11 @@ fn main() {
         generate_includes(&mut f, &solar_dir, "SOLAR");
         writeln!(f).unwrap();
         writeln!(f, "/// Get Solar icon by name (without .svg extension)").unwrap();
-        writeln!(f, "pub static SOLAR_ICONS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{").unwrap();
+        writeln!(
+            f,
+            "pub static SOLAR_ICONS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{"
+        )
+        .unwrap();
         writeln!(f, "    let mut map = HashMap::new();").unwrap();
         generate_map_entries(&mut f, &solar_dir, "SOLAR");
         writeln!(f, "    map").unwrap();
@@ -52,7 +56,11 @@ fn main() {
         writeln!(f).unwrap();
     } else {
         // Provide empty stubs
-        writeln!(f, "/// Solar icons (disabled - enable with svg_solar feature)").unwrap();
+        writeln!(
+            f,
+            "/// Solar icons (disabled - enable with svg_solar feature)"
+        )
+        .unwrap();
         writeln!(f, "pub static SOLAR_ICONS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| HashMap::new());").unwrap();
         writeln!(f).unwrap();
     }
@@ -62,15 +70,27 @@ fn main() {
         let noto_dir = get_resource_dir(&resources_dir, &cache_dir, "noto");
         generate_includes(&mut f, &noto_dir, "NOTO");
         writeln!(f).unwrap();
-        writeln!(f, "/// Get Noto emoji by filename (without .svg extension, e.g., \"emoji_u1f600\")").unwrap();
-        writeln!(f, "pub static NOTO_EMOJIS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{").unwrap();
+        writeln!(
+            f,
+            "/// Get Noto emoji by filename (without .svg extension, e.g., \"emoji_u1f600\")"
+        )
+        .unwrap();
+        writeln!(
+            f,
+            "pub static NOTO_EMOJIS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{"
+        )
+        .unwrap();
         writeln!(f, "    let mut map = HashMap::new();").unwrap();
         generate_map_entries(&mut f, &noto_dir, "NOTO");
         writeln!(f, "    map").unwrap();
         writeln!(f, "}});").unwrap();
         writeln!(f).unwrap();
     } else {
-        writeln!(f, "/// Noto emoji (disabled - enable with svg_noto feature)").unwrap();
+        writeln!(
+            f,
+            "/// Noto emoji (disabled - enable with svg_noto feature)"
+        )
+        .unwrap();
         writeln!(f, "pub static NOTO_EMOJIS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| HashMap::new());").unwrap();
         writeln!(f).unwrap();
     }
@@ -80,24 +100,42 @@ fn main() {
         let twemoji_dir = get_resource_dir(&resources_dir, &cache_dir, "twemoji");
         generate_includes(&mut f, &twemoji_dir, "TWEMOJI");
         writeln!(f).unwrap();
-        writeln!(f, "/// Get Twemoji by filename (without .svg extension, e.g., \"1f600\")").unwrap();
-        writeln!(f, "pub static TWEMOJI: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{").unwrap();
+        writeln!(
+            f,
+            "/// Get Twemoji by filename (without .svg extension, e.g., \"1f600\")"
+        )
+        .unwrap();
+        writeln!(
+            f,
+            "pub static TWEMOJI: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{"
+        )
+        .unwrap();
         writeln!(f, "    let mut map = HashMap::new();").unwrap();
         generate_map_entries(&mut f, &twemoji_dir, "TWEMOJI");
         writeln!(f, "    map").unwrap();
         writeln!(f, "}});").unwrap();
         writeln!(f).unwrap();
     } else {
-        writeln!(f, "/// Twemoji (disabled - enable with svg_twemoji feature)").unwrap();
+        writeln!(
+            f,
+            "/// Twemoji (disabled - enable with svg_twemoji feature)"
+        )
+        .unwrap();
         writeln!(f, "pub static TWEMOJI: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| HashMap::new());").unwrap();
         writeln!(f).unwrap();
     }
 
     // Set rerun triggers
     println!("cargo:rerun-if-changed=build.rs");
-    if svg_solar { println!("cargo:rerun-if-changed=resources/solar"); }
-    if svg_noto { println!("cargo:rerun-if-changed=resources/noto"); }
-    if svg_twemoji { println!("cargo:rerun-if-changed=resources/twemoji"); }
+    if svg_solar {
+        println!("cargo:rerun-if-changed=resources/solar");
+    }
+    if svg_noto {
+        println!("cargo:rerun-if-changed=resources/noto");
+    }
+    if svg_twemoji {
+        println!("cargo:rerun-if-changed=resources/twemoji");
+    }
 }
 
 /// Ensure resources are available (either from local checkout or download)
@@ -116,7 +154,10 @@ fn ensure_resources(resources_dir: &Path, cache_dir: &Path, name: &str) {
     }
 
     // Download from GitHub
-    println!("cargo:warning=Downloading {} SVG assets from GitHub (this is a one-time download)...", name);
+    println!(
+        "cargo:warning=Downloading {} SVG assets from GitHub (this is a one-time download)...",
+        name
+    );
     if let Err(e) = download_resources(&cache_subdir, name) {
         panic!(
             "Failed to download {} resources: {}\n\
@@ -191,7 +232,11 @@ fn download_resources(target_dir: &Path, name: &str) -> Result<(), Box<dyn std::
             })
             .collect();
 
-        println!("cargo:warning=Downloading {} SVG files for {}...", svg_files.len(), name);
+        println!(
+            "cargo:warning=Downloading {} SVG files for {}...",
+            svg_files.len(),
+            name
+        );
 
         for (i, (filename, url)) in svg_files.iter().enumerate() {
             if i % 100 == 0 {
@@ -207,7 +252,11 @@ fn download_resources(target_dir: &Path, name: &str) -> Result<(), Box<dyn std::
             fs::write(file_path, content)?;
         }
 
-        println!("cargo:warning=Successfully downloaded {} files for {}", svg_files.len(), name);
+        println!(
+            "cargo:warning=Successfully downloaded {} files for {}",
+            svg_files.len(),
+            name
+        );
     }
 
     Ok(())
@@ -224,14 +273,26 @@ fn generate_includes(f: &mut fs::File, dir: &Path, prefix: &str) {
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) == Some("svg") {
             let filename = path.file_stem().unwrap().to_str().unwrap();
-            let const_name = format!("{}_{}", prefix,
-                filename.to_uppercase()
+            let const_name = format!(
+                "{}_{}",
+                prefix,
+                filename
+                    .to_uppercase()
                     .chars()
-                    .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+                    .map(|c| if c.is_alphanumeric() || c == '_' {
+                        c
+                    } else {
+                        '_'
+                    })
                     .collect::<String>()
             );
             let path_str = path.to_str().unwrap().replace("\\", "/");
-            writeln!(f, "const {}: &str = include_str!(\"{}\");", const_name, path_str).unwrap();
+            writeln!(
+                f,
+                "const {}: &str = include_str!(\"{}\");",
+                const_name, path_str
+            )
+            .unwrap();
         }
     }
 }
@@ -247,10 +308,17 @@ fn generate_map_entries(f: &mut fs::File, dir: &Path, prefix: &str) {
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) == Some("svg") {
             let filename = path.file_stem().unwrap().to_str().unwrap();
-            let const_name = format!("{}_{}", prefix,
-                filename.to_uppercase()
+            let const_name = format!(
+                "{}_{}",
+                prefix,
+                filename
+                    .to_uppercase()
                     .chars()
-                    .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+                    .map(|c| if c.is_alphanumeric() || c == '_' {
+                        c
+                    } else {
+                        '_'
+                    })
                     .collect::<String>()
             );
             writeln!(f, "    map.insert(\"{}\", {});", filename, const_name).unwrap();

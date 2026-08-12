@@ -6,11 +6,11 @@
 #[cfg(feature = "spreadsheet")]
 use crate::theme::{get_global_color, set_theme_mode, ThemeMode};
 #[cfg(feature = "spreadsheet")]
+use futures::lock::Mutex;
+#[cfg(feature = "spreadsheet")]
 use std::path::PathBuf;
 #[cfg(feature = "spreadsheet")]
 use std::sync::Arc;
-#[cfg(feature = "spreadsheet")]
-use futures::lock::Mutex;
 
 // Native: use rusqlite for better dynamic schema support
 #[cfg(all(feature = "spreadsheet", not(target_family = "wasm")))]
@@ -21,8 +21,8 @@ mod native_imports {
 // WASM: use diesel (only option that works on WASM)
 #[cfg(all(feature = "spreadsheet", target_family = "wasm"))]
 mod wasm_imports {
-    pub use diesel::prelude::*;
     pub use diesel::connection::SimpleConnection;
+    pub use diesel::prelude::*;
     pub use std::sync::Once;
 
     pub static VFS: std::sync::Mutex<(i32, Once)> = std::sync::Mutex::new((0, Once::new()));
@@ -31,12 +31,12 @@ mod wasm_imports {
 #[cfg(all(feature = "spreadsheet", not(target_family = "wasm")))]
 use native_imports::*;
 
-#[cfg(all(feature = "spreadsheet", target_family = "wasm"))]
-use wasm_imports::*;
-#[cfg(feature = "spreadsheet")]
-use egui::{Id, Response, Sense, TextEdit, Ui, Widget};
 #[cfg(feature = "spreadsheet")]
 use crate::egui_smol::{Bind, StateWithData};
+#[cfg(feature = "spreadsheet")]
+use egui::{Id, Response, Sense, TextEdit, Ui, Widget};
+#[cfg(all(feature = "spreadsheet", target_family = "wasm"))]
+use wasm_imports::*;
 
 // Re-export for convenience
 #[cfg(feature = "spreadsheet")]
@@ -92,11 +92,13 @@ pub enum FileFormat {
 #[cfg(feature = "spreadsheet")]
 impl FileFormat {
     pub fn from_path(path: &std::path::Path) -> Option<Self> {
-        path.extension()?.to_str().and_then(|ext| match ext.to_lowercase().as_str() {
-            "csv" => Some(FileFormat::Csv),
-            "xls" | "xlsx" => Some(FileFormat::Excel),
-            _ => None,
-        })
+        path.extension()?
+            .to_str()
+            .and_then(|ext| match ext.to_lowercase().as_str() {
+                "csv" => Some(FileFormat::Csv),
+                "xls" | "xlsx" => Some(FileFormat::Excel),
+                _ => None,
+            })
     }
 }
 
@@ -130,7 +132,7 @@ impl SpreadsheetDataModel {
             // WASM: use diesel with WASM VFS
             let (vfs, _once) = &*VFS.lock().unwrap();
             let url = match vfs {
-                0 => ":memory:",  // in-memory for spreadsheet
+                0 => ":memory:", // in-memory for spreadsheet
                 1 => "file:spreadsheet.db?vfs=opfs-sahpool",
                 2 => "file:spreadsheet.db?vfs=relaxed-idb",
                 _ => ":memory:",
@@ -174,13 +176,15 @@ impl SpreadsheetDataModel {
 
         #[cfg(not(target_family = "wasm"))]
         {
-            self.conn.execute(&create_sql, [])
+            self.conn
+                .execute(&create_sql, [])
                 .map_err(|e| format!("Failed to create table: {}", e))?;
         }
 
         #[cfg(target_family = "wasm")]
         {
-            self.conn.batch_execute(&create_sql)
+            self.conn
+                .batch_execute(&create_sql)
                 .map_err(|e| format!("Failed to create table: {}", e))?;
         }
 
@@ -200,13 +204,15 @@ impl SpreadsheetDataModel {
 
         #[cfg(not(target_family = "wasm"))]
         {
-            self.conn.execute(&alter_sql, [])
+            self.conn
+                .execute(&alter_sql, [])
                 .map_err(|e| format!("Failed to add column: {}", e))?;
         }
 
         #[cfg(target_family = "wasm")]
         {
-            self.conn.batch_execute(&alter_sql)
+            self.conn
+                .batch_execute(&alter_sql)
                 .map_err(|e| format!("Failed to add column: {}", e))?;
         }
 
@@ -233,7 +239,9 @@ impl SpreadsheetDataModel {
         }
 
         // Build INSERT statement with inline values (SQLite doesn't have parameter limit issues)
-        let col_names: Vec<String> = self.columns.iter()
+        let col_names: Vec<String> = self
+            .columns
+            .iter()
             .map(|col| format!("\"{}\"", col.name.replace('"', "\"\"")))
             .collect();
 
@@ -246,7 +254,8 @@ impl SpreadsheetDataModel {
                     if value.is_empty() {
                         "NULL".to_string()
                     } else {
-                        value.parse::<i64>()
+                        value
+                            .parse::<i64>()
                             .map_err(|_| format!("Invalid integer value: {}", value))?
                             .to_string()
                     }
@@ -255,7 +264,8 @@ impl SpreadsheetDataModel {
                     if value.is_empty() {
                         "NULL".to_string()
                     } else {
-                        value.parse::<f64>()
+                        value
+                            .parse::<f64>()
                             .map_err(|_| format!("Invalid real value: {}", value))?
                             .to_string()
                     }
@@ -267,7 +277,8 @@ impl SpreadsheetDataModel {
                         let bool_val = match value.to_lowercase().as_str() {
                             "1" | "true" => true,
                             "0" | "false" => false,
-                            _ => value.parse::<bool>()
+                            _ => value
+                                .parse::<bool>()
                                 .map_err(|_| format!("Invalid boolean value: {}", value))?,
                         };
                         if bool_val { "1" } else { "0" }.to_string()
@@ -286,7 +297,8 @@ impl SpreadsheetDataModel {
 
         #[cfg(not(target_family = "wasm"))]
         {
-            self.conn.execute(&insert_sql, [])
+            self.conn
+                .execute(&insert_sql, [])
                 .map_err(|e| format!("Failed to insert row: {}", e))?;
         }
 
@@ -308,44 +320,52 @@ impl SpreadsheetDataModel {
             // Native: use rusqlite
             let select_sql = format!("SELECT * FROM {} ORDER BY id", self.table_name);
 
-            let mut stmt = self.conn.prepare(&select_sql)
+            let mut stmt = self
+                .conn
+                .prepare(&select_sql)
                 .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
-            let mut rows = stmt.query([])
+            let mut rows = stmt
+                .query([])
                 .map_err(|e| format!("Failed to query rows: {}", e))?;
 
             let mut result = Vec::new();
             let mut row_idx = 0;
 
-            while let Some(row) = rows.next().map_err(|e| format!("Failed to fetch row: {}", e))? {
+            while let Some(row) = rows
+                .next()
+                .map_err(|e| format!("Failed to fetch row: {}", e))?
+            {
                 let mut values = Vec::new();
 
                 // Skip the first column (id) and read the data columns
                 for (col_idx, col) in self.columns.iter().enumerate() {
                     let value = match &col.col_type {
-                        ColumnType::Text => {
-                            row.get::<_, Option<String>>(col_idx + 1)
-                                .map_err(|e| format!("Failed to get text value: {}", e))?
-                                .unwrap_or_default()
-                        }
-                        ColumnType::Integer => {
-                            row.get::<_, Option<i64>>(col_idx + 1)
-                                .map_err(|e| format!("Failed to get integer value: {}", e))?
-                                .map(|v| v.to_string())
-                                .unwrap_or_default()
-                        }
-                        ColumnType::Real => {
-                            row.get::<_, Option<f64>>(col_idx + 1)
-                                .map_err(|e| format!("Failed to get real value: {}", e))?
-                                .map(|v| v.to_string())
-                                .unwrap_or_default()
-                        }
-                        ColumnType::Boolean => {
-                            row.get::<_, Option<i32>>(col_idx + 1)
-                                .map_err(|e| format!("Failed to get boolean value: {}", e))?
-                                .map(|v| if v != 0 { "true".to_string() } else { "false".to_string() })
-                                .unwrap_or_default()
-                        }
+                        ColumnType::Text => row
+                            .get::<_, Option<String>>(col_idx + 1)
+                            .map_err(|e| format!("Failed to get text value: {}", e))?
+                            .unwrap_or_default(),
+                        ColumnType::Integer => row
+                            .get::<_, Option<i64>>(col_idx + 1)
+                            .map_err(|e| format!("Failed to get integer value: {}", e))?
+                            .map(|v| v.to_string())
+                            .unwrap_or_default(),
+                        ColumnType::Real => row
+                            .get::<_, Option<f64>>(col_idx + 1)
+                            .map_err(|e| format!("Failed to get real value: {}", e))?
+                            .map(|v| v.to_string())
+                            .unwrap_or_default(),
+                        ColumnType::Boolean => row
+                            .get::<_, Option<i32>>(col_idx + 1)
+                            .map_err(|e| format!("Failed to get boolean value: {}", e))?
+                            .map(|v| {
+                                if v != 0 {
+                                    "true".to_string()
+                                } else {
+                                    "false".to_string()
+                                }
+                            })
+                            .unwrap_or_default(),
                     };
                     values.push(value);
                 }
@@ -369,7 +389,12 @@ impl SpreadsheetDataModel {
     }
 
     /// Update a single cell
-    pub fn update_cell(&mut self, row_id: usize, col_idx: usize, value: String) -> Result<(), String> {
+    pub fn update_cell(
+        &mut self,
+        row_id: usize,
+        col_idx: usize,
+        value: String,
+    ) -> Result<(), String> {
         if col_idx >= self.columns.len() {
             return Err("Invalid column index".to_string());
         }
@@ -393,7 +418,10 @@ impl SpreadsheetDataModel {
                 if !value.is_empty() {
                     let lower = value.to_lowercase();
                     if lower != "true" && lower != "false" && lower != "1" && lower != "0" {
-                        return Err(format!("'{}' is not a valid boolean (use true/false or 1/0)", value));
+                        return Err(format!(
+                            "'{}' is not a valid boolean (use true/false or 1/0)",
+                            value
+                        ));
                     }
                 }
             }
@@ -410,7 +438,8 @@ impl SpreadsheetDataModel {
                 if value.is_empty() {
                     "NULL".to_string()
                 } else {
-                    value.parse::<i64>()
+                    value
+                        .parse::<i64>()
                         .map_err(|_| format!("Invalid integer value: {}", value))?
                         .to_string()
                 }
@@ -419,7 +448,8 @@ impl SpreadsheetDataModel {
                 if value.is_empty() {
                     "NULL".to_string()
                 } else {
-                    value.parse::<f64>()
+                    value
+                        .parse::<f64>()
                         .map_err(|_| format!("Invalid real value: {}", value))?
                         .to_string()
                 }
@@ -431,7 +461,8 @@ impl SpreadsheetDataModel {
                     let bool_val = match value.to_lowercase().as_str() {
                         "1" | "true" => true,
                         "0" | "false" => false,
-                        _ => value.parse::<bool>()
+                        _ => value
+                            .parse::<bool>()
                             .map_err(|_| format!("Invalid boolean value: {}", value))?,
                     };
                     if bool_val { "1" } else { "0" }.to_string()
@@ -441,15 +472,13 @@ impl SpreadsheetDataModel {
 
         let update_sql = format!(
             "UPDATE {} SET \"{}\" = {} WHERE id = {}",
-            self.table_name,
-            col_name,
-            value_str,
-            actual_id
+            self.table_name, col_name, value_str, actual_id
         );
 
         #[cfg(not(target_family = "wasm"))]
         {
-            self.conn.execute(&update_sql, [])
+            self.conn
+                .execute(&update_sql, [])
                 .map_err(|e| format!("Failed to update cell: {}", e))?;
         }
 
@@ -470,7 +499,8 @@ impl SpreadsheetDataModel {
 
         #[cfg(not(target_family = "wasm"))]
         {
-            self.conn.execute(&delete_sql, [])
+            self.conn
+                .execute(&delete_sql, [])
                 .map_err(|e| format!("Failed to delete row: {}", e))?;
         }
 
@@ -511,7 +541,8 @@ impl SpreadsheetDataModel {
 
         let file = File::open(path).map_err(|e| format!("Cannot open file: {}", e))?;
         let reader = std::io::BufReader::new(file);
-        let all_lines: Vec<String> = reader.lines()
+        let all_lines: Vec<String> = reader
+            .lines()
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("Failed to read file: {}", e))?;
 
@@ -575,42 +606,48 @@ impl SpreadsheetDataModel {
         // Determine if first line is a header (improved heuristic)
         let looks_like_header = first_values.iter().all(|v| {
             let trimmed = v.trim();
-            trimmed.len() < 50 &&
-            !trimmed.is_empty() &&
-            trimmed.parse::<f64>().is_err() &&
-            !trimmed.contains(|c: char| c.is_numeric() && trimmed.len() > 20)
+            trimmed.len() < 50
+                && !trimmed.is_empty()
+                && trimmed.parse::<f64>().is_err()
+                && !trimmed.contains(|c: char| c.is_numeric() && trimmed.len() > 20)
         });
 
-        let has_type_difference = first_values.iter().zip(second_values.iter()).any(|(v1, v2)| {
-            let v1_is_num = v1.trim().parse::<f64>().is_ok();
-            let v2_is_num = v2.trim().parse::<f64>().is_ok();
-            v1_is_num != v2_is_num
-        });
+        let has_type_difference = first_values
+            .iter()
+            .zip(second_values.iter())
+            .any(|(v1, v2)| {
+                let v1_is_num = v1.trim().parse::<f64>().is_ok();
+                let v2_is_num = v2.trim().parse::<f64>().is_ok();
+                v1_is_num != v2_is_num
+            });
 
         let has_unique_values = {
             let mut seen = std::collections::HashSet::new();
             first_values.iter().all(|v| seen.insert(v.trim()))
         };
 
-        let first_line_is_header = looks_like_header || has_type_difference || (has_unique_values && looks_like_header);
+        let first_line_is_header =
+            looks_like_header || has_type_difference || (has_unique_values && looks_like_header);
 
         // Create new column definitions
         let new_columns: Vec<ColumnDef> = if first_line_is_header {
-            first_values.iter().enumerate().map(|(_i, name)| {
-                ColumnDef {
+            first_values
+                .iter()
+                .enumerate()
+                .map(|(_i, name)| ColumnDef {
                     name: name.trim().to_string(),
                     col_type: ColumnType::Text,
                     width: 100.0,
-                }
-            }).collect()
+                })
+                .collect()
         } else {
-            (0..col_count).map(|i| {
-                ColumnDef {
+            (0..col_count)
+                .map(|i| ColumnDef {
                     name: format!("column{}", i + 1),
                     col_type: ColumnType::Text,
                     width: 100.0,
-                }
-            }).collect()
+                })
+                .collect()
         };
 
         // Drop and recreate table with new columns
@@ -618,13 +655,15 @@ impl SpreadsheetDataModel {
 
         #[cfg(not(target_family = "wasm"))]
         {
-            self.conn.execute(&drop_sql, [])
+            self.conn
+                .execute(&drop_sql, [])
                 .map_err(|e| format!("Failed to drop table: {}", e))?;
         }
 
         #[cfg(target_family = "wasm")]
         {
-            self.conn.batch_execute(&drop_sql)
+            self.conn
+                .batch_execute(&drop_sql)
                 .map_err(|e| format!("Failed to drop table: {}", e))?;
         }
 
@@ -634,14 +673,18 @@ impl SpreadsheetDataModel {
 
         // Prepare data rows
         let start_idx = if first_line_is_header { 1 } else { 0 };
-        let data_lines: Vec<&String> = all_lines.iter()
+        let data_lines: Vec<&String> = all_lines
+            .iter()
             .skip(start_idx)
             .filter(|line| !line.trim().is_empty())
             .collect();
 
         // Insert data rows
         for (idx, line) in data_lines.iter().enumerate() {
-            let values: Vec<String> = line.split(delimiter).map(|s| s.trim().to_string()).collect();
+            let values: Vec<String> = line
+                .split(delimiter)
+                .map(|s| s.trim().to_string())
+                .collect();
 
             // Validate column count
             if values.len() != col_count {
@@ -659,14 +702,17 @@ impl SpreadsheetDataModel {
 
         Ok(())
     }
-
 }
 
 /// Actions that can be performed on spreadsheet
 #[cfg(feature = "spreadsheet")]
 #[derive(Debug, Clone)]
 pub enum SpreadsheetAction {
-    CellEdited { row_id: usize, col_idx: usize, value: String },
+    CellEdited {
+        row_id: usize,
+        col_idx: usize,
+        value: String,
+    },
     RowAdded,
     RowDeleted(usize),
     DataLoaded(PathBuf),
@@ -812,7 +858,8 @@ impl MaterialSpreadsheet {
         self.load_processed = false; // Reset flag for new load
         let model = Arc::clone(&self.data_model);
         self.load_bind.refresh(async move {
-            let format = FileFormat::from_path(&path).ok_or_else(|| "Unknown file format".to_string())?;
+            let format =
+                FileFormat::from_path(&path).ok_or_else(|| "Unknown file format".to_string())?;
 
             match format {
                 FileFormat::Csv => {
@@ -829,7 +876,8 @@ impl MaterialSpreadsheet {
     pub fn save_to_file(&mut self, path: PathBuf) {
         let model = Arc::clone(&self.data_model);
         self.save_bind.refresh(async move {
-            let format = FileFormat::from_path(&path).ok_or_else(|| "Unknown file format".to_string())?;
+            let format =
+                FileFormat::from_path(&path).ok_or_else(|| "Unknown file format".to_string())?;
 
             match format {
                 FileFormat::Csv => {
@@ -874,7 +922,9 @@ impl MaterialSpreadsheet {
                 }
             }
             StateWithData::Failed(err) => {
-                return ui.label(format!("Load error: {}", err)).interact(Sense::hover());
+                return ui
+                    .label(format!("Load error: {}", err))
+                    .interact(Sense::hover());
             }
             StateWithData::Idle => {}
         }
@@ -918,7 +968,11 @@ impl MaterialSpreadsheet {
 
         // Add columns
         for col in columns.iter() {
-            table = table.column(egui_extras::Column::initial(col.width).at_least(50.0).resizable(true));
+            table = table.column(
+                egui_extras::Column::initial(col.width)
+                    .at_least(50.0)
+                    .resizable(true),
+            );
         }
 
         // Clone cached rows for rendering to avoid borrow issues
@@ -926,14 +980,15 @@ impl MaterialSpreadsheet {
 
         // Use UI memory to store pending cell updates
         let pending_update_id = self.id.with("pending_cell_update");
-        
+
         table
             .header(30.0, |mut header| {
                 for col in columns.iter() {
                     header.col(|ui| {
                         // Paint header background color with primary color
                         let rect = ui.max_rect();
-                        ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, primary);
+                        ui.painter()
+                            .rect_filled(rect, egui::CornerRadius::ZERO, primary);
 
                         ui.style_mut().visuals.override_text_color = Some(on_primary);
                         ui.strong(&col.name);
@@ -942,7 +997,8 @@ impl MaterialSpreadsheet {
             })
             .body(|mut body| {
                 for row_data in &display_rows {
-                    let is_selected = self.row_selection_enabled && self.selected_row == Some(row_data.id);
+                    let is_selected =
+                        self.row_selection_enabled && self.selected_row == Some(row_data.id);
 
                     body.row(self.row_height, |mut row| {
                         let mut text_clicked = false;
@@ -952,8 +1008,13 @@ impl MaterialSpreadsheet {
                                 // Highlight selected row
                                 if is_selected {
                                     let rect = ui.max_rect();
-                                    let highlight_color = ui.visuals().selection.bg_fill.gamma_multiply(0.5);
-                                    ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, highlight_color);
+                                    let highlight_color =
+                                        ui.visuals().selection.bg_fill.gamma_multiply(0.5);
+                                    ui.painter().rect_filled(
+                                        rect,
+                                        egui::CornerRadius::ZERO,
+                                        highlight_color,
+                                    );
                                 }
 
                                 let is_editing = self.editing_cell == Some((row_data.id, col_idx));
@@ -962,17 +1023,25 @@ impl MaterialSpreadsheet {
                                     // Edit mode with TextEdit
                                     let edit_response = ui.add(
                                         TextEdit::singleline(&mut self.edit_buffer)
-                                            .desired_width(f32::INFINITY)
+                                            .desired_width(f32::INFINITY),
                                     );
 
                                     // Handle Enter to save, Escape to cancel, or save on blur
                                     if edit_response.lost_focus() {
-                                        let escape_pressed = ui.input(|i| i.key_pressed(egui::Key::Escape));
+                                        let escape_pressed =
+                                            ui.input(|i| i.key_pressed(egui::Key::Escape));
 
                                         if !escape_pressed {
                                             // Store the update in UI memory for processing after rendering
                                             ui.memory_mut(|mem| {
-                                                mem.data.insert_temp(pending_update_id, (row_data.id, col_idx, self.edit_buffer.clone()));
+                                                mem.data.insert_temp(
+                                                    pending_update_id,
+                                                    (
+                                                        row_data.id,
+                                                        col_idx,
+                                                        self.edit_buffer.clone(),
+                                                    ),
+                                                );
                                             });
                                         }
                                         // Always exit edit mode when losing focus
@@ -992,7 +1061,10 @@ impl MaterialSpreadsheet {
                                     }
 
                                     // Single-click to edit (changed from double-click) - only if editing is enabled and selection is not
-                                    if self.allow_editing && !self.row_selection_enabled && label_response.clicked() {
+                                    if self.allow_editing
+                                        && !self.row_selection_enabled
+                                        && label_response.clicked()
+                                    {
                                         self.editing_cell = Some((row_data.id, col_idx));
                                         self.edit_buffer = value.clone();
                                     }
@@ -1002,7 +1074,8 @@ impl MaterialSpreadsheet {
 
                         // Handle row selection: select if text clicked OR row area clicked (including padding)
                         if self.row_selection_enabled {
-                            let row_area_clicked = row.response().interact(Sense::click()).clicked();
+                            let row_area_clicked =
+                                row.response().interact(Sense::click()).clicked();
                             if text_clicked || row_area_clicked {
                                 self.selected_row = Some(row_data.id);
                             }
@@ -1013,13 +1086,13 @@ impl MaterialSpreadsheet {
 
         // Apply any pending cell update after rendering
         if let Some((row_id, col_idx, new_value)) = ui.memory(|mem| {
-            mem.data.get_temp::<(usize, usize, String)>(pending_update_id)
+            mem.data
+                .get_temp::<(usize, usize, String)>(pending_update_id)
         }) {
             // Clear the pending update
             ui.memory_mut(|mem| {
                 mem.data.remove::<(usize, usize, String)>(pending_update_id);
             });
-
 
             // Use try_lock to avoid needing runtime in UI context
             let mut model = loop {
@@ -1037,17 +1110,13 @@ impl MaterialSpreadsheet {
                             // Request repaint so the updated data appears immediately
                             ui.ctx().request_repaint();
                         }
-                        Err(_e) => {
-                        }
+                        Err(_e) => {}
                     }
                 }
                 Err(e) => {
                     // Show error to user - store in temp memory for display
                     ui.memory_mut(|mem| {
-                        mem.data.insert_temp(
-                            self.id.with("cell_error"),
-                            e.clone()
-                        );
+                        mem.data.insert_temp(self.id.with("cell_error"), e.clone());
                     });
                     ui.ctx().request_repaint();
                 }
@@ -1055,14 +1124,14 @@ impl MaterialSpreadsheet {
         }
 
         // Display error message if there's a cell error
-        if let Some(error_msg) = ui.memory(|mem| {
-            mem.data.get_temp::<String>(self.id.with("cell_error"))
-        }) {
+        if let Some(error_msg) =
+            ui.memory(|mem| mem.data.get_temp::<String>(self.id.with("cell_error")))
+        {
             // Clear the error
             ui.memory_mut(|mem| {
                 mem.data.remove::<String>(self.id.with("cell_error"));
             });
-            
+
             // Show error message at the top
             ui.ctx().debug_painter().text(
                 ui.max_rect().center_top() + egui::vec2(0.0, 10.0),
@@ -1071,9 +1140,10 @@ impl MaterialSpreadsheet {
                 egui::FontId::proportional(14.0),
                 get_global_color("error"),
             );
-            
+
             // Keep showing the error for a bit
-            ui.ctx().request_repaint_after(std::time::Duration::from_secs(3));
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_secs(3));
         }
 
         ui.interact(ui.max_rect(), self.id, Sense::hover())
@@ -1122,13 +1192,10 @@ mod tests {
 
     #[test]
     fn test_spreadsheet_init() {
-        let columns = vec![
-            text_column("Name", 100.0),
-            text_column("Value", 100.0),
-        ];
+        let columns = vec![text_column("Name", 100.0), text_column("Value", 100.0)];
 
-        let mut spreadsheet = MaterialSpreadsheet::new("test", columns)
-            .expect("Failed to create spreadsheet");
+        let mut spreadsheet =
+            MaterialSpreadsheet::new("test", columns).expect("Failed to create spreadsheet");
 
         // Initialize with data
         spreadsheet.init_with_data(vec![
@@ -1145,27 +1212,39 @@ mod tests {
 
     #[test]
     fn test_data_model_operations() {
-        async_std::task::block_on(async {
-        let columns = vec![
-            ColumnDef { name: "Name".to_string(), col_type: ColumnType::Text, width: 100.0 },
-            ColumnDef { name: "Count".to_string(), col_type: ColumnType::Integer, width: 80.0 },
-        ];
+        smol::block_on(async {
+            let columns = vec![
+                ColumnDef {
+                    name: "Name".to_string(),
+                    col_type: ColumnType::Text,
+                    width: 100.0,
+                },
+                ColumnDef {
+                    name: "Count".to_string(),
+                    col_type: ColumnType::Integer,
+                    width: 80.0,
+                },
+            ];
 
-        let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
+            let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
 
-        // Insert data
-        model.insert_row(vec!["Test".to_string(), "42".to_string()]).expect("Failed to insert");
+            // Insert data
+            model
+                .insert_row(vec!["Test".to_string(), "42".to_string()])
+                .expect("Failed to insert");
 
-        // Query data
-        let rows = model.query_rows().expect("Failed to query");
-        assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].values[0], "Test");
-        assert_eq!(rows[0].values[1], "42");
+            // Query data
+            let rows = model.query_rows().expect("Failed to query");
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].values[0], "Test");
+            assert_eq!(rows[0].values[1], "42");
 
-        // Update cell
-        model.update_cell(0, 0, "Updated".to_string()).expect("Failed to update");
-        let rows = model.query_rows().expect("Failed to query");
-        assert_eq!(rows[0].values[0], "Updated");
+            // Update cell
+            model
+                .update_cell(0, 0, "Updated".to_string())
+                .expect("Failed to update");
+            let rows = model.query_rows().expect("Failed to query");
+            assert_eq!(rows[0].values[0], "Updated");
         })
     }
 
@@ -1173,16 +1252,17 @@ mod tests {
     fn test_csv_import_export() {
         use std::path::Path;
 
-        let columns = vec![
-            text_column("Name", 100.0),
-            text_column("Value", 100.0),
-        ];
+        let columns = vec![text_column("Name", 100.0), text_column("Value", 100.0)];
 
         let mut model = SpreadsheetDataModel::new(columns).expect("Failed to create model");
 
         // Add some data
-        model.insert_row(vec!["Item1".to_string(), "Value1".to_string()]).expect("Failed to insert");
-        model.insert_row(vec!["Item2".to_string(), "Value2".to_string()]).expect("Failed to insert");
+        model
+            .insert_row(vec!["Item1".to_string(), "Value1".to_string()])
+            .expect("Failed to insert");
+        model
+            .insert_row(vec!["Item2".to_string(), "Value2".to_string()])
+            .expect("Failed to insert");
 
         // Export to CSV
         let export_path = Path::new("/tmp/test_export.csv");
@@ -1191,7 +1271,9 @@ mod tests {
         // Create new model and import
         let columns2 = vec![text_column("Col1", 100.0), text_column("Col2", 100.0)];
         let mut model2 = SpreadsheetDataModel::new(columns2).expect("Failed to create model");
-        model2.import_csv(export_path).expect("Failed to import CSV");
+        model2
+            .import_csv(export_path)
+            .expect("Failed to import CSV");
 
         // Verify data
         let rows = model2.query_rows().expect("Failed to query");

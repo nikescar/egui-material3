@@ -1,7 +1,5 @@
 use crate::get_global_color;
-use egui::{
-    Align, Color32, CornerRadius, Layout, Response, Shadow, Stroke, Ui, Vec2, Widget,
-};
+use egui::{Align, Color32, CornerRadius, Layout, Response, Shadow, Stroke, Ui, Vec2, Widget};
 
 /// Material Design 3 toolbar component.
 ///
@@ -95,7 +93,7 @@ impl<'a> Default for MaterialToolbar<'a> {
             tabbar_labels: false,
             outline: true,
             bg_color: None,
-            elevation: None, // Use automatic elevation based on position
+            elevation: None,  // Use automatic elevation based on position
             min_height: 56.0, // Material Design standard toolbar height
             item_spacing: 8.0,
             padding: Vec2::new(16.0, 8.0),
@@ -125,9 +123,8 @@ impl<'a> MaterialToolbar<'a> {
     where
         W: Widget + 'a,
     {
-        self.items.push(ToolbarItem::Widget(Box::new(move |ui| {
-            ui.add(widget)
-        })));
+        self.items
+            .push(ToolbarItem::Widget(Box::new(move |ui| ui.add(widget))));
         self
     }
 
@@ -342,11 +339,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
             // Draw background using M3 surface color roles
             // No additional tint overlay needed - the surface container colors
             // already provide the correct tonal values for elevation hierarchy
-            ui.painter().rect_filled(
-                rect,
-                CornerRadius::ZERO,
-                bg_color,
-            );
+            ui.painter().rect_filled(rect, CornerRadius::ZERO, bg_color);
 
             // Draw outline/border using M3 outline color roles
             // outlineVariant: A less emphasized version of the outline color
@@ -375,7 +368,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
             let mut child_ui = ui.new_child(
                 egui::UiBuilder::new()
                     .max_rect(rect.shrink2(self.padding))
-                    .layout(Layout::left_to_right(Align::Center))
+                    .layout(Layout::left_to_right(Align::Center)),
             );
 
             child_ui.spacing_mut().item_spacing.x = self.item_spacing;
@@ -411,10 +404,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
                             widget_fn(&mut child_ui);
                         }
                         ToolbarItem::Spacer => {
-                            child_ui.with_layout(
-                                Layout::right_to_left(Align::Center),
-                                |_ui| {},
-                            );
+                            child_ui.with_layout(Layout::right_to_left(Align::Center), |_ui| {});
                         }
                     }
                 }

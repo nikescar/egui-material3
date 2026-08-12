@@ -2,19 +2,27 @@
 ///
 /// This example shows how to use SVG icons from the svg_emoji module
 /// with various Material Design 3 components.
-
 use eframe::egui;
 use egui_material3::{
     // Chips
-    assist_chip, filter_chip, input_chip, suggestion_chip,
+    assist_chip,
+    filter_chip,
     // Icon Buttons
-    icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
+    icon_button_filled,
+    icon_button_filled_tonal,
+    icon_button_outlined,
+    icon_button_standard,
+    input_chip,
+    suggestion_chip,
+    // SVG emoji collections
+    svg_emoji::{NOTO_EMOJIS, SOLAR_ICONS, TWEMOJI},
+    // Theme functions
+    theme::{
+        load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme,
+        update_window_background,
+    },
     // Buttons
     MaterialButton,
-    // SVG emoji collections
-    svg_emoji::{SOLAR_ICONS, NOTO_EMOJIS, TWEMOJI},
-    // Theme functions
-    theme::{load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme, update_window_background},
 };
 
 fn main() -> Result<(), eframe::Error> {

@@ -242,15 +242,17 @@ impl<'a> Widget for MaterialFab<'a> {
             FabSize::Extended => {
                 let left_margin = 16.0;
                 let right_margin = 24.0;
-                let icon_width = if self.icon.is_some() || self.svg_icon.is_some() || self.svg_data.is_some() {
-                    24.0 + 12.0
-                } else {
-                    0.0
-                };
+                let icon_width =
+                    if self.icon.is_some() || self.svg_icon.is_some() || self.svg_data.is_some() {
+                        24.0 + 12.0
+                    } else {
+                        0.0
+                    };
 
                 let text_width = if let Some(ref text) = self.text {
                     let font_id = egui::FontId::proportional(14.0);
-                    ui.painter().layout_no_wrap(text.clone(), font_id, Color32::WHITE)
+                    ui.painter()
+                        .layout_no_wrap(text.clone(), font_id, Color32::WHITE)
                         .size()
                         .x
                 } else {
@@ -298,10 +300,7 @@ impl<'a> Widget for MaterialFab<'a> {
 
         let (bg_color, icon_color) = if !enabled {
             // Disabled state: surfaceContainer background with outline @ 38% for icon (M3 spec)
-            (
-                surface_container,
-                outline.linear_multiply(0.38),
-            )
+            (surface_container, outline.linear_multiply(0.38))
         } else {
             match variant {
                 FabVariant::Surface => {
@@ -323,10 +322,16 @@ impl<'a> Widget for MaterialFab<'a> {
                     let content_color = on_primary;
                     if response.is_pointer_button_down_on() {
                         // Pressed state: 12% onPrimary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.12), content_color)
+                        (
+                            blend_state_layer(base_color, content_color, 0.12),
+                            content_color,
+                        )
                     } else if response.hovered() {
                         // Hover state: 8% onPrimary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.08), content_color)
+                        (
+                            blend_state_layer(base_color, content_color, 0.08),
+                            content_color,
+                        )
                     } else {
                         (base_color, content_color)
                     }
@@ -337,10 +342,16 @@ impl<'a> Widget for MaterialFab<'a> {
                     let content_color = on_secondary;
                     if response.is_pointer_button_down_on() {
                         // Pressed state: 12% onSecondary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.12), content_color)
+                        (
+                            blend_state_layer(base_color, content_color, 0.12),
+                            content_color,
+                        )
                     } else if response.hovered() {
                         // Hover state: 8% onSecondary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.08), content_color)
+                        (
+                            blend_state_layer(base_color, content_color, 0.08),
+                            content_color,
+                        )
                     } else {
                         (base_color, content_color)
                     }
@@ -351,10 +362,16 @@ impl<'a> Widget for MaterialFab<'a> {
                     let content_color = on_tertiary;
                     if response.is_pointer_button_down_on() {
                         // Pressed state: 12% onTertiary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.12), content_color)
+                        (
+                            blend_state_layer(base_color, content_color, 0.12),
+                            content_color,
+                        )
                     } else if response.hovered() {
                         // Hover state: 8% onTertiary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.08), content_color)
+                        (
+                            blend_state_layer(base_color, content_color, 0.08),
+                            content_color,
+                        )
                     } else {
                         (base_color, content_color)
                     }
@@ -365,10 +382,16 @@ impl<'a> Widget for MaterialFab<'a> {
                     let content_color = Color32::WHITE; // White icon/text on branded background
                     if response.is_pointer_button_down_on() {
                         // Pressed state: 12% white overlay
-                        (blend_state_layer(google_brand, content_color, 0.12), content_color)
+                        (
+                            blend_state_layer(google_brand, content_color, 0.12),
+                            content_color,
+                        )
                     } else if response.hovered() {
                         // Hover state: 8% white overlay
-                        (blend_state_layer(google_brand, content_color, 0.08), content_color)
+                        (
+                            blend_state_layer(google_brand, content_color, 0.08),
+                            content_color,
+                        )
                     } else {
                         (google_brand, content_color)
                     }
@@ -452,7 +475,8 @@ impl<'a> Widget for MaterialFab<'a> {
 
                     // Render SVG data
                     if let Ok(texture) = render_svg_to_texture(ui.ctx(), svg_str, icon_size) {
-                        let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size as f32));
+                        let icon_rect =
+                            Rect::from_center_size(rect.center(), Vec2::splat(icon_size as f32));
                         ui.painter().image(
                             texture.id(),
                             icon_rect,
@@ -494,7 +518,9 @@ impl<'a> Widget for MaterialFab<'a> {
 
                     let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
                     let icon_char = material_symbol_text("add");
-                    let icon = MaterialIcon::new(icon_char).size(icon_size).color(icon_color);
+                    let icon = MaterialIcon::new(icon_char)
+                        .size(icon_size)
+                        .color(icon_color);
                     ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
                         ui.add(icon);
                     });
@@ -511,13 +537,17 @@ impl<'a> Widget for MaterialFab<'a> {
 /// Used for M3 interactive states (hover: 8%, press: 12%).
 fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
     let alpha = (opacity * 255.0) as u8;
-    let overlay_with_alpha = Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
+    let overlay_with_alpha =
+        Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
     // Alpha blending
     let inv_alpha = 255 - alpha;
     Color32::from_rgba_unmultiplied(
-        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255) as u8,
-        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255) as u8,
-        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255) as u8,
+        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255)
+            as u8,
+        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255)
+            as u8,
+        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255)
+            as u8,
         base.a(),
     )
 }
@@ -575,10 +605,10 @@ fn render_svg_to_texture(
     svg_data: &str,
     size: u32,
 ) -> Result<egui::TextureHandle, String> {
-    use resvg::{usvg, tiny_skia};
+    use resvg::{tiny_skia, usvg};
 
-    let tree = usvg::Tree::from_str(svg_data, &usvg::Options::default())
-        .map_err(|e| e.to_string())?;
+    let tree =
+        usvg::Tree::from_str(svg_data, &usvg::Options::default()).map_err(|e| e.to_string())?;
     let mut pixmap =
         tiny_skia::Pixmap::new(size, size).ok_or_else(|| "pixmap alloc failed".to_string())?;
 
@@ -590,10 +620,8 @@ fn render_svg_to_texture(
         &mut pixmap.as_mut(),
     );
 
-    let color_image = egui::ColorImage::from_rgba_unmultiplied(
-        [size as usize, size as usize],
-        pixmap.data(),
-    );
+    let color_image =
+        egui::ColorImage::from_rgba_unmultiplied([size as usize, size as usize], pixmap.data());
 
     // Create a unique key for this texture
     use std::collections::hash_map::DefaultHasher;

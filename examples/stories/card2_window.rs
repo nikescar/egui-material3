@@ -162,11 +162,14 @@ impl Card2Window {
 
         ui.separator();
         ui.label("Elevation & Styling:");
-        
+
         ui.horizontal(|ui| {
             ui.label("Elevation:");
             ui.add(egui::Slider::new(&mut self.demo_elevation, 0.0..=12.0).suffix(" dp"));
-            ui.label(format!("Level: {}", self.get_elevation_level(self.demo_elevation)));
+            ui.label(format!(
+                "Level: {}",
+                self.get_elevation_level(self.demo_elevation)
+            ));
         });
 
         ui.horizontal(|ui| {
@@ -175,17 +178,38 @@ impl Card2Window {
         });
 
         ui.horizontal(|ui| {
-            ui.add(MaterialCheckbox::new(&mut self.show_surface_tint, "Surface Tint"));
+            ui.add(MaterialCheckbox::new(
+                &mut self.show_surface_tint,
+                "Surface Tint",
+            ));
             ui.add(MaterialCheckbox::new(&mut self.show_shadow, "Shadow"));
-            ui.add(MaterialCheckbox::new(&mut self.clip_content, "Clip Content"));
-            ui.add(MaterialCheckbox::new(&mut self.border_foreground, "Border Foreground"));
+            ui.add(MaterialCheckbox::new(
+                &mut self.clip_content,
+                "Clip Content",
+            ));
+            ui.add(MaterialCheckbox::new(
+                &mut self.border_foreground,
+                "Border Foreground",
+            ));
         });
 
         ui.horizontal(|ui| {
             ui.label("Elevation Mode:");
-            ui.radio_value(&mut self.elevation_mode, ElevationMode::TintOnly, "Tint Only");
-            ui.radio_value(&mut self.elevation_mode, ElevationMode::TintAndShadow, "Tint + Shadow");
-            ui.radio_value(&mut self.elevation_mode, ElevationMode::ShadowOnly, "Shadow Only");
+            ui.radio_value(
+                &mut self.elevation_mode,
+                ElevationMode::TintOnly,
+                "Tint Only",
+            );
+            ui.radio_value(
+                &mut self.elevation_mode,
+                ElevationMode::TintAndShadow,
+                "Tint + Shadow",
+            );
+            ui.radio_value(
+                &mut self.elevation_mode,
+                ElevationMode::ShadowOnly,
+                "Shadow Only",
+            );
         });
     }
     fn get_elevation_level(&self, elevation: f32) -> i32 {
@@ -212,7 +236,7 @@ impl Card2Window {
 
     fn render_elevation_demo(&mut self, ui: &mut Ui) {
         ui.heading("Elevation Demonstration");
-        
+
         ui.label("Material 3 defines 6 elevation levels (0-5) with corresponding overlay tints:");
         ui.add_space(10.0);
 
@@ -562,7 +586,7 @@ impl Card2Window {
         } else {
             let mut card_to_edit: Option<usize> = None;
             let mut card_to_delete: Option<usize> = None;
-            
+
             ui.vertical(|ui| {
                 let cards_to_render = self.custom_cards.clone();
                 for (idx, card) in cards_to_render.iter().enumerate() {
@@ -576,7 +600,7 @@ impl Card2Window {
                     ui.add_space(10.0);
                 }
             });
-            
+
             // Handle actions after rendering
             if let Some(idx) = card_to_edit {
                 if let Some(card) = self.custom_cards.get(idx).cloned() {
@@ -608,7 +632,7 @@ impl Card2Window {
     fn render_custom_card(&self, ui: &mut Ui, card: &CustomCard) -> (bool, bool) {
         let mut edit_clicked = false;
         let mut delete_clicked = false;
-        
+
         ui.vertical(|ui| {
             let card_builder = match card.variant {
                 CardVariant::Elevated => elevated_card2(),
@@ -623,7 +647,7 @@ impl Card2Window {
                 });
 
             ui.add(card_builder);
-            
+
             // Render action buttons below the card
             ui.horizontal(|ui| {
                 if ui.add(MaterialButton::text("Edit")).clicked() {
@@ -634,7 +658,7 @@ impl Card2Window {
                 }
             });
         });
-        
+
         (edit_clicked, delete_clicked)
     }
 
@@ -646,7 +670,7 @@ impl Card2Window {
         let mut open = self.edit_dialog_open;
         let mut save_clicked = false;
         let mut cancel_clicked = false;
-        
+
         egui::Window::new("Edit Card")
             .open(&mut open)
             .default_size([400.0, 300.0])
@@ -685,7 +709,7 @@ impl Card2Window {
                     });
                 }
             });
-        
+
         // Handle save/cancel after the window closes to avoid borrow issues
         if save_clicked {
             if let Some(card) = &self.editing_card {
@@ -696,12 +720,12 @@ impl Card2Window {
             self.edit_dialog_open = false;
             self.editing_card = None;
         }
-        
+
         if cancel_clicked {
             self.edit_dialog_open = false;
             self.editing_card = None;
         }
-        
+
         self.edit_dialog_open = open;
     }
 }

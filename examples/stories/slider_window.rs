@@ -1,18 +1,18 @@
 #![doc(hidden)]
 
-use crate::{slider, range_slider, MaterialButton, RangeValues, SliderInteraction, ThumbShape};
+use crate::{range_slider, slider, MaterialButton, RangeValues, SliderInteraction, ThumbShape};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
 pub struct SliderWindow {
     pub open: bool,
     disabled: bool,
-    
+
     // Basic slider values
     continuous_value: f32,
     labeled_value: f32,
     stepped_value: f32,
-    
+
     // Range slider values
     range_values: RangeValues,
     price_range: RangeValues,
@@ -24,26 +24,26 @@ pub struct SliderWindow {
     contrast_value: f32,
     saturation_value: f32,
     warmth_value: f32,
-    
+
     // Audio/video player simulation
     playback_position: f32,
     buffer_position: f32,
     playback_speed: f32,
-    
+
     // Interaction modes
     tap_and_slide_value: f32,
     tap_only_value: f32,
     slide_only_value: f32,
     slide_thumb_value: f32,
-    
+
     // Value indicators
     indicator_continuous: f32,
     indicator_discrete: f32,
-    
+
     // Thumb shapes
     round_value: f32,
     handle_value: f32,
-    
+
     // Temperature slider
     temperature_value: f32,
 }
@@ -127,8 +127,8 @@ impl SliderWindow {
 
         ui.vertical(|ui| {
             ui.label("Continuous:");
-            let mut continuous_slider = slider(&mut self.continuous_value, 0.0..=100.0)
-                .width(300.0);
+            let mut continuous_slider =
+                slider(&mut self.continuous_value, 0.0..=100.0).width(300.0);
             if self.disabled {
                 continuous_slider = continuous_slider.enabled(false);
             }
@@ -189,25 +189,28 @@ impl SliderWindow {
                 ui.label("⏯");
                 ui.vertical(|ui| {
                     ui.label("Playback Position:");
-                    
+
                     // Simulate buffer loading
-                    if self.buffer_position < 100.0 && self.playback_position > self.buffer_position - 10.0 {
+                    if self.buffer_position < 100.0
+                        && self.playback_position > self.buffer_position - 10.0
+                    {
                         self.buffer_position = (self.buffer_position + 0.5).min(100.0);
                     }
-                    
+
                     let mut player_slider = slider(&mut self.playback_position, 0.0..=100.0)
                         .secondary_track_value(self.buffer_position)
                         .show_value(false)
                         .width(400.0);
-                    
+
                     if self.disabled {
                         player_slider = player_slider.enabled(false);
                     }
-                    
+
                     ui.add(player_slider);
-                    
+
                     ui.horizontal(|ui| {
-                        ui.label(format!("{}:{:02}", 
+                        ui.label(format!(
+                            "{}:{:02}",
                             (self.playback_position as i32) / 60,
                             (self.playback_position as i32) % 60
                         ));
@@ -409,7 +412,7 @@ impl SliderWindow {
     }
 
     fn render_value_indicators(&mut self, ui: &mut egui::Ui) {
-      ui.heading("📊 Value Indicators");
+        ui.heading("📊 Value Indicators");
 
         ui.push_id("value_indicators", |ui| {
             ui.label("Continuous with Value Indicator (drag to see):");
@@ -469,7 +472,7 @@ impl SliderWindow {
             } else {
                 "😊"
             };
-            
+
             ui.horizontal(|ui| {
                 ui.label(temp_emoji);
                 let mut temp_slider = slider(&mut self.temperature_value, 50.0..=90.0)

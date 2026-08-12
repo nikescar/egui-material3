@@ -39,17 +39,17 @@
 
 use crate::get_global_color;
 use egui::{
-    Align2, Color32, ColorImage, FontId, Rect, Response, Sense, Stroke, TextureHandle, TextureOptions, Ui, Vec2,
-    Widget,
+    Align2, Color32, ColorImage, FontId, Rect, Response, Sense, Stroke, TextureHandle,
+    TextureOptions, Ui, Vec2, Widget,
 };
-use std::path::Path;
-use std::fs;
+use resvg::render;
+use resvg::tiny_skia::{Pixmap, Transform};
+use resvg::usvg::{Options, Tree};
 use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::Mutex;
-use resvg::usvg::{Options, Tree};
-use resvg::tiny_skia::{Pixmap, Transform};
-use resvg::render;
 
 lazy_static::lazy_static! {
     /// Cache to store pre-rendered SVG textures (ColorImage)
@@ -381,10 +381,18 @@ impl<'a> Widget for MaterialIconButton<'a> {
                         (base_color, content_color, Color32::TRANSPARENT)
                     } else if response.is_pointer_button_down_on() {
                         // Pressed state: 12% onPrimary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.12), content_color, Color32::TRANSPARENT)
+                        (
+                            blend_state_layer(base_color, content_color, 0.12),
+                            content_color,
+                            Color32::TRANSPARENT,
+                        )
                     } else if response.hovered() {
                         // Hover state: 8% onPrimary overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.08), content_color, Color32::TRANSPARENT)
+                        (
+                            blend_state_layer(base_color, content_color, 0.08),
+                            content_color,
+                            Color32::TRANSPARENT,
+                        )
                     } else {
                         (base_color, content_color, Color32::TRANSPARENT)
                     }
@@ -398,10 +406,18 @@ impl<'a> Widget for MaterialIconButton<'a> {
                         (base_color, content_color, Color32::TRANSPARENT)
                     } else if response.is_pointer_button_down_on() {
                         // Pressed state: 12% onSecondaryContainer overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.12), content_color, Color32::TRANSPARENT)
+                        (
+                            blend_state_layer(base_color, content_color, 0.12),
+                            content_color,
+                            Color32::TRANSPARENT,
+                        )
                     } else if response.hovered() {
                         // Hover state: 8% onSecondaryContainer overlay (M3 interaction state)
-                        (blend_state_layer(base_color, content_color, 0.08), content_color, Color32::TRANSPARENT)
+                        (
+                            blend_state_layer(base_color, content_color, 0.08),
+                            content_color,
+                            Color32::TRANSPARENT,
+                        )
                     } else {
                         (base_color, content_color, Color32::TRANSPARENT)
                     }
@@ -409,11 +425,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
                 IconButtonVariant::Outlined => {
                     if is_selected {
                         // Selected state: primary @ 10% background with primary icon and border
-                        (
-                            primary.linear_multiply(0.10),
-                            primary,
-                            primary,
-                        )
+                        (primary.linear_multiply(0.10), primary, primary)
                     } else if response.hovered() {
                         // Hover state: onSurface @ 8% state layer (M3 interaction state)
                         (
@@ -458,66 +470,66 @@ impl<'a> Widget for MaterialIconButton<'a> {
         let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
 
         // Helper function to render SVG from bytes with caching
-        let render_svg = |ui: &mut Ui, bytes: &[u8], cache_key: &str, icon_rect: Rect, icon_size: f32| {
-            let size_px = (icon_size.max(1.0).ceil() as u32).max(1);
-            let texture_id = format!("svg_icon:{}:{}", cache_key, size_px);
-            
-            // Try to get cached ColorImage, or create it if not exists
-            let color_image = {
-                let mut cache = SVG_IMAGE_CACHE.lock().unwrap();
-                
-                if let Some(cached_image) = cache.get(&texture_id) {
-                    // Image already rendered, use cached version
-                    Some(cached_image.clone())
-                } else {
-                    // Need to parse and render SVG (expensive operation - only happens once!)
-                    let mut opt = Options::default();
-                    opt.fontdb_mut().load_system_fonts();
-                    
-                    if let Ok(tree) = Tree::from_data(bytes, &opt) {
-                        if let Some(mut pixmap) = Pixmap::new(size_px, size_px) {
-                            let tree_size = tree.size();
-                            let scale_x = size_px as f32 / tree_size.width();
-                            let scale_y = size_px as f32 / tree_size.height();
-                            let scale = scale_x.min(scale_y);
-                            let transform = Transform::from_scale(scale, scale);
-                            render(&tree, transform, &mut pixmap.as_mut());
-                            let data = pixmap.data();
-                            
-                            // Convert premultiplied bytes to plain RGBA
-                            let mut rgba: Vec<u8> = Vec::with_capacity((size_px * size_px * 4) as usize);
-                            rgba.extend_from_slice(data);
-                            
-                            let img = Arc::new(ColorImage::from_rgba_unmultiplied(
-                                [size_px as usize, size_px as usize],
-                                &rgba
-                            ));
-                            
-                            // Store in cache for future use
-                            cache.insert(texture_id.clone(), img.clone());
-                            Some(img)
+        let render_svg =
+            |ui: &mut Ui, bytes: &[u8], cache_key: &str, icon_rect: Rect, icon_size: f32| {
+                let size_px = (icon_size.max(1.0).ceil() as u32).max(1);
+                let texture_id = format!("svg_icon:{}:{}", cache_key, size_px);
+
+                // Try to get cached ColorImage, or create it if not exists
+                let color_image = {
+                    let mut cache = SVG_IMAGE_CACHE.lock().unwrap();
+
+                    if let Some(cached_image) = cache.get(&texture_id) {
+                        // Image already rendered, use cached version
+                        Some(cached_image.clone())
+                    } else {
+                        // Need to parse and render SVG (expensive operation - only happens once!)
+                        let mut opt = Options::default();
+                        opt.fontdb_mut().load_system_fonts();
+
+                        if let Ok(tree) = Tree::from_data(bytes, &opt) {
+                            if let Some(mut pixmap) = Pixmap::new(size_px, size_px) {
+                                let tree_size = tree.size();
+                                let scale_x = size_px as f32 / tree_size.width();
+                                let scale_y = size_px as f32 / tree_size.height();
+                                let scale = scale_x.min(scale_y);
+                                let transform = Transform::from_scale(scale, scale);
+                                render(&tree, transform, &mut pixmap.as_mut());
+                                let data = pixmap.data();
+
+                                // Convert premultiplied bytes to plain RGBA
+                                let mut rgba: Vec<u8> =
+                                    Vec::with_capacity((size_px * size_px * 4) as usize);
+                                rgba.extend_from_slice(data);
+
+                                let img = Arc::new(ColorImage::from_rgba_unmultiplied(
+                                    [size_px as usize, size_px as usize],
+                                    &rgba,
+                                ));
+
+                                // Store in cache for future use
+                                cache.insert(texture_id.clone(), img.clone());
+                                Some(img)
+                            } else {
+                                None
+                            }
                         } else {
                             None
                         }
-                    } else {
-                        None
                     }
+                };
+
+                // Display the image if we have it
+                if let Some(img) = color_image {
+                    let tex: TextureHandle =
+                        ui.ctx()
+                            .load_texture(texture_id, (*img).clone(), TextureOptions::LINEAR);
+
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
+                        ui.image(&tex);
+                    });
                 }
             };
-            
-            // Display the image if we have it
-            if let Some(img) = color_image {
-                let tex: TextureHandle = ui.ctx().load_texture(
-                    texture_id,
-                    (*img).clone(),
-                    TextureOptions::LINEAR,
-                );
-                
-                ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-                    ui.image(&tex);
-                });
-            }
-        };
 
         if let Some(svg_content) = &self.svg_data {
             // Render inline SVG content
@@ -542,7 +554,13 @@ impl<'a> Widget for MaterialIconButton<'a> {
             let text = &self.icon;
             let font = FontId::proportional(icon_size);
             let final_icon_color = self.icon_color_override.unwrap_or(icon_color);
-            ui.painter().text(icon_rect.center(), Align2::CENTER_CENTER, text, font, final_icon_color);
+            ui.painter().text(
+                icon_rect.center(),
+                Align2::CENTER_CENTER,
+                text,
+                font,
+                final_icon_color,
+            );
         }
 
         // Add ripple effect on hover (skip for Filled variant as it already has state changes)
@@ -565,13 +583,17 @@ impl<'a> Widget for MaterialIconButton<'a> {
 /// Used for M3 interactive states (hover: 8%, press: 12%).
 fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
     let alpha = (opacity * 255.0) as u8;
-    let overlay_with_alpha = Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
+    let overlay_with_alpha =
+        Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
     // Alpha blending
     let inv_alpha = 255 - alpha;
     Color32::from_rgba_unmultiplied(
-        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255) as u8,
-        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255) as u8,
-        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255) as u8,
+        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255)
+            as u8,
+        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255)
+            as u8,
+        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255)
+            as u8,
         base.a(),
     )
 }

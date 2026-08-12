@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
-use crate::MaterialButton;
 #[cfg(feature = "svg_emoji")]
 use crate::svg_emoji::SOLAR_ICONS;
+use crate::MaterialButton;
 use eframe::egui::{self, epaint::Stroke, Ui, Vec2, Window};
 
 #[doc(hidden)]
@@ -95,7 +95,11 @@ impl ButtonWindow {
 
         ui.horizontal(|ui| {
             for (label, button) in self.all_variants() {
-                let button = if disabled { button.enabled(false) } else { button };
+                let button = if disabled {
+                    button.enabled(false)
+                } else {
+                    button
+                };
                 if ui.add(button).clicked() && !disabled {
                     println!("{label} button clicked!");
                 }
@@ -111,7 +115,11 @@ impl ButtonWindow {
         ui.horizontal(|ui| {
             for (label, button) in self.all_variants() {
                 let button = button.leading_icon("upload");
-                let button = if disabled { button.enabled(false) } else { button };
+                let button = if disabled {
+                    button.enabled(false)
+                } else {
+                    button
+                };
                 if ui.add(button).clicked() && !disabled {
                     println!("{label} button with leading icon clicked!");
                 }
@@ -127,7 +135,11 @@ impl ButtonWindow {
         ui.horizontal(|ui| {
             for (label, button) in self.all_variants() {
                 let button = button.trailing_icon("arrow_forward");
-                let button = if disabled { button.enabled(false) } else { button };
+                let button = if disabled {
+                    button.enabled(false)
+                } else {
+                    button
+                };
                 if ui.add(button).clicked() && !disabled {
                     println!("{label} button with trailing icon clicked!");
                 }
@@ -145,7 +157,11 @@ impl ButtonWindow {
                 let button = button
                     .leading_icon("open_in_new")
                     .trailing_icon("arrow_forward");
-                let button = if disabled { button.enabled(false) } else { button };
+                let button = if disabled {
+                    button.enabled(false)
+                } else {
+                    button
+                };
                 if ui.add(button).clicked() && !disabled {
                     println!("{label} button with both icons clicked!");
                 }
@@ -161,7 +177,11 @@ impl ButtonWindow {
         ui.horizontal(|ui| {
             for (label, button) in self.all_variants() {
                 let button = button.small();
-                let button = if disabled { button.enabled(false) } else { button };
+                let button = if disabled {
+                    button.enabled(false)
+                } else {
+                    button
+                };
                 if ui.add(button).clicked() && !disabled {
                     println!("{label} small button clicked!");
                 }
@@ -173,7 +193,7 @@ impl ButtonWindow {
         ui.heading("Small Buttons with SVG Icons");
 
         let disabled = self.is_disabled();
-                
+
         #[cfg(feature = "svg_emoji")]
         {
             // Leading SVG icons
@@ -183,7 +203,11 @@ impl ButtonWindow {
                     let button = MaterialButton::filled(self.label_or("Star"))
                         .small()
                         .leading_svg(star_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small filled button with SVG clicked!");
                     }
@@ -193,7 +217,11 @@ impl ButtonWindow {
                     let button = MaterialButton::outlined(self.label_or("Like"))
                         .small()
                         .leading_svg(heart_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small outlined button with SVG clicked!");
                     }
@@ -203,7 +231,11 @@ impl ButtonWindow {
                     let button = MaterialButton::filled_tonal(self.label_or("Save"))
                         .small()
                         .leading_svg(bookmark_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small tonal button with SVG clicked!");
                     }
@@ -213,7 +245,11 @@ impl ButtonWindow {
                     let button = MaterialButton::elevated(self.label_or("Settings"))
                         .small()
                         .leading_svg(settings_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small elevated button with SVG clicked!");
                     }
@@ -229,7 +265,11 @@ impl ButtonWindow {
                     let button = MaterialButton::filled(self.label_or("Next"))
                         .small()
                         .trailing_svg(arrow_right_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small button with trailing SVG clicked!");
                     }
@@ -239,7 +279,11 @@ impl ButtonWindow {
                     let button = MaterialButton::text(self.label_or("Share"))
                         .small()
                         .trailing_svg(share_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small text button with trailing SVG clicked!");
                     }
@@ -252,24 +296,34 @@ impl ButtonWindow {
             ui.label("With both leading and trailing SVG icons:");
             ui.horizontal_wrapped(|ui| {
                 if let (Some(&star_svg), Some(&arrow_right_svg)) =
-                    (SOLAR_ICONS.get("star"), SOLAR_ICONS.get("arrow-right")) {
+                    (SOLAR_ICONS.get("star"), SOLAR_ICONS.get("arrow-right"))
+                {
                     let button = MaterialButton::filled(self.label_or("Featured"))
                         .small()
                         .leading_svg(star_svg)
                         .trailing_svg(arrow_right_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small button with both SVG icons clicked!");
                     }
                 }
 
                 if let (Some(&download_svg), Some(&check_svg)) =
-                    (SOLAR_ICONS.get("download"), SOLAR_ICONS.get("check")) {
+                    (SOLAR_ICONS.get("download"), SOLAR_ICONS.get("check"))
+                {
                     let button = MaterialButton::outlined(self.label_or("Download"))
                         .small()
                         .leading_svg(download_svg)
                         .trailing_svg(check_svg);
-                    let button = if disabled { button.enabled(false) } else { button };
+                    let button = if disabled {
+                        button.enabled(false)
+                    } else {
+                        button
+                    };
                     if ui.add(button).clicked() && !disabled {
                         println!("Small outlined button with both SVG icons clicked!");
                     }
@@ -322,12 +376,10 @@ impl ButtonWindow {
 
         ui.horizontal(|ui| {
             let _ = ui.add(
-                MaterialButton::filled(self.label_or("Wide"))
-                    .min_size(Vec2::new(200.0, 40.0)),
+                MaterialButton::filled(self.label_or("Wide")).min_size(Vec2::new(200.0, 40.0)),
             );
             let _ = ui.add(
-                MaterialButton::outlined(self.label_or("Tall"))
-                    .min_size(Vec2::new(80.0, 60.0)),
+                MaterialButton::outlined(self.label_or("Tall")).min_size(Vec2::new(80.0, 60.0)),
             );
             let _ = ui.add(
                 MaterialButton::filled_tonal(self.label_or("Large"))
@@ -340,30 +392,30 @@ impl ButtonWindow {
         ui.heading("Custom Corner Radius Buttons");
 
         ui.horizontal(|ui| {
-            let _ = ui.add(
-                MaterialButton::filled(self.label_or("Square")).corner_radius(0),
-            );
-            let _ = ui.add(
-                MaterialButton::outlined(self.label_or("Slight")).corner_radius(4),
-            );
-            let _ = ui.add(
-                MaterialButton::elevated(self.label_or("Medium")).corner_radius(10),
-            );
-            let _ = ui.add(
-                MaterialButton::filled_tonal(self.label_or("Default (20)")).corner_radius(20),
-            );
-            let _ = ui.add(
-                MaterialButton::filled(self.label_or("Pill")).corner_radius(50),
-            );
+            let _ = ui.add(MaterialButton::filled(self.label_or("Square")).corner_radius(0));
+            let _ = ui.add(MaterialButton::outlined(self.label_or("Slight")).corner_radius(4));
+            let _ = ui.add(MaterialButton::elevated(self.label_or("Medium")).corner_radius(10));
+            let _ = ui
+                .add(MaterialButton::filled_tonal(self.label_or("Default (20)")).corner_radius(20));
+            let _ = ui.add(MaterialButton::filled(self.label_or("Pill")).corner_radius(50));
         });
     }
 
     fn all_variants(&self) -> Vec<(&str, MaterialButton<'_>)> {
         vec![
             ("Filled", MaterialButton::filled(self.label_or("Filled"))),
-            ("Outlined", MaterialButton::outlined(self.label_or("Outlined"))),
-            ("Elevated", MaterialButton::elevated(self.label_or("Elevated"))),
-            ("Tonal", MaterialButton::filled_tonal(self.label_or("Tonal"))),
+            (
+                "Outlined",
+                MaterialButton::outlined(self.label_or("Outlined")),
+            ),
+            (
+                "Elevated",
+                MaterialButton::elevated(self.label_or("Elevated")),
+            ),
+            (
+                "Tonal",
+                MaterialButton::filled_tonal(self.label_or("Tonal")),
+            ),
             ("Text", MaterialButton::text(self.label_or("Text"))),
         ]
     }

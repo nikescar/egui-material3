@@ -198,11 +198,18 @@ impl BreadcrumbsWindow {
                 println!("Products clicked");
             }
             ui.label("/");
-            if ui.add(MaterialButton::text("Electronics").small()).clicked() {
+            if ui
+                .add(MaterialButton::text("Electronics").small())
+                .clicked()
+            {
                 println!("Electronics clicked");
             }
             ui.label("/");
-            ui.add(MaterialButton::filled_tonal("Laptops").small().enabled(false));
+            ui.add(
+                MaterialButton::filled_tonal("Laptops")
+                    .small()
+                    .enabled(false),
+            );
         });
 
         ui.add_space(8.0);
@@ -213,11 +220,17 @@ impl BreadcrumbsWindow {
                 println!("Home clicked");
             }
             ui.label("›");
-            if ui.add(MaterialButton::outlined("Products").small()).clicked() {
+            if ui
+                .add(MaterialButton::outlined("Products").small())
+                .clicked()
+            {
                 println!("Products clicked");
             }
             ui.label("›");
-            if ui.add(MaterialButton::outlined("Electronics").small()).clicked() {
+            if ui
+                .add(MaterialButton::outlined("Electronics").small())
+                .clicked()
+            {
                 println!("Electronics clicked");
             }
             ui.label("›");
@@ -228,15 +241,24 @@ impl BreadcrumbsWindow {
 
         ui.label("Filled tonal buttons (medium emphasis):");
         ui.horizontal_wrapped(|ui| {
-            if ui.add(MaterialButton::filled_tonal("Home").small()).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Home").small())
+                .clicked()
+            {
                 println!("Home clicked");
             }
             ui.label(">");
-            if ui.add(MaterialButton::filled_tonal("Products").small()).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Products").small())
+                .clicked()
+            {
                 println!("Products clicked");
             }
             ui.label(">");
-            if ui.add(MaterialButton::filled_tonal("Electronics").small()).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Electronics").small())
+                .clicked()
+            {
                 println!("Electronics clicked");
             }
             ui.label(">");
@@ -251,11 +273,17 @@ impl BreadcrumbsWindow {
                 println!("Home clicked");
             }
             ui.label("•");
-            if ui.add(MaterialButton::elevated("Products").small()).clicked() {
+            if ui
+                .add(MaterialButton::elevated("Products").small())
+                .clicked()
+            {
                 println!("Products clicked");
             }
             ui.label("•");
-            if ui.add(MaterialButton::elevated("Electronics").small()).clicked() {
+            if ui
+                .add(MaterialButton::elevated("Electronics").small())
+                .clicked()
+            {
                 println!("Electronics clicked");
             }
             ui.label("•");
@@ -274,7 +302,10 @@ impl BreadcrumbsWindow {
                 println!("Products clicked");
             }
             ui.label("/");
-            if ui.add(MaterialButton::filled_tonal("Electronics").small()).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("Electronics").small())
+                .clicked()
+            {
                 println!("Electronics clicked");
             }
             ui.label("/");

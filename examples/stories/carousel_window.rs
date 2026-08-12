@@ -88,10 +88,7 @@ impl CarouselWindow {
             ui.add(carousel_widget);
 
             ui.add_space(10.0);
-            ui.label(format!(
-                "Scroll offset: {:.0}px",
-                self.scroll_offset_1
-            ));
+            ui.label(format!("Scroll offset: {:.0}px", self.scroll_offset_1));
         });
     }
 
@@ -111,32 +108,27 @@ impl CarouselWindow {
 
             // Add 20 items with more elaborate content
             for i in 0..20 {
-                carousel_widget = carousel_widget.item(Box::new(move |ui: &mut egui::Ui, _rect| {
-                    ui.vertical_centered(|ui| {
-                        ui.add_space(20.0);
-                        ui.heading(format!("#{}", i + 1));
-                        ui.add_space(10.0);
-                        ui.label(format!("Item {}", i));
-                        ui.add_space(10.0);
-                        ui.label("📦");
-                        ui.add_space(10.0);
-                        if ui
-                            .add(MaterialButton::filled("Action").small())
-                            .clicked()
-                        {
-                            println!("Item {} action clicked", i);
-                        }
-                    });
-                }));
+                carousel_widget =
+                    carousel_widget.item(Box::new(move |ui: &mut egui::Ui, _rect| {
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(20.0);
+                            ui.heading(format!("#{}", i + 1));
+                            ui.add_space(10.0);
+                            ui.label(format!("Item {}", i));
+                            ui.add_space(10.0);
+                            ui.label("📦");
+                            ui.add_space(10.0);
+                            if ui.add(MaterialButton::filled("Action").small()).clicked() {
+                                println!("Item {} action clicked", i);
+                            }
+                        });
+                    }));
             }
 
             ui.add(carousel_widget);
 
             ui.add_space(10.0);
-            ui.label(format!(
-                "Scroll offset: {:.0}px",
-                self.scroll_offset_2
-            ));
+            ui.label(format!("Scroll offset: {:.0}px", self.scroll_offset_2));
             ui.label("Scroll and release - items will snap to alignment");
         });
     }

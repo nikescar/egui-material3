@@ -221,18 +221,9 @@ impl MenuWindow {
             let mut builder = menu("icon_anchor_menu", &mut self.icon_anchor_open)
                 .item(menu_item("Menu 1").on_click(|| println!("Menu 1 clicked!")))
                 .item(menu_item("Menu 2").on_click(|| println!("Menu 2 clicked!")))
-                .item(
-                    menu_item("Menu 3.1")
-                        .on_click(|| println!("Menu 3.1 clicked!")),
-                )
-                .item(
-                    menu_item("Menu 3.2")
-                        .on_click(|| println!("Menu 3.2 clicked!")),
-                )
-                .item(
-                    menu_item("Menu 3.3")
-                        .on_click(|| println!("Menu 3.3 clicked!")),
-                );
+                .item(menu_item("Menu 3.1").on_click(|| println!("Menu 3.1 clicked!")))
+                .item(menu_item("Menu 3.2").on_click(|| println!("Menu 3.2 clicked!")))
+                .item(menu_item("Menu 3.3").on_click(|| println!("Menu 3.3 clicked!")));
 
             if let Some(rect) = self.icon_anchor_rect {
                 builder = builder.anchor_rect(rect);

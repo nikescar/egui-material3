@@ -447,7 +447,7 @@ impl IconButtonWindow {
 
         ui.heading("SVG Icon Demo");
         ui.label("Icon buttons with SVG images:");
-        
+
         ui.label("Google Logo (resources/google_logo.svg):");
         ui.horizontal(|ui| {
             if ui
@@ -582,6 +582,5 @@ impl IconButtonWindow {
                 }
             }
         });
-
     }
 }

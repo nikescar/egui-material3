@@ -6,15 +6,14 @@ use eframe::egui::{self, Window};
 use eframe::egui::{TextureHandle, TextureId};
 #[cfg(feature = "svg_emoji")]
 use egui_material3::{
-    svg_emoji::SvgCollection,
-    MaterialButton, assist_chip, filter_chip, input_chip, suggestion_chip,
-    fab_primary, fab_secondary,
-    icon_button_standard, icon_button_filled, icon_button_filled_tonal, icon_button_outlined,
+    assist_chip, fab_primary, fab_secondary, filter_chip, icon_button_filled,
+    icon_button_filled_tonal, icon_button_outlined, icon_button_standard, input_chip,
+    suggestion_chip, svg_emoji::SvgCollection, MaterialButton,
 };
 #[cfg(feature = "svg_emoji")]
-use std::collections::HashMap;
-#[cfg(feature = "svg_emoji")]
 use std::collections::hash_map::DefaultHasher;
+#[cfg(feature = "svg_emoji")]
+use std::collections::HashMap;
 #[cfg(feature = "svg_emoji")]
 use std::hash::{Hash, Hasher};
 
@@ -42,7 +41,10 @@ impl CollectionKind {
             Self::Noto => SvgCollection::noto_emoji(),
             Self::Twemoji => SvgCollection::twemoji(),
         };
-        col.icons.into_iter().map(|i| (i.name, i.svg_data)).collect()
+        col.icons
+            .into_iter()
+            .map(|i| (i.name, i.svg_data))
+            .collect()
     }
 }
 
@@ -87,9 +89,7 @@ impl Default for SvgEmojiWindow {
         }
         #[cfg(not(feature = "svg_emoji"))]
         {
-            Self {
-                open: false,
-            }
+            Self { open: false }
         }
     }
 }
@@ -128,7 +128,11 @@ impl SvgEmojiWindow {
 
         // ── Top bar ──────────────────────────────────────────────────────────
         ui.horizontal(|ui| {
-            for kind in [CollectionKind::Solar, CollectionKind::Noto, CollectionKind::Twemoji] {
+            for kind in [
+                CollectionKind::Solar,
+                CollectionKind::Noto,
+                CollectionKind::Twemoji,
+            ] {
                 let selected = self.active_kind == kind;
                 if ui.selectable_label(selected, kind.label()).clicked() && !selected {
                     self.active_kind = kind;
@@ -178,9 +182,11 @@ impl SvgEmojiWindow {
         let cols = ((available_width / CELL_W) as usize).max(1);
         let total_rows = (filtered.len() + cols - 1) / cols;
 
-        egui::ScrollArea::vertical()
-            .auto_shrink(false)
-            .show_rows(ui, CELL_H, total_rows, |ui, row_range| {
+        egui::ScrollArea::vertical().auto_shrink(false).show_rows(
+            ui,
+            CELL_H,
+            total_rows,
+            |ui, row_range| {
                 for row in row_range {
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
@@ -203,11 +209,7 @@ impl SvgEmojiWindow {
                                 }
 
                                 // SVG icon – get TextureId (Copy) so borrow ends here
-                                let tid = self.get_or_load_id(
-                                    painter.ctx(),
-                                    svg_data,
-                                    ICON_SIZE,
-                                );
+                                let tid = self.get_or_load_id(painter.ctx(), svg_data, ICON_SIZE);
                                 if let Some(tid) = tid {
                                     let icon_rect = egui::Rect::from_center_size(
                                         resp.rect.center_top()
@@ -247,7 +249,8 @@ impl SvgEmojiWindow {
                         }
                     });
                 }
-            });
+            },
+        );
     }
 
     /// Tooltip popup shown when hovering an icon cell.
@@ -277,10 +280,7 @@ impl SvgEmojiWindow {
                     .leading_icon_svg(svg_data)
                     .on_click(|| {}),
             );
-            ui.add(
-                filter_chip("Filter", &mut self.filter_selected_1)
-                    .leading_icon_svg(svg_data),
-            );
+            ui.add(filter_chip("Filter", &mut self.filter_selected_1).leading_icon_svg(svg_data));
             ui.add(
                 input_chip("Input")
                     .leading_icon_svg(svg_data)
@@ -308,7 +308,11 @@ impl SvgEmojiWindow {
         ui.horizontal_wrapped(|ui| {
             ui.add(MaterialButton::filled("Filled").leading_svg(svg_data));
             ui.add(MaterialButton::outlined("Outlined").leading_svg(svg_data));
-            ui.add(MaterialButton::elevated("Elevated").leading_svg(svg_data).trailing_svg(svg_data));
+            ui.add(
+                MaterialButton::elevated("Elevated")
+                    .leading_svg(svg_data)
+                    .trailing_svg(svg_data),
+            );
             ui.add(MaterialButton::text("Text").trailing_svg(svg_data));
         });
 
@@ -317,9 +321,13 @@ impl SvgEmojiWindow {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.add(fab_primary().svg_data(svg_data).on_click(|| {}));
             ui.add_space(8.0);
-            ui.add(fab_secondary().svg_data(svg_data).text("Edit").on_click(|| {}));
+            ui.add(
+                fab_secondary()
+                    .svg_data(svg_data)
+                    .text("Edit")
+                    .on_click(|| {}),
+            );
         });
-
     }
 
     // ── Texture helpers ───────────────────────────────────────────────────────
@@ -334,7 +342,12 @@ impl SvgEmojiWindow {
 
     /// Load (if needed) and return a `TextureId` (Copy – no borrow held on self).
     #[cfg(feature = "svg_emoji")]
-    fn get_or_load_id(&mut self, ctx: &egui::Context, svg_data: &str, size: u32) -> Option<TextureId> {
+    fn get_or_load_id(
+        &mut self,
+        ctx: &egui::Context,
+        svg_data: &str,
+        size: u32,
+    ) -> Option<TextureId> {
         let key = Self::texture_key(svg_data, size);
         if !self.svg_textures.contains_key(&key) {
             match Self::render_svg(ctx, svg_data, size, &format!("svgem_{key:x}")) {
@@ -360,8 +373,8 @@ impl SvgEmojiWindow {
     ) -> Result<TextureHandle, String> {
         use resvg::usvg;
 
-        let tree = usvg::Tree::from_str(svg_data, &usvg::Options::default())
-            .map_err(|e| e.to_string())?;
+        let tree =
+            usvg::Tree::from_str(svg_data, &usvg::Options::default()).map_err(|e| e.to_string())?;
         let mut pixmap =
             tiny_skia::Pixmap::new(size, size).ok_or_else(|| "pixmap alloc failed".to_string())?;
 
@@ -373,10 +386,8 @@ impl SvgEmojiWindow {
             &mut pixmap.as_mut(),
         );
 
-        let color_image = egui::ColorImage::from_rgba_unmultiplied(
-            [size as usize, size as usize],
-            pixmap.data(),
-        );
+        let color_image =
+            egui::ColorImage::from_rgba_unmultiplied([size as usize, size as usize], pixmap.data());
         Ok(ctx.load_texture(key, color_image, egui::TextureOptions::LINEAR))
     }
 }
@@ -384,10 +395,7 @@ impl SvgEmojiWindow {
 #[cfg(feature = "svg_emoji")]
 fn truncate_name(name: &str, max_chars: usize) -> String {
     let mut chars = name.char_indices();
-    let end = chars
-        .nth(max_chars)
-        .map(|(i, _)| i)
-        .unwrap_or(name.len());
+    let end = chars.nth(max_chars).map(|(i, _)| i).unwrap_or(name.len());
     if end < name.len() {
         format!("{}…", &name[..end])
     } else {

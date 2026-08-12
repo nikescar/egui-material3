@@ -109,7 +109,10 @@ impl SwitchWindow {
         ui.checkbox(&mut self.selected, "Selected (for basic switch)");
         ui.checkbox(&mut self.icons, "Show Icons");
         ui.checkbox(&mut self.show_only_selected_icon, "Show Only Selected Icon");
-        ui.checkbox(&mut self.show_track_outline, "Show Track Outline (Material 3)");
+        ui.checkbox(
+            &mut self.show_track_outline,
+            "Show Track Outline (Material 3)",
+        );
     }
 
     fn render_basic_switch(&mut self, ui: &mut egui::Ui) {
@@ -131,8 +134,7 @@ impl SwitchWindow {
             if self.show_only_selected_icon {
                 basic_switch_control = basic_switch_control.selected_icon(ICON_CHECK);
             } else {
-                basic_switch_control =
-                    basic_switch_control.with_icons(ICON_CHECK, ICON_CLOSE);
+                basic_switch_control = basic_switch_control.with_icons(ICON_CHECK, ICON_CLOSE);
             }
         }
 

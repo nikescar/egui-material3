@@ -52,19 +52,44 @@ impl TooltipWindow {
 
         ui.horizontal_wrapped(|ui| {
             let button1 = ui.add(MaterialButton::filled("Top Tooltip"));
-            show_tooltip_on_hover(ui, &button1, "This tooltip appears on top", TooltipPosition::Top);
+            show_tooltip_on_hover(
+                ui,
+                &button1,
+                "This tooltip appears on top",
+                TooltipPosition::Top,
+            );
 
             let button2 = ui.add(MaterialButton::filled("Bottom Tooltip"));
-            show_tooltip_on_hover(ui, &button2, "This tooltip appears at the bottom", TooltipPosition::Bottom);
+            show_tooltip_on_hover(
+                ui,
+                &button2,
+                "This tooltip appears at the bottom",
+                TooltipPosition::Bottom,
+            );
 
             let button3 = ui.add(MaterialButton::filled("Left Tooltip"));
-            show_tooltip_on_hover(ui, &button3, "This tooltip appears on the left", TooltipPosition::Left);
+            show_tooltip_on_hover(
+                ui,
+                &button3,
+                "This tooltip appears on the left",
+                TooltipPosition::Left,
+            );
 
             let button4 = ui.add(MaterialButton::filled("Right Tooltip"));
-            show_tooltip_on_hover(ui, &button4, "This tooltip appears on the right", TooltipPosition::Right);
+            show_tooltip_on_hover(
+                ui,
+                &button4,
+                "This tooltip appears on the right",
+                TooltipPosition::Right,
+            );
 
             let button5 = ui.add(MaterialButton::filled("Auto Tooltip"));
-            show_tooltip_on_hover(ui, &button5, "This tooltip automatically finds the best position", TooltipPosition::Auto);
+            show_tooltip_on_hover(
+                ui,
+                &button5,
+                "This tooltip automatically finds the best position",
+                TooltipPosition::Auto,
+            );
         });
 
         ui.add_space(20.0);
@@ -78,13 +103,28 @@ impl TooltipWindow {
             show_tooltip_on_hover(ui, &btn1, "Text button with tooltip", TooltipPosition::Top);
 
             let btn2 = ui.add(MaterialButton::outlined("Outlined Button"));
-            show_tooltip_on_hover(ui, &btn2, "Outlined button with tooltip", TooltipPosition::Top);
+            show_tooltip_on_hover(
+                ui,
+                &btn2,
+                "Outlined button with tooltip",
+                TooltipPosition::Top,
+            );
 
             let btn3 = ui.add(MaterialButton::filled_tonal("Tonal Button"));
-            show_tooltip_on_hover(ui, &btn3, "Filled tonal button with tooltip", TooltipPosition::Top);
+            show_tooltip_on_hover(
+                ui,
+                &btn3,
+                "Filled tonal button with tooltip",
+                TooltipPosition::Top,
+            );
 
             let btn4 = ui.add(MaterialButton::elevated("Elevated Button"));
-            show_tooltip_on_hover(ui, &btn4, "Elevated button with tooltip", TooltipPosition::Top);
+            show_tooltip_on_hover(
+                ui,
+                &btn4,
+                "Elevated button with tooltip",
+                TooltipPosition::Top,
+            );
         });
 
         ui.add_space(20.0);
@@ -97,16 +137,25 @@ impl TooltipWindow {
             let icon1 = ui.add(MaterialIconButton::standard(noto_emoji::HOUSE_BUILDING).size(40.0));
             show_tooltip_on_hover(ui, &icon1, "Home", TooltipPosition::Bottom);
 
-            let icon2 = ui.add(MaterialIconButton::standard(noto_emoji::RIGHT_POINTING_MAGNIFYING_GLASS).size(40.0));
+            let icon2 = ui.add(
+                MaterialIconButton::standard(noto_emoji::RIGHT_POINTING_MAGNIFYING_GLASS)
+                    .size(40.0),
+            );
             show_tooltip_on_hover(ui, &icon2, "Search", TooltipPosition::Bottom);
 
             let icon3 = ui.add(MaterialIconButton::standard(noto_emoji::GEAR).size(40.0));
             show_tooltip_on_hover(ui, &icon3, "Settings", TooltipPosition::Bottom);
 
-            let icon4 = ui.add(MaterialIconButton::standard(noto_emoji::SPARKLING_HEART).size(40.0));
+            let icon4 =
+                ui.add(MaterialIconButton::standard(noto_emoji::SPARKLING_HEART).size(40.0));
             show_tooltip_on_hover(ui, &icon4, "Favorite", TooltipPosition::Bottom);
 
-            let icon5 = ui.add(MaterialIconButton::standard(noto_emoji::ARROW_POINTING_RIGHTWARDS_THEN_CURVING_UPWARDS).size(40.0));
+            let icon5 = ui.add(
+                MaterialIconButton::standard(
+                    noto_emoji::ARROW_POINTING_RIGHTWARDS_THEN_CURVING_UPWARDS,
+                )
+                .size(40.0),
+            );
             show_tooltip_on_hover(ui, &icon5, "Share", TooltipPosition::Bottom);
 
             let icon6 = ui.add(MaterialIconButton::standard(noto_emoji::WASTEBASKET).size(40.0));
@@ -120,10 +169,12 @@ impl TooltipWindow {
         ui.label("All icon button variants support tooltips:");
 
         ui.horizontal_wrapped(|ui| {
-            let icon1 = ui.add(MaterialIconButton::standard(noto_emoji::INFORMATION_SOURCE).size(40.0));
+            let icon1 =
+                ui.add(MaterialIconButton::standard(noto_emoji::INFORMATION_SOURCE).size(40.0));
             show_tooltip_on_hover(ui, &icon1, "Standard icon button", TooltipPosition::Top);
 
-            let icon2 = ui.add(MaterialIconButton::filled(noto_emoji::WHITE_HEAVY_CHECK_MARK).size(40.0));
+            let icon2 =
+                ui.add(MaterialIconButton::filled(noto_emoji::WHITE_HEAVY_CHECK_MARK).size(40.0));
             show_tooltip_on_hover(ui, &icon2, "Filled icon button", TooltipPosition::Top);
 
             let icon3 = ui.add(MaterialIconButton::filled_tonal(noto_emoji::BELL).size(40.0));
@@ -274,7 +325,8 @@ impl TooltipWindow {
         ui.label("Tooltips provide helpful context for actions:");
 
         ui.horizontal_wrapped(|ui| {
-            let save_btn = ui.add(MaterialButton::filled("Save").min_size(egui::Vec2::new(80.0, 36.0)));
+            let save_btn =
+                ui.add(MaterialButton::filled("Save").min_size(egui::Vec2::new(80.0, 36.0)));
             show_tooltip_on_hover(
                 ui,
                 &save_btn,
@@ -282,7 +334,8 @@ impl TooltipWindow {
                 TooltipPosition::Top,
             );
 
-            let cancel_btn = ui.add(MaterialButton::outlined("Cancel").min_size(egui::Vec2::new(80.0, 36.0)));
+            let cancel_btn =
+                ui.add(MaterialButton::outlined("Cancel").min_size(egui::Vec2::new(80.0, 36.0)));
             show_tooltip_on_hover(
                 ui,
                 &cancel_btn,
@@ -290,7 +343,8 @@ impl TooltipWindow {
                 TooltipPosition::Top,
             );
 
-            let delete_btn = ui.add(MaterialButton::text("Delete").min_size(egui::Vec2::new(80.0, 36.0)));
+            let delete_btn =
+                ui.add(MaterialButton::text("Delete").min_size(egui::Vec2::new(80.0, 36.0)));
             show_tooltip_on_hover(
                 ui,
                 &delete_btn,
@@ -324,7 +378,12 @@ impl TooltipWindow {
                 ui.add_space(50.0);
 
                 let auto_btn = ui.add(MaterialButton::outlined("Auto"));
-                show_tooltip_on_hover(ui, &auto_btn, "Auto-positioned tooltip", TooltipPosition::Auto);
+                show_tooltip_on_hover(
+                    ui,
+                    &auto_btn,
+                    "Auto-positioned tooltip",
+                    TooltipPosition::Auto,
+                );
 
                 ui.add_space(50.0);
 
@@ -336,7 +395,12 @@ impl TooltipWindow {
 
             // Bottom
             let bottom_btn = ui.add(MaterialButton::outlined("Bottom"));
-            show_tooltip_on_hover(ui, &bottom_btn, "Tooltip on bottom", TooltipPosition::Bottom);
+            show_tooltip_on_hover(
+                ui,
+                &bottom_btn,
+                "Tooltip on bottom",
+                TooltipPosition::Bottom,
+            );
 
             ui.add_space(50.0);
         });

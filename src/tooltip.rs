@@ -12,9 +12,7 @@
 //! - **Corner radius**: 4dp
 
 use crate::theme::get_global_color;
-use egui::{
-    pos2, Area, FontId, Id, Order, Rect, Response, Sense, Stroke, Ui, Vec2,
-};
+use egui::{pos2, Area, FontId, Id, Order, Rect, Response, Sense, Stroke, Ui, Vec2};
 
 /// Tooltip position relative to target element
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -134,11 +132,9 @@ impl MaterialTooltip {
                 );
 
                 // Draw text
-                let text_pos = pos2(
-                    rect.min.x + self.padding.x,
-                    rect.min.y + self.padding.y,
-                );
-                ui.painter().galley(text_pos, text_galley, inverse_on_surface);
+                let text_pos = pos2(rect.min.x + self.padding.x, rect.min.y + self.padding.y);
+                ui.painter()
+                    .galley(text_pos, text_galley, inverse_on_surface);
             });
     }
 
@@ -234,7 +230,9 @@ pub fn show_tooltip_on_hover(
     position: TooltipPosition,
 ) {
     if target_response.hovered() {
-        MaterialTooltip::new(text).position(position).show(ui, target_response.rect);
+        MaterialTooltip::new(text)
+            .position(position)
+            .show(ui, target_response.rect);
     }
 }
 

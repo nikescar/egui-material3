@@ -343,4 +343,3 @@ impl<'a> MaterialButton<'a> {
         self
     }
 }
-

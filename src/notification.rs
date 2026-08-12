@@ -14,8 +14,8 @@
 //! - **Padding**: 16dp
 //! - **Corner radius**: 12dp
 
-use crate::theme::get_global_color;
 use crate::material_symbol::material_symbol_text;
+use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32, pos2, Area, FontId, Id, Order, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
 };
@@ -210,7 +210,9 @@ impl MaterialNotification {
         // Calculate notification width
         let screen_rect = ui.ctx().content_rect();
         let max_width: f32 = 400.0;
-        let width = self.width.unwrap_or(max_width.min(screen_rect.width() - 48.0));
+        let width = self
+            .width
+            .unwrap_or(max_width.min(screen_rect.width() - 48.0));
 
         let padding = 12.0;
         let content_width = width - padding * 2.0;
@@ -235,7 +237,12 @@ impl MaterialNotification {
                 title_text.clone(),
                 FontId::proportional(16.0),
                 on_surface,
-                available_text_width - if self.title_right_text.is_some() { 60.0 } else { 0.0 },
+                available_text_width
+                    - if self.title_right_text.is_some() {
+                        60.0
+                    } else {
+                        0.0
+                    },
             )
         });
 
@@ -290,7 +297,8 @@ impl MaterialNotification {
         let notification_pos = pos2(notification_x, notification_y);
 
         // Create a unique ID for this notification based on its content
-        let notification_id = Id::new("notification").with(self.title.as_deref().unwrap_or(""))
+        let notification_id = Id::new("notification")
+            .with(self.title.as_deref().unwrap_or(""))
             .with(self.text.as_deref().unwrap_or(""))
             .with(vertical_offset as i32); // Convert f32 to i32 for Hash
 
@@ -301,7 +309,8 @@ impl MaterialNotification {
             .interactable(true)
             .show(ui.ctx(), |ui| {
                 // Allocate space for the notification
-                let (rect, mut response) = ui.allocate_exact_size(Vec2::new(width, total_height), Sense::click());
+                let (rect, mut response) =
+                    ui.allocate_exact_size(Vec2::new(width, total_height), Sense::click());
                 let notification_rect = rect;
 
                 // Draw background with rounded corners
@@ -344,10 +353,14 @@ impl MaterialNotification {
                     // Draw right text if present
                     if let Some(right_galley) = right_text_galley {
                         let right_pos = pos2(
-                            notification_rect.max.x - padding - close_button_space - right_galley.size().x,
+                            notification_rect.max.x
+                                - padding
+                                - close_button_space
+                                - right_galley.size().x,
                             current_y,
                         );
-                        ui.painter().galley(right_pos, right_galley, on_surface_variant);
+                        ui.painter()
+                            .galley(right_pos, right_galley, on_surface_variant);
                     }
 
                     current_y += galley.size().y + 4.0;
@@ -356,7 +369,8 @@ impl MaterialNotification {
                 // Draw subtitle
                 if let Some(galley) = subtitle_galley {
                     let subtitle_pos = pos2(text_start_x, current_y);
-                    ui.painter().galley(subtitle_pos, galley.clone(), on_surface_variant);
+                    ui.painter()
+                        .galley(subtitle_pos, galley.clone(), on_surface_variant);
                     current_y += galley.size().y + 4.0;
                 }
 
@@ -385,13 +399,19 @@ impl MaterialNotification {
                         Vec2::new(24.0, 24.0),
                     );
 
-                    let close_response = ui.interact(close_rect, response.id.with("close"), Sense::click());
+                    let close_response =
+                        ui.interact(close_rect, response.id.with("close"), Sense::click());
 
                     if close_response.hovered() {
-                        ui.painter().circle_filled(close_rect.center(), 12.0, on_surface_variant.linear_multiply(0.1));
+                        ui.painter().circle_filled(
+                            close_rect.center(),
+                            12.0,
+                            on_surface_variant.linear_multiply(0.1),
+                        );
                     }
 
-                    ui.painter().galley(close_button_pos, close_galley, on_surface_variant);
+                    ui.painter()
+                        .galley(close_button_pos, close_galley, on_surface_variant);
 
                     if close_response.clicked() {
                         close_clicked = true;

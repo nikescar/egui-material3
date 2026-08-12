@@ -59,8 +59,7 @@ pub enum Positioning {
 /// - `corner_radius`: `4.0`
 /// - `min_width`: `112.0`
 /// - `max_width`: `280.0`
-#[derive(Clone, Debug)]
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct MenuStyle {
     /// The menu's background fill color.
     pub background_color: Option<Color32>,
@@ -79,7 +78,6 @@ pub struct MenuStyle {
     /// The corner radius of the menu shape.
     pub corner_radius: Option<f32>,
 }
-
 
 impl MenuStyle {
     /// Returns a copy of this `MenuStyle` where `None` fields are
@@ -161,8 +159,7 @@ pub struct MenuBarThemeData {
 /// - `min_height`: `48.0`
 /// - `icon_size`: `24.0`
 /// - `padding_horizontal`: `12.0`
-#[derive(Clone, Debug)]
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct MenuButtonThemeData {
     /// Text/foreground color for enabled menu items.
     pub foreground_color: Option<Color32>,
@@ -185,7 +182,6 @@ pub struct MenuButtonThemeData {
     /// Horizontal padding inside each menu item.
     pub padding_horizontal: Option<f32>,
 }
-
 
 impl MenuButtonThemeData {
     /// Resolve all button theme values, applying M3 defaults for `None` fields.

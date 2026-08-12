@@ -105,7 +105,10 @@ impl NotificationWindow {
             if ui.add(MaterialButton::filled_tonal("With Icon")).clicked() {
                 self.show_with_icon = !self.show_with_icon;
             }
-            if ui.add(MaterialButton::filled_tonal("With Subtitle")).clicked() {
+            if ui
+                .add(MaterialButton::filled_tonal("With Subtitle"))
+                .clicked()
+            {
                 self.show_with_subtitle = !self.show_with_subtitle;
             }
             if ui.add(MaterialButton::filled_tonal("Full")).clicked() {
@@ -123,9 +126,21 @@ impl NotificationWindow {
 
         ui.horizontal(|ui| {
             ui.label("Notification Alignment:");
-            ui.radio_value(&mut self.notification_align, NotificationAlign::Left, "Left");
-            ui.radio_value(&mut self.notification_align, NotificationAlign::Center, "Center");
-            ui.radio_value(&mut self.notification_align, NotificationAlign::Right, "Right");
+            ui.radio_value(
+                &mut self.notification_align,
+                NotificationAlign::Left,
+                "Left",
+            );
+            ui.radio_value(
+                &mut self.notification_align,
+                NotificationAlign::Center,
+                "Center",
+            );
+            ui.radio_value(
+                &mut self.notification_align,
+                NotificationAlign::Right,
+                "Right",
+            );
         });
     }
 
@@ -225,7 +240,10 @@ impl NotificationWindow {
         ui.label("Notification with title, subtitle, and text (auto-dismisses after 5 seconds):");
 
         ui.horizontal(|ui| {
-            if ui.add(MaterialButton::outlined("Show With Subtitle")).clicked() {
+            if ui
+                .add(MaterialButton::outlined("Show With Subtitle"))
+                .clicked()
+            {
                 self.show_with_subtitle = true;
                 self.with_subtitle_show_time = Some(Instant::now());
             }

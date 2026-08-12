@@ -57,14 +57,62 @@ impl Default for SpreadsheetWindow {
 
             // Add sample data - initialize with pre-populated rows
             spreadsheet.init_with_data(vec![
-                vec!["Laptop".to_string(), "Electronics".to_string(), "999.99".to_string(), "15".to_string(), "TechCorp".to_string()],
-                vec!["Mouse".to_string(), "Electronics".to_string(), "29.99".to_string(), "150".to_string(), "TechCorp".to_string()],
-                vec!["Keyboard".to_string(), "Electronics".to_string(), "79.99".to_string(), "85".to_string(), "KeyMaster".to_string()],
-                vec!["Monitor".to_string(), "Electronics".to_string(), "299.99".to_string(), "42".to_string(), "ScreenPro".to_string()],
-                vec!["Desk Chair".to_string(), "Furniture".to_string(), "199.99".to_string(), "30".to_string(), "ComfortSeats".to_string()],
-                vec!["Desk".to_string(), "Furniture".to_string(), "349.99".to_string(), "20".to_string(), "OfficePro".to_string()],
-                vec!["Notebook".to_string(), "Stationery".to_string(), "5.99".to_string(), "500".to_string(), "PaperGoods".to_string()],
-                vec!["Pen Pack".to_string(), "Stationery".to_string(), "12.99".to_string(), "300".to_string(), "WriteWell".to_string()],
+                vec![
+                    "Laptop".to_string(),
+                    "Electronics".to_string(),
+                    "999.99".to_string(),
+                    "15".to_string(),
+                    "TechCorp".to_string(),
+                ],
+                vec![
+                    "Mouse".to_string(),
+                    "Electronics".to_string(),
+                    "29.99".to_string(),
+                    "150".to_string(),
+                    "TechCorp".to_string(),
+                ],
+                vec![
+                    "Keyboard".to_string(),
+                    "Electronics".to_string(),
+                    "79.99".to_string(),
+                    "85".to_string(),
+                    "KeyMaster".to_string(),
+                ],
+                vec![
+                    "Monitor".to_string(),
+                    "Electronics".to_string(),
+                    "299.99".to_string(),
+                    "42".to_string(),
+                    "ScreenPro".to_string(),
+                ],
+                vec![
+                    "Desk Chair".to_string(),
+                    "Furniture".to_string(),
+                    "199.99".to_string(),
+                    "30".to_string(),
+                    "ComfortSeats".to_string(),
+                ],
+                vec![
+                    "Desk".to_string(),
+                    "Furniture".to_string(),
+                    "349.99".to_string(),
+                    "20".to_string(),
+                    "OfficePro".to_string(),
+                ],
+                vec![
+                    "Notebook".to_string(),
+                    "Stationery".to_string(),
+                    "5.99".to_string(),
+                    "500".to_string(),
+                    "PaperGoods".to_string(),
+                ],
+                vec![
+                    "Pen Pack".to_string(),
+                    "Stationery".to_string(),
+                    "12.99".to_string(),
+                    "300".to_string(),
+                    "WriteWell".to_string(),
+                ],
             ]);
 
             Self {
@@ -82,9 +130,7 @@ impl Default for SpreadsheetWindow {
         }
         #[cfg(not(feature = "spreadsheet"))]
         {
-            Self {
-                open: false,
-            }
+            Self { open: false }
         }
     }
 }
@@ -140,7 +186,13 @@ impl SpreadsheetWindow {
 
             ui.horizontal(|ui| {
                 ui.push_id("allow_editing_control", |ui| {
-                    if ui.add(MaterialCheckbox::new(&mut self.allow_editing, "Allow Editing")).changed() {
+                    if ui
+                        .add(MaterialCheckbox::new(
+                            &mut self.allow_editing,
+                            "Allow Editing",
+                        ))
+                        .changed()
+                    {
                         if let Some(ref mut spreadsheet) = self.spreadsheet {
                             spreadsheet.set_allow_editing(self.allow_editing);
                         }
@@ -150,7 +202,13 @@ impl SpreadsheetWindow {
                 ui.add_space(10.0);
 
                 ui.push_id("allow_selection_control", |ui| {
-                    if ui.add(MaterialCheckbox::new(&mut self.allow_selection, "Allow Selection")).changed() {
+                    if ui
+                        .add(MaterialCheckbox::new(
+                            &mut self.allow_selection,
+                            "Allow Selection",
+                        ))
+                        .changed()
+                    {
                         if let Some(ref mut spreadsheet) = self.spreadsheet {
                             spreadsheet.set_allow_selection(self.allow_selection);
                         }
@@ -160,7 +218,10 @@ impl SpreadsheetWindow {
                 ui.add_space(10.0);
 
                 ui.push_id("striped_control", |ui| {
-                    if ui.add(MaterialCheckbox::new(&mut self.striped, "Striped Rows")).changed() {
+                    if ui
+                        .add(MaterialCheckbox::new(&mut self.striped, "Striped Rows"))
+                        .changed()
+                    {
                         if let Some(ref mut spreadsheet) = self.spreadsheet {
                             spreadsheet.set_striped(self.striped);
                         }
@@ -170,7 +231,13 @@ impl SpreadsheetWindow {
                 ui.add_space(10.0);
 
                 ui.push_id("row_selection_control", |ui| {
-                    if ui.add(MaterialCheckbox::new(&mut self.row_selection_enabled, "Enable Row Selection")).changed() {
+                    if ui
+                        .add(MaterialCheckbox::new(
+                            &mut self.row_selection_enabled,
+                            "Enable Row Selection",
+                        ))
+                        .changed()
+                    {
                         if let Some(ref mut spreadsheet) = self.spreadsheet {
                             spreadsheet.set_row_selection_enabled(self.row_selection_enabled);
                         }

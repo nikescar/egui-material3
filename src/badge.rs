@@ -14,10 +14,7 @@
 //! - **Corner radius**: Fully rounded (50%)
 
 use crate::theme::get_global_color;
-use egui::{
-    ecolor::Color32, pos2, FontId, Rect, Response,
-    Sense, Ui, Vec2, Widget,
-};
+use egui::{ecolor::Color32, pos2, FontId, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Badge color variants following Material Design 3 specifications
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -158,12 +155,7 @@ impl MaterialBadge {
     /// * `ui` - The UI context
     /// * `target_rect` - The rectangle of the element to badge
     /// * `position` - Where to position the badge relative to the target
-    pub fn draw_on(
-        &self,
-        ui: &mut Ui,
-        target_rect: Rect,
-        position: BadgePosition,
-    ) -> Response {
+    pub fn draw_on(&self, ui: &mut Ui, target_rect: Rect, position: BadgePosition) -> Response {
         let (bg_color, text_color) = self.get_colors();
         let (min_width, min_height, font_size) = self.get_dimensions();
 
@@ -191,33 +183,26 @@ impl MaterialBadge {
         // Using 95% overlap to make badges appear extremely close and tightly over the icon
         let overlap_factor = 0.95;
         let badge_pos = match position {
-            BadgePosition::TopRight => {
-                pos2(
-                    target_rect.max.x - badge_width * (1.0 - overlap_factor),
-                    target_rect.min.y - badge_height * (1.0 - overlap_factor),
-                )
-            }
-            BadgePosition::TopLeft => {
-                pos2(
-                    target_rect.min.x - badge_width * overlap_factor,
-                    target_rect.min.y - badge_height * (1.0 - overlap_factor),
-                )
-            }
-            BadgePosition::BottomRight => {
-                pos2(
-                    target_rect.max.x - badge_width * (1.0 - overlap_factor),
-                    target_rect.max.y - badge_height * (1.0 - overlap_factor),
-                )
-            }
-            BadgePosition::BottomLeft => {
-                pos2(
-                    target_rect.min.x - badge_width * overlap_factor,
-                    target_rect.max.y - badge_height * (1.0 - overlap_factor),
-                )
-            }
-            BadgePosition::Custom(offset) => {
-                pos2(target_rect.center().x + offset.x, target_rect.center().y + offset.y)
-            }
+            BadgePosition::TopRight => pos2(
+                target_rect.max.x - badge_width * (1.0 - overlap_factor),
+                target_rect.min.y - badge_height * (1.0 - overlap_factor),
+            ),
+            BadgePosition::TopLeft => pos2(
+                target_rect.min.x - badge_width * overlap_factor,
+                target_rect.min.y - badge_height * (1.0 - overlap_factor),
+            ),
+            BadgePosition::BottomRight => pos2(
+                target_rect.max.x - badge_width * (1.0 - overlap_factor),
+                target_rect.max.y - badge_height * (1.0 - overlap_factor),
+            ),
+            BadgePosition::BottomLeft => pos2(
+                target_rect.min.x - badge_width * overlap_factor,
+                target_rect.max.y - badge_height * (1.0 - overlap_factor),
+            ),
+            BadgePosition::Custom(offset) => pos2(
+                target_rect.center().x + offset.x,
+                target_rect.center().y + offset.y,
+            ),
         };
 
         let badge_pos = pos2(
@@ -327,8 +312,7 @@ impl Widget for MaterialBadge {
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
         // Draw badge background
-        ui.painter()
-            .rect_filled(rect, badge_height / 2.0, bg_color);
+        ui.painter().rect_filled(rect, badge_height / 2.0, bg_color);
 
         // Draw text if not a dot
         if let Some(galley) = text_galley {

@@ -3,9 +3,9 @@
 //! Provides async state management for egui UI.
 //! Uses async-std for native and wasm-bindgen-futures for WASM.
 
+use futures::lock::Mutex;
 use std::future::Future;
 use std::sync::Arc;
-use futures::lock::Mutex;
 
 /// State of an async operation
 #[derive(Clone, Debug)]
@@ -67,7 +67,8 @@ impl<T: Clone + Send + 'static, E: Clone + Send + 'static> Bind<T, E> {
                     Ok(data) => StateWithData::Finished(data),
                     Err(err) => StateWithData::Failed(err),
                 };
-            }).detach();
+            })
+            .detach();
         }
 
         #[cfg(target_family = "wasm")]

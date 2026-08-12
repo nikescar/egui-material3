@@ -322,17 +322,29 @@ fn line1_head(t: f32) -> f32 {
 }
 
 fn line1_tail(t: f32) -> f32 {
-    let local_t = interval(t, 333.0 / INDETERMINATE_LINEAR_DURATION_MS, 1083.0 / INDETERMINATE_LINEAR_DURATION_MS);
+    let local_t = interval(
+        t,
+        333.0 / INDETERMINATE_LINEAR_DURATION_MS,
+        1083.0 / INDETERMINATE_LINEAR_DURATION_MS,
+    );
     cubic_bezier(0.4, 0.0, 1.0, 1.0, local_t)
 }
 
 fn line2_head(t: f32) -> f32 {
-    let local_t = interval(t, 1000.0 / INDETERMINATE_LINEAR_DURATION_MS, 1567.0 / INDETERMINATE_LINEAR_DURATION_MS);
+    let local_t = interval(
+        t,
+        1000.0 / INDETERMINATE_LINEAR_DURATION_MS,
+        1567.0 / INDETERMINATE_LINEAR_DURATION_MS,
+    );
     cubic_bezier(0.0, 0.0, 0.65, 1.0, local_t)
 }
 
 fn line2_tail(t: f32) -> f32 {
-    let local_t = interval(t, 1267.0 / INDETERMINATE_LINEAR_DURATION_MS, 1800.0 / INDETERMINATE_LINEAR_DURATION_MS);
+    let local_t = interval(
+        t,
+        1267.0 / INDETERMINATE_LINEAR_DURATION_MS,
+        1800.0 / INDETERMINATE_LINEAR_DURATION_MS,
+    );
     cubic_bezier(0.10, 0.0, 0.45, 1.0, local_t)
 }
 
@@ -366,19 +378,23 @@ fn circular_rotation_value(t: f32) -> f32 {
 impl MaterialProgress {
     /// Resolve colors with fallback to theme defaults
     fn resolve_active_color(&self) -> Color32 {
-        self.active_color.unwrap_or_else(|| get_global_color("primary"))
+        self.active_color
+            .unwrap_or_else(|| get_global_color("primary"))
     }
 
     fn resolve_track_color(&self) -> Color32 {
-        self.track_color.unwrap_or_else(|| get_global_color("secondaryContainer"))
+        self.track_color
+            .unwrap_or_else(|| get_global_color("secondaryContainer"))
     }
 
     fn resolve_buffer_color(&self) -> Color32 {
-        self.buffer_color.unwrap_or_else(|| get_global_color("primaryContainer"))
+        self.buffer_color
+            .unwrap_or_else(|| get_global_color("primaryContainer"))
     }
 
     fn resolve_stop_indicator_color(&self) -> Color32 {
-        self.stop_indicator_color.unwrap_or_else(|| get_global_color("primary"))
+        self.stop_indicator_color
+            .unwrap_or_else(|| get_global_color("primary"))
     }
 
     fn resolve_border_radius(&self, rect_height: f32) -> f32 {
@@ -400,8 +416,7 @@ impl MaterialProgress {
 
     /// Get effective track gap fraction scaled proportionally near 0%.
     fn effective_track_gap_fraction(current_value: f32, track_gap_fraction: f32) -> f32 {
-        track_gap_fraction
-            * current_value.clamp(0.0, TRACK_GAP_RAMP_DOWN_THRESHOLD)
+        track_gap_fraction * current_value.clamp(0.0, TRACK_GAP_RAMP_DOWN_THRESHOLD)
             / TRACK_GAP_RAMP_DOWN_THRESHOLD
     }
 
@@ -445,7 +460,8 @@ impl MaterialProgress {
             // Draw track before line 1 (right side of line 1)
             if first_line_head < 1.0 - track_gap_fraction {
                 let track_start = if first_line_head > 0.0 {
-                    first_line_head + Self::effective_track_gap_fraction(first_line_head, track_gap_fraction)
+                    first_line_head
+                        + Self::effective_track_gap_fraction(first_line_head, track_gap_fraction)
                 } else {
                     0.0
                 };
@@ -454,35 +470,65 @@ impl MaterialProgress {
 
             // Draw line 1
             if first_line_head - first_line_tail > 0.0 {
-                self.draw_linear_segment(ui, rect, first_line_tail, first_line_head, active_color, rounding);
+                self.draw_linear_segment(
+                    ui,
+                    rect,
+                    first_line_tail,
+                    first_line_head,
+                    active_color,
+                    rounding,
+                );
             }
 
             // Draw track between line 1 and line 2
             if first_line_tail > track_gap_fraction {
                 let track_start = if second_line_head > 0.0 {
-                    second_line_head + Self::effective_track_gap_fraction(second_line_head, track_gap_fraction)
+                    second_line_head
+                        + Self::effective_track_gap_fraction(second_line_head, track_gap_fraction)
                 } else {
                     0.0
                 };
                 let track_end = if first_line_tail < 1.0 {
-                    first_line_tail - Self::effective_track_gap_fraction(1.0 - first_line_tail, track_gap_fraction)
+                    first_line_tail
+                        - Self::effective_track_gap_fraction(
+                            1.0 - first_line_tail,
+                            track_gap_fraction,
+                        )
                 } else {
                     1.0
                 };
                 if track_end > track_start {
-                    self.draw_linear_segment(ui, rect, track_start, track_end, track_color, rounding);
+                    self.draw_linear_segment(
+                        ui,
+                        rect,
+                        track_start,
+                        track_end,
+                        track_color,
+                        rounding,
+                    );
                 }
             }
 
             // Draw line 2
             if second_line_head - second_line_tail > 0.0 {
-                self.draw_linear_segment(ui, rect, second_line_tail, second_line_head, active_color, rounding);
+                self.draw_linear_segment(
+                    ui,
+                    rect,
+                    second_line_tail,
+                    second_line_head,
+                    active_color,
+                    rounding,
+                );
             }
 
             // Draw track after line 2 (left side of line 2)
             if second_line_tail > track_gap_fraction {
                 let track_end = if second_line_tail < 1.0 {
-                    second_line_tail - Self::effective_track_gap_fraction(1.0 - second_line_tail, track_gap_fraction)
+                    second_line_tail
+                        - Self::effective_track_gap_fraction(
+                            1.0 - second_line_tail,
+                            track_gap_fraction,
+                        )
                 } else {
                     1.0
                 };
@@ -514,10 +560,7 @@ impl MaterialProgress {
             if stop_radius > 0.0 {
                 let stop_color = self.resolve_stop_indicator_color();
                 let max_radius = rect.height() / 2.0;
-                let center = Pos2::new(
-                    rect.max.x - max_radius,
-                    rect.min.y + max_radius,
-                );
+                let center = Pos2::new(rect.max.x - max_radius, rect.min.y + max_radius);
                 ui.painter().circle_filled(center, stop_radius, stop_color);
             }
 
@@ -531,7 +574,14 @@ impl MaterialProgress {
                         progress
                     };
                     if buffer_progress > buffer_start {
-                        self.draw_linear_segment(ui, rect, buffer_start, buffer_progress, buffer_color, rounding);
+                        self.draw_linear_segment(
+                            ui,
+                            rect,
+                            buffer_start,
+                            buffer_progress,
+                            buffer_color,
+                            rounding,
+                        );
                     }
                 }
             }
@@ -558,10 +608,8 @@ impl MaterialProgress {
 
         let left = rect.min.x + start_fraction * rect.width();
         let right = rect.min.x + end_fraction * rect.width();
-        let segment_rect = Rect::from_min_max(
-            Pos2::new(left, rect.min.y),
-            Pos2::new(right, rect.max.y),
-        );
+        let segment_rect =
+            Rect::from_min_max(Pos2::new(left, rect.min.y), Pos2::new(right, rect.max.y));
 
         ui.painter().rect_filled(segment_rect, rounding, color);
     }
@@ -584,7 +632,8 @@ impl MaterialProgress {
             let rotation_value = circular_rotation_value(animation_value);
 
             // Draw track (full circle, no gap for indeterminate)
-            ui.painter().circle_stroke(center, radius, Stroke::new(stroke_width, track_color));
+            ui.painter()
+                .circle_stroke(center, radius, Stroke::new(stroke_width, track_color));
 
             // Calculate arc start and sweep (from Flutter reference)
             let arc_start = -PI / 2.0
@@ -623,7 +672,11 @@ impl MaterialProgress {
                 let stroke_radius = stroke_width / arc_radius;
                 let gap_radius = track_gap / arc_radius;
                 let start_gap = stroke_radius + gap_radius;
-                let end_gap = if progress < epsilon { start_gap } else { start_gap * 2.0 };
+                let end_gap = if progress < epsilon {
+                    start_gap
+                } else {
+                    start_gap * 2.0
+                };
                 let track_start = -PI / 2.0 + start_gap;
                 let track_sweep = (two_pi - progress.clamp(0.0, 1.0) * two_pi - end_gap).max(0.0);
 
@@ -642,7 +695,8 @@ impl MaterialProgress {
                 }
             } else {
                 // Full track circle (no gap)
-                ui.painter().circle_stroke(center, radius, Stroke::new(stroke_width, track_color));
+                ui.painter()
+                    .circle_stroke(center, radius, Stroke::new(stroke_width, track_color));
             }
 
             // Draw progress arc

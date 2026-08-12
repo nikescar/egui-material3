@@ -1,8 +1,8 @@
 #![doc(hidden)]
 
-use egui_material3::material_symbol::{ICON_PAUSE, ICON_PLAY_ARROW};
 use crate::{circular_progress, icon_button_standard, linear_progress, MaterialButton};
 use eframe::egui::{self, Color32, Vec2, Window};
+use egui_material3::material_symbol::{ICON_PAUSE, ICON_PLAY_ARROW};
 
 #[doc(hidden)]
 pub struct ProgressWindow {
@@ -283,7 +283,14 @@ impl ProgressWindow {
         ui.add_space(8.0);
 
         ui.horizontal(|ui| {
-            if ui.add(MaterialButton::filled(if self.content_loading { "Stop Loading" } else { "Start Loading" })).clicked() {
+            if ui
+                .add(MaterialButton::filled(if self.content_loading {
+                    "Stop Loading"
+                } else {
+                    "Start Loading"
+                }))
+                .clicked()
+            {
                 self.content_loading = !self.content_loading;
             }
         });
@@ -293,13 +300,20 @@ impl ProgressWindow {
         if self.content_loading {
             // Show loading state with centered spinner (mimics about.dart lines 812, 1077)
             ui.horizontal(|ui| {
-                ui.add(circular_progress().indeterminate(true).size(Vec2::splat(36.0)).stroke_width(3.0));
+                ui.add(
+                    circular_progress()
+                        .indeterminate(true)
+                        .size(Vec2::splat(36.0))
+                        .stroke_width(3.0),
+                );
                 ui.add_space(12.0);
                 ui.label("Loading content...");
             });
         } else {
             ui.label("Content loaded successfully.");
-            ui.label("This demonstrates using CircularProgressIndicator as an inline loading spinner.");
+            ui.label(
+                "This demonstrates using CircularProgressIndicator as an inline loading spinner.",
+            );
         }
     }
 

@@ -40,8 +40,7 @@ use egui::{
 /// # });
 /// ```
 /// Visual variant of the select component.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SelectVariant {
     /// Filled variant with background color
     #[default]
@@ -50,10 +49,8 @@ pub enum SelectVariant {
     Outlined,
 }
 
-
 /// Menu alignment options.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MenuAlignment {
     /// Align menu to start edge
     #[default]
@@ -61,7 +58,6 @@ pub enum MenuAlignment {
     /// Align menu to end edge
     End,
 }
-
 
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialSelect<'a> {
@@ -436,7 +432,7 @@ impl<'a> Widget for MaterialSelect<'a> {
             self.label.clone(),
         ));
         let mut open = ui.memory(|mem| mem.data.get_temp::<bool>(select_id).unwrap_or(false));
-        
+
         // Handle Escape key to close dropdown
         if open && ui.input(|i| i.key_pressed(Key::Escape)) {
             open = false;
@@ -478,10 +474,10 @@ impl<'a> Widget for MaterialSelect<'a> {
         // Determine if we should show floating label
         let has_content = self.selected.is_some();
         let should_float_label = has_content || open || response.hovered();
-        
+
         // Hide label if field is empty and not focused (placeholder will be shown instead)
         let should_show_label = self.label.is_some() && should_float_label;
-        
+
         // Determine colors based on state
         let (bg_color, border_color, text_color) = if !self.enabled {
             (
@@ -525,7 +521,10 @@ impl<'a> Widget for MaterialSelect<'a> {
                             Pos2::new(rect.min.x, rect.max.y),
                             Pos2::new(rect.max.x, rect.max.y),
                         ],
-                        Stroke::new(if open || response.hovered() { 2.0 } else { 1.0 }, border_color),
+                        Stroke::new(
+                            if open || response.hovered() { 2.0 } else { 1.0 },
+                            border_color,
+                        ),
                     );
                 }
             }
@@ -534,7 +533,10 @@ impl<'a> Widget for MaterialSelect<'a> {
                 ui.painter().rect_stroke(
                     rect,
                     4.0,
-                    Stroke::new(if open || response.hovered() { 2.0 } else { 1.0 }, border_color),
+                    Stroke::new(
+                        if open || response.hovered() { 2.0 } else { 1.0 },
+                        border_color,
+                    ),
                     egui::epaint::StrokeKind::Outside,
                 );
             }
@@ -548,7 +550,7 @@ impl<'a> Widget for MaterialSelect<'a> {
             } else {
                 FontId::new(16.0, FontFamily::Proportional)
             };
-            
+
             let label_color = if !self.enabled {
                 on_surface.linear_multiply(0.38)
             } else if self.error_text.is_some() {
@@ -558,13 +560,13 @@ impl<'a> Widget for MaterialSelect<'a> {
             } else {
                 on_surface_variant
             };
-            
+
             let label_pos = if should_float_label {
                 Pos2::new(rect.min.x + 16.0, rect.min.y + 8.0)
             } else {
                 Pos2::new(rect.min.x + 16.0, rect.center().y)
             };
-            
+
             ui.painter().text(
                 label_pos,
                 egui::Align2::LEFT_TOP,
@@ -587,15 +589,19 @@ impl<'a> Widget for MaterialSelect<'a> {
 
         // Use consistent font styling for select field
         let select_font = FontId::new(16.0, FontFamily::Proportional);
-        let text_y_offset = if should_show_label && should_float_label { 12.0 } else { 0.0 };
+        let text_y_offset = if should_show_label && should_float_label {
+            12.0
+        } else {
+            0.0
+        };
         let text_pos = Pos2::new(rect.min.x + 16.0, rect.center().y + text_y_offset);
-        
+
         let display_color = if self.selected.is_none() {
             on_surface_variant.linear_multiply(0.6)
         } else {
             text_color
         };
-        
+
         ui.painter().text(
             text_pos,
             egui::Align2::LEFT_CENTER,
@@ -672,10 +678,14 @@ impl<'a> Widget for MaterialSelect<'a> {
                 available_space_below.max(available_space_above)
             };
 
-            let max_items_below =
-                ((available_space_below.min(effective_max_height) - dropdown_padding) / item_height).floor() as usize;
-            let max_items_above =
-                ((available_space_above.min(effective_max_height) - dropdown_padding) / item_height).floor() as usize;
+            let max_items_below = ((available_space_below.min(effective_max_height)
+                - dropdown_padding)
+                / item_height)
+                .floor() as usize;
+            let max_items_above = ((available_space_above.min(effective_max_height)
+                - dropdown_padding)
+                / item_height)
+                .floor() as usize;
 
             // Determine dropdown position and size
             let (dropdown_y, visible_items, scroll_needed) = if max_items_below
@@ -736,7 +746,8 @@ impl<'a> Widget for MaterialSelect<'a> {
                     );
 
                     // Draw dropdown background
-                    ui.painter().rect_filled(dropdown_rect, menu_border_radius, dropdown_bg_color);
+                    ui.painter()
+                        .rect_filled(dropdown_rect, menu_border_radius, dropdown_bg_color);
 
                     // Draw dropdown border
                     ui.painter().rect_stroke(
@@ -771,38 +782,41 @@ impl<'a> Widget for MaterialSelect<'a> {
                                             on_surface
                                         };
 
-                                        let galley = ui.painter().layout_job(egui::text::LayoutJob {
-                                            text: option.text.clone(),
-                                            sections: vec![egui::text::LayoutSection {
-                                                leading_space: 0.0,
-                                                byte_range: 0..option.text.len(),
-                                                format: egui::TextFormat {
-                                                    font_id: select_font.clone(),
-                                                    color: text_color,
+                                        let galley =
+                                            ui.painter().layout_job(egui::text::LayoutJob {
+                                                text: option.text.clone(),
+                                                sections: vec![egui::text::LayoutSection {
+                                                    leading_space: 0.0,
+                                                    byte_range: 0..option.text.len(),
+                                                    format: egui::TextFormat {
+                                                        font_id: select_font.clone(),
+                                                        color: text_color,
+                                                        ..Default::default()
+                                                    },
+                                                }],
+                                                wrap: egui::text::TextWrapping {
+                                                    max_width: available_width,
                                                     ..Default::default()
                                                 },
-                                            }],
-                                            wrap: egui::text::TextWrapping {
-                                                max_width: available_width,
-                                                ..Default::default()
-                                            },
-                                            break_on_newline: true,
-                                            halign: egui::Align::LEFT,
-                                            justify: false,
-                                            first_row_min_height: 0.0,
-                                            round_output_to_gui: true,
-                                        });
+                                                break_on_newline: true,
+                                                halign: egui::Align::LEFT,
+                                                justify: false,
+                                                first_row_min_height: 0.0,
+                                                round_output_to_gui: true,
+                                            });
 
                                         // Use actual text height + padding, with minimum of 48.0
                                         let min_height = 48.0;
                                         let text_height = galley.size().y;
                                         let vertical_padding = 12.0;
-                                        let option_height = (text_height + vertical_padding).max(min_height);
+                                        let option_height =
+                                            (text_height + vertical_padding).max(min_height);
 
-                                        let (option_rect, option_response) = ui.allocate_exact_size(
-                                            Vec2::new(ui.available_width(), option_height),
-                                            Sense::click(),
-                                        );
+                                        let (option_rect, option_response) = ui
+                                            .allocate_exact_size(
+                                                Vec2::new(ui.available_width(), option_height),
+                                                Sense::click(),
+                                            );
 
                                         let option_bg_color = if is_selected {
                                             Color32::from_rgba_premultiplied(
@@ -823,10 +837,17 @@ impl<'a> Widget for MaterialSelect<'a> {
                                         };
 
                                         if option_bg_color != Color32::TRANSPARENT {
-                                            ui.painter().rect_filled(option_rect, 4.0, option_bg_color);
+                                            ui.painter().rect_filled(
+                                                option_rect,
+                                                4.0,
+                                                option_bg_color,
+                                            );
                                         }
 
-                                        let text_pos = Pos2::new(option_rect.min.x + 16.0, option_rect.center().y - text_height / 2.0);
+                                        let text_pos = Pos2::new(
+                                            option_rect.min.x + 16.0,
+                                            option_rect.center().y - text_height / 2.0,
+                                        );
                                         ui.painter().galley(text_pos, galley, text_color);
 
                                         if option_response.clicked() {
@@ -835,7 +856,8 @@ impl<'a> Widget for MaterialSelect<'a> {
                                                 open = false;
                                                 ui.memory_mut(|mem| {
                                                     mem.data.insert_temp(select_id, open);
-                                                    mem.data.remove::<egui::Id>(global_open_select_id);
+                                                    mem.data
+                                                        .remove::<egui::Id>(global_open_select_id);
                                                 });
                                             }
                                             response.mark_changed();
@@ -931,7 +953,10 @@ impl<'a> Widget for MaterialSelect<'a> {
                                 response.mark_changed();
                             }
 
-                            let text_pos = Pos2::new(option_rect.min.x + 16.0, option_rect.center().y - text_height / 2.0);
+                            let text_pos = Pos2::new(
+                                option_rect.min.x + 16.0,
+                                option_rect.center().y - text_height / 2.0,
+                            );
                             ui.painter().galley(text_pos, galley, text_color);
 
                             current_y += option_height;
@@ -939,7 +964,7 @@ impl<'a> Widget for MaterialSelect<'a> {
                     }
                 });
         }
-        
+
         // Draw helper text or error text below the field
         if let Some(ref error) = self.error_text {
             let error_font = FontId::new(12.0, FontFamily::Proportional);

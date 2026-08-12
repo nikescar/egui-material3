@@ -10,9 +10,9 @@
 //! For large tables (100+ rows), these optimizations provide 5-10x faster scrolling.
 //! Use `.refresh_interval(0.0)` to disable throttling if needed.
 
-mod types;
 mod builder;
 mod rendering;
+mod types;
 
 pub use types::*;
 

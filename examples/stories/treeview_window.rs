@@ -55,7 +55,8 @@ impl TreeViewWindow {
                 self.basic_state.expand_all(&Self::create_basic_items());
                 self.icon_state.expand_all(&Self::create_icon_items());
                 self.complex_state.expand_all(&Self::create_complex_items());
-                self.selectable_state.expand_all(&Self::create_selectable_items());
+                self.selectable_state
+                    .expand_all(&Self::create_selectable_items());
             }
 
             if ui.add(MaterialButton::outlined("Collapse All")).clicked() {
@@ -65,7 +66,10 @@ impl TreeViewWindow {
                 self.selectable_state.collapse_all();
             }
 
-            if ui.add(MaterialButton::outlined("Clear Selections")).clicked() {
+            if ui
+                .add(MaterialButton::outlined("Clear Selections"))
+                .clicked()
+            {
                 self.basic_state.clear_selections();
                 self.icon_state.clear_selections();
                 self.complex_state.clear_selections();
@@ -121,7 +125,10 @@ impl TreeViewWindow {
         ui.add_space(10.0);
         ui.horizontal(|ui| {
             ui.label("Selected items:");
-            let selected: Vec<_> = self.selectable_state.selected.iter()
+            let selected: Vec<_> = self
+                .selectable_state
+                .selected
+                .iter()
                 .filter(|(_, &selected)| selected)
                 .map(|(id, _)| id.as_str())
                 .collect();
@@ -167,33 +174,30 @@ impl TreeViewWindow {
                 .icon("download")
                 .child(TreeViewItem::new("images", "Images").icon("image"))
                 .child(TreeViewItem::new("videos", "Videos").icon("video_library")),
-            TreeViewItem::new("settings", "Settings")
-                .icon("settings"),
+            TreeViewItem::new("settings", "Settings").icon("settings"),
         ]
     }
 
     fn create_complex_items() -> Vec<TreeViewItem> {
-        vec![
-            TreeViewItem::new("root", "Root")
-                .icon("folder")
-                .child(
-                    TreeViewItem::new("level1-1", "Level 1.1")
-                        .icon("folder")
-                        .child(
-                            TreeViewItem::new("level2-1", "Level 2.1")
-                                .icon("folder")
-                                .child(TreeViewItem::new("level3-1", "Level 3.1").icon("description"))
-                                .child(TreeViewItem::new("level3-2", "Level 3.2").icon("description"))
-                        )
-                        .child(TreeViewItem::new("level2-2", "Level 2.2").icon("description"))
-                )
-                .child(
-                    TreeViewItem::new("level1-2", "Level 1.2")
-                        .icon("folder")
-                        .child(TreeViewItem::new("level2-3", "Level 2.3").icon("description"))
-                        .child(TreeViewItem::new("level2-4", "Level 2.4").icon("description"))
-                ),
-        ]
+        vec![TreeViewItem::new("root", "Root")
+            .icon("folder")
+            .child(
+                TreeViewItem::new("level1-1", "Level 1.1")
+                    .icon("folder")
+                    .child(
+                        TreeViewItem::new("level2-1", "Level 2.1")
+                            .icon("folder")
+                            .child(TreeViewItem::new("level3-1", "Level 3.1").icon("description"))
+                            .child(TreeViewItem::new("level3-2", "Level 3.2").icon("description")),
+                    )
+                    .child(TreeViewItem::new("level2-2", "Level 2.2").icon("description")),
+            )
+            .child(
+                TreeViewItem::new("level1-2", "Level 1.2")
+                    .icon("folder")
+                    .child(TreeViewItem::new("level2-3", "Level 2.3").icon("description"))
+                    .child(TreeViewItem::new("level2-4", "Level 2.4").icon("description")),
+            )]
     }
 
     fn create_selectable_items() -> Vec<TreeViewItem> {
@@ -222,19 +226,22 @@ impl TreeViewWindow {
                     TreeViewItem::new("documents", "Documents")
                         .icon("folder")
                         .child(TreeViewItem::new("report.pdf", "report.pdf").icon("description"))
-                        .child(TreeViewItem::new("presentation.pptx", "presentation.pptx").icon("slideshow"))
+                        .child(
+                            TreeViewItem::new("presentation.pptx", "presentation.pptx")
+                                .icon("slideshow"),
+                        ),
                 )
                 .child(
                     TreeViewItem::new("pictures", "Pictures")
                         .icon("folder")
                         .child(TreeViewItem::new("vacation.jpg", "vacation.jpg").icon("image"))
-                        .child(TreeViewItem::new("family.png", "family.png").icon("image"))
+                        .child(TreeViewItem::new("family.png", "family.png").icon("image")),
                 )
                 .child(
                     TreeViewItem::new("music", "Music")
                         .icon("folder")
                         .child(TreeViewItem::new("song1.mp3", "song1.mp3").icon("music_note"))
-                        .child(TreeViewItem::new("song2.mp3", "song2.mp3").icon("music_note"))
+                        .child(TreeViewItem::new("song2.mp3", "song2.mp3").icon("music_note")),
                 ),
             TreeViewItem::new("desktop", "Desktop")
                 .icon("computer")

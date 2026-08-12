@@ -8,7 +8,10 @@
 use eframe::egui;
 use egui_material3::mvvm::{RefState, ValState, ViewModel};
 use egui_material3::{
-    theme::{load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme, update_window_background},
+    theme::{
+        load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme,
+        update_window_background,
+    },
     MaterialButton, MaterialCheckbox, TextEdit,
 };
 
@@ -120,11 +123,14 @@ impl TodoListViewModel {
         let all_todos = self.todos.get();
         let filter = self.filter.get();
 
-        all_todos.into_iter().filter(|todo| match filter {
-            TodoFilter::All => true,
-            TodoFilter::Active => !todo.completed,
-            TodoFilter::Completed => todo.completed,
-        }).collect()
+        all_todos
+            .into_iter()
+            .filter(|todo| match filter {
+                TodoFilter::All => true,
+                TodoFilter::Active => !todo.completed,
+                TodoFilter::Completed => todo.completed,
+            })
+            .collect()
     }
 
     fn stats(&self) -> (usize, usize, usize) {
@@ -141,7 +147,11 @@ impl ViewModel for TodoListViewModel {
         println!("TodoListViewModel initialized");
         // Could load from persistent storage here
         self.todos.update(|todos| {
-            todos.push(TodoItem { id: 0, text: "Welcome to MVVM Todo!".to_string(), completed: false });
+            todos.push(TodoItem {
+                id: 0,
+                text: "Welcome to MVVM Todo!".to_string(),
+                completed: false,
+            });
         });
     }
 
@@ -185,7 +195,7 @@ impl eframe::App for MyApp {
                 let response = ui.add(
                     TextEdit::singleline(&mut text)
                         .desired_width(400.0)
-                        .hint_text("What needs to be done?")
+                        .hint_text("What needs to be done?"),
                 );
 
                 if response.changed() {
@@ -258,12 +268,15 @@ impl eframe::App for MyApp {
                             };
                             ui.label(text_style);
 
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                if ui.add(MaterialButton::text("Delete")).clicked() {
-                                    self.view_model.delete_todo(todo.id);
-                                    ctx.request_repaint();
-                                }
-                            });
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if ui.add(MaterialButton::text("Delete")).clicked() {
+                                        self.view_model.delete_todo(todo.id);
+                                        ctx.request_repaint();
+                                    }
+                                },
+                            );
                         });
                         ui.separator();
                     }
@@ -275,7 +288,10 @@ impl eframe::App for MyApp {
             // Stats and actions
             ui.horizontal(|ui| {
                 let (total, active, completed) = self.view_model.stats();
-                ui.label(format!("Total: {} | Active: {} | Completed: {}", total, active, completed));
+                ui.label(format!(
+                    "Total: {} | Active: {} | Completed: {}",
+                    total, active, completed
+                ));
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if completed > 0 {

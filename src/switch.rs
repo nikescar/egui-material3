@@ -29,7 +29,9 @@
 //! - **Icon**: 16dp on thumb
 
 use crate::get_global_color;
-use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2, Widget};
+use egui::{
+    self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2, Widget,
+};
 
 /// Material Design switch component following Material Design 3 specifications
 ///
@@ -169,11 +171,11 @@ impl<'a> Widget for MaterialSwitch<'a> {
         let track_height = 32.0;
 
         let desired_size = if let Some(ref text) = self.text {
-            let text_width = ui.painter().layout_no_wrap(
-                text.clone(),
-                egui::FontId::default(),
-                egui::Color32::WHITE,
-            ).size().x;
+            let text_width = ui
+                .painter()
+                .layout_no_wrap(text.clone(), egui::FontId::default(), egui::Color32::WHITE)
+                .size()
+                .x;
             Vec2::new(switch_width + 8.0 + text_width, switch_height)
         } else {
             Vec2::new(switch_width, switch_height)
@@ -263,7 +265,12 @@ impl<'a> Widget for MaterialSwitch<'a> {
                 // Disabled off: surfaceContainerHighest @ 38% icon
                 surface_container_highest.linear_multiply(0.38)
             };
-            (disabled_track, disabled_thumb, disabled_outline, disabled_icon)
+            (
+                disabled_track,
+                disabled_thumb,
+                disabled_outline,
+                disabled_icon,
+            )
         } else if *self.selected {
             // Selected (on) state: primary track, onPrimary/primaryContainer thumb
             let track = primary; // Track uses primary when on
@@ -349,7 +356,7 @@ impl<'a> Widget for MaterialSwitch<'a> {
         if let Some(icon) = current_icon {
             let icon_size = 16.0;
             let icon_font = FontId::proportional(icon_size);
-            
+
             ui.painter().text(
                 thumb_center,
                 egui::Align2::CENTER_CENTER,

@@ -36,8 +36,8 @@
 //! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
 //! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
 
-mod types;
 mod builder;
 mod rendering;
+mod types;
 
 pub use types::*;

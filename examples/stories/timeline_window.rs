@@ -1,6 +1,9 @@
 #![doc(hidden)]
 
-use crate::{timeline, MaterialButton, MaterialCard2, TimelineDot, TimelineDotColor, TimelineDotVariant, TimelineItem, TimelinePosition};
+use crate::{
+    timeline, MaterialButton, MaterialCard2, TimelineDot, TimelineDotColor, TimelineDotVariant,
+    TimelineItem, TimelinePosition,
+};
 use eframe::egui::{self, Color32, Window};
 
 #[doc(hidden)]
@@ -62,22 +65,47 @@ impl TimelineWindow {
         let mut textures = Vec::new();
 
         // Texture 1: Red gradient circle (YouTube-style)
-        textures.push(Self::create_circle_texture(ctx, "icon_1", egui::Color32::from_rgb(255, 0, 0), egui::Color32::from_rgb(200, 0, 0)));
+        textures.push(Self::create_circle_texture(
+            ctx,
+            "icon_1",
+            egui::Color32::from_rgb(255, 0, 0),
+            egui::Color32::from_rgb(200, 0, 0),
+        ));
 
         // Texture 2: Blue/Green gradient circle (Chrome-style)
-        textures.push(Self::create_circle_texture(ctx, "icon_2", egui::Color32::from_rgb(66, 133, 244), egui::Color32::from_rgb(52, 168, 83)));
+        textures.push(Self::create_circle_texture(
+            ctx,
+            "icon_2",
+            egui::Color32::from_rgb(66, 133, 244),
+            egui::Color32::from_rgb(52, 168, 83),
+        ));
 
         // Texture 3: Green gradient circle (Spotify-style)
-        textures.push(Self::create_circle_texture(ctx, "icon_3", egui::Color32::from_rgb(30, 215, 96), egui::Color32::from_rgb(25, 180, 80)));
+        textures.push(Self::create_circle_texture(
+            ctx,
+            "icon_3",
+            egui::Color32::from_rgb(30, 215, 96),
+            egui::Color32::from_rgb(25, 180, 80),
+        ));
 
         // Texture 4: Orange/Yellow gradient square (Gmail-style)
-        textures.push(Self::create_square_texture(ctx, "icon_4", egui::Color32::from_rgb(234, 67, 53), egui::Color32::from_rgb(251, 188, 5)));
+        textures.push(Self::create_square_texture(
+            ctx,
+            "icon_4",
+            egui::Color32::from_rgb(234, 67, 53),
+            egui::Color32::from_rgb(251, 188, 5),
+        ));
 
         textures
     }
 
     /// Create a gradient circle texture
-    fn create_circle_texture(ctx: &egui::Context, name: &str, color1: egui::Color32, color2: egui::Color32) -> egui::TextureHandle {
+    fn create_circle_texture(
+        ctx: &egui::Context,
+        name: &str,
+        color1: egui::Color32,
+        color2: egui::Color32,
+    ) -> egui::TextureHandle {
         let size = 48;
         let mut pixels = vec![egui::Color32::TRANSPARENT; size * size];
 
@@ -113,7 +141,12 @@ impl TimelineWindow {
     }
 
     /// Create a gradient square texture with rounded corners
-    fn create_square_texture(ctx: &egui::Context, name: &str, color1: egui::Color32, color2: egui::Color32) -> egui::TextureHandle {
+    fn create_square_texture(
+        ctx: &egui::Context,
+        name: &str,
+        color1: egui::Color32,
+        color2: egui::Color32,
+    ) -> egui::TextureHandle {
         let size = 48;
         let mut pixels = vec![egui::Color32::TRANSPARENT; size * size];
 
@@ -197,10 +230,26 @@ impl TimelineWindow {
                 egui::ComboBox::from_label("")
                     .selected_text(format!("{:?}", self.position_selection))
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.position_selection, TimelinePosition::Left, "Left");
-                        ui.selectable_value(&mut self.position_selection, TimelinePosition::Right, "Right");
-                        ui.selectable_value(&mut self.position_selection, TimelinePosition::Alternate, "Alternate");
-                        ui.selectable_value(&mut self.position_selection, TimelinePosition::AlternateReverse, "Alternate Reverse");
+                        ui.selectable_value(
+                            &mut self.position_selection,
+                            TimelinePosition::Left,
+                            "Left",
+                        );
+                        ui.selectable_value(
+                            &mut self.position_selection,
+                            TimelinePosition::Right,
+                            "Right",
+                        );
+                        ui.selectable_value(
+                            &mut self.position_selection,
+                            TimelinePosition::Alternate,
+                            "Alternate",
+                        );
+                        ui.selectable_value(
+                            &mut self.position_selection,
+                            TimelinePosition::AlternateReverse,
+                            "Alternate Reverse",
+                        );
                     });
             });
         });
@@ -553,11 +602,7 @@ impl TimelineWindow {
                     TimelineItem::new()
                         .opposite_content("Step 2")
                         .content("🖱️ I'm clickable too!")
-                        .dot(
-                            TimelineDot::new()
-                                .color(TimelineDotColor::Info)
-                                .icon("2"),
-                        )
+                        .dot(TimelineDot::new().color(TimelineDotColor::Info).icon("2"))
                         .on_click(|| {
                             println!("Second step clicked!");
                         }),
@@ -600,7 +645,10 @@ impl TimelineWindow {
                                 if ui.add(MaterialButton::filled("Approve").small()).clicked() {
                                     println!("Approved!");
                                 }
-                                if ui.add(MaterialButton::outlined("Comment").small()).clicked() {
+                                if ui
+                                    .add(MaterialButton::outlined("Comment").small())
+                                    .clicked()
+                                {
                                     println!("Adding comment...");
                                 }
                                 if ui.add(MaterialButton::text("Dismiss").small()).clicked() {
@@ -609,7 +657,12 @@ impl TimelineWindow {
                             });
                         })
                         .min_height(80.0)
-                        .dot(TimelineDot::new().color(TimelineDotColor::Primary).icon("📝").size(48.0)),
+                        .dot(
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Primary)
+                                .icon("📝")
+                                .size(48.0),
+                        ),
                 )
                 .item(
                     TimelineItem::new()
@@ -621,7 +674,10 @@ impl TimelineWindow {
                                 if ui.add(MaterialButton::filled("Accept").small()).clicked() {
                                     println!("Meeting accepted!");
                                 }
-                                if ui.add(MaterialButton::outlined("Tentative").small()).clicked() {
+                                if ui
+                                    .add(MaterialButton::outlined("Tentative").small())
+                                    .clicked()
+                                {
                                     println!("Marked as tentative");
                                 }
                                 if ui.add(MaterialButton::text("Decline").small()).clicked() {
@@ -630,7 +686,12 @@ impl TimelineWindow {
                             });
                         })
                         .min_height(80.0)
-                        .dot(TimelineDot::new().color(TimelineDotColor::Info).icon("📅").size(48.0)),
+                        .dot(
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Info)
+                                .icon("📅")
+                                .size(48.0),
+                        ),
                 )
                 .item(
                     TimelineItem::new()
@@ -642,7 +703,10 @@ impl TimelineWindow {
                                 if ui.add(MaterialButton::filled("Deploy").small()).clicked() {
                                     println!("Deploying...");
                                 }
-                                if ui.add(MaterialButton::outlined("Rollback").small()).clicked() {
+                                if ui
+                                    .add(MaterialButton::outlined("Rollback").small())
+                                    .clicked()
+                                {
                                     println!("Rolling back...");
                                 }
                                 if ui.add(MaterialButton::text("Details").small()).clicked() {
@@ -651,7 +715,12 @@ impl TimelineWindow {
                             });
                         })
                         .min_height(80.0)
-                        .dot(TimelineDot::new().color(TimelineDotColor::Success).icon("🚀").size(48.0)),
+                        .dot(
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Success)
+                                .icon("🚀")
+                                .size(48.0),
+                        ),
                 )
                 .item(
                     TimelineItem::new()
@@ -660,10 +729,16 @@ impl TimelineWindow {
                             ui.label("Alert: High CPU Usage Detected");
                             ui.add_space(5.0);
                             ui.horizontal(|ui| {
-                                if ui.add(MaterialButton::filled("Investigate").small()).clicked() {
+                                if ui
+                                    .add(MaterialButton::filled("Investigate").small())
+                                    .clicked()
+                                {
                                     println!("Opening monitoring dashboard...");
                                 }
-                                if ui.add(MaterialButton::outlined("Acknowledge").small()).clicked() {
+                                if ui
+                                    .add(MaterialButton::outlined("Acknowledge").small())
+                                    .clicked()
+                                {
                                     println!("Alert acknowledged");
                                 }
                                 if ui.add(MaterialButton::text("Snooze").small()).clicked() {
@@ -672,7 +747,12 @@ impl TimelineWindow {
                             });
                         })
                         .min_height(80.0)
-                        .dot(TimelineDot::new().color(TimelineDotColor::Warning).icon("⚠️").size(48.0)),
+                        .dot(
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Warning)
+                                .icon("⚠️")
+                                .size(48.0),
+                        ),
                 ),
         );
     }
@@ -823,57 +903,51 @@ impl TimelineWindow {
                         .opposite_content("09:00 AM")
                         .content("App Launched: YouTube")
                         .min_height(60.0)
-                        .dot(
-                            if let Some(tex) = self.sample_textures.get(0) {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Primary)
-                                    .texture_icon(tex.id())
-                                    .size(48.0)
-                            } else {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Primary)
-                                    .icon("📱")
-                                    .size(48.0)
-                            }
-                        ),
+                        .dot(if let Some(tex) = self.sample_textures.get(0) {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Primary)
+                                .texture_icon(tex.id())
+                                .size(48.0)
+                        } else {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Primary)
+                                .icon("📱")
+                                .size(48.0)
+                        }),
                 )
                 .item(
                     TimelineItem::new()
                         .opposite_content("09:15 AM")
                         .content("App Launched: Chrome Browser")
                         .min_height(60.0)
-                        .dot(
-                            if let Some(tex) = self.sample_textures.get(1) {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Success)
-                                    .texture_icon(tex.id())
-                                    .size(48.0)
-                            } else {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Success)
-                                    .icon("🌐")
-                                    .size(48.0)
-                            }
-                        ),
+                        .dot(if let Some(tex) = self.sample_textures.get(1) {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Success)
+                                .texture_icon(tex.id())
+                                .size(48.0)
+                        } else {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Success)
+                                .icon("🌐")
+                                .size(48.0)
+                        }),
                 )
                 .item(
                     TimelineItem::new()
                         .opposite_content("09:30 AM")
                         .content("App Launched: Spotify")
                         .min_height(60.0)
-                        .dot(
-                            if let Some(tex) = self.sample_textures.get(2) {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Info)
-                                    .texture_icon(tex.id())
-                                    .size(48.0)
-                            } else {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Info)
-                                    .icon("🎵")
-                                    .size(48.0)
-                            }
-                        ),
+                        .dot(if let Some(tex) = self.sample_textures.get(2) {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Info)
+                                .texture_icon(tex.id())
+                                .size(48.0)
+                        } else {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Info)
+                                .icon("🎵")
+                                .size(48.0)
+                        }),
                 )
                 .item(
                     TimelineItem::new()
@@ -891,24 +965,24 @@ impl TimelineWindow {
                             });
                         })
                         .min_height(100.0)
-                        .dot(
-                            if let Some(tex) = self.sample_textures.get(3) {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Warning)
-                                    .texture_icon(tex.id())
-                                    .size(48.0)
-                            } else {
-                                TimelineDot::new()
-                                    .color(TimelineDotColor::Warning)
-                                    .icon("📧")
-                                    .size(48.0)
-                            }
-                        ),
+                        .dot(if let Some(tex) = self.sample_textures.get(3) {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Warning)
+                                .texture_icon(tex.id())
+                                .size(48.0)
+                        } else {
+                            TimelineDot::new()
+                                .color(TimelineDotColor::Warning)
+                                .icon("📧")
+                                .size(48.0)
+                        }),
                 ),
         );
 
         ui.add_space(10.0);
-        ui.label("💡 Texture icons are loaded from egui::TextureHandle and displayed in timeline dots");
+        ui.label(
+            "💡 Texture icons are loaded from egui::TextureHandle and displayed in timeline dots",
+        );
         ui.label("💡 Different textures shown: Red circle (YouTube), Blue-Green circle (Chrome), Green circle (Spotify), Orange-Yellow square (Gmail)");
         ui.label("💡 Falls back to emoji/text icons if texture is not available");
         ui.label("💡 Icon size can be customized with .size() method (48.0 shown here)");

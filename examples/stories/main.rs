@@ -3,8 +3,7 @@
 use eframe::egui::{self, Color32};
 use egui_file_dialog::FileDialog;
 use egui_material3::theme::{
-    load_fonts, load_themes, setup_google_fonts,
-    setup_local_fonts_from_bytes, setup_local_theme,
+    load_fonts, load_themes, setup_google_fonts, setup_local_fonts_from_bytes, setup_local_theme,
 };
 use egui_material3::*;
 use std::collections::HashMap;
@@ -36,8 +35,8 @@ mod select_window;
 mod slider_window;
 mod snackbar_window;
 mod spreadsheet_window;
-mod switch_window;
 mod svgemoji_window;
+mod switch_window;
 mod symbol_window;
 mod tabs_window;
 mod timeline_window;
@@ -71,15 +70,15 @@ use select_window::SelectWindow;
 use slider_window::SliderWindow;
 use snackbar_window::SnackbarWindow;
 use spreadsheet_window::SpreadsheetWindow;
-use switch_window::SwitchWindow;
 use svgemoji_window::SvgEmojiWindow;
+use switch_window::SwitchWindow;
 use symbol_window::SymbolWindow;
 use tabs_window::TabsWindow;
 use timeline_window::TimelineWindow;
 use toolbar_window::ToolbarWindow;
 use tooltip_window::TooltipWindow;
-use treeview_window::TreeViewWindow;
 use topappbar_window::TopAppBarWindow;
+use treeview_window::TreeViewWindow;
 
 fn main() -> Result<(), eframe::Error> {
     // Initialize async-std executor for async operations (spreadsheet feature)
@@ -376,13 +375,19 @@ impl eframe::App for MaterialApp {
                 ui.horizontal(|ui| {
                     ui.heading("Material Theme Controls");
 
-                    if ui.add(MaterialButton::filled("Theme Builder").small()).clicked() {
+                    if ui
+                        .add(MaterialButton::filled("Theme Builder").small())
+                        .clicked()
+                    {
                         let _ = webbrowser::open(
                             "https://material-foundation.github.io/material-theme-builder/",
                         );
                     }
 
-                    if ui.add(MaterialButton::filled("Google Fonts").small()).clicked() {
+                    if ui
+                        .add(MaterialButton::filled("Google Fonts").small())
+                        .clicked()
+                    {
                         let _ = webbrowser::open(
                             "https://fonts.google.com/specimen/Google+Sans+Code?query=google+sans",
                         );
@@ -396,7 +401,10 @@ impl eframe::App for MaterialApp {
                     ui.horizontal(|ui| {
                         ui.label("Theme File:");
 
-                        if ui.add(MaterialButton::filled("📁 Load JSON Theme").small()).clicked() {
+                        if ui
+                            .add(MaterialButton::filled("📁 Load JSON Theme").small())
+                            .clicked()
+                        {
                             self.load_theme_file();
                         }
 
@@ -569,7 +577,10 @@ impl eframe::App for MaterialApp {
             ui.add_space(15.0);
             ui.label("Demo Windows:");
             ui.horizontal_wrapped(|ui| {
-                if ui.add(MaterialButton::filled("Action Sheet Stories")).clicked() {
+                if ui
+                    .add(MaterialButton::filled("Action Sheet Stories"))
+                    .clicked()
+                {
                     self.actionsheet_window.open = true;
                 }
 
@@ -577,7 +588,10 @@ impl eframe::App for MaterialApp {
                     self.badge_window.open = true;
                 }
 
-                if ui.add(MaterialButton::filled("Breadcrumbs Stories")).clicked() {
+                if ui
+                    .add(MaterialButton::filled("Breadcrumbs Stories"))
+                    .clicked()
+                {
                     self.breadcrumbs_window.open = true;
                 }
 
@@ -619,7 +633,10 @@ impl eframe::App for MaterialApp {
                     self.carousel_window.open = true;
                 }
 
-                if ui.add(MaterialButton::filled("Dashboard Counter Stories")).clicked() {
+                if ui
+                    .add(MaterialButton::filled("Dashboard Counter Stories"))
+                    .clicked()
+                {
                     self.dashcounter_window.open = true;
                 }
 
@@ -656,7 +673,10 @@ impl eframe::App for MaterialApp {
                     self.menu_window.open = true;
                 }
 
-                if ui.add(MaterialButton::filled("Notification Stories")).clicked() {
+                if ui
+                    .add(MaterialButton::filled("Notification Stories"))
+                    .clicked()
+                {
                     self.notification_window.open = true;
                 }
 
@@ -680,7 +700,10 @@ impl eframe::App for MaterialApp {
                     self.snackbar_window.open = true;
                 }
 
-                if ui.add(MaterialButton::filled("Spreadsheet Stories")).clicked() {
+                if ui
+                    .add(MaterialButton::filled("Spreadsheet Stories"))
+                    .clicked()
+                {
                     self.spreadsheet_window.open = true;
                 }
 
@@ -688,7 +711,10 @@ impl eframe::App for MaterialApp {
                     self.switch_window.open = true;
                 }
 
-                if ui.add(MaterialButton::filled("SVG Emoji Stories")).clicked() {
+                if ui
+                    .add(MaterialButton::filled("SVG Emoji Stories"))
+                    .clicked()
+                {
                     self.svgemoji_window.open = true;
                 }
 

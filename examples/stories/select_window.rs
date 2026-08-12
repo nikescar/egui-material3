@@ -142,33 +142,42 @@ impl SelectWindow {
                 ui.label("Trailing Icon:");
                 ui.text_edit_singleline(&mut self.trailing_icon);
             });
-            
+
             ui.separator();
-            
+
             ui.horizontal(|ui| {
                 ui.label("Variant:");
-                if ui.radio(matches!(self.variant, SelectVariant::Filled), "Filled").clicked() {
+                if ui
+                    .radio(matches!(self.variant, SelectVariant::Filled), "Filled")
+                    .clicked()
+                {
                     self.variant = SelectVariant::Filled;
                 }
-                if ui.radio(matches!(self.variant, SelectVariant::Outlined), "Outlined").clicked() {
+                if ui
+                    .radio(matches!(self.variant, SelectVariant::Outlined), "Outlined")
+                    .clicked()
+                {
                     self.variant = SelectVariant::Outlined;
                 }
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Border Radius:");
                 ui.add(egui::Slider::new(&mut self.border_radius, 0.0..=28.0));
             });
-            
+
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.use_custom_menu_width, "Custom Menu Width:");
                 if self.use_custom_menu_width {
                     ui.add(egui::Slider::new(&mut self.menu_width, 100.0..=400.0));
                 }
             });
-            
+
             ui.horizontal(|ui| {
-                ui.checkbox(&mut self.use_custom_menu_max_height, "Custom Menu Max Height:");
+                ui.checkbox(
+                    &mut self.use_custom_menu_max_height,
+                    "Custom Menu Max Height:",
+                );
                 if self.use_custom_menu_max_height {
                     ui.add(egui::Slider::new(&mut self.menu_max_height, 100.0..=500.0));
                 }
@@ -224,10 +233,10 @@ impl SelectWindow {
             });
         });
     }
-    
+
     fn render_variant_comparison(&mut self, ui: &mut egui::Ui) {
         ui.heading("Variant Comparison - Filled vs Outlined");
-        
+
         ui.push_id("variant_comparison", |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
@@ -242,19 +251,19 @@ impl SelectWindow {
                         .option(4, "Purple")
                         .helper_text("Select your favorite color")
                         .width(250.0);
-                        
+
                     if self.disabled {
                         filled_demo = filled_demo.enabled(false);
                     }
                     if self.error {
                         filled_demo = filled_demo.error_text(&self.error_text);
                     }
-                    
+
                     ui.add(filled_demo);
                 });
-                
+
                 ui.add_space(30.0);
-                
+
                 ui.vertical(|ui| {
                     ui.label("Outlined Variant:");
                     let mut outlined_demo = select(&mut self.variant_demo_outlined)
@@ -267,31 +276,31 @@ impl SelectWindow {
                         .option(4, "Purple")
                         .helper_text("Select your favorite color")
                         .width(250.0);
-                        
+
                     if self.disabled {
                         outlined_demo = outlined_demo.enabled(false);
                     }
                     if self.error {
                         outlined_demo = outlined_demo.error_text(&self.error_text);
                     }
-                    
+
                     ui.add(outlined_demo);
                 });
             });
         });
     }
-    
+
     fn render_validation_examples(&mut self, ui: &mut egui::Ui) {
         ui.heading("Validation Examples");
-        
+
         ui.push_id("validation_examples", |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ui.label("Required Field (with error):");
-                    
+
                     // Check validation state before creating the select
                     let should_show_error = self.validation_demo.is_none() && self.required;
-                    
+
                     let validation_select = select(&mut self.validation_demo)
                         .variant(SelectVariant::Outlined)
                         .label("Country *")
@@ -308,18 +317,18 @@ impl SelectWindow {
                         })
                         .required(self.required)
                         .width(250.0);
-                    
+
                     ui.add(validation_select);
-                    
+
                     if ui.button("Validate").clicked() {
                         if self.validation_demo.is_none() {
                             // Trigger error state
                         }
                     }
                 });
-                
+
                 ui.add_space(30.0);
-                
+
                 ui.vertical(|ui| {
                     ui.label("Custom Styling:");
                     let custom_select = select(&mut self.custom_style_demo)
@@ -333,19 +342,19 @@ impl SelectWindow {
                         .helper_text("Choose your size")
                         .width(250.0)
                         .border_radius(self.border_radius);
-                    
+
                     let custom_select = if self.use_custom_menu_width {
                         custom_select.menu_width(self.menu_width)
                     } else {
                         custom_select
                     };
-                    
+
                     let custom_select = if self.use_custom_menu_max_height {
                         custom_select.menu_max_height(self.menu_max_height)
                     } else {
                         custom_select
                     };
-                    
+
                     ui.add(custom_select);
                 });
             });
@@ -492,7 +501,9 @@ impl SelectWindow {
             ui.add_space(10.0);
 
             // With icons example
-            ui.label("Select with Icons:").on_hover_text("Select component with emoji icons demonstrating visual content in options");
+            ui.label("Select with Icons:").on_hover_text(
+                "Select component with emoji icons demonstrating visual content in options",
+            );
             let mut icon_select = select(&mut self.outlined_select_value)
                 .variant(self.variant)
                 .label("Fruit with Emoji")
@@ -554,50 +565,50 @@ impl SelectWindow {
                         .placeholder("Select long text option")
                         .width(250.0)
                         .border_radius(self.border_radius);
-                    
+
                     if self.disabled {
                         long_text_select = long_text_select.enabled(false);
                     }
-                    
+
                     if self.use_custom_menu_width {
                         long_text_select = long_text_select.menu_width(self.menu_width);
                     }
-                    
+
                     ui.add(long_text_select);
                 });
-                
+
                 ui.add_space(20.0);
-                
+
                 ui.vertical(|ui| {
                     ui.label("Many Options (Scroll Attachment):").on_hover_text("Tests dropdown menu scrolling behavior with 25 options and max height control");
                     let mut many_options_select = select(&mut self.many_options_select)
                         .variant(self.variant)
                         .label("Option");
-                    
+
                     // Add many options to test scrolling
                     for i in 1..=25 {
                         many_options_select = many_options_select.option(i, format!("Option {}: Item number {}", i, i));
                     }
-                    
+
                     many_options_select = many_options_select
                         .placeholder("Select from many options")
                         .width(220.0)
                         .border_radius(self.border_radius);
-                    
+
                     if self.disabled {
                         many_options_select = many_options_select.enabled(false);
                     }
-                    
+
                     if self.use_custom_menu_max_height {
                         many_options_select = many_options_select.menu_max_height(self.menu_max_height);
                     }
-                    
+
                     ui.add(many_options_select);
-                    
+
                     ui.label("⚠️ This select tests scroll attachment to edge.");
                 });
             });
-            
+
         });
     }
 }

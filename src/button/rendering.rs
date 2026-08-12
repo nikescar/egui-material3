@@ -6,7 +6,8 @@ use egui::{
     ecolor::Color32,
     emath::NumExt,
     epaint::{CornerRadius, Shadow, Stroke},
-    Align, Rect, Response, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetType, WidgetText,
+    Align, Rect, Response, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetText,
+    WidgetType,
 };
 
 impl Widget for MaterialButton<'_> {
@@ -53,14 +54,14 @@ impl Widget for MaterialButton<'_> {
                 false,
             ),
             MaterialButtonVariant::Outlined => (
-                Some(Color32::TRANSPARENT), // Transparent to show parent surface
+                Some(Color32::TRANSPARENT),      // Transparent to show parent surface
                 Some(Stroke::new(1.0, outline)), // Use outline for medium-emphasis border
                 CornerRadius::from(20),
                 false,
             ),
             MaterialButtonVariant::Text => (
                 Some(Color32::TRANSPARENT), // Transparent to show parent surface
-                Some(Stroke::NONE), // No border for low-emphasis text button
+                Some(Stroke::NONE),         // No border for low-emphasis text button
                 CornerRadius::from(20),
                 false,
             ),
@@ -82,17 +83,32 @@ impl Widget for MaterialButton<'_> {
 
         // Load SVG textures early if provided (takes precedence over font icons)
         let leading_svg_texture = leading_svg.and_then(|svg_data| {
-            crate::image_utils::create_texture_from_svg(ui.ctx(), &svg_data, &format!("btn_lead_{}", svg_data.len())).ok()
+            crate::image_utils::create_texture_from_svg(
+                ui.ctx(),
+                &svg_data,
+                &format!("btn_lead_{}", svg_data.len()),
+            )
+            .ok()
         });
         let trailing_svg_texture = trailing_svg.and_then(|svg_data| {
-            crate::image_utils::create_texture_from_svg(ui.ctx(), &svg_data, &format!("btn_trail_{}", svg_data.len())).ok()
+            crate::image_utils::create_texture_from_svg(
+                ui.ctx(),
+                &svg_data,
+                &format!("btn_trail_{}", svg_data.len()),
+            )
+            .ok()
         });
 
         // Build icon galleys early (only if no SVG provided)
         let leading_icon_galley = if leading_svg_texture.is_none() {
             leading_icon.map(|name| {
                 let icon_str: WidgetText = material_symbol_text(&name).into();
-                icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
+                icon_str.into_galley(
+                    ui,
+                    Some(TextWrapMode::Extend),
+                    f32::INFINITY,
+                    TextStyle::Body,
+                )
             })
         } else {
             None
@@ -100,7 +116,12 @@ impl Widget for MaterialButton<'_> {
         let trailing_icon_galley = if trailing_svg_texture.is_none() {
             trailing_icon.map(|name| {
                 let icon_str: WidgetText = material_symbol_text(&name).into();
-                icon_str.into_galley(ui, Some(TextWrapMode::Extend), f32::INFINITY, TextStyle::Body)
+                icon_str.into_galley(
+                    ui,
+                    Some(TextWrapMode::Extend),
+                    f32::INFINITY,
+                    TextStyle::Body,
+                )
             })
         } else {
             None
@@ -112,7 +133,8 @@ impl Widget for MaterialButton<'_> {
         // With both icons: 16px left, 16px right
         // No icons: 24px left, 24px right
         // For small buttons: 4px (with icon) or 6px (without icon)
-        let has_leading = leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some();
+        let has_leading =
+            leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some();
         let has_trailing = trailing_icon_galley.is_some() || trailing_svg_texture.is_some();
         let padding_multiplier = if small { 0.25 } else { 1.0 };
         let padding_left = if has_leading { 16.0 } else { 24.0 } * padding_multiplier;
@@ -225,7 +247,9 @@ impl Widget for MaterialButton<'_> {
         }
 
         // Gap between leading content and text
-        if (leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some()) && galley.is_some() {
+        if (leading_icon_galley.is_some() || leading_svg_texture.is_some() || image.is_some())
+            && galley.is_some()
+        {
             desired_size.x += icon_spacing;
         }
 
@@ -236,14 +260,22 @@ impl Widget for MaterialButton<'_> {
 
         // Trailing icon (font or SVG)
         if let Some(tg) = &trailing_icon_galley {
-            if galley.is_some() || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
+            if galley.is_some()
+                || image.is_some()
+                || leading_icon_galley.is_some()
+                || leading_svg_texture.is_some()
+            {
                 desired_size.x += icon_spacing;
             }
             desired_size.x += tg.size().x;
             desired_size.y = desired_size.y.max(tg.size().y);
         }
         if trailing_svg_texture.is_some() {
-            if galley.is_some() || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
+            if galley.is_some()
+                || image.is_some()
+                || leading_icon_galley.is_some()
+                || leading_svg_texture.is_some()
+            {
                 desired_size.x += icon_spacing;
             }
             desired_size.x += svg_icon_size;
@@ -354,8 +386,7 @@ impl Widget for MaterialButton<'_> {
 
             // Draw leading icon (font icon)
             if let Some(leading_galley) = &leading_icon_galley {
-                let icon_y =
-                    content_rect_y_min + (content_height - leading_galley.size().y) / 2.0;
+                let icon_y = content_rect_y_min + (content_height - leading_galley.size().y) / 2.0;
                 let icon_pos = egui::pos2(cursor_x, icon_y);
                 ui.painter()
                     .galley(icon_pos, leading_galley.clone(), resolved_text_color);
@@ -365,10 +396,8 @@ impl Widget for MaterialButton<'_> {
             // Draw leading icon (SVG texture)
             if let Some(texture) = &leading_svg_texture {
                 let icon_y = content_rect_y_min + (content_height - svg_icon_size) / 2.0;
-                let icon_rect = Rect::from_min_size(
-                    egui::pos2(cursor_x, icon_y),
-                    Vec2::splat(svg_icon_size),
-                );
+                let icon_rect =
+                    Rect::from_min_size(egui::pos2(cursor_x, icon_y), Vec2::splat(svg_icon_size));
                 ui.painter().image(
                     texture.id(),
                     icon_rect,
@@ -377,7 +406,12 @@ impl Widget for MaterialButton<'_> {
                 );
                 cursor_x += svg_icon_size;
                 // Add spacing only if there's content after the icon
-                if image.is_some() || galley.is_some() || trailing_icon_galley.is_some() || trailing_svg_texture.is_some() || shortcut_galley.is_some() {
+                if image.is_some()
+                    || galley.is_some()
+                    || trailing_icon_galley.is_some()
+                    || trailing_svg_texture.is_some()
+                    || shortcut_galley.is_some()
+                {
                     cursor_x += icon_spacing;
                 }
             }
@@ -409,7 +443,9 @@ impl Widget for MaterialButton<'_> {
             // Draw main text
             let has_text = galley.is_some();
             if let Some(galley) = galley {
-                let text_y = content_rect_y_min + (content_height - galley.size().y) / 2.0 + if small { 1.0 } else { 0.0 };
+                let text_y = content_rect_y_min
+                    + (content_height - galley.size().y) / 2.0
+                    + if small { 1.0 } else { 0.0 };
                 let mut text_pos = egui::pos2(cursor_x, text_y);
                 // Center text if no leading/trailing elements
                 if leading_icon_galley.is_none()
@@ -424,14 +460,8 @@ impl Widget for MaterialButton<'_> {
                         .align_size_within_rect(
                             galley.size(),
                             Rect::from_min_max(
-                                egui::pos2(
-                                    rect.min.x + button_padding_left,
-                                    content_rect_y_min,
-                                ),
-                                egui::pos2(
-                                    rect.max.x - button_padding_right,
-                                    content_rect_y_max,
-                                ),
+                                egui::pos2(rect.min.x + button_padding_left, content_rect_y_min),
+                                egui::pos2(rect.max.x - button_padding_right, content_rect_y_max),
                             ),
                         )
                         .min;
@@ -444,8 +474,7 @@ impl Widget for MaterialButton<'_> {
             // Draw trailing icon (font icon)
             if let Some(trailing_galley) = &trailing_icon_galley {
                 cursor_x += icon_spacing;
-                let icon_y =
-                    content_rect_y_min + (content_height - trailing_galley.size().y) / 2.0;
+                let icon_y = content_rect_y_min + (content_height - trailing_galley.size().y) / 2.0;
                 let icon_pos = egui::pos2(cursor_x, icon_y);
                 ui.painter()
                     .galley(icon_pos, trailing_galley.clone(), resolved_text_color);
@@ -454,14 +483,16 @@ impl Widget for MaterialButton<'_> {
             // Draw trailing icon (SVG texture)
             if let Some(texture) = &trailing_svg_texture {
                 // Add spacing before the icon if there's content before it
-                if has_text || image.is_some() || leading_icon_galley.is_some() || leading_svg_texture.is_some() {
+                if has_text
+                    || image.is_some()
+                    || leading_icon_galley.is_some()
+                    || leading_svg_texture.is_some()
+                {
                     cursor_x += icon_spacing;
                 }
                 let icon_y = content_rect_y_min + (content_height - svg_icon_size) / 2.0;
-                let icon_rect = Rect::from_min_size(
-                    egui::pos2(cursor_x, icon_y),
-                    Vec2::splat(svg_icon_size),
-                );
+                let icon_rect =
+                    Rect::from_min_size(egui::pos2(cursor_x, icon_y), Vec2::splat(svg_icon_size));
                 ui.painter().image(
                     texture.id(),
                     icon_rect,
@@ -507,13 +538,17 @@ impl Widget for MaterialButton<'_> {
 /// Blend an overlay color on top of a base color with given opacity.
 fn blend_overlay(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
     let alpha = (opacity * 255.0) as u8;
-    let overlay_with_alpha = Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
+    let overlay_with_alpha =
+        Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
     // Simple alpha blending
     let inv_alpha = 255 - alpha;
     Color32::from_rgba_unmultiplied(
-        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255) as u8,
-        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255) as u8,
-        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255) as u8,
+        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255)
+            as u8,
+        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255)
+            as u8,
+        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255)
+            as u8,
         base.a(),
     )
 }

@@ -26,8 +26,8 @@
 //! - **Min touch target**: 48x48dp
 
 use crate::get_global_color;
-use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 use egui::epaint::CornerRadius;
+use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Material Design tabs component.
 ///
@@ -253,9 +253,11 @@ const ICON_FONT_SIZE: f32 = 18.0;
 impl<'a> Widget for MaterialTabs<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let has_icons = self.tabs.iter().any(|t| t.icon.is_some());
-        let tab_height = self
-            .height
-            .unwrap_or(if has_icons { TAB_HEIGHT_WITH_ICON } else { TAB_HEIGHT_TEXT_ONLY });
+        let tab_height = self.height.unwrap_or(if has_icons {
+            TAB_HEIGHT_WITH_ICON
+        } else {
+            TAB_HEIGHT_TEXT_ONLY
+        });
         let tab_width = ui.available_width() / self.tabs.len().max(1) as f32;
 
         let desired_size = Vec2::new(ui.available_width(), tab_height);
@@ -272,7 +274,7 @@ impl<'a> Widget for MaterialTabs<'a> {
         // Draw tab bar background based on variant
         let bg_color = match self.variant {
             TabVariant::Primary => surface_container, // Filled container for primary tabs
-            TabVariant::Secondary => surface, // Surface background for secondary tabs
+            TabVariant::Secondary => surface,         // Surface background for secondary tabs
         };
         ui.painter().rect_filled(rect, 0.0, bg_color);
 
@@ -390,8 +392,7 @@ impl<'a> Widget for MaterialTabs<'a> {
                             text_color,
                         );
                         let label_width = galley.size().x + 16.0; // add padding
-                        let indicator_x =
-                            tab_rect.center().x - label_width / 2.0;
+                        let indicator_x = tab_rect.center().x - label_width / 2.0;
                         let indicator_rect = Rect::from_min_size(
                             Pos2::new(indicator_x, tab_rect.max.y - PRIMARY_INDICATOR_HEIGHT),
                             Vec2::new(label_width, PRIMARY_INDICATOR_HEIGHT),
@@ -402,8 +403,7 @@ impl<'a> Widget for MaterialTabs<'a> {
                             sw: 0,
                             se: 0,
                         };
-                        ui.painter()
-                            .rect_filled(indicator_rect, rounding, primary);
+                        ui.painter().rect_filled(indicator_rect, rounding, primary);
                     }
                     TabVariant::Secondary => {
                         // M3: full tab width underline, primary color
@@ -411,8 +411,7 @@ impl<'a> Widget for MaterialTabs<'a> {
                             Pos2::new(tab_rect.min.x, tab_rect.max.y - SECONDARY_INDICATOR_HEIGHT),
                             Vec2::new(tab_width, SECONDARY_INDICATOR_HEIGHT),
                         );
-                        ui.painter()
-                            .rect_filled(indicator_rect, 0.0, primary);
+                        ui.painter().rect_filled(indicator_rect, 0.0, primary);
                     }
                 }
             }

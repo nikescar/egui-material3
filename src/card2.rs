@@ -255,7 +255,6 @@ impl<'a> MaterialCard2<'a> {
     /// Calculate surface tint overlay based on elevation level.
     /// Material 3 uses elevation levels: 0 (0%), 1 (5%), 2 (8%), 3 (11%), 4 (12%), 5 (14%)
     fn calculate_tint_overlay(&self, elevation: f32) -> f32 {
-        
         match elevation as i32 {
             0 => 0.0,
             1 => 0.05,
@@ -272,14 +271,19 @@ impl<'a> MaterialCard2<'a> {
             return base_color;
         }
 
-        let tint_color = self.surface_tint_color.unwrap_or_else(|| get_global_color("primary"));
+        let tint_color = self
+            .surface_tint_color
+            .unwrap_or_else(|| get_global_color("primary"));
         let tint_opacity = self.calculate_tint_overlay(elevation);
 
         // Blend tint color over base color
         Color32::from_rgba_premultiplied(
-            (base_color.r() as f32 * (1.0 - tint_opacity) + tint_color.r() as f32 * tint_opacity) as u8,
-            (base_color.g() as f32 * (1.0 - tint_opacity) + tint_color.g() as f32 * tint_opacity) as u8,
-            (base_color.b() as f32 * (1.0 - tint_opacity) + tint_color.b() as f32 * tint_opacity) as u8,
+            (base_color.r() as f32 * (1.0 - tint_opacity) + tint_color.r() as f32 * tint_opacity)
+                as u8,
+            (base_color.g() as f32 * (1.0 - tint_opacity) + tint_color.g() as f32 * tint_opacity)
+                as u8,
+            (base_color.b() as f32 * (1.0 - tint_opacity) + tint_color.b() as f32 * tint_opacity)
+                as u8,
             255,
         )
     }
@@ -294,8 +298,10 @@ impl<'a> Default for MaterialCard2<'a> {
 impl Widget for MaterialCard2<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let (base_color, stroke, elevation) = self.get_card_style();
-        let shadow_color = self.shadow_color.unwrap_or_else(|| get_global_color("shadow"));
-        
+        let shadow_color = self
+            .shadow_color
+            .unwrap_or_else(|| get_global_color("shadow"));
+
         // Apply surface tint overlay based on elevation
         let background_color = self.apply_surface_tint(base_color, elevation);
 
@@ -327,7 +333,11 @@ impl Widget for MaterialCard2<'_> {
         // Calculate total height based on content
         let header_height = if header_title.is_some() {
             // Reduced height for tighter spacing between header and content
-            if header_subtitle.is_some() { 60.0 } else { 44.0 }
+            if header_subtitle.is_some() {
+                60.0
+            } else {
+                44.0
+            }
         } else {
             0.0
         };
@@ -343,22 +353,14 @@ impl Widget for MaterialCard2<'_> {
         let card_size = Vec2::new(min_size.x, total_height.max(min_size.y));
 
         // Apply margin to available space
-        let available_with_margin = ui.available_size() - Vec2::new(
-            margin * 2.0,
-            margin * 2.0,
-        );
+        let available_with_margin = ui.available_size() - Vec2::new(margin * 2.0, margin * 2.0);
         let desired_size = available_with_margin.max(card_size);
-        
-        let (margin_rect, mut response) = ui.allocate_exact_size(desired_size + Vec2::new(
-            margin * 2.0,
-            margin * 2.0,
-        ), sense);
-        
+
+        let (margin_rect, mut response) =
+            ui.allocate_exact_size(desired_size + Vec2::new(margin * 2.0, margin * 2.0), sense);
+
         // Apply margin inset
-        let rect = Rect::from_min_size(
-            margin_rect.min + Vec2::new(margin, margin),
-            desired_size,
-        );
+        let rect = Rect::from_min_size(margin_rect.min + Vec2::new(margin, margin), desired_size);
 
         if ui.is_rect_visible(rect) {
             // Draw shadow based on elevation
@@ -366,11 +368,9 @@ impl Widget for MaterialCard2<'_> {
                 let shadow_offset = (elevation * 0.5).min(4.0);
                 let _shadow_blur = elevation * 0.5;
                 let shadow_alpha = (elevation * 3.0).min(30.0) as u8;
-                
-                let shadow_rect = Rect::from_min_size(
-                    rect.min + Vec2::new(0.0, shadow_offset),
-                    rect.size(),
-                );
+
+                let shadow_rect =
+                    Rect::from_min_size(rect.min + Vec2::new(0.0, shadow_offset), rect.size());
                 ui.painter().rect_filled(
                     shadow_rect,
                     corner_radius,
@@ -446,7 +446,7 @@ impl Widget for MaterialCard2<'_> {
                     // Enable clipping for media area
                     media_ui_builder = media_ui_builder.sense(Sense::hover());
                 }
-                
+
                 let media_response = ui.scope_builder(media_ui_builder, |ui| {
                     // Draw media background
                     ui.painter().rect_filled(

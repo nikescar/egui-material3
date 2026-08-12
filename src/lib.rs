@@ -241,27 +241,27 @@ pub mod dashcounter;
 pub mod datatable;
 pub mod dialog;
 pub mod drawer;
+#[cfg(feature = "spreadsheet")]
+pub mod egui_smol;
 pub mod fab;
 pub mod icon;
 pub mod iconbutton;
-pub mod material_symbol;
-pub mod noto_emoji;
-#[cfg(feature = "svg_emoji")]
-pub mod svg_emoji;
 pub mod image_utils;
 pub mod imagelist;
 pub mod layoutgrid;
 pub mod list;
+pub mod material_symbol;
 pub mod menu;
 pub mod notification;
+pub mod noto_emoji;
 pub mod progress;
 pub mod radio;
 pub mod select;
 pub mod slider;
 pub mod snackbar;
-#[cfg(feature = "spreadsheet")]
-pub mod egui_smol;
 pub mod spreadsheet;
+#[cfg(feature = "svg_emoji")]
+pub mod svg_emoji;
 pub mod switch;
 pub mod tabs;
 pub mod theme;
@@ -311,15 +311,25 @@ pub use {
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, VisualDensity},
     menu::{
-        menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData,
-        MenuButtonThemeData, MenuItem, MenuStyle, MenuThemeData, Positioning,
+        menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
+        MenuItem, MenuStyle, MenuThemeData, Positioning,
     },
-    notification::{notification, MaterialNotification, MaterialNotificationWithOffset, NotificationAlign},
+    notification::{
+        notification, MaterialNotification, MaterialNotificationWithOffset, NotificationAlign,
+    },
     progress::{circular_progress, linear_progress, MaterialProgress, ProgressVariant},
-    radio::{radio, radio_group, radio_list_tile, MaterialRadio, MaterialRadioGroup, RadioListTile, ListTileControlAffinity},
-    select::{select, MaterialSelect, SelectVariant, MenuAlignment},
-    slider::{slider, range_slider, MaterialSlider, MaterialRangeSlider, RangeValues, SliderInteraction, ThumbShape},
-    snackbar::{snackbar, snackbar_with_action, MaterialSnackbar, SnackbarPosition, SnackBarBehavior},
+    radio::{
+        radio, radio_group, radio_list_tile, ListTileControlAffinity, MaterialRadio,
+        MaterialRadioGroup, RadioListTile,
+    },
+    select::{select, MaterialSelect, MenuAlignment, SelectVariant},
+    slider::{
+        range_slider, slider, MaterialRangeSlider, MaterialSlider, RangeValues, SliderInteraction,
+        ThumbShape,
+    },
+    snackbar::{
+        snackbar, snackbar_with_action, MaterialSnackbar, SnackBarBehavior, SnackbarPosition,
+    },
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
     theme::{
@@ -331,7 +341,10 @@ pub use {
         TimelineItem, TimelinePosition,
     },
     toolbar::{toolbar, MaterialToolbar, ToolbarElevation},
-    tooltip::{show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip, MaterialTooltip, TooltipPosition},
+    tooltip::{
+        show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip,
+        MaterialTooltip, TooltipPosition,
+    },
     topappbar::{
         center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar,
         MaterialTopAppBar, TopAppBarVariant,

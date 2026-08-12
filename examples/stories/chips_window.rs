@@ -1,8 +1,11 @@
 #![doc(hidden)]
 
-use crate::{assist_chip, filter_chip, image_utils, input_chip, suggestion_chip, MaterialButton, MaterialCheckbox};
 #[cfg(feature = "svg_emoji")]
 use crate::svg_emoji::SOLAR_ICONS;
+use crate::{
+    assist_chip, filter_chip, image_utils, input_chip, suggestion_chip, MaterialButton,
+    MaterialCheckbox,
+};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -98,8 +101,8 @@ impl ChipsWindow {
 
         // Row 1: Enabled chips (matches Flutter component_screen.dart)
         ui.horizontal_wrapped(|ui| {
-            let mut chip = assist_chip(l("Assist"))
-                .leading_icon(image_utils::material_icons::EVENT);
+            let mut chip =
+                assist_chip(l("Assist")).leading_icon(image_utils::material_icons::EVENT);
             if elevated {
                 chip = chip.elevated(true);
             }
@@ -197,10 +200,7 @@ impl ChipsWindow {
             ui.add_space(8.0);
 
             // With SVG icon (Google logo)
-            ui.add(
-                assist_chip(l("Assist link"))
-                    .leading_icon_svg(image_utils::GOOGLE_LOGO_SVG),
-            );
+            ui.add(assist_chip(l("Assist link")).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG));
             ui.add_space(8.0);
 
             // Elevated
@@ -283,7 +283,10 @@ impl ChipsWindow {
 
         ui.horizontal_wrapped(|ui| {
             // Basic filter chip
-            ui.add(filter_chip(l("Filter chip"), &mut self.filter_icon_selected));
+            ui.add(filter_chip(
+                l("Filter chip"),
+                &mut self.filter_icon_selected,
+            ));
             ui.add_space(8.0);
 
             // With leading icon
@@ -432,9 +435,7 @@ impl ChipsWindow {
             ui.add_space(8.0);
 
             // With Google logo link
-            ui.add(
-                input_chip(l("Input link")).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG),
-            );
+            ui.add(input_chip(l("Input link")).leading_icon_svg(image_utils::GOOGLE_LOGO_SVG));
             ui.add_space(8.0);
 
             // Removable

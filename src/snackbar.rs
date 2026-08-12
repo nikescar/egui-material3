@@ -455,7 +455,7 @@ impl Widget for MaterialSnackbar<'_> {
             + action_padding.x;
         let min_width = 344.0;
         let max_width = 672.0;
-        
+
         // Apply custom width if specified (floating only)
         let snackbar_width = if let Some(custom_width) = width {
             if is_floating {
@@ -487,20 +487,20 @@ impl Widget for MaterialSnackbar<'_> {
 
         // Calculate position
         let screen_rect = ui.ctx().content_rect();
-        
+
         // Apply margin for floating behavior
         let effective_margin = if is_floating {
             margin.unwrap_or(Vec2::new(24.0, 16.0))
         } else {
             Vec2::ZERO
         };
-        
+
         let snackbar_x = if is_floating {
             (screen_rect.width() - snackbar_size.x).max(0.0) / 2.0
         } else {
             0.0
         };
-        
+
         let snackbar_y = match position {
             SnackbarPosition::Bottom => {
                 if is_floating {
@@ -745,7 +745,7 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             + action_padding.x;
         let min_width = 344.0;
         let max_width = 672.0;
-        
+
         // Apply custom width if specified (floating only)
         let snackbar_width = if let Some(custom_width) = width {
             if is_floating {
@@ -777,24 +777,28 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
 
         // Calculate position with vertical offset for stacking
         let screen_rect = ui.ctx().content_rect();
-        
+
         // Apply margin for floating behavior
         let effective_margin = if is_floating {
             margin.unwrap_or(Vec2::new(24.0, 16.0))
         } else {
             Vec2::ZERO
         };
-        
+
         let snackbar_x = if is_floating {
             (screen_rect.width() - snackbar_size.x).max(0.0) / 2.0
         } else {
             0.0
         };
-        
+
         let snackbar_y = match position {
             SnackbarPosition::Bottom => {
                 if is_floating {
-                    screen_rect.height() - snackbar_size.y - effective_margin.y - 32.0 - self.vertical_offset
+                    screen_rect.height()
+                        - snackbar_size.y
+                        - effective_margin.y
+                        - 32.0
+                        - self.vertical_offset
                 } else {
                     screen_rect.height() - snackbar_size.y - self.vertical_offset
                 }
@@ -859,17 +863,19 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
                 current_x,
                 snackbar_rect.center().y - icon_galley.size().y / 2.0,
             );
-            ui.painter().galley(icon_pos, icon_galley.clone(), label_text_color);
+            ui.painter()
+                .galley(icon_pos, icon_galley.clone(), label_text_color);
             current_x += icon_galley.size().x + 16.0; // icon + spacing
         }
 
         // Draw message text
         let text_pos = egui::pos2(current_x, snackbar_rect.min.y + label_padding.y);
-        ui.painter().galley(text_pos, text_galley.clone(), label_text_color);
+        ui.painter()
+            .galley(text_pos, text_galley.clone(), label_text_color);
 
         // Calculate action and close icon area width
         let action_and_icon_width = action_width + close_icon_width;
-        let will_overflow_action = 
+        let will_overflow_action =
             action_and_icon_width / snackbar_width > action_overflow_threshold;
 
         // Handle action button if present
@@ -934,12 +940,9 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
         let mut close_clicked = false;
         if show_close_icon {
             let close_icon_color = close_icon_color.unwrap_or(default_close_icon_color);
-            
+
             let close_rect = Rect::from_min_size(
-                egui::pos2(
-                    snackbar_rect.max.x - 40.0,
-                    snackbar_rect.center().y - 20.0,
-                ),
+                egui::pos2(snackbar_rect.max.x - 40.0, snackbar_rect.center().y - 20.0),
                 Vec2::new(40.0, 40.0),
             );
 

@@ -9,8 +9,8 @@
 //! - **onSurfaceVariant**: Category text
 
 use crate::get_global_color;
-use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
 use egui::epaint::CornerRadius;
+use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
 
 /// A Material Design 3 Dashboard Counter component.
 ///
@@ -292,7 +292,10 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
 
         // Title height + card area height + bottom padding
         let title_height = 30.0;
-        let desired_size = Vec2::new(available_width, title_height + self.height + self.padding * 2.0);
+        let desired_size = Vec2::new(
+            available_width,
+            title_height + self.height + self.padding * 2.0,
+        );
 
         let (outer_rect, mut response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
@@ -306,24 +309,37 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
         let outline = get_global_color("outline");
 
         // Use custom colors if provided, otherwise use theme defaults
-        let category_color = self.category_color.unwrap_or_else(|| get_global_color("onSurfaceVariant"));
-        let counter_color = self.counter_color.unwrap_or_else(|| get_global_color("primary"));
-        let description_color = self.description_color.unwrap_or_else(|| get_global_color("onSurfaceVariant"));
+        let category_color = self
+            .category_color
+            .unwrap_or_else(|| get_global_color("onSurfaceVariant"));
+        let counter_color = self
+            .counter_color
+            .unwrap_or_else(|| get_global_color("primary"));
+        let description_color = self
+            .description_color
+            .unwrap_or_else(|| get_global_color("onSurfaceVariant"));
 
         let painter = ui.painter_at(outer_rect);
 
         // Draw title area with optional custom UI
         let title_rect = Rect::from_min_size(
-            Pos2::new(outer_rect.left() + self.padding, outer_rect.top() + self.padding),
+            Pos2::new(
+                outer_rect.left() + self.padding,
+                outer_rect.top() + self.padding,
+            ),
             Vec2::new(available_width - self.padding * 2.0, title_height),
         );
 
         let mut title_ui = ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(title_rect)
-                .layout(egui::Layout::left_to_right(egui::Align::BOTTOM))
+                .layout(egui::Layout::left_to_right(egui::Align::BOTTOM)),
         );
-        title_ui.label(egui::RichText::new(&self.title).size(18.0).color(on_surface));
+        title_ui.label(
+            egui::RichText::new(&self.title)
+                .size(18.0)
+                .color(on_surface),
+        );
 
         // Call custom title UI callback if provided
         if let Some(mut callback) = self.title_ui {
@@ -370,8 +386,10 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
         let scroll = *self.scroll_offset;
 
         // Determine visible card range
-        let first_visible = ((scroll / card_step).floor() as usize).min(card_count.saturating_sub(1));
-        let last_visible = (((scroll + available_width) / card_step).ceil() as usize).min(card_count);
+        let first_visible =
+            ((scroll / card_step).floor() as usize).min(card_count.saturating_sub(1));
+        let last_visible =
+            (((scroll + available_width) / card_step).ceil() as usize).min(card_count);
 
         // Draw cards
         for i in first_visible..last_visible {
@@ -405,7 +423,8 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             let content_padding = 12.0;
 
             // Check if this card has any descriptions
-            let has_descriptions = card.sub_description.is_some() || card.total_description.is_some();
+            let has_descriptions =
+                card.sub_description.is_some() || card.total_description.is_some();
 
             // Determine colors for this card: card-specific > control-level > theme default
             let card_category_color = card.category_color.unwrap_or(category_color);
@@ -413,11 +432,11 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             let card_description_color = card.description_color.unwrap_or(description_color);
 
             // Calculate total content height for vertical centering
-            let category_height = 15.0;  // Approximate height for 12pt font
-            let gap_after_category = 10.0;  // Space between category and counter
-            let counter_height = 32.0;  // Approximate height for 32pt font
-            let desc_gap = 3.0;  // Gap before descriptions
-            let desc_height = 12.0;  // Approximate height for 10pt font
+            let category_height = 15.0; // Approximate height for 12pt font
+            let gap_after_category = 10.0; // Space between category and counter
+            let counter_height = 32.0; // Approximate height for 32pt font
+            let desc_gap = 3.0; // Gap before descriptions
+            let desc_height = 12.0; // Approximate height for 10pt font
 
             let total_content_height = if has_descriptions {
                 category_height + gap_after_category + counter_height + desc_gap + desc_height
@@ -451,8 +470,10 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             let total_font = FontId::proportional(20.0);
             let desc_font = FontId::proportional(10.0);
 
-            let sub_galley = painter.layout_no_wrap(sub_text.clone(), sub_font.clone(), card_counter_color);
-            let total_galley = painter.layout_no_wrap(total_text.clone(), total_font.clone(), card_counter_color);
+            let sub_galley =
+                painter.layout_no_wrap(sub_text.clone(), sub_font.clone(), card_counter_color);
+            let total_galley =
+                painter.layout_no_wrap(total_text.clone(), total_font.clone(), card_counter_color);
 
             let total_width = sub_galley.rect.width() + total_galley.rect.width();
             let start_x = card_rect.center().x - total_width / 2.0;
@@ -482,8 +503,8 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
 
             // Draw descriptions below their respective numbers (only if they exist)
             if has_descriptions {
-                let desc_y = counter_y + desc_gap;  // Position below the counter (counter_y is now bottom of counter)
-                let desc_padding = 4.0;  // Small padding between the two descriptions
+                let desc_y = counter_y + desc_gap; // Position below the counter (counter_y is now bottom of counter)
+                let desc_padding = 4.0; // Small padding between the two descriptions
 
                 // If both descriptions exist, center them as a pair
                 if card.sub_description.is_some() && card.total_description.is_some() {
@@ -491,11 +512,21 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                     let total_desc = card.total_description.as_ref().unwrap();
 
                     // Measure description text widths
-                    let sub_desc_galley = painter.layout_no_wrap(sub_desc.clone(), desc_font.clone(), card_description_color);
-                    let total_desc_galley = painter.layout_no_wrap(total_desc.clone(), desc_font.clone(), card_description_color);
+                    let sub_desc_galley = painter.layout_no_wrap(
+                        sub_desc.clone(),
+                        desc_font.clone(),
+                        card_description_color,
+                    );
+                    let total_desc_galley = painter.layout_no_wrap(
+                        total_desc.clone(),
+                        desc_font.clone(),
+                        card_description_color,
+                    );
 
                     // Calculate total width and center position
-                    let total_desc_width = sub_desc_galley.rect.width() + desc_padding + total_desc_galley.rect.width();
+                    let total_desc_width = sub_desc_galley.rect.width()
+                        + desc_padding
+                        + total_desc_galley.rect.width();
                     let desc_start_x = card_rect.center().x - total_desc_width / 2.0;
 
                     // Draw left description (extends rightward from start)
@@ -509,7 +540,10 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
 
                     // Draw right description (extends rightward after padding)
                     painter.text(
-                        Pos2::new(desc_start_x + sub_desc_galley.rect.width() + desc_padding, desc_y),
+                        Pos2::new(
+                            desc_start_x + sub_desc_galley.rect.width() + desc_padding,
+                            desc_y,
+                        ),
                         egui::Align2::LEFT_TOP,
                         total_desc,
                         desc_font.clone(),
@@ -583,6 +617,9 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
 ///     .card("Pending", 7, 15));
 /// # });
 /// ```
-pub fn dashcounter<'a>(title: impl Into<String>, scroll_offset: &'a mut f32) -> MaterialDashCounter<'a> {
+pub fn dashcounter<'a>(
+    title: impl Into<String>,
+    scroll_offset: &'a mut f32,
+) -> MaterialDashCounter<'a> {
     MaterialDashCounter::new(title, scroll_offset)
 }
