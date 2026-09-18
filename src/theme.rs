@@ -1624,17 +1624,12 @@ where
     let shadow = theme.get_color_by_name("shadow");
 
     // === Selection colors ===
-    // Use semi-transparent primary for text selection (30% alpha)
-    // Egui doesn't support separate text color for selections, so we use
-    // a transparent overlay that creates a tint while keeping text readable.
-    // This is the standard Material Design approach for text selection.
-    visuals.selection.bg_fill = Color32::from_rgba_unmultiplied(
-        primary.r(),
-        primary.g(),
-        primary.b(),
-        77, // 30% alpha (0.3 * 255)
-    );
-    visuals.selection.stroke.color = primary;
+    // CRITICAL: egui's selection rendering doesn't support alpha transparency!
+    // We MUST use a solid color that contrasts with on_surface text.
+    // Use inverse_surface which is specifically designed to contrast with
+    // on_surface in Material 3 color system (light bg in dark theme, dark bg in light theme).
+    visuals.selection.bg_fill = inverse_surface;
+    visuals.selection.stroke.color = inverse_primary;
 
     // === Hyperlink ===
     visuals.hyperlink_color = primary;
