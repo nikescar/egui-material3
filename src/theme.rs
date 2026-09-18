@@ -1624,10 +1624,16 @@ where
     let shadow = theme.get_color_by_name("shadow");
 
     // === Selection colors ===
-    // Use primary_container instead of primary for text selection background
-    // because egui doesn't support separate text color for selections.
-    // primary_container provides good contrast with on_surface text color.
-    visuals.selection.bg_fill = primary_container;
+    // Use semi-transparent primary for text selection (30% alpha)
+    // Egui doesn't support separate text color for selections, so we use
+    // a transparent overlay that creates a tint while keeping text readable.
+    // This is the standard Material Design approach for text selection.
+    visuals.selection.bg_fill = Color32::from_rgba_unmultiplied(
+        primary.r(),
+        primary.g(),
+        primary.b(),
+        77, // 30% alpha (0.3 * 255)
+    );
     visuals.selection.stroke.color = primary;
 
     // === Hyperlink ===
