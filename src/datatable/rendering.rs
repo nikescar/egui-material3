@@ -1057,6 +1057,11 @@ impl<'a> MaterialDataTable<'a> {
                                     ui.set_clip_rect(old_clip_rect);
                                 }
                                 CellContent::Widget(widget_fn) => {
+                                    // Save current clip rect and set clipping to cell bounds
+                                    let old_clip_rect = ui.clip_rect();
+                                    let cell_clip_rect = cell_rect.intersect(old_clip_rect);
+                                    ui.set_clip_rect(cell_clip_rect);
+
                                     // Render custom widget
                                     // Calculate widget rect based on alignment
                                     let padding = 8.0;
@@ -1111,6 +1116,9 @@ impl<'a> MaterialDataTable<'a> {
                                             };
                                         },
                                     );
+
+                                    // Restore original clip rect
+                                    ui.set_clip_rect(old_clip_rect);
                                 }
                             }
                         }
