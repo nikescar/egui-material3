@@ -265,11 +265,6 @@ impl MaterialApp {
         // Apply colors to visuals - use inverse_surface for selection to contrast with on_surface text
         visuals.selection.bg_fill = inverse_surface;
         visuals.selection.stroke.color = inverse_primary;
-
-        eprintln!("=== EXAMPLE SELECTION COLORS ===");
-        eprintln!("selection.bg_fill (inverse_surface): {:?}", inverse_surface);
-        eprintln!("text (on_surface): {:?}", on_surface);
-        eprintln!("================================");
         visuals.hyperlink_color = primary_color;
 
         // Button and widget colors

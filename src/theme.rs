@@ -1631,14 +1631,6 @@ where
     visuals.selection.bg_fill = inverse_surface;
     visuals.selection.stroke.color = inverse_primary;
 
-    // DEBUG: Print actual colors being used
-    eprintln!("=== SELECTION COLORS DEBUG ===");
-    eprintln!("selection.bg_fill (inverse_surface): {:?}", inverse_surface);
-    eprintln!("text color (on_surface): {:?}", on_surface);
-    eprintln!("inverse_primary: {:?}", inverse_primary);
-    eprintln!("primary: {:?}", primary);
-    eprintln!("================================");
-
     // === Hyperlink ===
     visuals.hyperlink_color = primary;
 
