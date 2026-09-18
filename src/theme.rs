@@ -1624,7 +1624,10 @@ where
     let shadow = theme.get_color_by_name("shadow");
 
     // === Selection colors ===
-    visuals.selection.bg_fill = primary;
+    // Use primary_container instead of primary for text selection background
+    // because egui doesn't support separate text color for selections.
+    // primary_container provides good contrast with on_surface text color.
+    visuals.selection.bg_fill = primary_container;
     visuals.selection.stroke.color = primary;
 
     // === Hyperlink ===
