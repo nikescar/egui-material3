@@ -256,13 +256,20 @@ impl MaterialApp {
         let primary_color = theme.get_primary_color();
         let on_primary = theme.get_on_primary_color();
         let surface = theme.get_surface_color(visuals.dark_mode);
-        let _on_surface = theme.get_color_by_name("onSurface");
+        let on_surface = theme.get_color_by_name("onSurface");
         let _background = theme.get_color_by_name("background");
         let _on_background = theme.get_color_by_name("onBackground");
+        let inverse_surface = theme.get_color_by_name("inverseSurface");
+        let inverse_primary = theme.get_color_by_name("inversePrimary");
 
-        // Apply colors to visuals
-        visuals.selection.bg_fill = primary_color;
-        visuals.selection.stroke.color = primary_color;
+        // Apply colors to visuals - use inverse_surface for selection to contrast with on_surface text
+        visuals.selection.bg_fill = inverse_surface;
+        visuals.selection.stroke.color = inverse_primary;
+
+        eprintln!("=== EXAMPLE SELECTION COLORS ===");
+        eprintln!("selection.bg_fill (inverse_surface): {:?}", inverse_surface);
+        eprintln!("text (on_surface): {:?}", on_surface);
+        eprintln!("================================");
         visuals.hyperlink_color = primary_color;
 
         // Button and widget colors
