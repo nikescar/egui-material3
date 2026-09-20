@@ -619,8 +619,9 @@ impl<'a> Widget for MaterialSelect<'a> {
         // Use consistent font styling for select field
         let select_font = FontId::new(16.0, FontFamily::Proportional);
         let text_y_offset = if should_show_label && should_float_label {
-            // Compact mode: minimal offset (3px), standard: 12px
-            if self.compact { 3.0 } else { 12.0 }
+            // Compact mode: 6.5px offset centers text in space below label
+            // Standard mode: 12px offset centers text in space below label
+            if self.compact { 6.5 } else { 12.0 }
         } else {
             0.0
         };
