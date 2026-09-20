@@ -99,6 +99,8 @@ pub struct MaterialSelect<'a> {
     border_radius: Option<f32>,
     /// Menu alignment
     menu_alignment: MenuAlignment,
+    /// Enable compact mode with minimal padding
+    compact: bool,
 }
 
 /// Individual option in a select component.
@@ -144,6 +146,7 @@ impl<'a> MaterialSelect<'a> {
             menu_max_height: None,
             border_radius: None,
             menu_alignment: MenuAlignment::default(),
+            compact: false,
         }
     }
 
@@ -413,12 +416,36 @@ impl<'a> MaterialSelect<'a> {
         self.menu_alignment = alignment;
         self
     }
+
+    /// Enable compact mode with minimal padding.
+    ///
+    /// Compact mode reduces vertical padding to create a smaller select component
+    /// with height closer to the text height. Useful for inline selections, data tables,
+    /// or space-constrained UIs.
+    ///
+    /// # Arguments
+    /// * `compact` - If true, uses minimal padding; if false, uses standard Material Design padding
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut selection = None;
+    /// ui.add(MaterialSelect::new(&mut selection)
+    ///     .compact(true)); // Compact mode with minimal height
+    /// # });
+    /// ```
+    pub fn compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
 }
 
 impl<'a> Widget for MaterialSelect<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let width = self.width.unwrap_or(200.0);
-        let height = 56.0;
+        // Standard Material Design height: 56.0
+        // Compact mode: ~32.0 (closer to text height with minimal padding)
+        let height = if self.compact { 32.0 } else { 56.0 };
         let desired_size = Vec2::new(width, height);
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
@@ -562,7 +589,9 @@ impl<'a> Widget for MaterialSelect<'a> {
             };
 
             let label_pos = if should_float_label {
-                Pos2::new(rect.min.x + 16.0, rect.min.y + 8.0)
+                // Compact mode: minimal top padding (1px), standard: 8px
+                let top_padding = if self.compact { 1.0 } else { 8.0 };
+                Pos2::new(rect.min.x + 16.0, rect.min.y + top_padding)
             } else {
                 Pos2::new(rect.min.x + 16.0, rect.center().y)
             };
@@ -590,7 +619,8 @@ impl<'a> Widget for MaterialSelect<'a> {
         // Use consistent font styling for select field
         let select_font = FontId::new(16.0, FontFamily::Proportional);
         let text_y_offset = if should_show_label && should_float_label {
-            12.0
+            // Compact mode: minimal offset (3px), standard: 12px
+            if self.compact { 3.0 } else { 12.0 }
         } else {
             0.0
         };

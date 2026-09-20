@@ -40,6 +40,9 @@ pub struct SelectWindow {
     variant_demo_outlined: Option<usize>,
     validation_demo: Option<usize>,
     custom_style_demo: Option<usize>,
+    // Compact mode examples
+    compact_filled: Option<usize>,
+    compact_outlined: Option<usize>,
 }
 
 impl Default for SelectWindow {
@@ -80,6 +83,9 @@ impl Default for SelectWindow {
             variant_demo_outlined: Some(1),
             validation_demo: None,
             custom_style_demo: Some(2),
+            // Compact mode examples
+            compact_filled: Some(1),
+            compact_outlined: Some(1),
         }
     }
 }
@@ -101,6 +107,8 @@ impl SelectWindow {
                     self.render_select_examples(ui);
                     ui.add_space(20.0);
                     self.render_validation_examples(ui);
+                    ui.add_space(20.0);
+                    self.render_compact_examples(ui);
                     ui.add_space(20.0);
                     self.render_special_examples(ui);
                 });
@@ -545,6 +553,88 @@ impl SelectWindow {
                 ui.label(format!("Many Options: {:?}", self.many_options_select));
             });
         }); // Close push_id block
+    }
+
+    fn render_compact_examples(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Compact Mode - Minimal Height");
+
+        ui.push_id("compact_examples", |ui| {
+            ui.label("Compact mode reduces vertical padding for space-constrained UIs, data tables, and inline selections.");
+
+            ui.add_space(10.0);
+
+            ui.horizontal(|ui| {
+                // Standard Filled
+                ui.vertical(|ui| {
+                    ui.label("Standard Filled:");
+                    let filled_select = select(&mut self.filled_select_value)
+                        .variant(SelectVariant::Filled)
+                        .label("Fruit")
+                        .option(0, "")
+                        .option(1, "Apple")
+                        .option(2, "Banana")
+                        .option(3, "Cherry")
+                        .width(200.0);
+
+                    ui.add(filled_select);
+                });
+
+                ui.add_space(20.0);
+
+                // Compact Filled
+                ui.vertical(|ui| {
+                    ui.label("Compact Filled:");
+                    let compact_filled = select(&mut self.compact_filled)
+                        .variant(SelectVariant::Filled)
+                        .label("Fruit")
+                        .option(0, "")
+                        .option(1, "Apple")
+                        .option(2, "Banana")
+                        .option(3, "Cherry")
+                        .compact(true)
+                        .width(200.0);
+
+                    ui.add(compact_filled);
+                });
+            });
+
+            ui.add_space(10.0);
+
+            ui.horizontal(|ui| {
+                // Standard Outlined
+                ui.vertical(|ui| {
+                    ui.label("Standard Outlined:");
+                    let outlined_select = select(&mut self.outlined_select_value)
+                        .variant(SelectVariant::Outlined)
+                        .label("Fruit")
+                        .option(0, "")
+                        .option(1, "Apple")
+                        .option(2, "Banana")
+                        .option(3, "Cherry")
+                        .width(200.0);
+
+                    ui.add(outlined_select);
+                });
+
+                ui.add_space(20.0);
+
+                // Compact Outlined
+                ui.vertical(|ui| {
+                    ui.label("Compact Outlined:");
+                    let compact_outlined = select(&mut self.compact_outlined)
+                        .variant(SelectVariant::Outlined)
+                        .label("Fruit")
+                        .option(0, "")
+                        .option(1, "Apple")
+                        .option(2, "Banana")
+                        .option(3, "Cherry")
+                        .compact(true)
+                        .width(200.0);
+
+                    ui.add(compact_outlined);
+                });
+            });
+        });
     }
 
     fn render_special_examples(&mut self, ui: &mut egui::Ui) {
