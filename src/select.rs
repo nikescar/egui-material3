@@ -632,7 +632,13 @@ impl<'a> Widget for MaterialSelect<'a> {
             text_color
         };
 
-        ui.painter().text(
+        // Clip text to prevent overflow - leave space for dropdown arrow
+        let text_clip_rect = Rect::from_min_max(
+            Pos2::new(rect.min.x + 16.0, rect.min.y),
+            Pos2::new(rect.max.x - 48.0, rect.max.y), // 48px space for arrow
+        );
+
+        ui.painter().with_clip_rect(text_clip_rect).text(
             text_pos,
             egui::Align2::LEFT_CENTER,
             display_text,
