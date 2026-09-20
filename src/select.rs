@@ -810,44 +810,14 @@ impl<'a> Widget for MaterialSelect<'a> {
                                 .auto_shrink([false; 2])
                                 .show(ui, |ui| {
                                     for option in &options {
-                                        // Calculate text layout first to determine actual height needed
-                                        let available_width = ui.available_width() - 32.0;
+                                        // Fixed height for all options - no text wrapping
+                                        let option_height = 48.0;
                                         let is_selected = *selected == Some(option.value);
                                         let text_color = if is_selected {
                                             get_global_color("primary")
                                         } else {
                                             on_surface
                                         };
-
-                                        let galley =
-                                            ui.painter().layout_job(egui::text::LayoutJob {
-                                                text: option.text.clone(),
-                                                sections: vec![egui::text::LayoutSection {
-                                                    leading_space: 0.0,
-                                                    byte_range: 0..option.text.len(),
-                                                    format: egui::TextFormat {
-                                                        font_id: select_font.clone(),
-                                                        color: text_color,
-                                                        ..Default::default()
-                                                    },
-                                                }],
-                                                wrap: egui::text::TextWrapping {
-                                                    max_width: available_width,
-                                                    ..Default::default()
-                                                },
-                                                break_on_newline: true,
-                                                halign: egui::Align::LEFT,
-                                                justify: false,
-                                                first_row_min_height: 0.0,
-                                                round_output_to_gui: true,
-                                            });
-
-                                        // Use actual text height + padding, with minimum of 48.0
-                                        let min_height = 48.0;
-                                        let text_height = galley.size().y;
-                                        let vertical_padding = 12.0;
-                                        let option_height =
-                                            (text_height + vertical_padding).max(min_height);
 
                                         let (option_rect, option_response) = ui
                                             .allocate_exact_size(
@@ -881,11 +851,23 @@ impl<'a> Widget for MaterialSelect<'a> {
                                             );
                                         }
 
+                                        // Clip text to option bounds
+                                        let text_clip_rect = Rect::from_min_max(
+                                            Pos2::new(option_rect.min.x + 16.0, option_rect.min.y),
+                                            Pos2::new(option_rect.max.x - 16.0, option_rect.max.y),
+                                        );
+
                                         let text_pos = Pos2::new(
                                             option_rect.min.x + 16.0,
-                                            option_rect.center().y - text_height / 2.0,
+                                            option_rect.center().y,
                                         );
-                                        ui.painter().galley(text_pos, galley, text_color);
+                                        ui.painter().with_clip_rect(text_clip_rect).text(
+                                            text_pos,
+                                            egui::Align2::LEFT_CENTER,
+                                            &option.text,
+                                            select_font.clone(),
+                                            text_color,
+                                        );
 
                                         if option_response.clicked() {
                                             *selected = Some(option.value);
@@ -908,42 +890,14 @@ impl<'a> Widget for MaterialSelect<'a> {
                         let items_to_show = visible_items.min(options.len());
 
                         for option in options.iter().take(items_to_show) {
-                            // Calculate text layout first to determine actual height needed
+                            // Fixed height for all options - no text wrapping
+                            let option_height = 48.0;
                             let is_selected = *selected == Some(option.value);
                             let text_color = if is_selected {
                                 get_global_color("primary")
                             } else {
                                 on_surface
                             };
-
-                            let available_width = menu_width - 16.0 - 32.0;
-                            let galley = ui.painter().layout_job(egui::text::LayoutJob {
-                                text: option.text.clone(),
-                                sections: vec![egui::text::LayoutSection {
-                                    leading_space: 0.0,
-                                    byte_range: 0..option.text.len(),
-                                    format: egui::TextFormat {
-                                        font_id: select_font.clone(),
-                                        color: text_color,
-                                        ..Default::default()
-                                    },
-                                }],
-                                wrap: egui::text::TextWrapping {
-                                    max_width: available_width,
-                                    ..Default::default()
-                                },
-                                break_on_newline: true,
-                                halign: egui::Align::LEFT,
-                                justify: false,
-                                first_row_min_height: 0.0,
-                                round_output_to_gui: true,
-                            });
-
-                            // Use actual text height + padding, with minimum of 48.0
-                            let min_height = 48.0;
-                            let text_height = galley.size().y;
-                            let vertical_padding = 12.0;
-                            let option_height = (text_height + vertical_padding).max(min_height);
 
                             let option_rect = Rect::from_min_size(
                                 Pos2::new(dropdown_rect.min.x + 8.0, current_y),
@@ -990,11 +944,23 @@ impl<'a> Widget for MaterialSelect<'a> {
                                 response.mark_changed();
                             }
 
+                            // Clip text to option bounds
+                            let text_clip_rect = Rect::from_min_max(
+                                Pos2::new(option_rect.min.x + 16.0, option_rect.min.y),
+                                Pos2::new(option_rect.max.x - 16.0, option_rect.max.y),
+                            );
+
                             let text_pos = Pos2::new(
                                 option_rect.min.x + 16.0,
-                                option_rect.center().y - text_height / 2.0,
+                                option_rect.center().y,
                             );
-                            ui.painter().galley(text_pos, galley, text_color);
+                            ui.painter().with_clip_rect(text_clip_rect).text(
+                                text_pos,
+                                egui::Align2::LEFT_CENTER,
+                                &option.text,
+                                select_font.clone(),
+                                text_color,
+                            );
 
                             current_y += option_height;
                         }
