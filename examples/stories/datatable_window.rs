@@ -1021,6 +1021,70 @@ impl DataTableWindow {
             });
 
         ui.add(mixed_drawer_table);
+
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Data Table with Static Height Drawer");
+        ui.label("Drawer panels with fixed height constraint (120px). Long content will clip or scroll.");
+
+        let static_drawer_table = data_table()
+            .id(Id::new("static_drawer_table"))
+            .allow_drawer(true)
+            .drawer_row_height(120.0)  // Fixed height for all drawers
+            .column("Product", 180.0, false)
+            .column("Category", 120.0, false)
+            .column("Status", 100.0, false)
+            .row(|row| {
+                row.cell("Smart Watch")
+                   .cell("Electronics")
+                   .cell("In Stock")
+                   .drawer(|ui| {
+                       ui.add_space(8.0);
+                       ui.label("Short content that fits within 120px height constraint.");
+                       ui.label("SKU: WATCH-123 · Battery: 48h · Water resistant: 5ATM");
+                   })
+            })
+            .row(|row| {
+                row.cell("Running Shoes")
+                   .cell("Sports")
+                   .cell("Low Stock")
+                   .drawer(|ui| {
+                       ui.add_space(8.0);
+                       ui.label("Medium length content in fixed-height drawer.");
+                       ui.label("SKU: SHOE-456 · Sizes: 7-12 · Color: Black/White");
+                       ui.label("Material: Breathable mesh · Weight: 280g");
+                       ui.label("Cushioning: EVA foam · Warranty: 6 months");
+                   })
+            })
+            .row(|row| {
+                row.cell("Coffee Maker")
+                   .cell("Appliances")
+                   .cell("Available")
+                   .drawer(|ui| {
+                       ui.add_space(8.0);
+                       ui.label("Very long content that exceeds the 120px height limit.");
+                       ui.label("This drawer demonstrates what happens when content is taller than the fixed height.");
+                       ui.label("SKU: COFFEE-789 · Capacity: 1.5L · Power: 1200W");
+                       ui.label("Features: Programmable timer, auto shut-off, keep warm function");
+                       ui.label("Material: Stainless steel · Color: Silver");
+                       ui.label("Dimensions: 25x20x35cm · Weight: 2.1kg");
+                       ui.label("Warranty: 2 years · Origin: Germany");
+                       ui.label("This content will be constrained by the 120px height limit.");
+                   })
+            })
+            .row(|row| {
+                row.cell("Desk Lamp")
+                   .cell("Lighting")
+                   .cell("Available")
+                   .drawer(|ui| {
+                       ui.add_space(8.0);
+                       ui.label("Minimal content - just one line.");
+                   })
+            });
+
+        ui.add(static_drawer_table);
+        ui.add_space(10.0);
+        ui.label("Note: All drawers have fixed 120px height. Compare with auto-sizing drawers above.");
         });
     }
 }
