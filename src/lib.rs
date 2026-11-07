@@ -248,6 +248,7 @@ pub mod icon;
 pub mod iconbutton;
 pub mod image_utils;
 pub mod imagelist;
+pub mod input;
 pub mod layoutgrid;
 pub mod list;
 pub mod material_symbol;
@@ -308,6 +309,7 @@ pub use {
         image_list, masonry_image_list, woven_image_list, ImageListItem, ImageListVariant,
         MaterialImageList,
     },
+    input::{InputVariant, MaterialInput},
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, VisualDensity},
     menu::{
