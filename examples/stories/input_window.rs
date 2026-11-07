@@ -50,6 +50,9 @@ pub struct InputWindow {
     email_field: String,
     url_field: String,
     number_field: String,
+
+    // Test field
+    test_text: String,
 }
 
 impl Default for InputWindow {
@@ -80,6 +83,7 @@ impl Default for InputWindow {
             email_field: String::new(),
             url_field: String::new(),
             number_field: String::new(),
+            test_text: String::new(),
         }
     }
 }
@@ -142,6 +146,16 @@ impl InputWindow {
 
                     self.render_validation_examples(ui);
                     ui.add_space(20.0);
+                    
+                    ui.add(
+                        egui::TextEdit::singleline(&mut self.test_text)
+                            .hint_text("Search here...")                 // Placeholder text
+                            .text_color(egui::Color32::from_rgb(0, 255, 0)) // Change active text color
+                            .background_color(egui::Color32::BLACK)     // Box background
+                            .margin(egui::vec2(10.0, 10.0))             // Padding around text
+                            .font(egui::FontId::monospace(16.0))        // Custom text font/size
+                            .frame(true)                                // False strips the background border entirely
+                    );
                 });
             });
         self.open = open;
