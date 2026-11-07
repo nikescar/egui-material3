@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{tabs_primary, tabs_secondary, MaterialButton};
+use crate::{get_global_color, tabs_primary, tabs_secondary, MaterialButton};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -24,6 +24,10 @@ pub struct TabsWindow {
     m3_secondary_selected: usize,
     icon_text_primary_selected: usize,
     icon_text_secondary_selected: usize,
+    compact_primary_selected: usize,
+    compact_secondary_selected: usize,
+    vivid_primary_selected: usize,
+    vivid_secondary_selected: usize,
 }
 
 impl Default for TabsWindow {
@@ -47,6 +51,10 @@ impl Default for TabsWindow {
             m3_secondary_selected: 0,
             icon_text_primary_selected: 0,
             icon_text_secondary_selected: 0,
+            compact_primary_selected: 0,
+            compact_secondary_selected: 0,
+            vivid_primary_selected: 0,
+            vivid_secondary_selected: 0,
         }
     }
 }
@@ -64,6 +72,10 @@ impl TabsWindow {
                     self.render_m3_demo_tabs(ui);
                     ui.add_space(20.0);
                     self.render_icon_text_tabs(ui);
+                    ui.add_space(20.0);
+                    self.render_compact_tabs(ui);
+                    ui.add_space(20.0);
+                    self.render_vivid_color_tabs(ui);
                     ui.add_space(20.0);
                     self.render_primary_tabs(ui);
                     ui.add_space(20.0);
@@ -119,11 +131,11 @@ impl TabsWindow {
             ui.add(
                 tabs_primary(&mut self.music_primary_selected)
                     .id_salt("music_primary")
-                    .tab("🎹 Keyboard")
-                    .tab("🎸 Guitar")
-                    .tab("🥁 Drums")
-                    .tab("🎻 Bass")
-                    .tab("🎷 Saxophone"),
+                    .tab("Keyboard")
+                    .tab("Guitar")
+                    .tab("Drums")
+                    .tab("Bass")
+                    .tab("Saxophone"),
             );
 
             // Enhanced content for selected tab
@@ -133,7 +145,7 @@ impl TabsWindow {
 
             match self.music_primary_selected {
                 0 => {
-                    ui.heading("🎹 Keyboard");
+                    ui.heading("Keyboard");
                     ui.label("Master the art of keyboard playing with these beautiful melodies:");
                     ui.add_space(8.0);
                     ui.label("• Classical compositions: Bach, Mozart, Chopin");
@@ -142,7 +154,7 @@ impl TabsWindow {
                     ui.label("• Recommended practice: 30 minutes daily");
                 }
                 1 => {
-                    ui.heading("🎸 Guitar");
+                    ui.heading("Guitar");
                     ui.label("Strum your way to guitar mastery:");
                     ui.add_space(8.0);
                     ui.label("• Basic chords: G, C, D, Em, Am");
@@ -151,7 +163,7 @@ impl TabsWindow {
                     ui.label("• Equipment: Acoustic vs. Electric guitars");
                 }
                 2 => {
-                    ui.heading("🥁 Drums");
+                    ui.heading("Drums");
                     ui.label("Keep the rhythm alive with powerful beats:");
                     ui.add_space(8.0);
                     ui.label("• Basic beats: 4/4 time, rock, jazz, funk");
@@ -160,7 +172,7 @@ impl TabsWindow {
                     ui.label("• Timing: Use metronome for practice");
                 }
                 3 => {
-                    ui.heading("🎻 Bass");
+                    ui.heading("Bass");
                     ui.label("Lay down the foundation with deep bass lines:");
                     ui.add_space(8.0);
                     ui.label("• Playing techniques: Fingerstyle, slap, pick");
@@ -169,7 +181,7 @@ impl TabsWindow {
                     ui.label("• Genres: Rock, funk, jazz, reggae");
                 }
                 4 => {
-                    ui.heading("🎷 Saxophone");
+                    ui.heading("Saxophone");
                     ui.label("Create smooth jazz vibes with saxophone:");
                     ui.add_space(8.0);
                     ui.label("• Saxophone types: Alto, tenor, soprano, baritone");
@@ -191,10 +203,10 @@ impl TabsWindow {
         ui.add(
             tabs_secondary(&mut self.travel_secondary_selected)
                 .id_salt("travel_secondary")
-                .tab("✈️ Travel")
-                .tab("🏨 Hotel")
-                .tab("🥾 Activities")
-                .tab("🍽️ Food"),
+                .tab("Travel")
+                .tab("Hotel")
+                .tab("Activities")
+                .tab("Food"),
         );
 
         // Enhanced content for selected tab
@@ -204,7 +216,7 @@ impl TabsWindow {
 
         match self.travel_secondary_selected {
             0 => {
-                ui.heading("✈️ Travel Planning");
+                ui.heading("Travel Planning");
                 ui.label("Plan your next adventure with these travel tips:");
                 ui.add_space(8.0);
                 ui.label("• Booking flights: Compare prices, flexible dates");
@@ -213,7 +225,7 @@ impl TabsWindow {
                 ui.label("• Travel insurance: Medical and trip coverage");
             }
             1 => {
-                ui.heading("🏨 Hotel Accommodation");
+                ui.heading("Hotel Accommodation");
                 ui.label("Find the perfect place to stay:");
                 ui.add_space(8.0);
                 ui.label("• Hotel types: Luxury, boutique, budget, hostel");
@@ -222,7 +234,7 @@ impl TabsWindow {
                 ui.label("• Reviews: Check ratings and guest feedback");
             }
             2 => {
-                ui.heading("🥾 Activities & Adventures");
+                ui.heading("Activities & Adventures");
                 ui.label("Discover exciting experiences at your destination:");
                 ui.add_space(8.0);
                 ui.label("• Outdoor activities: Hiking, biking, water sports");
@@ -231,7 +243,7 @@ impl TabsWindow {
                 ui.label("• Local experiences: Cooking classes, workshops");
             }
             3 => {
-                ui.heading("🍽️ Local Cuisine");
+                ui.heading("Local Cuisine");
                 ui.label("Taste authentic local flavors:");
                 ui.add_space(8.0);
                 ui.label("• Street food: Safe vendors, popular dishes");
@@ -278,17 +290,17 @@ impl TabsWindow {
 
         match self.scrolling_selected {
             0..=2 => {
-                ui.label("📊 First section - Basic information and getting started guides");
+                ui.label("First section - Basic information and getting started guides");
                 ui.label("• Introduction to the system");
                 ui.label("• Setup instructions");
             }
             3..=5 => {
-                ui.label("⚙️ Middle section - Configuration and advanced features");
+                ui.label("Middle section - Configuration and advanced features");
                 ui.label("• Advanced settings");
                 ui.label("• Customization options");
             }
             6..=9 => {
-                ui.label("🚀 Final section - Expert features and troubleshooting");
+                ui.label("Final section - Expert features and troubleshooting");
                 ui.label("• Expert configuration");
                 ui.label("• Performance optimization");
             }
@@ -305,10 +317,10 @@ impl TabsWindow {
         ui.add(
             tabs_primary(&mut self.custom_selected)
                 .id_salt("custom_primary")
-                .tab("✈️ Travel")
-                .tab("🏨 Hotel")
-                .tab("🥾 Activities")
-                .tab("🍽️ Food"),
+                .tab("Travel")
+                .tab("Hotel")
+                .tab("Activities")
+                .tab("Food"),
         );
 
         // Enhanced content with custom styling
@@ -320,7 +332,7 @@ impl TabsWindow {
             0 => {
                 ui.colored_label(
                     egui::Color32::from_rgb(103, 80, 164),
-                    "✈️ Custom Travel Experience",
+                    "Custom Travel Experience",
                 );
                 ui.label("Enhanced travel planning with personalized recommendations:");
                 ui.add_space(8.0);
@@ -340,7 +352,7 @@ impl TabsWindow {
             1 => {
                 ui.colored_label(
                     egui::Color32::from_rgb(103, 80, 164),
-                    "🏨 Premium Hotel Search",
+                    "Premium Hotel Search",
                 );
                 ui.label("Luxury accommodation finder with exclusive benefits:");
                 ui.add_space(8.0);
@@ -360,7 +372,7 @@ impl TabsWindow {
             2 => {
                 ui.colored_label(
                     egui::Color32::from_rgb(103, 80, 164),
-                    "🥾 Curated Activity Hub",
+                    "Curated Activity Hub",
                 );
                 ui.label("Handpicked experiences tailored to your interests:");
                 ui.add_space(8.0);
@@ -380,7 +392,7 @@ impl TabsWindow {
             3 => {
                 ui.colored_label(
                     egui::Color32::from_rgb(103, 80, 164),
-                    "🍽️ Gourmet Dining Network",
+                    "Gourmet Dining Network",
                 );
                 ui.label("Exclusive access to world-class culinary experiences:");
                 ui.add_space(8.0);
@@ -452,6 +464,149 @@ impl TabsWindow {
         });
     }
 
+    fn render_compact_tabs(&mut self, ui: &mut egui::Ui) {
+        ui.push_id("compact_section", |ui| {
+            ui.heading("Compact Tabs (32px height)");
+            ui.label("Minimal height tabs for space-constrained UIs");
+
+            ui.add(
+                tabs_primary(&mut self.compact_primary_selected)
+                    .id_salt("compact_primary")
+                    .height(32.0)
+                    .tab("Home")
+                    .tab("Profile")
+                    .tab("Settings")
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.compact_primary_selected {
+                0 => ui.label("Home content - compact design"),
+                1 => ui.label("Profile content - compact design"),
+                2 => ui.label("Settings content - compact design"),
+                _ => ui.label("Select a tab"),
+            };
+
+            ui.add_space(16.0);
+            ui.label("Secondary compact tabs");
+
+            ui.add(
+                tabs_secondary(&mut self.compact_secondary_selected)
+                    .id_salt("compact_secondary")
+                    .height(32.0)
+                    .tab("Recent")
+                    .tab("Favorites")
+                    .tab("Archive")
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.compact_secondary_selected {
+                0 => ui.label("Recent items - compact secondary"),
+                1 => ui.label("Favorite items - compact secondary"),
+                2 => ui.label("Archived items - compact secondary"),
+                _ => ui.label("Select a tab"),
+            };
+        });
+    }
+
+    fn render_vivid_color_tabs(&mut self, ui: &mut egui::Ui) {
+        ui.push_id("vivid_color_section", |ui| {
+            ui.heading("Vivid Color Tabs");
+            ui.label("Tabs with custom theme colors - each tab has unique background and text");
+
+            // Get theme colors for primary tabs (7 total)
+            let primary_container = get_global_color("primaryContainer");
+            let on_primary_container = get_global_color("onPrimaryContainer");
+            let secondary_container = get_global_color("secondaryContainer");
+            let on_secondary_container = get_global_color("onSecondaryContainer");
+            let tertiary_container = get_global_color("tertiaryContainer");
+            let on_tertiary_container = get_global_color("onTertiaryContainer");
+            let error_container = get_global_color("errorContainer");
+            let on_error_container = get_global_color("onErrorContainer");
+            let surface_variant = get_global_color("surfaceVariant");
+            let on_surface_variant = get_global_color("onSurfaceVariant");
+            let inverse_surface = get_global_color("inverseSurface");
+            let inverse_on_surface = get_global_color("inverseOnSurface");
+            let surface_container_highest = get_global_color("surfaceContainerHighest");
+            let on_surface = get_global_color("onSurface");
+
+            ui.add(
+                tabs_primary(&mut self.vivid_primary_selected)
+                    .id_salt("vivid_primary")
+                    .tab_with_color("Primary", primary_container, on_primary_container)
+                    .tab_with_color("Secondary", secondary_container, on_secondary_container)
+                    .tab_with_color("Tertiary", tertiary_container, on_tertiary_container)
+                    .tab_with_color("Error", error_container, on_error_container)
+                    .tab_with_color("Surface", surface_variant, on_surface_variant)
+                    .tab_with_color("Inverse", inverse_surface, inverse_on_surface)
+                    .tab_with_color("Container", surface_container_highest, on_surface)
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.vivid_primary_selected {
+                0 => ui.label("Primary color content - using primaryContainer theme"),
+                1 => ui.label("Secondary color content - using secondaryContainer theme"),
+                2 => ui.label("Tertiary color content - using tertiaryContainer theme"),
+                3 => ui.label("Error color content - using errorContainer theme"),
+                4 => ui.label("Surface color content - using surfaceVariant theme"),
+                5 => ui.label("Inverse color content - using inverseSurface theme"),
+                6 => ui.label("Container color content - using surfaceContainerHighest theme"),
+                _ => ui.label("Select a tab"),
+            };
+
+            ui.add_space(16.0);
+            ui.label("Secondary vivid tabs (9 total)");
+
+            // Get theme colors for secondary tabs (9 total)
+            let primary = get_global_color("primary");
+            let on_primary = get_global_color("onPrimary");
+            let secondary = get_global_color("secondary");
+            let on_secondary = get_global_color("onSecondary");
+            let tertiary = get_global_color("tertiary");
+            let on_tertiary = get_global_color("onTertiary");
+            let error = get_global_color("error");
+            let on_error = get_global_color("onError");
+            let outline = get_global_color("outline");
+            let outline_variant = get_global_color("outlineVariant");
+            let scrim = get_global_color("scrim");
+
+            ui.add(
+                tabs_secondary(&mut self.vivid_secondary_selected)
+                    .id_salt("vivid_secondary")
+                    .tab_with_color("Primary", primary, on_primary)
+                    .tab_with_color("Secondary", secondary, on_secondary)
+                    .tab_with_color("Tertiary", tertiary, on_tertiary)
+                    .tab_with_color("Error", error, on_error)
+                    .tab_with_color("Surface+", surface_container_highest, on_surface)
+                    .tab_with_color("Variant", surface_variant, on_surface_variant)
+                    .tab_with_color("Outline", outline, egui::Color32::WHITE)
+                    .tab_with_color("OutlineV", outline_variant, on_surface)
+                    .tab_with_color("Scrim", scrim, egui::Color32::WHITE)
+                    .enabled(self.tabs_enabled),
+            );
+
+            ui.add_space(10.0);
+
+            match self.vivid_secondary_selected {
+                0 => ui.label("Primary vivid content"),
+                1 => ui.label("Secondary vivid content"),
+                2 => ui.label("Tertiary vivid content"),
+                3 => ui.label("Error vivid content"),
+                4 => ui.label("Surface container highest content"),
+                5 => ui.label("Surface variant content"),
+                6 => ui.label("Outline color content"),
+                7 => ui.label("Outline variant content"),
+                8 => ui.label("Scrim color content"),
+                _ => ui.label("Select a tab"),
+            };
+        });
+    }
+
     fn render_icon_text_tabs(&mut self, ui: &mut egui::Ui) {
         ui.push_id("icon_text_section", |ui| {
             ui.heading("Icon + Text Tabs (72px height)");
@@ -505,9 +660,9 @@ impl TabsWindow {
         ui.add(
             tabs_primary(&mut self.nested_primary_selected)
                 .id_salt("nested_primary")
-                .tab("🎬 Movies")
-                .tab("📸 Photos")
-                .tab("🎵 Music"),
+                .tab("Movies")
+                .tab("Photos")
+                .tab("Music"),
         );
 
         ui.add_space(10.0);

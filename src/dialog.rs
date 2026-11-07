@@ -79,8 +79,8 @@ pub struct MaterialDialog<'a> {
     dialog_type: DialogType,
     /// Optional icon to display in dialog header
     icon: Option<String>,
-    /// Content rendering function called once
-    content: Box<dyn FnOnce(&mut Ui) + 'a>,
+    /// Content rendering function called once with UI and open state
+    content: Box<dyn FnOnce(&mut Ui, &mut bool) + 'a>,
     /// List of action buttons at the bottom of the dialog
     actions: Vec<DialogAction<'a>>,
     /// Whether this is a quick/temporary dialog
@@ -147,7 +147,7 @@ impl<'a> MaterialDialog<'a> {
             open,
             dialog_type: DialogType::Standard,
             icon: None,
-            content: Box::new(|_| {}),
+            content: Box::new(|_, _| {}),
             actions: Vec::new(),
             quick: false,
             no_focus_trap: false,
@@ -190,13 +190,17 @@ impl<'a> MaterialDialog<'a> {
     /// Set the content of the dialog
     ///
     /// ## Parameters
-    /// - `content`: A closure that renders the content UI
+    /// - `content`: A closure that renders the content UI and has access to the dialog's open state
+    ///
+    /// The closure receives two parameters:
+    /// - `ui`: The egui UI context for rendering
+    /// - `open`: Mutable reference to the dialog's open state (set to `false` to close programmatically)
     ///
     /// ## Returns
     /// Self for method chaining
     pub fn content<F>(mut self, content: F) -> Self
     where
-        F: FnOnce(&mut Ui) + 'a,
+        F: FnOnce(&mut Ui, &mut bool) + 'a,
     {
         self.content = Box::new(content);
         self
@@ -581,7 +585,9 @@ impl<'a> MaterialDialog<'a> {
                                         if content_top > 0.0 {
                                             ui.add_space(content_top);
                                         }
-                                        (self.content)(ui);
+                                        unsafe {
+                                            (self.content)(ui, &mut *open_ref);
+                                        }
                                     });
                             },
                         );
@@ -599,7 +605,9 @@ impl<'a> MaterialDialog<'a> {
                             if content_top > 0.0 {
                                 ui.add_space(content_top);
                             }
-                            (self.content)(ui);
+                            unsafe {
+                                (self.content)(ui, &mut *open_ref);
+                            }
                             // Don't consume remaining vertical space - let content size naturally
                         });
                         ui.add_space(content_right);

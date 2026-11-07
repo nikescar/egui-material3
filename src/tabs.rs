@@ -67,6 +67,8 @@ pub struct TabItem {
     label: String,
     /// Optional icon for the tab
     icon: Option<String>,
+    /// Optional custom color (background, text)
+    color: Option<(Color32, Color32)>,
 }
 
 /// Visual variants for tabs component.
@@ -157,6 +159,7 @@ impl<'a> MaterialTabs<'a> {
         self.tabs.push(TabItem {
             label: label.into(),
             icon: None,
+            color: None,
         });
         self
     }
@@ -180,6 +183,37 @@ impl<'a> MaterialTabs<'a> {
         self.tabs.push(TabItem {
             label: label.into(),
             icon: Some(icon.into()),
+            color: None,
+        });
+        self
+    }
+
+    /// Add a tab with custom background and text color.
+    ///
+    /// # Arguments
+    /// * `label` - Text label for the tab
+    /// * `bg_color` - Background color for the tab
+    /// * `text_color` - Text color for the tab
+    ///
+    /// # Example
+    /// ```rust
+    /// # egui::__run_test_ui(|ui| {
+    /// let mut tab_index = 0;
+    /// ui.add(MaterialTabs::primary(&mut tab_index)
+    ///     .tab_with_color("Red", egui::Color32::from_rgb(255, 0, 0), egui::Color32::WHITE)
+    ///     .tab_with_color("Blue", egui::Color32::from_rgb(0, 0, 255), egui::Color32::WHITE));
+    /// # });
+    /// ```
+    pub fn tab_with_color(
+        mut self,
+        label: impl Into<String>,
+        bg_color: Color32,
+        text_color: Color32,
+    ) -> Self {
+        self.tabs.push(TabItem {
+            label: label.into(),
+            icon: None,
+            color: Some((bg_color, text_color)),
         });
         self
     }
@@ -301,20 +335,29 @@ impl<'a> Widget for MaterialTabs<'a> {
             let is_selected = *self.selected == index;
             let is_hovered = tab_response.hovered();
 
-            // M3 label colors per variant
-            let text_color = match self.variant {
-                TabVariant::Primary => {
-                    if is_selected {
-                        primary
-                    } else {
-                        on_surface_variant
+            // Draw custom background if color is specified
+            if let Some((bg_color, _)) = tab.color {
+                ui.painter().rect_filled(tab_rect, 0.0, bg_color);
+            }
+
+            // M3 label colors per variant (or custom color if specified)
+            let text_color = if let Some((_, text_color)) = tab.color {
+                text_color
+            } else {
+                match self.variant {
+                    TabVariant::Primary => {
+                        if is_selected {
+                            primary
+                        } else {
+                            on_surface_variant
+                        }
                     }
-                }
-                TabVariant::Secondary => {
-                    if is_selected {
-                        on_surface
-                    } else {
-                        on_surface_variant
+                    TabVariant::Secondary => {
+                        if is_selected {
+                            on_surface
+                        } else {
+                            on_surface_variant
+                        }
                     }
                 }
             };

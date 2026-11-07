@@ -1146,8 +1146,30 @@ impl<'a> MaterialDataTable<'a> {
                             let table_clip_rect = rect.intersect(old_clip_rect);
                             ui.set_clip_rect(table_clip_rect);
 
-                            // Drawer background: slightly tinted surface
-                            let drawer_bg = get_global_color("surfaceVariant");
+                            // Drawer background: match the row color above
+                            // Recalculate row_bg using same logic as row rendering (lines 675-696)
+                            let drawer_bg = if let Some(custom_color) = row.color {
+                                custom_color
+                            } else if row_selected {
+                                theme
+                                    .selected_row_color
+                                    .unwrap_or_else(|| get_global_color("primaryContainer"))
+                            } else if row.readonly {
+                                // Subtle background for readonly rows
+                                let surface_variant = get_global_color("surfaceVariant");
+                                Color32::from_rgba_premultiplied(
+                                    surface_variant.r(),
+                                    surface_variant.g(),
+                                    surface_variant.b(),
+                                    (surface_variant.a() as f32 * 0.3) as u8,
+                                )
+                            } else if row_idx % 2 == 1 {
+                                theme
+                                    .data_row_color
+                                    .unwrap_or_else(|| get_global_color("surfaceVariant"))
+                            } else {
+                                background_color
+                            };
                             ui.painter()
                                 .rect_filled(drawer_rect, CornerRadius::ZERO, drawer_bg);
 
