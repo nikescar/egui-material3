@@ -269,6 +269,18 @@ impl<'a> DataTableRow<'a> {
         self.drawer = Some(std::sync::Arc::new(f));
         self
     }
+
+    /// Conditionally add a drawer based on a boolean condition.
+    /// Only sets the drawer if `condition` is true.
+    pub fn drawer_if<F>(mut self, condition: bool, f: F) -> Self
+    where
+        F: Fn(&mut egui::Ui) + Send + Sync + 'static,
+    {
+        if condition {
+            self.drawer = Some(std::sync::Arc::new(f));
+        }
+        self
+    }
 }
 
 /// Persistent state for a Material Design data table

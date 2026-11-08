@@ -1085,6 +1085,78 @@ impl DataTableWindow {
         ui.add(static_drawer_table);
         ui.add_space(10.0);
         ui.label("Note: All drawers have fixed 120px height. Compare with auto-sizing drawers above.");
+
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Compact Rows with Selective Drawer");
+        ui.label("Drawers enabled only for rows matching condition (stock > 20)");
+        ui.label("Notice: only high-stock items show the drawer arrow (>)");
+
+        let compact_selective_table = data_table()
+            .id(Id::new("compact_selective_drawer"))
+            .allow_drawer(true)
+            .default_row_height(40.0)
+            .column("Product", 150.0, false)
+            .column("Category", 120.0, false)
+            .column("Stock", 80.0, true)
+            .row(|row| {
+                row.cell("Wireless Mouse")
+                   .cell("Accessories")
+                   .cell("15")
+                   // No drawer - stock (15) ≤ 20
+            })
+            .row(|row| {
+                let stock = 45;
+                row.cell("Mechanical Keyboard")
+                   .cell("Accessories")
+                   .cell("45")
+                   .drawer_if(stock > 20, |ui| {
+                       ui.add_space(4.0);
+                       ui.label("✓ High stock available");
+                       ui.label("Eligible for bulk discount (10+ units)");
+                       ui.label("Free shipping on orders over $100");
+                   })
+            })
+            .row(|row| {
+                row.cell("USB Cable")
+                   .cell("Accessories")
+                   .cell("8")
+                   // No drawer - stock (8) ≤ 20
+            })
+            .row(|row| {
+                let stock = 120;
+                row.cell("Monitor Stand")
+                   .cell("Accessories")
+                   .cell("120")
+                   .drawer_if(stock > 20, |ui| {
+                       ui.add_space(4.0);
+                       ui.label("✓ High stock available");
+                       ui.label("Eligible for bulk discount (10+ units)");
+                       ui.label("Warehouse: Building A, Shelf 12");
+                   })
+            })
+            .row(|row| {
+                row.cell("HDMI Adapter")
+                   .cell("Accessories")
+                   .cell("5")
+                   // No drawer - stock (5) ≤ 20
+            })
+            .row(|row| {
+                let stock = 67;
+                row.cell("Laptop Stand")
+                   .cell("Accessories")
+                   .cell("67")
+                   .drawer_if(stock > 20, |ui| {
+                       ui.add_space(4.0);
+                       ui.label("✓ High stock available");
+                       ui.label("Eligible for bulk discount (10+ units)");
+                       ui.label("Next restock: Not needed");
+                   })
+            });
+
+        ui.add(compact_selective_table);
+        ui.add_space(10.0);
+        ui.label("Pattern: Use `.drawer_if(condition, |ui| {...})` to conditionally enable drawers per row");
         });
     }
 }
