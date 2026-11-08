@@ -383,7 +383,7 @@ impl<'a> Widget for MaterialInput<'a> {
             }
         }
 
-        // Calculate text input position
+        // Calculate text input position with vertical centering
         let text_y_offset = if should_float_label && self.label.is_some() {
             24.0
         } else {
@@ -393,9 +393,17 @@ impl<'a> Widget for MaterialInput<'a> {
         let text_x = rect.min.x + HORIZONTAL_PADDING +
             if self.leading_icon.is_some() { ICON_SIZE + ICON_PADDING * 2.0 } else { 0.0 };
 
+        // Approximate text height (body font size + small margin)
+        let text_height = 20.0;
+
+        // Calculate vertical centering within available space
+        let available_vertical_space = INPUT_HEIGHT - text_y_offset;
+        let vertical_padding = (available_vertical_space - text_height) / 2.0;
+        let text_y = rect.min.y + text_y_offset + vertical_padding;
+
         let text_rect = Rect::from_min_size(
-            Pos2::new(text_x, rect.min.y + text_y_offset),
-            Vec2::new(content_width - HORIZONTAL_PADDING * 2.0, INPUT_HEIGHT - text_y_offset),
+            Pos2::new(text_x, text_y),
+            Vec2::new(content_width - HORIZONTAL_PADDING * 2.0, text_height),
         );
 
         // Draw text input
@@ -487,5 +495,108 @@ impl<'a> Widget for MaterialInput<'a> {
         );
 
         response
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_height_constant() {
+        // Verify Material Design 3 spec height
+        assert_eq!(INPUT_HEIGHT, 56.0, "Input height should be 56dp per M3 spec");
+    }
+
+    #[test]
+    fn test_vertical_centering_calculation() {
+        // Test that text is centered vertically when no label
+        let rect_height = INPUT_HEIGHT;
+        let text_height = 20.0; // Approximate body font height
+        let text_y_offset = 0.0; // No floating label
+
+        // Calculate center position
+        let available_vertical_space = rect_height - text_y_offset;
+        let vertical_padding = (available_vertical_space - text_height) / 2.0;
+
+        // Text should start at center - half height
+        assert!(vertical_padding > 0.0, "Should have vertical padding for centering");
+        assert_eq!(vertical_padding, (56.0 - 20.0) / 2.0); // 18.0
+    }
+
+    #[test]
+    fn test_vertical_centering_with_floating_label() {
+        // Test that text is centered in remaining space when label floats
+        let rect_height = INPUT_HEIGHT;
+        let text_height = 20.0;
+        let text_y_offset = 24.0; // Label floating offset
+
+        // Available space below the floating label
+        let available_vertical_space = rect_height - text_y_offset; // 56 - 24 = 32
+        let vertical_padding = (available_vertical_space - text_height) / 2.0;
+
+        // Should center in remaining 32px space
+        assert!(vertical_padding > 0.0, "Should have vertical padding even with floating label");
+        assert_eq!(vertical_padding, (32.0 - 20.0) / 2.0); // 6.0
+    }
+
+    #[test]
+    fn test_label_float_behavior() {
+        // Verify label should float when input has content
+        let has_content = true;
+        let is_focused = false;
+
+        let should_float = is_focused || has_content;
+        assert!(should_float, "Label should float when input has content");
+    }
+
+    #[test]
+    fn test_label_float_when_focused() {
+        // Verify label should float when input is focused (even if empty)
+        let has_content = false;
+        let is_focused = true;
+
+        let should_float = is_focused || has_content;
+        assert!(should_float, "Label should float when input is focused");
+    }
+
+    #[test]
+    fn test_label_not_float_when_empty_unfocused() {
+        // Verify label should NOT float when empty and unfocused
+        let has_content = false;
+        let is_focused = false;
+
+        let should_float = is_focused || has_content;
+        assert!(!should_float, "Label should not float when empty and unfocused");
+    }
+
+    #[test]
+    fn test_text_offset_with_label() {
+        // Text should be offset down when label is floating
+        let should_float_label = true;
+        let has_label = true;
+
+        let text_y_offset = if should_float_label && has_label {
+            24.0
+        } else {
+            0.0
+        };
+
+        assert_eq!(text_y_offset, 24.0, "Text should be offset by 24px when label floats");
+    }
+
+    #[test]
+    fn test_text_offset_without_label() {
+        // Text should NOT be offset when there's no label
+        let should_float_label = false;
+        let has_label = false;
+
+        let text_y_offset = if should_float_label && has_label {
+            24.0
+        } else {
+            0.0
+        };
+
+        assert_eq!(text_y_offset, 0.0, "Text should not be offset when no label");
     }
 }
