@@ -22,6 +22,7 @@ mod dashcounter_window;
 mod datatable_window;
 mod dialog_window;
 mod drawer_window;
+mod egui_window;
 mod fab_window;
 mod iconbutton_window;
 mod input_window;
@@ -46,6 +47,9 @@ mod tooltip_window;
 mod topappbar_window;
 mod treeview_window;
 
+#[cfg(test)]
+mod theme_test;
+
 use actionsheet_window::ActionSheetWindow;
 use badge_window::BadgeWindow;
 use breadcrumbs_window::BreadcrumbsWindow;
@@ -58,6 +62,7 @@ use dashcounter_window::DashCounterWindow;
 use datatable_window::DataTableWindow;
 use dialog_window::DialogWindow;
 use drawer_window::DrawerWindow;
+use egui_window::EguiWindow;
 use fab_window::FabWindow;
 use iconbutton_window::IconButtonWindow;
 use input_window::InputWindow;
@@ -134,6 +139,7 @@ struct MaterialApp {
     chips_window: ChipsWindow,
     dashcounter_window: DashCounterWindow,
     dialog_window: DialogWindow,
+    egui_window: EguiWindow,
     fab_window: FabWindow,
     iconbutton_window: IconButtonWindow,
     input_window: InputWindow,
@@ -177,6 +183,7 @@ impl Default for MaterialApp {
             chips_window: ChipsWindow::default(),
             dashcounter_window: DashCounterWindow::default(),
             dialog_window: DialogWindow::default(),
+            egui_window: EguiWindow::default(),
             fab_window: FabWindow::default(),
             iconbutton_window: IconButtonWindow::default(),
             input_window: InputWindow::default(),
@@ -258,9 +265,9 @@ impl MaterialApp {
 
         // Apply Material Design 3 colors if theme is loaded
         let primary_color = theme.get_primary_color();
-        let on_primary = theme.get_on_primary_color();
         let surface = theme.get_surface_color(visuals.dark_mode);
         let on_surface = theme.get_color_by_name("onSurface");
+        let on_surface_variant = theme.get_color_by_name("onSurfaceVariant");
         let _background = theme.get_color_by_name("background");
         let _on_background = theme.get_color_by_name("onBackground");
         let inverse_surface = theme.get_color_by_name("inverseSurface");
@@ -271,8 +278,13 @@ impl MaterialApp {
         visuals.selection.stroke.color = inverse_primary;
         visuals.hyperlink_color = primary_color;
 
+        // Text colors - Material Design 3 text hierarchy
+        visuals.override_text_color = Some(on_surface); // High emphasis text
+        visuals.weak_text_color = Some(on_surface_variant); // Medium emphasis text
+
         // Button and widget colors
         visuals.widgets.noninteractive.bg_fill = surface;
+        visuals.widgets.noninteractive.fg_stroke.color = on_surface;
 
         visuals.widgets.inactive.bg_fill = Color32::from_rgba_unmultiplied(
             primary_color.r(),
@@ -280,6 +292,7 @@ impl MaterialApp {
             primary_color.b(),
             20,
         );
+        visuals.widgets.inactive.fg_stroke.color = on_surface;
 
         visuals.widgets.hovered.bg_fill = Color32::from_rgba_unmultiplied(
             primary_color.r(),
@@ -287,9 +300,12 @@ impl MaterialApp {
             primary_color.b(),
             40,
         );
+        visuals.widgets.hovered.fg_stroke.color = on_surface;
 
         visuals.widgets.active.bg_fill = primary_color;
-        visuals.widgets.active.fg_stroke.color = on_primary;
+        // Use on_surface for active widget text so .strong() is visible on normal backgrounds
+        // Material buttons handle their own on_primary text internally
+        visuals.widgets.active.fg_stroke.color = on_surface;
 
         // Window background
         visuals.window_fill = surface;
@@ -314,6 +330,7 @@ impl MaterialApp {
         self.chips_window.open = false;
         self.dashcounter_window.open = false;
         self.dialog_window.open = false;
+        self.egui_window.open = false;
         self.fab_window.open = false;
         self.iconbutton_window.open = false;
         self.input_window.open = false;
@@ -630,6 +647,13 @@ impl eframe::App for MaterialApp {
                 }
 
                 if ui
+                    .add(MaterialButton::filled("Egui Widget Gallery"))
+                    .clicked()
+                {
+                    self.egui_window.open = true;
+                }
+
+                if ui
                     .add(MaterialButton::filled("Enhanced Card (Card2) Stories"))
                     .clicked()
                 {
@@ -786,6 +810,7 @@ impl eframe::App for MaterialApp {
         self.tabs_window.show(ctx);
         self.datatable_window.show(ctx);
         self.drawer_window.show(ctx);
+        self.egui_window.show(ctx);
         self.imagelist_window.show(ctx);
         self.layoutgrid_window.show(ctx);
         self.snackbar_window.show(ctx);
