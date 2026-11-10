@@ -1,7 +1,7 @@
 //! Rendering implementation for MaterialButton
 
 use super::{types::*, MaterialButton};
-use crate::{get_global_color, material_symbol::material_symbol_text};
+use crate::{get_global_color, get_global_theme, material_symbol::material_symbol_text};
 use egui::{
     ecolor::Color32,
     emath::NumExt,
@@ -36,9 +36,16 @@ impl Widget for MaterialButton<'_> {
             text_color: custom_text_color,
         } = self;
 
+        // Detect dark mode for color selection
+        let dark_mode = get_global_theme()
+            .lock()
+            .map(|theme| theme.dark_mode)
+            .unwrap_or(false);
+
         // M3 Color Roles - Button Variants
         let primary = get_global_color("primary"); // Filled button background
-        let on_primary = get_global_color("onPrimary"); // Content on primary background
+        let on_primary = get_global_color("onPrimary"); // Content on primary background (light mode)
+        let on_primary_fixed = get_global_color("onPrimaryFixed"); // Content on primary background (dark mode)
         let secondary_container = get_global_color("secondaryContainer"); // Tonal button background
         let on_secondary_container = get_global_color("onSecondaryContainer"); // Content on tonal background
         let surface = get_global_color("surface"); // Elevated button background, disabled button background
@@ -165,7 +172,14 @@ impl Widget for MaterialButton<'_> {
             custom
         } else {
             match variant {
-                MaterialButtonVariant::Filled => on_primary, // Use onPrimary for content on primary background
+                MaterialButtonVariant::Filled => {
+                    // M3 spec: use onPrimaryFixed in dark mode, onPrimary in light mode
+                    if dark_mode {
+                        on_primary_fixed
+                    } else {
+                        on_primary
+                    }
+                }
                 MaterialButtonVariant::Outlined => on_surface, // Use onSurface for content on transparent surface
                 MaterialButtonVariant::Text => on_surface, // Use onSurface for content on transparent surface
                 MaterialButtonVariant::Elevated => on_surface, // Use onSurface for content on elevated surface

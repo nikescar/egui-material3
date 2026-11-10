@@ -341,7 +341,8 @@ impl MaterialApp {
         visuals.hyperlink_color = primary;
 
         // --- Text Hierarchy (Material Design 3: high/medium/disabled emphasis) ---
-        visuals.override_text_color = Some(on_surface); // High emphasis: body text, headings
+        // DISABLED: override_text_color forces all text to one color, breaking Material components
+        // visuals.override_text_color = Some(on_surface); // High emphasis: body text, headings
         visuals.weak_text_color = Some(on_surface_variant); // Medium emphasis: captions, labels
 
         // --- Widget States (noninteractive/inactive/hovered/active) ---

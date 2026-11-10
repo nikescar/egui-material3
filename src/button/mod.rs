@@ -6,8 +6,9 @@
 //!
 //! ## Filled Button (High Emphasis)
 //! - **primary**: Button background
-//! - **onPrimary**: Text and icon color on primary background
-//! - **State layers**: onPrimary @ 8% (hover), 12% (press)
+//! - **onPrimary** (light mode): Text and icon color on primary background
+//! - **onPrimaryFixed** (dark mode): Text and icon color on primary background
+//! - **State layers**: onPrimary/onPrimaryFixed @ 8% (hover), 12% (press)
 //! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
 //!
 //! ## Outlined Button (Medium Emphasis)
