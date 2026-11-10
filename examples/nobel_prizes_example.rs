@@ -131,6 +131,7 @@ impl NobelPrizesApp {
                     contrast_level: ContrastLevel::Normal,
                     material_theme: Some(theme_file),
                     selected_colors: std::collections::HashMap::new(),
+                    dark_mode: false,
                 };
                 update_global_theme(theme_context);
                 self.theme_loaded = true;

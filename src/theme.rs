@@ -292,6 +292,7 @@ pub struct MaterialThemeContext {
     pub contrast_level: ContrastLevel,
     pub material_theme: Option<MaterialThemeFile>,
     pub selected_colors: HashMap<String, Color32>,
+    pub dark_mode: bool,
 }
 
 impl Default for MaterialThemeContext {
@@ -301,6 +302,7 @@ impl Default for MaterialThemeContext {
             contrast_level: ContrastLevel::Normal,
             material_theme: Some(get_default_material_theme()),
             selected_colors: HashMap::new(),
+            dark_mode: false,
         }
     }
 }
@@ -992,6 +994,21 @@ impl MaterialThemeContext {
 
     pub fn get_current_scheme(&self) -> Option<&MaterialScheme> {
         if let Some(ref theme) = self.material_theme {
+            // Always use light scheme with selected contrast level
+            let scheme_key = match self.contrast_level {
+                ContrastLevel::Normal => "light",
+                ContrastLevel::Medium => "light-medium-contrast",
+                ContrastLevel::High => "light-high-contrast",
+            };
+            theme.schemes.get(scheme_key)
+        } else {
+            None
+        }
+    }
+
+    /// Get scheme for a specific dark_mode state, respecting Auto mode
+    pub fn get_scheme_for_mode(&self, dark_mode: bool) -> Option<&MaterialScheme> {
+        if let Some(ref theme) = self.material_theme {
             let scheme_key = match (self.theme_mode, self.contrast_level) {
                 (ThemeMode::Light, ContrastLevel::Normal) => "light",
                 (ThemeMode::Light, ContrastLevel::Medium) => "light-medium-contrast",
@@ -1000,11 +1017,19 @@ impl MaterialThemeContext {
                 (ThemeMode::Dark, ContrastLevel::Medium) => "dark-medium-contrast",
                 (ThemeMode::Dark, ContrastLevel::High) => "dark-high-contrast",
                 (ThemeMode::Auto, contrast) => {
-                    // For auto mode, we'll default to light for now
-                    match contrast {
-                        ContrastLevel::Normal => "light",
-                        ContrastLevel::Medium => "light-medium-contrast",
-                        ContrastLevel::High => "light-high-contrast",
+                    // Use provided dark_mode to select scheme
+                    if dark_mode {
+                        match contrast {
+                            ContrastLevel::Normal => "dark",
+                            ContrastLevel::Medium => "dark-medium-contrast",
+                            ContrastLevel::High => "dark-high-contrast",
+                        }
+                    } else {
+                        match contrast {
+                            ContrastLevel::Normal => "light",
+                            ContrastLevel::Medium => "light-medium-contrast",
+                            ContrastLevel::High => "light-high-contrast",
+                        }
                     }
                 }
             };
@@ -1145,6 +1170,78 @@ impl MaterialThemeContext {
                 "surfaceContainerHighest" => Color32::from_rgb(226, 227, 217), // #E2E3D9
                 _ => Color32::GRAY,
             }
+        }
+    }
+
+    /// Set dark mode state for token swapping
+    pub fn set_dark_mode(&mut self, dark: bool) {
+        self.dark_mode = dark;
+    }
+
+    /// Get color by name for a specific dark_mode state (respects Auto mode)
+    pub fn get_color_by_name_for_mode(&self, name: &str, dark_mode: bool) -> Color32 {
+        if let Some(color) = self.selected_colors.get(name) {
+            return *color;
+        }
+
+        if let Some(scheme) = self.get_scheme_for_mode(dark_mode) {
+            let hex = match name {
+                "primary" => &scheme.primary,
+                "surfaceTint" => &scheme.surface_tint,
+                "onPrimary" => &scheme.on_primary,
+                "primaryContainer" => &scheme.primary_container,
+                "onPrimaryContainer" => &scheme.on_primary_container,
+                "secondary" => &scheme.secondary,
+                "onSecondary" => &scheme.on_secondary,
+                "secondaryContainer" => &scheme.secondary_container,
+                "onSecondaryContainer" => &scheme.on_secondary_container,
+                "tertiary" => &scheme.tertiary,
+                "onTertiary" => &scheme.on_tertiary,
+                "tertiaryContainer" => &scheme.tertiary_container,
+                "onTertiaryContainer" => &scheme.on_tertiary_container,
+                "error" => &scheme.error,
+                "onError" => &scheme.on_error,
+                "errorContainer" => &scheme.error_container,
+                "onErrorContainer" => &scheme.on_error_container,
+                "background" => &scheme.background,
+                "onBackground" => &scheme.on_background,
+                "surface" => &scheme.surface,
+                "onSurface" => &scheme.on_surface,
+                "surfaceVariant" => &scheme.surface_variant,
+                "onSurfaceVariant" => &scheme.on_surface_variant,
+                "outline" => &scheme.outline,
+                "outlineVariant" => &scheme.outline_variant,
+                "shadow" => &scheme.shadow,
+                "scrim" => &scheme.scrim,
+                "inverseSurface" => &scheme.inverse_surface,
+                "inverseOnSurface" => &scheme.inverse_on_surface,
+                "inversePrimary" => &scheme.inverse_primary,
+                "primaryFixed" => &scheme.primary_fixed,
+                "onPrimaryFixed" => &scheme.on_primary_fixed,
+                "primaryFixedDim" => &scheme.primary_fixed_dim,
+                "onPrimaryFixedVariant" => &scheme.on_primary_fixed_variant,
+                "secondaryFixed" => &scheme.secondary_fixed,
+                "onSecondaryFixed" => &scheme.on_secondary_fixed,
+                "secondaryFixedDim" => &scheme.secondary_fixed_dim,
+                "onSecondaryFixedVariant" => &scheme.on_secondary_fixed_variant,
+                "tertiaryFixed" => &scheme.tertiary_fixed,
+                "onTertiaryFixed" => &scheme.on_tertiary_fixed,
+                "tertiaryFixedDim" => &scheme.tertiary_fixed_dim,
+                "onTertiaryFixedVariant" => &scheme.on_tertiary_fixed_variant,
+                "surfaceDim" => &scheme.surface_dim,
+                "surfaceBright" => &scheme.surface_bright,
+                "surfaceContainerLowest" => &scheme.surface_container_lowest,
+                "surfaceContainerLow" => &scheme.surface_container_low,
+                "surfaceContainer" => &scheme.surface_container,
+                "surfaceContainerHigh" => &scheme.surface_container_high,
+                "surfaceContainerHighest" => &scheme.surface_container_highest,
+                _ => return Color32::GRAY, // fallback
+            };
+
+            Self::hex_to_color32(hex).unwrap_or(Color32::GRAY)
+        } else {
+            // Use same fallback as get_color_by_name
+            self.get_color_by_name(name)
         }
     }
 
@@ -1448,9 +1545,13 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
 }
 
 /// Helper function to get a color by name from the global theme
+/// Automatically selects the correct scheme (light/dark) based on dark_mode
+///
+/// Uses MaterialThemeContext.get_color_by_name_for_mode() to load the appropriate
+/// scheme colors directly, following Material Design 3 spec without token swapping.
 pub fn get_global_color(name: &str) -> Color32 {
     if let Ok(theme) = GLOBAL_THEME.lock() {
-        theme.get_color_by_name(name)
+        theme.get_color_by_name_for_mode(name, theme.dark_mode)
     } else {
         // Fallback colors when theme is not accessible
         match name {

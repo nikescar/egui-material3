@@ -247,6 +247,37 @@ impl MaterialApp {
         self.file_dialog.pick_file();
     }
 
+    /// Apply Material Design 3 theme colors to egui context
+    ///
+    /// # Material Design 3 Color System
+    ///
+    /// Colors are organized into semantic groups following M3 specifications:
+    ///
+    /// ## 1. Accent & Utility Colors
+    /// Drive core branding, actions, and states:
+    /// - **[Key]**: High-emphasis fill (e.g., `primary` for FABs, key actions)
+    /// - **on[Key]**: Text/icon on key color ensuring readable contrast
+    /// - **[Key]Container**: Lower-intensity container for cards, buttons, chips
+    /// - **on[Key]Container**: Text/icon on container color
+    ///
+    /// ## 2. Surfaces & Structural Hierarchy
+    /// Color-based tonal shifts indicate depth (replacing shadows):
+    /// - **surface/onSurface**: Baseline for cards, dialogs, sheets
+    /// - **surfaceContainer[Lowest→Highest]**: 5-tier depth system
+    /// - **outline/outlineVariant**: High/low contrast borders and dividers
+    /// - **surfaceTint**: Transparent primary layer indicating altitude
+    ///
+    /// ## 3. Inverse & Fixed Schemes
+    /// Maintain visual stability across themes:
+    /// - **inverse***: High-contrast snippets (dark snackbars on light theme)
+    /// - **\*Fixed**: Constants across light/dark mode switches
+    ///
+    /// # Dark Mode Token Swapping
+    ///
+    /// `get_global_color()` automatically swaps tokens for dark mode:
+    /// - `surface` → `inverseSurface` (dark background)
+    /// - `onSurface` → `inverseOnSurface` (light text)
+    /// - Container tokens → surface variations for proper contrast
     fn apply_theme(&self, ctx: &egui::Context) {
         let theme = self.get_theme();
 
@@ -263,59 +294,82 @@ impl MaterialApp {
             }
         };
 
-        // Apply Material Design 3 colors if theme is loaded
-        let primary_color = theme.get_primary_color();
-        let surface = theme.get_surface_color(visuals.dark_mode);
-        let on_surface = theme.get_color_by_name("onSurface");
-        let on_surface_variant = theme.get_color_by_name("onSurfaceVariant");
-        let _background = theme.get_color_by_name("background");
-        let _on_background = theme.get_color_by_name("onBackground");
-        let inverse_surface = theme.get_color_by_name("inverseSurface");
-        let inverse_primary = theme.get_color_by_name("inversePrimary");
+        // Sync dark_mode state to global theme so components can access it via get_global_color()
+        if let Ok(mut global_theme) = egui_material3::get_global_theme().lock() {
+            global_theme.set_dark_mode(visuals.dark_mode);
+        }
 
-        // Apply colors to visuals - use inverse_surface for selection to contrast with on_surface text
-        visuals.selection.bg_fill = inverse_surface;
+        // ============================================================================
+        // FETCH MATERIAL DESIGN 3 COLOR TOKENS (grouped by semantic purpose)
+        // ============================================================================
+
+        // === 1. ACCENT & UTILITY COLORS ===
+        // Primary: Main brand color for FABs, key actions, active states
+        let primary = egui_material3::get_global_color("primary");
+        let _on_primary = egui_material3::get_global_color("onPrimary");
+
+        // Secondary: Less prominent accents for chips, selection controls
+        let secondary_container = egui_material3::get_global_color("secondaryContainer");
+
+        // Inverse: High-contrast snippets (e.g., dark snackbars on light background)
+        let inverse_primary = egui_material3::get_global_color("inversePrimary");
+
+        // === 2. SURFACES & STRUCTURAL HIERARCHY ===
+        // Base surface: Baseline for standalone blocks (cards, dialogs, sheets)
+        let surface = egui_material3::get_global_color("surface");
+        let on_surface = egui_material3::get_global_color("onSurface");
+        let on_surface_variant = egui_material3::get_global_color("onSurfaceVariant");
+
+        // 5-tier container system (Lowest→Highest emphasis)
+        // Lowest: Closest to white (light) or black (dark)
+        // Highest: Maximum relative emphasis/forward prominence
+        let surface_container_lowest = egui_material3::get_global_color("surfaceContainerLowest");
+        let surface_container = egui_material3::get_global_color("surfaceContainer");
+        let surface_container_high = egui_material3::get_global_color("surfaceContainerHigh");
+        let surface_container_highest = egui_material3::get_global_color("surfaceContainerHighest");
+
+        // ============================================================================
+        // APPLY COLORS TO EGUI VISUALS (grouped by UI element type)
+        // ============================================================================
+
+        // --- Selection & Hyperlinks ---
+        // Selection uses secondaryContainer (less prominent than primary)
+        visuals.selection.bg_fill = secondary_container;
+        // Stroke uses inversePrimary for contrast with selection background
         visuals.selection.stroke.color = inverse_primary;
-        visuals.hyperlink_color = primary_color;
+        // Links use primary brand color
+        visuals.hyperlink_color = primary;
 
-        // Text colors - Material Design 3 text hierarchy
-        visuals.override_text_color = Some(on_surface); // High emphasis text
-        visuals.weak_text_color = Some(on_surface_variant); // Medium emphasis text
+        // --- Text Hierarchy (Material Design 3: high/medium/disabled emphasis) ---
+        visuals.override_text_color = Some(on_surface); // High emphasis: body text, headings
+        visuals.weak_text_color = Some(on_surface_variant); // Medium emphasis: captions, labels
 
-        // Button and widget colors
+        // --- Widget States (noninteractive/inactive/hovered/active) ---
+        // Noninteractive: Disabled or static elements
         visuals.widgets.noninteractive.bg_fill = surface;
         visuals.widgets.noninteractive.fg_stroke.color = on_surface;
 
-        visuals.widgets.inactive.bg_fill = Color32::from_rgba_unmultiplied(
-            primary_color.r(),
-            primary_color.g(),
-            primary_color.b(),
-            20,
-        );
+        // Inactive: Default resting state (highest container for subtle elevation)
+        visuals.widgets.inactive.bg_fill = surface_container_highest;
         visuals.widgets.inactive.fg_stroke.color = on_surface;
 
-        visuals.widgets.hovered.bg_fill = Color32::from_rgba_unmultiplied(
-            primary_color.r(),
-            primary_color.g(),
-            primary_color.b(),
-            40,
-        );
+        // Hovered: Mouse-over state (high container for depth)
+        visuals.widgets.hovered.bg_fill = surface_container_high;
         visuals.widgets.hovered.fg_stroke.color = on_surface;
 
-        visuals.widgets.active.bg_fill = primary_color;
-        // Use on_surface for active widget text so .strong() is visible on normal backgrounds
-        // Material buttons handle their own on_primary text internally
+        // Active: Pressed/selected state (primary brand color for emphasis)
+        visuals.widgets.active.bg_fill = primary;
+        // Note: Uses onSurface (not onPrimary) so .strong() text is visible on normal backgrounds
+        // Material Design buttons handle their own onPrimary text color internally
         visuals.widgets.active.fg_stroke.color = on_surface;
 
-        // Window background
+        // --- Background Surfaces (window/panel/extreme) ---
+        // Window: Main application surface
         visuals.window_fill = surface;
-        visuals.panel_fill = theme.get_color_by_name("surfaceContainer");
-
-        // Text colors
-        // visuals.override_text_color = Some(background);
-
-        // Apply surface colors
-        visuals.extreme_bg_color = theme.get_color_by_name("surfaceContainerLowest");
+        // Panel: Mid-tier container for content sections
+        visuals.panel_fill = surface_container;
+        // Extreme: Lowest tier for maximum depth/background layers
+        visuals.extreme_bg_color = surface_container_lowest;
 
         ctx.set_visuals(visuals);
     }
@@ -389,9 +443,10 @@ impl eframe::App for MaterialApp {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let theme = self.get_theme();
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                let theme = self.get_theme();
 
-            ui.heading("Material Design Components Demo 테스트");
+                ui.heading("Material Design Components Demo 테스트");
             ui.add_space(10.0);
 
             // Material Design 3 Theme Controls
@@ -786,6 +841,7 @@ impl eframe::App for MaterialApp {
             });
 
             ui.add_space(15.0);
+            });
         });
 
         // Show demo windows
