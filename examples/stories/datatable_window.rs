@@ -2,18 +2,22 @@
 
 use crate::datatable::{RowAction, SortDirection as DataTableSortDirection};
 use crate::{
-    data_table, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton, MaterialCheckbox,
+    data_table, dialog, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton,
+    MaterialCheckbox, MaterialInput,
 };
 use eframe::egui::{self, Color32, Id, Ui, Window};
 use egui_material3::{ListItem, MaterialList};
+use serde::Serialize;
 use std::collections::{HashMap, HashSet};
+use std::error::Error;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 struct TableRow {
     product: String,
     category: String,
     price: String,
     stock: String,
+    #[serde(skip)]
     _selected: bool,
 }
 
@@ -51,6 +55,15 @@ pub struct DataTableWindow {
     sort_direction: SortDirection,
     // Track selection state for drawer table
     drawer_selection: Vec<bool>,
+    // Add row form inputs
+    new_product: String,
+    new_category: String,
+    new_price: String,
+    new_stock: String,
+    // Status message
+    status_message: String,
+    // Add row dialog state
+    add_row_dialog_open: bool,
 }
 
 impl Default for DataTableWindow {
@@ -107,6 +120,12 @@ impl Default for DataTableWindow {
             sort_column: None,
             sort_direction: SortDirection::Ascending,
             drawer_selection: vec![false; 4], // 4 rows in the drawer table
+            new_product: String::new(),
+            new_category: String::new(),
+            new_price: String::new(),
+            new_stock: String::new(),
+            status_message: String::new(),
+            add_row_dialog_open: false,
         }
     }
 }
@@ -136,6 +155,103 @@ impl DataTableWindow {
             open = false;
         }
         self.open = open;
+
+        // Add Row Dialog
+        self.render_add_row_dialog(ctx);
+    }
+
+    #[cfg(feature = "spreadsheet")]
+    fn export_to_csv(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+        let mut writer = csv::Writer::from_path(file_path)?;
+        for row in &self.interactive_rows {
+            writer.serialize(row)?;
+        }
+        writer.flush()?;
+        Ok(())
+    }
+
+    #[cfg(not(feature = "spreadsheet"))]
+    fn export_to_csv(&self, _file_path: &str) -> Result<(), Box<dyn Error>> {
+        Err("CSV export requires the 'spreadsheet' feature".into())
+    }
+
+    fn render_add_row_dialog(&mut self, ctx: &egui::Context) {
+        if self.add_row_dialog_open {
+            dialog(
+                "add_row_dialog",
+                "Add New Row",
+                &mut self.add_row_dialog_open,
+            )
+            .max_width(500.0)
+            .content(|ui, open| {
+                ui.vertical(|ui| {
+                    // Check if Product field is empty for error state
+                    let is_product_error = !self.status_message.is_empty()
+                        && self.status_message.contains("cannot be empty");
+
+                    ui.add(MaterialInput::filled(&mut self.new_product)
+                        .label("Product")
+                        .error_text("Product cannot be empty")
+                        .is_error(is_product_error));
+                    ui.add_space(10.0);
+
+                    ui.add(MaterialInput::filled(&mut self.new_category)
+                        .label("Category")
+                        .helper_text("Optional"));
+                    ui.add_space(10.0);
+
+                    ui.add(MaterialInput::filled(&mut self.new_price)
+                        .label("Price")
+                        .hint("e.g., $99"));
+                    ui.add_space(10.0);
+
+                    ui.add(MaterialInput::filled(&mut self.new_stock)
+                        .label("Stock")
+                        .hint("Quantity available"));
+
+                    // Manual button handling in content
+                    ui.add_space(16.0);
+                    ui.horizontal(|ui| {
+                        if ui.add(MaterialButton::text("Cancel")).clicked() {
+                            *open = false;
+                            self.status_message.clear();
+                        }
+
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.add(MaterialButton::filled("Save")).clicked() {
+                                // Validate before saving
+                                if !self.new_product.trim().is_empty() {
+                                    let new_row = TableRow {
+                                        product: self.new_product.trim().to_string(),
+                                        category: self.new_category.trim().to_string(),
+                                        price: self.new_price.trim().to_string(),
+                                        stock: self.new_stock.trim().to_string(),
+                                        _selected: false,
+                                    };
+                                    self.interactive_rows.push(new_row);
+                                    self.interactive_selection.push(false);
+                                    // Clear inputs
+                                    self.new_product.clear();
+                                    self.new_category.clear();
+                                    self.new_price.clear();
+                                    self.new_stock.clear();
+                                    self.status_message = "Row added.".to_string();
+                                    *open = false;
+                                } else {
+                                    self.status_message = "Product cannot be empty.".to_string();
+                                }
+                            }
+                        });
+                    });
+                });
+            })
+            .show(ctx);
+        } else {
+            // Clear validation when dialog is closed
+            if self.status_message.contains("cannot be empty") {
+                self.status_message.clear();
+            }
+        }
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
@@ -328,17 +444,7 @@ impl DataTableWindow {
 
         ui.horizontal(|ui| {
             if ui.add(MaterialButton::filled("Add Row")).clicked() {
-                // Add a new row with sample data
-                let new_row = TableRow {
-                    product: format!("Product {}", self.interactive_rows.len() + 1),
-                    category: "New Category".to_string(),
-                    price: "$99".to_string(),
-                    stock: "10".to_string(),
-                    _selected: false,
-                };
-                self.interactive_rows.push(new_row);
-                self.interactive_selection.push(false);
-                println!("Added new row");
+                self.add_row_dialog_open = true;
             }
 
             if ui.add(MaterialButton::outlined("Delete Selected")).clicked() {
@@ -366,18 +472,15 @@ impl DataTableWindow {
                 }
             }
 
-            if ui.add(MaterialButton::text("Export")).clicked() {
-                // Export data (in real implementation, this could save to CSV, etc.)
-                let export_data: Vec<String> = self.interactive_rows
-                    .iter()
-                    .map(|row| format!("{},{},{},{}", row.product, row.category, row.price, row.stock))
-                    .collect();
-
-                println!("Exported data:");
-                println!("Product,Category,Price,Stock");
-                for line in export_data {
-                    println!("{}", line);
+            if ui.add(MaterialButton::text("Export to CSV")).clicked() {
+                match self.export_to_csv("exported_data.csv") {
+                    Ok(_) => self.status_message = "Saved to exported_data.csv".to_string(),
+                    Err(e) => self.status_message = format!("Export failed: {}", e),
                 }
+            }
+
+            if !self.status_message.is_empty() {
+                ui.label(&self.status_message);
             }
         });
 

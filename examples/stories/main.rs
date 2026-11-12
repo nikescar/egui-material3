@@ -88,9 +88,8 @@ use topappbar_window::TopAppBarWindow;
 use treeview_window::TreeViewWindow;
 
 fn main() -> Result<(), eframe::Error> {
-    // Initialize async-std executor for async operations (spreadsheet feature)
-    #[cfg(feature = "spreadsheet")]
-    egui_material3::egui_async_std::init_executor();
+    // Note: smol async runtime doesn't require explicit initialization
+    // The spreadsheet feature will use smol::block_on or smol::spawn as needed
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 1200.0]),
