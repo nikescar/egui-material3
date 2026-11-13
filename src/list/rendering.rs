@@ -92,19 +92,9 @@ impl<'a> Widget for MaterialList<'a> {
         }
 
         let list_width = max_content_width.min(ui.available_width());
+        // Use allocate_at_least to allow for dynamic drawer heights
         let desired_size = Vec2::new(list_width, total_height);
-        let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
-
-        // Draw list background using surfaceContainerLowest (lowest emphasis surface container)
-        ui.painter()
-            .rect_filled(rect, 8.0, surface_container_lowest);
-        // Draw border using outlineVariant (less emphasized outline for structure)
-        ui.painter().rect_stroke(
-            rect,
-            8.0,
-            Stroke::new(1.0, outline_variant),
-            egui::epaint::StrokeKind::Outside,
-        );
+        let (mut rect, response) = ui.allocate_at_least(desired_size, Sense::hover());
 
         let mut current_y = rect.min.y;
         let mut pending_actions = Vec::new();
@@ -481,6 +471,21 @@ impl<'a> Widget for MaterialList<'a> {
                 current_y += 1.0;
             }
         }
+
+        // Update rect to actual final height including drawers
+        let final_height = current_y - rect.min.y;
+        rect.max.y = rect.min.y + final_height;
+
+        // Draw list background using surfaceContainerLowest (lowest emphasis surface container)
+        ui.painter()
+            .rect_filled(rect, 8.0, surface_container_lowest);
+        // Draw border using outlineVariant (less emphasized outline for structure)
+        ui.painter().rect_stroke(
+            rect,
+            8.0,
+            Stroke::new(1.0, outline_variant),
+            egui::epaint::StrokeKind::Outside,
+        );
 
         // Execute pending actions
         for action in pending_actions {
