@@ -134,7 +134,7 @@ impl EguiWindow {
                 ui.label("Background:");
                 ui.label(
                     egui::RichText::new("Highlighted")
-                        .background_color(Color32::from_rgb(255, 255, 0))
+                        .background_color(Color32::from_rgb(255, 255, 0)),
                 );
                 ui.end_row();
 
@@ -155,7 +155,7 @@ impl EguiWindow {
                     egui::RichText::new("Bold + Colored + Large")
                         .strong()
                         .color(Color32::from_rgb(0, 128, 255))
-                        .heading()
+                        .heading(),
                 );
                 ui.end_row();
             });
@@ -192,10 +192,8 @@ impl EguiWindow {
         ui.separator();
 
         ui.vertical_centered(|ui| {
-            ui.hyperlink_to(
-                "egui documentation",
-                "https://docs.rs/egui/"
-            ).on_hover_text("Full egui documentation");
+            ui.hyperlink_to("egui documentation", "https://docs.rs/egui/")
+                .on_hover_text("Full egui documentation");
         });
     }
 
@@ -207,18 +205,12 @@ impl EguiWindow {
 
         // Hyperlink
         ui.label("Hyperlink:");
-        ui.hyperlink_to(
-            "egui on GitHub",
-            "https://github.com/emilk/egui"
-        );
+        ui.hyperlink_to("egui on GitHub", "https://github.com/emilk/egui");
         ui.end_row();
 
         // TextEdit single line
         ui.label("TextEdit:");
-        ui.add(
-            egui::TextEdit::singleline(&mut self.string)
-                .hint_text("Write something here")
-        );
+        ui.add(egui::TextEdit::singleline(&mut self.string).hint_text("Write something here"));
         ui.end_row();
 
         // Button

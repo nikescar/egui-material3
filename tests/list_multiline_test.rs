@@ -11,10 +11,7 @@ fn test_multiline_secondary_text_renders() {
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
             let list = MaterialList::new()
-                .item(
-                    ListItem::new("Primary Text")
-                        .secondary_text("Line 1\nLine 2")
-                );
+                .item(ListItem::new("Primary Text").secondary_text("Line 1\nLine 2"));
 
             ui.add(list);
             // If it compiles and renders without panic, test passes
@@ -32,10 +29,7 @@ fn test_single_line_secondary_text_unchanged() {
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
             let list = MaterialList::new()
-                .item(
-                    ListItem::new("Primary Text")
-                        .secondary_text("Single line only")
-                );
+                .item(ListItem::new("Primary Text").secondary_text("Single line only"));
 
             ui.add(list);
             assert!(true);
@@ -51,17 +45,11 @@ fn test_multiline_increases_height() {
 
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let single_line = MaterialList::new()
-                .item(
-                    ListItem::new("Item")
-                        .secondary_text("One line")
-                );
+            let single_line =
+                MaterialList::new().item(ListItem::new("Item").secondary_text("One line"));
 
             let multi_line = MaterialList::new()
-                .item(
-                    ListItem::new("Item")
-                        .secondary_text("Line 1\nLine 2\nLine 3")
-                );
+                .item(ListItem::new("Item").secondary_text("Line 1\nLine 2\nLine 3"));
 
             let single_response = ui.add(single_line);
             let multi_response = ui.add(multi_line);
@@ -80,8 +68,7 @@ fn test_no_secondary_text() {
 
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let list = MaterialList::new()
-                .item(ListItem::new("Primary only"));
+            let list = MaterialList::new().item(ListItem::new("Primary only"));
 
             ui.add(list);
             assert!(true);
@@ -97,13 +84,12 @@ fn test_five_line_item_with_all_fields() {
 
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let list = MaterialList::new()
-                .item(
-                    ListItem::new("Primary Text")
-                        .overline("Overline")
-                        .secondary_text("Secondary Line 1\nSecondary Line 2")
-                        .trailing_text("Trailing")
-                );
+            let list = MaterialList::new().item(
+                ListItem::new("Primary Text")
+                    .overline("Overline")
+                    .secondary_text("Secondary Line 1\nSecondary Line 2")
+                    .trailing_text("Trailing"),
+            );
 
             ui.add(list);
             assert!(true);

@@ -630,90 +630,85 @@ impl DialogWindow {
         // Wizard Dialog - using enhanced dialog() builder with programmatic close
         if self.wizard_dialog_open {
             let mut open = self.wizard_dialog_open;
-            dialog(
-                "wizard_dialog",
-                "Setup Wizard",
-                &mut open,
-            )
-            .max_width(500.0)
-            .content(|ui, open| {
-                // Step indicator
-                ui.add_space(10.0);
-                self.render_wizard_step_indicator(ui);
-                ui.add_space(10.0);
-                ui.separator();
-                ui.add_space(10.0);
-
-                // Step content
-                match self.wizard_current_step {
-                    0 => self.render_wizard_step_account(ui),
-                    1 => self.render_wizard_step_plan(ui),
-                    2 => self.render_wizard_step_confirm(ui),
-                    3 => self.render_wizard_step_complete(ui),
-                    _ => {}
-                }
-
-                // Navigation buttons
-                ui.add_space(20.0);
-                ui.separator();
-                ui.add_space(10.0);
-
-                ui.horizontal(|ui| {
-                    // Close button - now works with enhanced API!
-                    if ui.add(MaterialButton::outlined("Close")).clicked() {
-                        *open = false;
-                    }
-
+            dialog("wizard_dialog", "Setup Wizard", &mut open)
+                .max_width(500.0)
+                .content(|ui, open| {
+                    // Step indicator
+                    ui.add_space(10.0);
+                    self.render_wizard_step_indicator(ui);
+                    ui.add_space(10.0);
+                    ui.separator();
                     ui.add_space(10.0);
 
-                    // Previous button (disabled on first step)
-                    let can_go_back = self.wizard_current_step > 0;
-                    if ui
-                        .add(MaterialButton::outlined("Previous").enabled(can_go_back))
-                        .clicked()
-                    {
-                        if self.wizard_current_step > 0 {
-                            self.wizard_current_step -= 1;
+                    // Step content
+                    match self.wizard_current_step {
+                        0 => self.render_wizard_step_account(ui),
+                        1 => self.render_wizard_step_plan(ui),
+                        2 => self.render_wizard_step_confirm(ui),
+                        3 => self.render_wizard_step_complete(ui),
+                        _ => {}
+                    }
+
+                    // Navigation buttons
+                    ui.add_space(20.0);
+                    ui.separator();
+                    ui.add_space(10.0);
+
+                    ui.horizontal(|ui| {
+                        // Close button - now works with enhanced API!
+                        if ui.add(MaterialButton::outlined("Close")).clicked() {
+                            *open = false;
                         }
-                    }
 
-                    ui.add_space(10.0);
+                        ui.add_space(10.0);
 
-                    // Next/Finish button
-                    if self.wizard_current_step < 3 {
-                        // Validate current step before allowing Next
-                        let can_proceed = match self.wizard_current_step {
-                            0 => !self.wizard_name.is_empty() && !self.wizard_email.is_empty(),
-                            1 => self.wizard_plan.is_some(),
-                            2 => self.wizard_agree_terms,
-                            _ => true,
-                        };
-
+                        // Previous button (disabled on first step)
+                        let can_go_back = self.wizard_current_step > 0;
                         if ui
-                            .add(MaterialButton::filled("Next").enabled(can_proceed))
+                            .add(MaterialButton::outlined("Previous").enabled(can_go_back))
                             .clicked()
                         {
-                            self.wizard_current_step += 1;
+                            if self.wizard_current_step > 0 {
+                                self.wizard_current_step -= 1;
+                            }
                         }
-                    } else {
-                        // Final step - show Finish button
-                        if ui.add(MaterialButton::filled("Finish")).clicked() {
-                            *open = false;
-                            // Reset wizard state
-                            self.wizard_current_step = 0;
-                            self.wizard_name.clear();
-                            self.wizard_email.clear();
-                            self.wizard_plan = Some(0);
-                            self.wizard_agree_terms = false;
+
+                        ui.add_space(10.0);
+
+                        // Next/Finish button
+                        if self.wizard_current_step < 3 {
+                            // Validate current step before allowing Next
+                            let can_proceed = match self.wizard_current_step {
+                                0 => !self.wizard_name.is_empty() && !self.wizard_email.is_empty(),
+                                1 => self.wizard_plan.is_some(),
+                                2 => self.wizard_agree_terms,
+                                _ => true,
+                            };
+
+                            if ui
+                                .add(MaterialButton::filled("Next").enabled(can_proceed))
+                                .clicked()
+                            {
+                                self.wizard_current_step += 1;
+                            }
+                        } else {
+                            // Final step - show Finish button
+                            if ui.add(MaterialButton::filled("Finish")).clicked() {
+                                *open = false;
+                                // Reset wizard state
+                                self.wizard_current_step = 0;
+                                self.wizard_name.clear();
+                                self.wizard_email.clear();
+                                self.wizard_plan = Some(0);
+                                self.wizard_agree_terms = false;
+                            }
                         }
-                    }
-                });
-            })
-            .show(ctx);
+                    });
+                })
+                .show(ctx);
             self.wizard_dialog_open = open;
         }
     }
-
 
     fn render_wizard_step_indicator(&self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
@@ -825,5 +820,4 @@ impl DialogWindow {
         ui.add_space(15.0);
         ui.label("You can now start using the application.");
     }
-
 }

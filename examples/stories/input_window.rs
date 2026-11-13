@@ -146,15 +146,15 @@ impl InputWindow {
 
                     self.render_validation_examples(ui);
                     ui.add_space(20.0);
-                    
+
                     ui.add(
                         egui::TextEdit::singleline(&mut self.test_text)
-                            .hint_text("Search here...")                 // Placeholder text
+                            .hint_text("Search here...") // Placeholder text
                             .text_color(egui::Color32::from_rgb(0, 255, 0)) // Change active text color
-                            .background_color(egui::Color32::BLACK)     // Box background
-                            .margin(egui::vec2(10.0, 10.0))             // Padding around text
-                            .font(egui::FontId::monospace(16.0))        // Custom text font/size
-                            .frame(true)                                // False strips the background border entirely
+                            .background_color(egui::Color32::BLACK) // Box background
+                            .margin(egui::vec2(10.0, 10.0)) // Padding around text
+                            .font(egui::FontId::monospace(16.0)) // Custom text font/size
+                            .frame(true), // False strips the background border entirely
                     );
                 });
             });
@@ -171,7 +171,10 @@ impl InputWindow {
 
             ui.add_space(10.0);
 
-            if ui.add(MaterialButton::outlined("Angular Examples").small()).clicked() {
+            if ui
+                .add(MaterialButton::outlined("Angular Examples").small())
+                .clicked()
+            {
                 let _ = webbrowser::open("https://material.angular.dev/components/input/examples");
             }
         });
@@ -198,17 +201,17 @@ impl InputWindow {
         ui.label("Labels float above the input when focused or filled");
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::filled(&mut self.labeled_text)
-            .label("Full Name"));
+        ui.add(MaterialInput::filled(&mut self.labeled_text).label("Full Name"));
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::outlined(&mut self.labeled_email)
-            .label("Email Address"));
+        ui.add(MaterialInput::outlined(&mut self.labeled_email).label("Email Address"));
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::filled(&mut self.labeled_password)
-            .label("Password")
-            .password(true));
+        ui.add(
+            MaterialInput::filled(&mut self.labeled_password)
+                .label("Password")
+                .password(true),
+        );
     }
 
     fn render_helper_text_examples(&mut self, ui: &mut egui::Ui) {
@@ -216,14 +219,18 @@ impl InputWindow {
         ui.label("Helper text provides additional context below the input");
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::filled(&mut self.helper_text_input)
-            .label("Username")
-            .helper_text("Choose a unique username"));
+        ui.add(
+            MaterialInput::filled(&mut self.helper_text_input)
+                .label("Username")
+                .helper_text("Choose a unique username"),
+        );
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::outlined(&mut self.placeholder_text)
-            .placeholder("Enter your message here")
-            .helper_text("Optional message for the recipient"));
+        ui.add(
+            MaterialInput::outlined(&mut self.placeholder_text)
+                .placeholder("Enter your message here")
+                .helper_text("Optional message for the recipient"),
+        );
     }
 
     fn render_error_examples(&mut self, ui: &mut egui::Ui) {
@@ -232,18 +239,22 @@ impl InputWindow {
         ui.add_space(10.0);
 
         let is_error_empty = self.error_input.is_empty();
-        ui.add(MaterialInput::filled(&mut self.error_input)
-            .label("Required Field")
-            .error_text("This field is required")
-            .is_error(is_error_empty));
+        ui.add(
+            MaterialInput::filled(&mut self.error_input)
+                .label("Required Field")
+                .error_text("This field is required")
+                .is_error(is_error_empty),
+        );
         ui.add_space(10.0);
 
         let is_invalid_email = !self.email_input.is_empty() && !self.email_input.contains('@');
-        ui.add(MaterialInput::outlined(&mut self.email_input)
-            .label("Email")
-            .error_text("Please enter a valid email address")
-            .is_error(is_invalid_email)
-            .helper_text("example@domain.com"));
+        ui.add(
+            MaterialInput::outlined(&mut self.email_input)
+                .label("Email")
+                .error_text("Please enter a valid email address")
+                .is_error(is_invalid_email)
+                .helper_text("example@domain.com"),
+        );
     }
 
     fn render_icon_examples(&mut self, ui: &mut egui::Ui) {
@@ -251,27 +262,35 @@ impl InputWindow {
         ui.label("Leading and trailing icons for visual context");
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::filled(&mut self.icon_search)
-            .label("Search")
-            .leading_icon("search"));
+        ui.add(
+            MaterialInput::filled(&mut self.icon_search)
+                .label("Search")
+                .leading_icon("search"),
+        );
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::outlined(&mut self.icon_email)
-            .label("Email")
-            .leading_icon("mail")
-            .trailing_icon("done"));
+        ui.add(
+            MaterialInput::outlined(&mut self.icon_email)
+                .label("Email")
+                .leading_icon("mail")
+                .trailing_icon("done"),
+        );
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::filled(&mut self.icon_password)
-            .label("Password")
-            .leading_icon("lock")
-            .password(true));
+        ui.add(
+            MaterialInput::filled(&mut self.icon_password)
+                .label("Password")
+                .leading_icon("lock")
+                .password(true),
+        );
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::outlined(&mut self.icon_phone)
-            .label("Phone")
-            .leading_icon("phone")
-            .trailing_icon("clear"));
+        ui.add(
+            MaterialInput::outlined(&mut self.icon_phone)
+                .label("Phone")
+                .leading_icon("phone")
+                .trailing_icon("clear"),
+        );
     }
 
     fn render_character_counter(&mut self, ui: &mut egui::Ui) {
@@ -279,17 +298,21 @@ impl InputWindow {
         ui.label("Track character count with optional limit");
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::filled(&mut self.counter_input)
-            .label("Message")
-            .show_character_count(true)
-            .helper_text("Type your message"));
+        ui.add(
+            MaterialInput::filled(&mut self.counter_input)
+                .label("Message")
+                .show_character_count(true)
+                .helper_text("Type your message"),
+        );
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::outlined(&mut self.counter_limited)
-            .label("Bio")
-            .max_length(100)
-            .show_character_count(true)
-            .helper_text("Maximum 100 characters"));
+        ui.add(
+            MaterialInput::outlined(&mut self.counter_limited)
+                .label("Bio")
+                .max_length(100)
+                .show_character_count(true)
+                .helper_text("Maximum 100 characters"),
+        );
     }
 
     fn render_password_examples(&mut self, ui: &mut egui::Ui) {
@@ -297,10 +320,12 @@ impl InputWindow {
         ui.label("Masked text input for sensitive data");
         ui.add_space(10.0);
 
-        ui.add(MaterialInput::filled(&mut self.password_text)
-            .label("Password")
-            .password(true)
-            .leading_icon("lock"));
+        ui.add(
+            MaterialInput::filled(&mut self.password_text)
+                .label("Password")
+                .password(true)
+                .leading_icon("lock"),
+        );
         ui.add_space(10.0);
 
         let passwords_match = !self.password_text.is_empty()
@@ -308,13 +333,15 @@ impl InputWindow {
             && self.password_text == self.confirm_password;
         let show_error = !self.confirm_password.is_empty() && !passwords_match;
 
-        ui.add(MaterialInput::outlined(&mut self.confirm_password)
-            .label("Confirm Password")
-            .password(true)
-            .leading_icon("lock")
-            .trailing_icon(if passwords_match { "done" } else { "close" })
-            .error_text("Passwords do not match")
-            .is_error(show_error));
+        ui.add(
+            MaterialInput::outlined(&mut self.confirm_password)
+                .label("Confirm Password")
+                .password(true)
+                .leading_icon("lock")
+                .trailing_icon(if passwords_match { "done" } else { "close" })
+                .error_text("Passwords do not match")
+                .is_error(show_error),
+        );
     }
 
     fn render_state_examples(&mut self, ui: &mut egui::Ui) {
@@ -323,22 +350,28 @@ impl InputWindow {
         ui.add_space(10.0);
 
         ui.label("Disabled filled:");
-        ui.add(MaterialInput::filled(&mut self.disabled_filled)
-            .label("Disabled Field")
-            .enabled(false));
+        ui.add(
+            MaterialInput::filled(&mut self.disabled_filled)
+                .label("Disabled Field")
+                .enabled(false),
+        );
         ui.add_space(10.0);
 
         ui.label("Disabled outlined:");
-        ui.add(MaterialInput::outlined(&mut self.disabled_outlined)
-            .label("Disabled Outlined")
-            .enabled(false));
+        ui.add(
+            MaterialInput::outlined(&mut self.disabled_outlined)
+                .label("Disabled Outlined")
+                .enabled(false),
+        );
         ui.add_space(10.0);
 
         ui.label("Read-only:");
-        ui.add(MaterialInput::filled(&mut self.readonly_text)
-            .label("Read Only")
-            .readonly(true)
-            .helper_text("This field cannot be edited"));
+        ui.add(
+            MaterialInput::filled(&mut self.readonly_text)
+                .label("Read Only")
+                .readonly(true)
+                .helper_text("This field cannot be edited"),
+        );
     }
 
     fn render_validation_examples(&mut self, ui: &mut egui::Ui) {
@@ -347,37 +380,45 @@ impl InputWindow {
         ui.add_space(10.0);
 
         let is_required_empty = self.required_field.is_empty();
-        ui.add(MaterialInput::filled(&mut self.required_field)
-            .label("Required Field *")
-            .error_text("This field is required")
-            .is_error(is_required_empty)
-            .helper_text("Please fill in this field"));
+        ui.add(
+            MaterialInput::filled(&mut self.required_field)
+                .label("Required Field *")
+                .error_text("This field is required")
+                .is_error(is_required_empty)
+                .helper_text("Please fill in this field"),
+        );
         ui.add_space(10.0);
 
-        let email_valid = self.email_field.is_empty() ||
-            (self.email_field.contains('@') && self.email_field.contains('.'));
-        ui.add(MaterialInput::outlined(&mut self.email_field)
-            .label("Email Validation")
-            .leading_icon("mail")
-            .error_text("Please enter a valid email (user@example.com)")
-            .is_error(!email_valid));
+        let email_valid = self.email_field.is_empty()
+            || (self.email_field.contains('@') && self.email_field.contains('.'));
+        ui.add(
+            MaterialInput::outlined(&mut self.email_field)
+                .label("Email Validation")
+                .leading_icon("mail")
+                .error_text("Please enter a valid email (user@example.com)")
+                .is_error(!email_valid),
+        );
         ui.add_space(10.0);
 
-        let url_valid = self.url_field.is_empty() ||
-            (self.url_field.starts_with("http://") || self.url_field.starts_with("https://"));
-        ui.add(MaterialInput::filled(&mut self.url_field)
-            .label("Website URL")
-            .leading_icon("link")
-            .error_text("URL must start with http:// or https://")
-            .is_error(!url_valid)
-            .helper_text("https://example.com"));
+        let url_valid = self.url_field.is_empty()
+            || (self.url_field.starts_with("http://") || self.url_field.starts_with("https://"));
+        ui.add(
+            MaterialInput::filled(&mut self.url_field)
+                .label("Website URL")
+                .leading_icon("link")
+                .error_text("URL must start with http:// or https://")
+                .is_error(!url_valid)
+                .helper_text("https://example.com"),
+        );
         ui.add_space(10.0);
 
         let number_valid = self.number_field.is_empty() || self.number_field.parse::<i32>().is_ok();
-        ui.add(MaterialInput::outlined(&mut self.number_field)
-            .label("Number Only")
-            .leading_icon("tag")
-            .error_text("Please enter a valid number")
-            .is_error(!number_valid));
+        ui.add(
+            MaterialInput::outlined(&mut self.number_field)
+                .label("Number Only")
+                .leading_icon("tag")
+                .error_text("Please enter a valid number")
+                .is_error(!number_valid),
+        );
     }
 }

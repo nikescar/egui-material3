@@ -1043,10 +1043,17 @@ impl<'a> MaterialDataTable<'a> {
                                     ui.painter().galley(text_pos, galley, text_color);
 
                                     if should_show_tooltip {
-                                        let cell_interact_id = table_id.with(format!("cell_{}_{}", row_idx, cell_idx));
-                                        let cell_response = ui.interact(cell_rect, cell_interact_id, Sense::hover());
+                                        let cell_interact_id =
+                                            table_id.with(format!("cell_{}_{}", row_idx, cell_idx));
+                                        let cell_response = ui.interact(
+                                            cell_rect,
+                                            cell_interact_id,
+                                            Sense::hover(),
+                                        );
                                         if cell_response.hovered() {
-                                            use crate::tooltip::{show_tooltip_on_hover, TooltipPosition};
+                                            use crate::tooltip::{
+                                                show_tooltip_on_hover, TooltipPosition,
+                                            };
                                             show_tooltip_on_hover(
                                                 ui,
                                                 &cell_response,

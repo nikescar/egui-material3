@@ -621,7 +621,11 @@ impl<'a> Widget for MaterialSelect<'a> {
         let text_y_offset = if should_show_label && should_float_label {
             // Compact mode: 6.5px offset centers text in space below label
             // Standard mode: 12px offset centers text in space below label
-            if self.compact { 6.5 } else { 12.0 }
+            if self.compact {
+                6.5
+            } else {
+                12.0
+            }
         } else {
             0.0
         };
@@ -950,10 +954,8 @@ impl<'a> Widget for MaterialSelect<'a> {
                                 Pos2::new(option_rect.max.x - 16.0, option_rect.max.y),
                             );
 
-                            let text_pos = Pos2::new(
-                                option_rect.min.x + 16.0,
-                                option_rect.center().y,
-                            );
+                            let text_pos =
+                                Pos2::new(option_rect.min.x + 16.0, option_rect.center().y);
                             ui.painter().with_clip_rect(text_clip_rect).text(
                                 text_pos,
                                 egui::Align2::LEFT_CENTER,

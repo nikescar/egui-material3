@@ -32,7 +32,9 @@
 //! - **Label font**: 16sp (placeholder), 12sp (floating)
 
 use crate::get_global_color;
-use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, TextStyle, Ui, Vec2, Widget};
+use egui::{
+    self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, TextStyle, Ui, Vec2, Widget,
+};
 
 /// Material Design text input field following Material Design 3 specifications
 ///
@@ -287,15 +289,22 @@ impl<'a> Widget for MaterialInput<'a> {
 
         // Determine colors based on state
         let (border_color, label_color) = if !self.enabled {
-            (on_surface.linear_multiply(0.38), on_surface.linear_multiply(0.38))
+            (
+                on_surface.linear_multiply(0.38),
+                on_surface.linear_multiply(0.38),
+            )
         } else if self.is_error {
             (error, error)
         } else if is_focused {
             (primary, primary)
         } else {
             (
-                if self.variant == InputVariant::Outlined { outline } else { on_surface_variant },
-                on_surface_variant
+                if self.variant == InputVariant::Outlined {
+                    outline
+                } else {
+                    on_surface_variant
+                },
+                on_surface_variant,
             )
         };
 
@@ -358,8 +367,13 @@ impl<'a> Widget for MaterialInput<'a> {
                 rect.center().y
             };
 
-            let label_x = rect.min.x + HORIZONTAL_PADDING +
-                if self.leading_icon.is_some() { ICON_SIZE + ICON_PADDING * 2.0 } else { 0.0 };
+            let label_x = rect.min.x
+                + HORIZONTAL_PADDING
+                + if self.leading_icon.is_some() {
+                    ICON_SIZE + ICON_PADDING * 2.0
+                } else {
+                    0.0
+                };
 
             ui.painter().text(
                 Pos2::new(label_x, label_y),
@@ -370,8 +384,13 @@ impl<'a> Widget for MaterialInput<'a> {
             );
         } else if let Some(ref placeholder_text) = self.placeholder {
             if !has_content && !is_focused {
-                let placeholder_x = rect.min.x + HORIZONTAL_PADDING +
-                    if self.leading_icon.is_some() { ICON_SIZE + ICON_PADDING * 2.0 } else { 0.0 };
+                let placeholder_x = rect.min.x
+                    + HORIZONTAL_PADDING
+                    + if self.leading_icon.is_some() {
+                        ICON_SIZE + ICON_PADDING * 2.0
+                    } else {
+                        0.0
+                    };
 
                 ui.painter().text(
                     Pos2::new(placeholder_x, rect.center().y),
@@ -390,8 +409,13 @@ impl<'a> Widget for MaterialInput<'a> {
             0.0
         };
 
-        let text_x = rect.min.x + HORIZONTAL_PADDING +
-            if self.leading_icon.is_some() { ICON_SIZE + ICON_PADDING * 2.0 } else { 0.0 };
+        let text_x = rect.min.x
+            + HORIZONTAL_PADDING
+            + if self.leading_icon.is_some() {
+                ICON_SIZE + ICON_PADDING * 2.0
+            } else {
+                0.0
+            };
 
         // Approximate text height (body font size + small margin)
         let text_height = 20.0;
@@ -407,24 +431,26 @@ impl<'a> Widget for MaterialInput<'a> {
         );
 
         // Draw text input
-        let text_response = ui.allocate_ui_at_rect(text_rect, |ui| {
-            ui.style_mut().spacing.interact_size.y = 0.0;
+        let text_response = ui
+            .allocate_ui_at_rect(text_rect, |ui| {
+                ui.style_mut().spacing.interact_size.y = 0.0;
 
-            let mut text_edit = egui::TextEdit::singleline(self.text)
-                .font(TextStyle::Body)
-                .desired_width(text_rect.width())
-                .frame(false);
+                let mut text_edit = egui::TextEdit::singleline(self.text)
+                    .font(TextStyle::Body)
+                    .desired_width(text_rect.width())
+                    .frame(false);
 
-            if self.password {
-                text_edit = text_edit.password(true);
-            }
+                if self.password {
+                    text_edit = text_edit.password(true);
+                }
 
-            if !self.enabled || self.readonly {
-                text_edit = text_edit.interactive(false);
-            }
+                if !self.enabled || self.readonly {
+                    text_edit = text_edit.interactive(false);
+                }
 
-            ui.add(text_edit)
-        }).inner;
+                ui.add(text_edit)
+            })
+            .inner;
 
         response = response.union(text_response);
 
@@ -445,7 +471,11 @@ impl<'a> Widget for MaterialInput<'a> {
                 egui::Align2::LEFT_CENTER,
                 crate::material_symbol::material_symbol_text(icon),
                 FontId::proportional(ICON_SIZE),
-                if self.enabled { on_surface_variant } else { on_surface.linear_multiply(0.38) },
+                if self.enabled {
+                    on_surface_variant
+                } else {
+                    on_surface.linear_multiply(0.38)
+                },
             );
         }
 
@@ -459,7 +489,11 @@ impl<'a> Widget for MaterialInput<'a> {
                 egui::Align2::LEFT_CENTER,
                 crate::material_symbol::material_symbol_text(icon),
                 FontId::proportional(ICON_SIZE),
-                if self.enabled { on_surface_variant } else { on_surface.linear_multiply(0.38) },
+                if self.enabled {
+                    on_surface_variant
+                } else {
+                    on_surface.linear_multiply(0.38)
+                },
             );
         }
 
@@ -476,7 +510,11 @@ impl<'a> Widget for MaterialInput<'a> {
                             ui.label(egui::RichText::new(error_text).size(12.0).color(error));
                         }
                     } else if let Some(ref helper) = self.helper_text {
-                        ui.label(egui::RichText::new(helper).size(12.0).color(on_surface_variant));
+                        ui.label(
+                            egui::RichText::new(helper)
+                                .size(12.0)
+                                .color(on_surface_variant),
+                        );
                     }
 
                     // Character counter
@@ -487,7 +525,11 @@ impl<'a> Widget for MaterialInput<'a> {
                             } else {
                                 format!("{}", self.text.len())
                             };
-                            ui.label(egui::RichText::new(counter_text).size(12.0).color(on_surface_variant));
+                            ui.label(
+                                egui::RichText::new(counter_text)
+                                    .size(12.0)
+                                    .color(on_surface_variant),
+                            );
                         });
                     }
                 });
@@ -505,7 +547,10 @@ mod tests {
     #[test]
     fn test_input_height_constant() {
         // Verify Material Design 3 spec height
-        assert_eq!(INPUT_HEIGHT, 56.0, "Input height should be 56dp per M3 spec");
+        assert_eq!(
+            INPUT_HEIGHT, 56.0,
+            "Input height should be 56dp per M3 spec"
+        );
     }
 
     #[test]
@@ -520,7 +565,10 @@ mod tests {
         let vertical_padding = (available_vertical_space - text_height) / 2.0;
 
         // Text should start at center - half height
-        assert!(vertical_padding > 0.0, "Should have vertical padding for centering");
+        assert!(
+            vertical_padding > 0.0,
+            "Should have vertical padding for centering"
+        );
         assert_eq!(vertical_padding, (56.0 - 20.0) / 2.0); // 18.0
     }
 
@@ -536,7 +584,10 @@ mod tests {
         let vertical_padding = (available_vertical_space - text_height) / 2.0;
 
         // Should center in remaining 32px space
-        assert!(vertical_padding > 0.0, "Should have vertical padding even with floating label");
+        assert!(
+            vertical_padding > 0.0,
+            "Should have vertical padding even with floating label"
+        );
         assert_eq!(vertical_padding, (32.0 - 20.0) / 2.0); // 6.0
     }
 
@@ -567,7 +618,10 @@ mod tests {
         let is_focused = false;
 
         let should_float = is_focused || has_content;
-        assert!(!should_float, "Label should not float when empty and unfocused");
+        assert!(
+            !should_float,
+            "Label should not float when empty and unfocused"
+        );
     }
 
     #[test]
@@ -582,7 +636,10 @@ mod tests {
             0.0
         };
 
-        assert_eq!(text_y_offset, 24.0, "Text should be offset by 24px when label floats");
+        assert_eq!(
+            text_y_offset, 24.0,
+            "Text should be offset by 24px when label floats"
+        );
     }
 
     #[test]
@@ -597,6 +654,9 @@ mod tests {
             0.0
         };
 
-        assert_eq!(text_y_offset, 0.0, "Text should not be offset when no label");
+        assert_eq!(
+            text_y_offset, 0.0,
+            "Text should not be offset when no label"
+        );
     }
 }

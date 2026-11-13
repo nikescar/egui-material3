@@ -13,18 +13,12 @@ fn test_multiline_item_height_applied() {
             // Single-line item
             let single = MaterialList::new()
                 .id(egui::Id::new("single"))
-                .item(
-                    ListItem::new("Primary")
-                        .secondary_text("One line")
-                );
+                .item(ListItem::new("Primary").secondary_text("One line"));
 
             // Multi-line item (should be taller)
             let multi = MaterialList::new()
                 .id(egui::Id::new("multi"))
-                .item(
-                    ListItem::new("Primary")
-                        .secondary_text("Line 1\nLine 2\nLine 3")
-                );
+                .item(ListItem::new("Primary").secondary_text("Line 1\nLine 2\nLine 3"));
 
             let single_response = ui.add(single);
             let multi_response = ui.add(multi);
@@ -46,13 +40,12 @@ fn test_five_line_item_spacing() {
 
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let list = MaterialList::new()
-                .item(
-                    ListItem::new("Backend Development")
-                        .overline("Engineering")
-                        .secondary_text("Server infrastructure\nand API services")
-                        .trailing_text("Expand ▶")
-                );
+            let list = MaterialList::new().item(
+                ListItem::new("Backend Development")
+                    .overline("Engineering")
+                    .secondary_text("Server infrastructure\nand API services")
+                    .trailing_text("Expand ▶"),
+            );
 
             let response = ui.add(list);
 
@@ -78,18 +71,9 @@ fn test_no_accumulated_bottom_spacing() {
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
             let list = MaterialList::new()
-                .item(
-                    ListItem::new("Item 1")
-                        .secondary_text("Line A\nLine B")
-                )
-                .item(
-                    ListItem::new("Item 2")
-                        .secondary_text("Line C\nLine D")
-                )
-                .item(
-                    ListItem::new("Item 3")
-                        .secondary_text("Line E\nLine F")
-                );
+                .item(ListItem::new("Item 1").secondary_text("Line A\nLine B"))
+                .item(ListItem::new("Item 2").secondary_text("Line C\nLine D"))
+                .item(ListItem::new("Item 3").secondary_text("Line E\nLine F"));
 
             let response = ui.add(list);
 
@@ -120,14 +104,8 @@ fn test_dividers_with_multiline() {
         egui::CentralPanel::default().show(ctx, |ui| {
             let list = MaterialList::new()
                 .dividers(true)
-                .item(
-                    ListItem::new("Item 1")
-                        .secondary_text("Line A\nLine B")
-                )
-                .item(
-                    ListItem::new("Item 2")
-                        .secondary_text("Line C\nLine D")
-                );
+                .item(ListItem::new("Item 1").secondary_text("Line A\nLine B"))
+                .item(ListItem::new("Item 2").secondary_text("Line C\nLine D"));
 
             let response = ui.add(list);
 

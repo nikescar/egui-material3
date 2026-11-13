@@ -10,13 +10,12 @@ fn test_multiline_vertical_centering() {
 
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let list = MaterialList::new()
-                .item(
-                    ListItem::new("Backend Development")
-                        .overline("Engineering")
-                        .secondary_text("Server infrastructure\nand API services")
-                        .trailing_text("Expand ▶")
-                );
+            let list = MaterialList::new().item(
+                ListItem::new("Backend Development")
+                    .overline("Engineering")
+                    .secondary_text("Server infrastructure\nand API services")
+                    .trailing_text("Expand ▶"),
+            );
 
             let response = ui.add(list);
 
@@ -35,12 +34,11 @@ fn test_3line_centering_unchanged() {
 
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let list = MaterialList::new()
-                .item(
-                    ListItem::new("Primary Text")
-                        .overline("Overline")
-                        .secondary_text("Single line secondary")
-                );
+            let list = MaterialList::new().item(
+                ListItem::new("Primary Text")
+                    .overline("Overline")
+                    .secondary_text("Single line secondary"),
+            );
 
             let response = ui.add(list);
 
@@ -66,10 +64,7 @@ fn test_2line_with_multiline_secondary() {
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
             let list = MaterialList::new()
-                .item(
-                    ListItem::new("Primary Text")
-                        .secondary_text("Line 1\nLine 2")
-                );
+                .item(ListItem::new("Primary Text").secondary_text("Line 1\nLine 2"));
 
             let response = ui.add(list);
 
@@ -93,13 +88,12 @@ fn test_dense_multiline_centering() {
 
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let list = MaterialList::new()
-                .item(
-                    ListItem::new("Primary")
-                        .overline("Overline")
-                        .secondary_text("Line 1\nLine 2")
-                        .dense(true)
-                );
+            let list = MaterialList::new().item(
+                ListItem::new("Primary")
+                    .overline("Overline")
+                    .secondary_text("Line 1\nLine 2")
+                    .dense(true),
+            );
 
             let response = ui.add(list);
 
@@ -124,10 +118,7 @@ fn test_no_overline_centering() {
     ctx.run(Default::default(), |ctx| {
         egui::CentralPanel::default().show(ctx, |ui| {
             let list = MaterialList::new()
-                .item(
-                    ListItem::new("Primary")
-                        .secondary_text("Line 1\nLine 2\nLine 3")
-                );
+                .item(ListItem::new("Primary").secondary_text("Line 1\nLine 2\nLine 3"));
 
             let response = ui.add(list);
 

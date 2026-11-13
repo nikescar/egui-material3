@@ -1,8 +1,8 @@
 // Integration tests for conditional drawer functionality
 // Tests verify API compiles and can be used correctly
 
-use egui_material3::data_table;
 use egui::Id;
+use egui_material3::data_table;
 
 #[test]
 fn test_drawer_if_api_compiles_with_true_condition() {
@@ -16,11 +16,9 @@ fn test_drawer_if_api_compiles_with_true_condition() {
         .column("Product", 100.0, false)
         .column("Stock", 80.0, true)
         .row(|row| {
-            row.cell("Keyboard")
-                .cell("45")
-                .drawer_if(condition, |ui| {
-                    ui.label("High stock - bulk order available");
-                })
+            row.cell("Keyboard").cell("45").drawer_if(condition, |ui| {
+                ui.label("High stock - bulk order available");
+            })
         });
 
     // Assert - compilation is the test
@@ -38,11 +36,9 @@ fn test_drawer_if_api_compiles_with_false_condition() {
         .column("Product", 100.0, false)
         .column("Stock", 80.0, true)
         .row(|row| {
-            row.cell("Mouse")
-                .cell("10")
-                .drawer_if(condition, |ui| {
-                    ui.label("Details");
-                })
+            row.cell("Mouse").cell("10").drawer_if(condition, |ui| {
+                ui.label("Details");
+            })
         });
 
     // Assert - compilation is the test
@@ -57,32 +53,24 @@ fn test_mixed_drawer_conditions_api() {
         .column("Product", 100.0, false)
         .column("Stock", 80.0, true)
         .row(|row| {
-            row.cell("Mouse")
-                .cell("10")
-                .drawer_if(10 > 20, |ui| {
-                    ui.label("Stock: 10 - bulk order available");
-                })
+            row.cell("Mouse").cell("10").drawer_if(10 > 20, |ui| {
+                ui.label("Stock: 10 - bulk order available");
+            })
         })
         .row(|row| {
-            row.cell("Keyboard")
-                .cell("45")
-                .drawer_if(45 > 20, |ui| {
-                    ui.label("Stock: 45 - bulk order available");
-                })
+            row.cell("Keyboard").cell("45").drawer_if(45 > 20, |ui| {
+                ui.label("Stock: 45 - bulk order available");
+            })
         })
         .row(|row| {
-            row.cell("Monitor")
-                .cell("5")
-                .drawer_if(5 > 20, |ui| {
-                    ui.label("Stock: 5 - bulk order available");
-                })
+            row.cell("Monitor").cell("5").drawer_if(5 > 20, |ui| {
+                ui.label("Stock: 5 - bulk order available");
+            })
         })
         .row(|row| {
-            row.cell("Laptop")
-                .cell("30")
-                .drawer_if(30 > 20, |ui| {
-                    ui.label("Stock: 30 - bulk order available");
-                })
+            row.cell("Laptop").cell("30").drawer_if(30 > 20, |ui| {
+                ui.label("Stock: 30 - bulk order available");
+            })
         });
 
     // Assert - successful table creation
@@ -99,19 +87,15 @@ fn test_drawer_if_with_different_conditions() {
         .column("Stock", 80.0, true)
         .row(|row| {
             let stock = 25;
-            row.cell("Item A")
-                .cell("25")
-                .drawer_if(stock > 20, |ui| {
-                    ui.label("Available for bulk order");
-                })
+            row.cell("Item A").cell("25").drawer_if(stock > 20, |ui| {
+                ui.label("Available for bulk order");
+            })
         })
         .row(|row| {
             let stock = 8;
-            row.cell("Item B")
-                .cell("8")
-                .drawer_if(stock > 20, |ui| {
-                    ui.label("Available for bulk order");
-                })
+            row.cell("Item B").cell("8").drawer_if(stock > 20, |ui| {
+                ui.label("Available for bulk order");
+            })
         });
 
     // Assert - successful API usage

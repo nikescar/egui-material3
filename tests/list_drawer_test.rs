@@ -5,10 +5,9 @@ use egui_material3::ListItem;
 #[test]
 fn test_list_item_can_have_drawer() {
     // Test that ListItem can have a drawer closure
-    let item = ListItem::new("Test Item")
-        .drawer(|ui| {
-            ui.label("Drawer content");
-        });
+    let item = ListItem::new("Test Item").drawer(|ui| {
+        ui.label("Drawer content");
+    });
 
     // If this compiles, the API exists
     assert!(true);
@@ -18,16 +17,14 @@ fn test_list_item_can_have_drawer() {
 fn test_drawer_if_conditional() {
     // Test conditional drawer
     let condition_true = true;
-    let item_with_drawer = ListItem::new("Item 1")
-        .drawer_if(condition_true, |ui| {
-            ui.label("This drawer shows");
-        });
+    let item_with_drawer = ListItem::new("Item 1").drawer_if(condition_true, |ui| {
+        ui.label("This drawer shows");
+    });
 
     let condition_false = false;
-    let item_without_drawer = ListItem::new("Item 2")
-        .drawer_if(condition_false, |ui| {
-            ui.label("This drawer does not show");
-        });
+    let item_without_drawer = ListItem::new("Item 2").drawer_if(condition_false, |ui| {
+        ui.label("This drawer does not show");
+    });
 
     // If this compiles, drawer_if API exists
     assert!(true);

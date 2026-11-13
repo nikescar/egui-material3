@@ -9,9 +9,18 @@ fn test_datatable_default_theme_uses_surface_container() {
 
     // Act & Assert - default theme should not override M3 colors
     // This allows the component to use proper M3 surface containers
-    assert!(theme.decoration.is_none(), "decoration should be None to use surfaceContainer");
-    assert!(theme.heading_row_color.is_none(), "heading should use surfaceContainerHigh");
-    assert!(theme.data_row_color.is_none(), "data rows should use surfaceContainer");
+    assert!(
+        theme.decoration.is_none(),
+        "decoration should be None to use surfaceContainer"
+    );
+    assert!(
+        theme.heading_row_color.is_none(),
+        "heading should use surfaceContainerHigh"
+    );
+    assert!(
+        theme.data_row_color.is_none(),
+        "data rows should use surfaceContainer"
+    );
 }
 
 #[test]
@@ -20,7 +29,10 @@ fn test_datatable_selected_row_uses_secondary_container() {
     let theme = DataTableTheme::default();
 
     // Act & Assert - selected row color should use secondaryContainer
-    assert!(theme.selected_row_color.is_none(), "selected rows should use secondaryContainer");
+    assert!(
+        theme.selected_row_color.is_none(),
+        "selected rows should use secondaryContainer"
+    );
 }
 
 #[test]
@@ -29,7 +41,10 @@ fn test_datatable_divider_uses_outline_variant() {
     let theme = DataTableTheme::default();
 
     // Act & Assert - divider should use outlineVariant for subtle separation
-    assert!(theme.divider_color.is_none(), "divider should use outlineVariant");
+    assert!(
+        theme.divider_color.is_none(),
+        "divider should use outlineVariant"
+    );
 }
 
 #[test]
@@ -38,7 +53,10 @@ fn test_datatable_heading_text_uses_on_surface() {
     let theme = DataTableTheme::default();
 
     // Act & Assert - heading text should use onSurface
-    assert!(theme.heading_text_style.is_none(), "heading text should use onSurface");
+    assert!(
+        theme.heading_text_style.is_none(),
+        "heading text should use onSurface"
+    );
 }
 
 #[test]
@@ -47,7 +65,10 @@ fn test_datatable_data_text_uses_on_surface() {
     let theme = DataTableTheme::default();
 
     // Act & Assert - data text should use onSurface
-    assert!(theme.data_text_style.is_none(), "data text should use onSurface");
+    assert!(
+        theme.data_text_style.is_none(),
+        "data text should use onSurface"
+    );
 }
 
 #[test]
@@ -56,8 +77,14 @@ fn test_datatable_sort_icons_use_primary() {
     let theme = DataTableTheme::default();
 
     // Act & Assert - active sort should use primary
-    assert!(theme.sort_active_color.is_none(), "active sort should use primary");
-    assert!(theme.sort_inactive_color.is_none(), "inactive sort should use onSurfaceVariant");
+    assert!(
+        theme.sort_active_color.is_none(),
+        "active sort should use primary"
+    );
+    assert!(
+        theme.sort_inactive_color.is_none(),
+        "inactive sort should use onSurfaceVariant"
+    );
 }
 
 #[test]
@@ -82,10 +109,14 @@ fn test_datatable_m3_theme_constructor() {
     assert_eq!(theme.divider_color, Some(outline_variant));
 
     // Text colors
-    let heading_style = theme.heading_text_style.expect("heading text style should be set");
+    let heading_style = theme
+        .heading_text_style
+        .expect("heading text style should be set");
     assert_eq!(heading_style.1, on_surface);
 
-    let data_style = theme.data_text_style.expect("data text style should be set");
+    let data_style = theme
+        .data_text_style
+        .expect("data text style should be set");
     assert_eq!(data_style.1, on_surface);
 
     // Sort colors

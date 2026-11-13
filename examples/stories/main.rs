@@ -25,8 +25,8 @@ mod drawer_window;
 mod egui_window;
 mod fab_window;
 mod iconbutton_window;
-mod input_window;
 mod imagelist_window;
+mod input_window;
 mod layoutgrid_window;
 mod list_window;
 mod menu_window;
@@ -65,8 +65,8 @@ use drawer_window::DrawerWindow;
 use egui_window::EguiWindow;
 use fab_window::FabWindow;
 use iconbutton_window::IconButtonWindow;
-use input_window::InputWindow;
 use imagelist_window::ImageListWindow;
+use input_window::InputWindow;
 use layoutgrid_window::LayoutGridWindow;
 use list_window::ListWindow;
 use menu_window::MenuWindow;
@@ -447,400 +447,400 @@ impl eframe::App for MaterialApp {
                 let theme = self.get_theme();
 
                 ui.heading("Material Design Components Demo 테스트");
-            ui.add_space(10.0);
+                ui.add_space(10.0);
 
-            // Material Design 3 Theme Controls
-            ui.group(|ui| {
-                ui.horizontal(|ui| {
-                    ui.heading("Material Theme Controls");
-
-                    if ui
-                        .add(MaterialButton::filled("Theme Builder").small())
-                        .clicked()
-                    {
-                        let _ = webbrowser::open(
-                            "https://material-foundation.github.io/material-theme-builder/",
-                        );
-                    }
-
-                    if ui
-                        .add(MaterialButton::filled("Google Fonts").small())
-                        .clicked()
-                    {
-                        let _ = webbrowser::open(
-                            "https://fonts.google.com/specimen/Google+Sans+Code?query=google+sans",
-                        );
-                    }
-                });
-
-                ui.add_space(8.0);
-
-                // File Upload Section
+                // Material Design 3 Theme Controls
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
-                        ui.label("Theme File:");
+                        ui.heading("Material Theme Controls");
 
                         if ui
-                            .add(MaterialButton::filled("📁 Load JSON Theme").small())
+                            .add(MaterialButton::filled("Theme Builder").small())
                             .clicked()
                         {
-                            self.load_theme_file();
+                            let _ = webbrowser::open(
+                                "https://material-foundation.github.io/material-theme-builder/",
+                            );
                         }
 
-                        if let Some(ref path) = self.selected_file_path {
-                            ui.label(format!(
-                                "Loaded: {}",
-                                path.file_name().unwrap_or_default().to_string_lossy()
-                            ));
-                        } else {
-                            ui.label("No theme loaded");
+                        if ui
+                            .add(MaterialButton::filled("Google Fonts").small())
+                            .clicked()
+                        {
+                            let _ = webbrowser::open(
+                            "https://fonts.google.com/specimen/Google+Sans+Code?query=google+sans",
+                        );
                         }
                     });
-                });
 
-                ui.add_space(8.0);
+                    ui.add_space(8.0);
 
-                // Theme Mode Selector
-                ui.horizontal(|ui| {
-                    ui.label("Color Mode:");
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.horizontal(|ui| {
-                            // Light mode button
-                            let light_selected = theme.theme_mode == ThemeMode::Light;
-                            let light_button = ui.selectable_label(light_selected, "☀️ Light");
-                            if light_button.clicked() {
-                                self.update_theme(|theme| {
-                                    theme.theme_mode = ThemeMode::Light;
-                                });
-                            }
-
-                            // Auto mode button
-                            let auto_selected = theme.theme_mode == ThemeMode::Auto;
-                            let auto_button = ui.selectable_label(auto_selected, "🌗 Auto");
-                            if auto_button.clicked() {
-                                self.update_theme(|theme| {
-                                    theme.theme_mode = ThemeMode::Auto;
-                                });
-                            }
-
-                            // Dark mode button
-                            let dark_selected = theme.theme_mode == ThemeMode::Dark;
-                            let dark_button = ui.selectable_label(dark_selected, "🌙 Dark");
-                            if dark_button.clicked() {
-                                self.update_theme(|theme| {
-                                    theme.theme_mode = ThemeMode::Dark;
-                                });
-                            }
-                        });
-                    });
-                });
-
-                ui.add_space(8.0);
-
-                // Contrast Level Selection
-                ui.horizontal(|ui| {
-                    ui.label("Contrast:");
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.horizontal(|ui| {
-                            let normal_selected = theme.contrast_level == ContrastLevel::Normal;
-                            let normal_button = ui.selectable_label(normal_selected, "Normal");
-                            if normal_button.clicked() {
-                                self.update_theme(|theme| {
-                                    theme.contrast_level = ContrastLevel::Normal;
-                                });
-                            }
-
-                            let medium_selected = theme.contrast_level == ContrastLevel::Medium;
-                            let medium_button = ui.selectable_label(medium_selected, "Medium");
-                            if medium_button.clicked() {
-                                self.update_theme(|theme| {
-                                    theme.contrast_level = ContrastLevel::Medium;
-                                });
-                            }
-
-                            let high_selected = theme.contrast_level == ContrastLevel::High;
-                            let high_button = ui.selectable_label(high_selected, "High");
-                            if high_button.clicked() {
-                                self.update_theme(|theme| {
-                                    theme.contrast_level = ContrastLevel::High;
-                                });
-                            }
-                        });
-                    });
-                });
-
-                ui.add_space(8.0);
-
-                // 49 Color Selectors - always show since we have default theme
-                {
+                    // File Upload Section
                     ui.group(|ui| {
-                        ui.label("Material Color Tokens:");
-                        ui.add_space(4.0);
+                        ui.horizontal(|ui| {
+                            ui.label("Theme File:");
 
-                        let color_names = [
-                            "primary",
-                            "surfaceTint",
-                            "onPrimary",
-                            "primaryContainer",
-                            "onPrimaryContainer",
-                            "secondary",
-                            "onSecondary",
-                            "secondaryContainer",
-                            "onSecondaryContainer",
-                            "tertiary",
-                            "onTertiary",
-                            "tertiaryContainer",
-                            "onTertiaryContainer",
-                            "error",
-                            "onError",
-                            "errorContainer",
-                            "onErrorContainer",
-                            "background",
-                            "onBackground",
-                            "surface",
-                            "onSurface",
-                            "surfaceVariant",
-                            "onSurfaceVariant",
-                            "outline",
-                            "outlineVariant",
-                            "shadow",
-                            "scrim",
-                            "inverseSurface",
-                            "inverseOnSurface",
-                            "inversePrimary",
-                            "primaryFixed",
-                            "onPrimaryFixed",
-                            "primaryFixedDim",
-                            "onPrimaryFixedVariant",
-                            "secondaryFixed",
-                            "onSecondaryFixed",
-                            "secondaryFixedDim",
-                            "onSecondaryFixedVariant",
-                            "tertiaryFixed",
-                            "onTertiaryFixed",
-                            "tertiaryFixedDim",
-                            "onTertiaryFixedVariant",
-                            "surfaceDim",
-                            "surfaceBright",
-                            "surfaceContainerLowest",
-                            "surfaceContainerLow",
-                            "surfaceContainer",
-                            "surfaceContainerHigh",
-                            "surfaceContainerHighest",
-                        ];
+                            if ui
+                                .add(MaterialButton::filled("📁 Load JSON Theme").small())
+                                .clicked()
+                            {
+                                self.load_theme_file();
+                            }
 
-                        ui.horizontal_wrapped(|ui| {
-                            for color_name in &color_names {
-                                let current_color = theme.get_color_by_name(color_name);
+                            if let Some(ref path) = self.selected_file_path {
+                                ui.label(format!(
+                                    "Loaded: {}",
+                                    path.file_name().unwrap_or_default().to_string_lossy()
+                                ));
+                            } else {
+                                ui.label("No theme loaded");
+                            }
+                        });
+                    });
 
-                                // Color name label
-                                ui.label(*color_name);
+                    ui.add_space(8.0);
 
-                                let mut temp_color = current_color;
-                                let color_changed =
-                                    ui.color_edit_button_srgba(&mut temp_color).changed();
-                                if color_changed {
+                    // Theme Mode Selector
+                    ui.horizontal(|ui| {
+                        ui.label("Color Mode:");
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.horizontal(|ui| {
+                                // Light mode button
+                                let light_selected = theme.theme_mode == ThemeMode::Light;
+                                let light_button = ui.selectable_label(light_selected, "☀️ Light");
+                                if light_button.clicked() {
                                     self.update_theme(|theme| {
-                                        theme
-                                            .selected_colors
-                                            .insert(color_name.to_string(), temp_color);
+                                        theme.theme_mode = ThemeMode::Light;
                                     });
                                 }
-                                ui.separator();
-                            }
+
+                                // Auto mode button
+                                let auto_selected = theme.theme_mode == ThemeMode::Auto;
+                                let auto_button = ui.selectable_label(auto_selected, "🌗 Auto");
+                                if auto_button.clicked() {
+                                    self.update_theme(|theme| {
+                                        theme.theme_mode = ThemeMode::Auto;
+                                    });
+                                }
+
+                                // Dark mode button
+                                let dark_selected = theme.theme_mode == ThemeMode::Dark;
+                                let dark_button = ui.selectable_label(dark_selected, "🌙 Dark");
+                                if dark_button.clicked() {
+                                    self.update_theme(|theme| {
+                                        theme.theme_mode = ThemeMode::Dark;
+                                    });
+                                }
+                            });
                         });
                     });
-                }
-            });
 
-            ui.add_space(15.0);
-            ui.label("Demo Windows:");
-            ui.horizontal_wrapped(|ui| {
-                if ui
-                    .add(MaterialButton::filled("Action Sheet Stories"))
-                    .clicked()
-                {
-                    self.actionsheet_window.open = true;
-                }
+                    ui.add_space(8.0);
 
-                if ui.add(MaterialButton::filled("Badge Stories")).clicked() {
-                    self.badge_window.open = true;
-                }
+                    // Contrast Level Selection
+                    ui.horizontal(|ui| {
+                        ui.label("Contrast:");
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.horizontal(|ui| {
+                                let normal_selected = theme.contrast_level == ContrastLevel::Normal;
+                                let normal_button = ui.selectable_label(normal_selected, "Normal");
+                                if normal_button.clicked() {
+                                    self.update_theme(|theme| {
+                                        theme.contrast_level = ContrastLevel::Normal;
+                                    });
+                                }
 
-                if ui
-                    .add(MaterialButton::filled("Breadcrumbs Stories"))
-                    .clicked()
-                {
-                    self.breadcrumbs_window.open = true;
-                }
+                                let medium_selected = theme.contrast_level == ContrastLevel::Medium;
+                                let medium_button = ui.selectable_label(medium_selected, "Medium");
+                                if medium_button.clicked() {
+                                    self.update_theme(|theme| {
+                                        theme.contrast_level = ContrastLevel::Medium;
+                                    });
+                                }
 
-                if ui.add(MaterialButton::filled("Button Stories")).clicked() {
-                    self.button_window.open = true;
-                }
+                                let high_selected = theme.contrast_level == ContrastLevel::High;
+                                let high_button = ui.selectable_label(high_selected, "High");
+                                if high_button.clicked() {
+                                    self.update_theme(|theme| {
+                                        theme.contrast_level = ContrastLevel::High;
+                                    });
+                                }
+                            });
+                        });
+                    });
 
-                if ui.add(MaterialButton::filled("Checkbox Stories")).clicked() {
-                    self.checkbox_window.open = true;
-                }
+                    ui.add_space(8.0);
 
-                if ui.add(MaterialButton::filled("Chips Stories")).clicked() {
-                    self.chips_window.open = true;
-                }
+                    // 49 Color Selectors - always show since we have default theme
+                    {
+                        ui.group(|ui| {
+                            ui.label("Material Color Tokens:");
+                            ui.add_space(4.0);
 
-                if ui
-                    .add(MaterialButton::filled("Data Table Stories"))
-                    .clicked()
-                {
-                    self.datatable_window.open = true;
-                }
+                            let color_names = [
+                                "primary",
+                                "surfaceTint",
+                                "onPrimary",
+                                "primaryContainer",
+                                "onPrimaryContainer",
+                                "secondary",
+                                "onSecondary",
+                                "secondaryContainer",
+                                "onSecondaryContainer",
+                                "tertiary",
+                                "onTertiary",
+                                "tertiaryContainer",
+                                "onTertiaryContainer",
+                                "error",
+                                "onError",
+                                "errorContainer",
+                                "onErrorContainer",
+                                "background",
+                                "onBackground",
+                                "surface",
+                                "onSurface",
+                                "surfaceVariant",
+                                "onSurfaceVariant",
+                                "outline",
+                                "outlineVariant",
+                                "shadow",
+                                "scrim",
+                                "inverseSurface",
+                                "inverseOnSurface",
+                                "inversePrimary",
+                                "primaryFixed",
+                                "onPrimaryFixed",
+                                "primaryFixedDim",
+                                "onPrimaryFixedVariant",
+                                "secondaryFixed",
+                                "onSecondaryFixed",
+                                "secondaryFixedDim",
+                                "onSecondaryFixedVariant",
+                                "tertiaryFixed",
+                                "onTertiaryFixed",
+                                "tertiaryFixedDim",
+                                "onTertiaryFixedVariant",
+                                "surfaceDim",
+                                "surfaceBright",
+                                "surfaceContainerLowest",
+                                "surfaceContainerLow",
+                                "surfaceContainer",
+                                "surfaceContainerHigh",
+                                "surfaceContainerHighest",
+                            ];
 
-                if ui.add(MaterialButton::filled("Dialog Stories")).clicked() {
-                    self.dialog_window.open = true;
-                }
+                            ui.horizontal_wrapped(|ui| {
+                                for color_name in &color_names {
+                                    let current_color = theme.get_color_by_name(color_name);
 
-                if ui.add(MaterialButton::filled("Drawer Stories")).clicked() {
-                    self.drawer_window.open = true;
-                }
+                                    // Color name label
+                                    ui.label(*color_name);
 
-                if ui
-                    .add(MaterialButton::filled("Egui Widget Gallery"))
-                    .clicked()
-                {
-                    self.egui_window.open = true;
-                }
+                                    let mut temp_color = current_color;
+                                    let color_changed =
+                                        ui.color_edit_button_srgba(&mut temp_color).changed();
+                                    if color_changed {
+                                        self.update_theme(|theme| {
+                                            theme
+                                                .selected_colors
+                                                .insert(color_name.to_string(), temp_color);
+                                        });
+                                    }
+                                    ui.separator();
+                                }
+                            });
+                        });
+                    }
+                });
 
-                if ui
-                    .add(MaterialButton::filled("Enhanced Card (Card2) Stories"))
-                    .clicked()
-                {
-                    self.card2_window.open = true;
-                }
+                ui.add_space(15.0);
+                ui.label("Demo Windows:");
+                ui.horizontal_wrapped(|ui| {
+                    if ui
+                        .add(MaterialButton::filled("Action Sheet Stories"))
+                        .clicked()
+                    {
+                        self.actionsheet_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Carousel Stories")).clicked() {
-                    self.carousel_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Badge Stories")).clicked() {
+                        self.badge_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("Dashboard Counter Stories"))
-                    .clicked()
-                {
-                    self.dashcounter_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Breadcrumbs Stories"))
+                        .clicked()
+                    {
+                        self.breadcrumbs_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("FAB Stories")).clicked() {
-                    self.fab_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Button Stories")).clicked() {
+                        self.button_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("Icon Button Stories"))
-                    .clicked()
-                {
-                    self.iconbutton_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Checkbox Stories")).clicked() {
+                        self.checkbox_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Input Stories")).clicked() {
-                    self.input_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Chips Stories")).clicked() {
+                        self.chips_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("Image List Stories"))
-                    .clicked()
-                {
-                    self.imagelist_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Data Table Stories"))
+                        .clicked()
+                    {
+                        self.datatable_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("Layout Grid Stories"))
-                    .clicked()
-                {
-                    self.layoutgrid_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Dialog Stories")).clicked() {
+                        self.dialog_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("List Stories")).clicked() {
-                    self.list_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Drawer Stories")).clicked() {
+                        self.drawer_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Menu Stories")).clicked() {
-                    self.menu_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Egui Widget Gallery"))
+                        .clicked()
+                    {
+                        self.egui_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("Notification Stories"))
-                    .clicked()
-                {
-                    self.notification_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Enhanced Card (Card2) Stories"))
+                        .clicked()
+                    {
+                        self.card2_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Progress Stories")).clicked() {
-                    self.progress_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Carousel Stories")).clicked() {
+                        self.carousel_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Radio Stories")).clicked() {
-                    self.radio_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Dashboard Counter Stories"))
+                        .clicked()
+                    {
+                        self.dashcounter_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Select Stories")).clicked() {
-                    self.select_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("FAB Stories")).clicked() {
+                        self.fab_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Slider Stories")).clicked() {
-                    self.slider_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Icon Button Stories"))
+                        .clicked()
+                    {
+                        self.iconbutton_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Snackbar Stories")).clicked() {
-                    self.snackbar_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Input Stories")).clicked() {
+                        self.input_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("Spreadsheet Stories"))
-                    .clicked()
-                {
-                    self.spreadsheet_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Image List Stories"))
+                        .clicked()
+                    {
+                        self.imagelist_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Switch Stories")).clicked() {
-                    self.switch_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Layout Grid Stories"))
+                        .clicked()
+                    {
+                        self.layoutgrid_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("SVG Emoji Stories"))
-                    .clicked()
-                {
-                    self.svgemoji_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("List Stories")).clicked() {
+                        self.list_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Symbol Stories")).clicked() {
-                    self.symbol_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Menu Stories")).clicked() {
+                        self.menu_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
-                    self.tabs_window.open = true;
-                }
+                    if ui
+                        .add(MaterialButton::filled("Notification Stories"))
+                        .clicked()
+                    {
+                        self.notification_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Timeline Stories")).clicked() {
-                    self.timeline_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Progress Stories")).clicked() {
+                        self.progress_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Toolbar Stories")).clicked() {
-                    self.toolbar_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Radio Stories")).clicked() {
+                        self.radio_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("Tooltip Stories")).clicked() {
-                    self.tooltip_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Select Stories")).clicked() {
+                        self.select_window.open = true;
+                    }
 
-                if ui.add(MaterialButton::filled("TreeView Stories")).clicked() {
-                    self.treeview_window.open = true;
-                }
+                    if ui.add(MaterialButton::filled("Slider Stories")).clicked() {
+                        self.slider_window.open = true;
+                    }
 
-                if ui
-                    .add(MaterialButton::filled("Top App Bar Stories"))
-                    .clicked()
-                {
-                    self.topappbar_window.open = true;
-                }
-            });
+                    if ui.add(MaterialButton::filled("Snackbar Stories")).clicked() {
+                        self.snackbar_window.open = true;
+                    }
 
-            ui.add_space(15.0);
+                    if ui
+                        .add(MaterialButton::filled("Spreadsheet Stories"))
+                        .clicked()
+                    {
+                        self.spreadsheet_window.open = true;
+                    }
+
+                    if ui.add(MaterialButton::filled("Switch Stories")).clicked() {
+                        self.switch_window.open = true;
+                    }
+
+                    if ui
+                        .add(MaterialButton::filled("SVG Emoji Stories"))
+                        .clicked()
+                    {
+                        self.svgemoji_window.open = true;
+                    }
+
+                    if ui.add(MaterialButton::filled("Symbol Stories")).clicked() {
+                        self.symbol_window.open = true;
+                    }
+
+                    if ui.add(MaterialButton::filled("Tabs Stories")).clicked() {
+                        self.tabs_window.open = true;
+                    }
+
+                    if ui.add(MaterialButton::filled("Timeline Stories")).clicked() {
+                        self.timeline_window.open = true;
+                    }
+
+                    if ui.add(MaterialButton::filled("Toolbar Stories")).clicked() {
+                        self.toolbar_window.open = true;
+                    }
+
+                    if ui.add(MaterialButton::filled("Tooltip Stories")).clicked() {
+                        self.tooltip_window.open = true;
+                    }
+
+                    if ui.add(MaterialButton::filled("TreeView Stories")).clicked() {
+                        self.treeview_window.open = true;
+                    }
+
+                    if ui
+                        .add(MaterialButton::filled("Top App Bar Stories"))
+                        .clicked()
+                    {
+                        self.topappbar_window.open = true;
+                    }
+                });
+
+                ui.add_space(15.0);
             });
         });
 

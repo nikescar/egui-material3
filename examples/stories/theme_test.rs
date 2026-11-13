@@ -150,13 +150,15 @@ fn test_container_hierarchy_in_dark_mode() {
     assert!(
         mid_lum > low_lum,
         "surfaceContainer should be lighter than surfaceContainerLow. Got mid={:.3}, low={:.3}",
-        mid_lum, low_lum
+        mid_lum,
+        low_lum
     );
 
     assert!(
         high_lum > mid_lum,
         "surfaceContainerHigh should be lighter than surfaceContainer. Got high={:.3}, mid={:.3}",
-        high_lum, mid_lum
+        high_lum,
+        mid_lum
     );
 
     // Cleanup
@@ -179,10 +181,26 @@ fn test_debug_dark_mode_color_values() {
     let surface_container_high = egui_material3::get_global_color("surfaceContainerHigh");
 
     println!("Dark mode colors:");
-    println!("  surface: {:?} (lum: {:.3})", surface, calculate_luminance(surface));
-    println!("  secondaryContainer: {:?} (lum: {:.3})", secondary_container, calculate_luminance(secondary_container));
-    println!("  surfaceVariant: {:?} (lum: {:.3})", surface_variant, calculate_luminance(surface_variant));
-    println!("  surfaceContainerHigh: {:?} (lum: {:.3})", surface_container_high, calculate_luminance(surface_container_high));
+    println!(
+        "  surface: {:?} (lum: {:.3})",
+        surface,
+        calculate_luminance(surface)
+    );
+    println!(
+        "  secondaryContainer: {:?} (lum: {:.3})",
+        secondary_container,
+        calculate_luminance(secondary_container)
+    );
+    println!(
+        "  surfaceVariant: {:?} (lum: {:.3})",
+        surface_variant,
+        calculate_luminance(surface_variant)
+    );
+    println!(
+        "  surfaceContainerHigh: {:?} (lum: {:.3})",
+        surface_container_high,
+        calculate_luminance(surface_container_high)
+    );
 
     // Cleanup
     let mut theme = theme_binding.lock().unwrap();
@@ -394,8 +412,7 @@ fn test_auto_mode_scheme_selection() {
 
     // These should be different colors
     assert_ne!(
-        surface_container_highest_light,
-        surface_container_highest_dark,
+        surface_container_highest_light, surface_container_highest_dark,
         "Light and dark mode should have different surfaceContainerHighest colors"
     );
 
@@ -424,7 +441,7 @@ fn test_auto_mode_scheme_selection() {
 
 #[test]
 fn test_global_theme_stores_dark_mode_state() {
-    use egui_material3::{get_global_theme};
+    use egui_material3::get_global_theme;
 
     // Get mutable access to global theme
     if let Ok(mut theme) = get_global_theme().lock() {

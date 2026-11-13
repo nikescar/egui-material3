@@ -189,25 +189,33 @@ impl DataTableWindow {
                     let is_product_error = !self.status_message.is_empty()
                         && self.status_message.contains("cannot be empty");
 
-                    ui.add(MaterialInput::filled(&mut self.new_product)
-                        .label("Product")
-                        .error_text("Product cannot be empty")
-                        .is_error(is_product_error));
+                    ui.add(
+                        MaterialInput::filled(&mut self.new_product)
+                            .label("Product")
+                            .error_text("Product cannot be empty")
+                            .is_error(is_product_error),
+                    );
                     ui.add_space(10.0);
 
-                    ui.add(MaterialInput::filled(&mut self.new_category)
-                        .label("Category")
-                        .helper_text("Optional"));
+                    ui.add(
+                        MaterialInput::filled(&mut self.new_category)
+                            .label("Category")
+                            .helper_text("Optional"),
+                    );
                     ui.add_space(10.0);
 
-                    ui.add(MaterialInput::filled(&mut self.new_price)
-                        .label("Price")
-                        .hint("e.g., $99"));
+                    ui.add(
+                        MaterialInput::filled(&mut self.new_price)
+                            .label("Price")
+                            .hint("e.g., $99"),
+                    );
                     ui.add_space(10.0);
 
-                    ui.add(MaterialInput::filled(&mut self.new_stock)
-                        .label("Stock")
-                        .hint("Quantity available"));
+                    ui.add(
+                        MaterialInput::filled(&mut self.new_stock)
+                            .label("Stock")
+                            .hint("Quantity available"),
+                    );
 
                     // Manual button handling in content
                     ui.add_space(16.0);
