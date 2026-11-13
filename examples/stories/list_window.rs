@@ -57,6 +57,8 @@ impl ListWindow {
                     ui.add_space(20.0);
                     self.render_visual_density_comparison(ui);
                     ui.add_space(20.0);
+                    self.render_drawer_demo(ui);
+                    ui.add_space(20.0);
                     self.render_real_world_examples(ui);
                 });
             });
@@ -647,6 +649,89 @@ impl ListWindow {
                 ui.add(compact_list);
             });
         });
+    }
+
+    fn render_drawer_demo(&mut self, ui: &mut egui::Ui) {
+        ui.heading("List with Selective Drawers");
+        ui.label("Click the chevron arrow to expand/collapse drawer content");
+
+        let drawer_list = MaterialList::new()
+            .id("drawer_demo_list")
+            .allow_drawer(true)
+            .item(
+                ListItem::new("Project Alpha")
+                    .secondary_text("High priority")
+                    .leading_icon("folder".to_string())
+                    .drawer(|ui| {
+                        ui.label("Project Details:");
+                        ui.label("• Status: In Progress");
+                        ui.label("• Deadline: Next Friday");
+                        ui.label("• Team: 5 members");
+                        ui.label("• Budget: $50,000");
+                    }),
+            )
+            .item(
+                ListItem::new("Project Beta")
+                    .secondary_text("Medium priority")
+                    .leading_icon("folder_open".to_string())
+                    .drawer(|ui| {
+                        ui.label("Project Details:");
+                        ui.label("• Status: Planning");
+                        ui.label("• Deadline: Next month");
+                        ui.label("• Team: 3 members");
+                        ui.label("• Budget: $30,000");
+                    }),
+            )
+            .item(
+                ListItem::new("Regular Item")
+                    .secondary_text("No drawer content")
+                    .leading_icon("description".to_string()),
+            )
+            .item(
+                ListItem::new("Project Gamma")
+                    .secondary_text("Low priority")
+                    .leading_icon("folder_special".to_string())
+                    .drawer_if(true, |ui| {
+                        ui.label("Project Details:");
+                        ui.label("• Status: On Hold");
+                        ui.label("• Deadline: TBD");
+                        ui.label("• Team: 2 members");
+                        ui.label("• Budget: $15,000");
+                    }),
+            );
+
+        ui.add(drawer_list);
+
+        ui.add_space(10.0);
+        ui.label("Conditional Drawers (drawer_if):");
+        ui.label("Drawers shown only for active projects:");
+
+        let projects = vec![
+            ("Design System", "Active", true),
+            ("API Migration", "Completed", false),
+            ("Mobile App", "Active", true),
+            ("Documentation", "Pending", false),
+        ];
+
+        let conditional_drawer_list = MaterialList::new()
+            .id("conditional_drawer_list")
+            .allow_drawer(true);
+
+        let mut list = conditional_drawer_list;
+        for (name, status, is_active) in projects {
+            let item = ListItem::new(name)
+                .secondary_text(format!("Status: {}", status))
+                .leading_icon(if is_active { "task_alt".to_string() } else { "radio_button_unchecked".to_string() })
+                .drawer_if(is_active, |ui| {
+                    ui.label("Active Project Info:");
+                    ui.label("• Last updated: Today");
+                    ui.label("• Recent activity: 3 commits");
+                    ui.label("• Next milestone: In 2 weeks");
+                });
+            list = list.item(item);
+        }
+
+        ui.add(list);
     }
 
     fn render_real_world_examples(&mut self, ui: &mut egui::Ui) {

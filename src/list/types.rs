@@ -106,6 +106,15 @@ pub struct MaterialList<'a> {
     pub(crate) dividers: bool,
     /// Optional unique ID for this list to avoid widget ID collisions
     pub(crate) id: Option<egui::Id>,
+    /// Whether to enable drawer functionality
+    pub(crate) allow_drawer: bool,
+}
+
+/// Persistent state for a Material Design list
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct MaterialListState {
+    /// Set of item indices that have their drawers expanded
+    pub drawer_open_items: std::collections::HashSet<usize>,
 }
 
 /// Individual item in a Material Design list.
@@ -168,4 +177,7 @@ pub struct ListItem<'a> {
     pub(crate) text_color: Option<Color32>,
     /// Callback function to execute when the item is clicked
     pub(crate) action: Option<Box<dyn Fn() + 'a>>,
+    /// Optional drawer content that expands below the item
+    #[allow(clippy::type_complexity)]
+    pub(crate) drawer: Option<std::sync::Arc<dyn Fn(&mut egui::Ui) + Send + Sync>>,
 }

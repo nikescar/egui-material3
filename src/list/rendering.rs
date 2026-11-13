@@ -3,8 +3,7 @@
 use super::{types::*, MaterialList};
 use crate::{get_global_color, material_symbol::material_symbol_text};
 use egui::{
-    ecolor::Color32, epaint::Stroke, pos2, Align, FontFamily, FontId, Pos2, Rect, Response, Sense,
-    Ui, Vec2, Widget, WidgetText,
+    ecolor::Color32, epaint::Stroke, Pos2, Rect, Response, Sense, Ui, Vec2, Widget,
 };
 
 impl<'a> Widget for MaterialList<'a> {
@@ -110,6 +109,12 @@ impl<'a> Widget for MaterialList<'a> {
         let mut current_y = rect.min.y;
         let mut pending_actions = Vec::new();
         let items_len = self.items.len();
+
+        // Load persistent drawer state
+        let state_id = self.id.unwrap_or_else(|| ui.id().with("material_list"));
+        let mut state = ui
+            .data_mut(|d| d.get_persisted::<MaterialListState>(state_id))
+            .unwrap_or_default();
 
         for (index, item) in self.items.into_iter().enumerate() {
             // Calculate item-specific dimensions
@@ -366,6 +371,37 @@ impl<'a> Widget for MaterialList<'a> {
                 );
             }
 
+            // Draw drawer chevron if drawer is enabled and item has drawer
+            let drawer_chevron_width = if self.allow_drawer && item.drawer.is_some() {
+                let chevron_pos = Pos2::new(item_rect.max.x - trailing_icon_width - trailing_text_width - 28.0, content_y);
+                let is_open = state.drawer_open_items.contains(&index);
+                let chevron = if is_open { "expand_more" } else { "chevron_right" };
+
+                let chevron_rect = Rect::from_center_size(chevron_pos, Vec2::splat(24.0));
+                let chevron_id = unique_id.with("drawer_chevron");
+                let chevron_response = ui.interact(chevron_rect, chevron_id, Sense::click());
+
+                if chevron_response.clicked() {
+                    if is_open {
+                        state.drawer_open_items.remove(&index);
+                    } else {
+                        state.drawer_open_items.insert(index);
+                    }
+                }
+
+                let chevron_string = material_symbol_text(chevron);
+                ui.painter().text(
+                    chevron_pos,
+                    egui::Align2::CENTER_CENTER,
+                    &chevron_string,
+                    egui::FontId::proportional(20.0),
+                    icon_color,
+                );
+                32.0
+            } else {
+                0.0
+            };
+
             // Draw trailing icon
             if let Some(icon_name) = &item.trailing_icon {
                 let icon_pos = Pos2::new(item_rect.max.x - 28.0, content_y);
@@ -381,6 +417,55 @@ impl<'a> Widget for MaterialList<'a> {
             }
 
             current_y += item_height;
+
+            // Render expanded drawer content if open
+            if self.allow_drawer && item.drawer.is_some() && state.drawer_open_items.contains(&index) {
+                let drawer_fn = item.drawer.as_ref().unwrap();
+                let drawer_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, current_y),
+                    Vec2::new(rect.width(), 0.0), // Height will be determined by content
+                );
+
+                // Accent stripe on the left
+                let stripe_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, current_y),
+                    Vec2::new(4.0, 0.0), // Height updated after content
+                );
+
+                // Background for drawer
+                let drawer_bg = primary_container.gamma_multiply(0.3);
+
+                let mut child_ui = ui.child_ui(drawer_rect, egui::Layout::top_down(egui::Align::LEFT), None);
+                child_ui.set_clip_rect(rect); // Constrain to list bounds
+
+                // Add padding
+                child_ui.add_space(8.0);
+                child_ui.horizontal(|ui| {
+                    ui.add_space(20.0); // Left indent
+                    ui.vertical(|ui| {
+                        drawer_fn(ui);
+                    });
+                });
+                child_ui.add_space(8.0);
+
+                let drawer_height = child_ui.min_rect().height();
+
+                // Draw drawer background
+                let final_drawer_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, current_y),
+                    Vec2::new(rect.width(), drawer_height),
+                );
+                ui.painter().rect_filled(final_drawer_rect, 0.0, drawer_bg);
+
+                // Draw accent stripe
+                let final_stripe_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, current_y),
+                    Vec2::new(4.0, drawer_height),
+                );
+                ui.painter().rect_filled(final_stripe_rect, 0.0, primary_container);
+
+                current_y += drawer_height;
+            }
 
             // Draw divider between items
             if self.dividers && index < items_len - 1 {
@@ -401,6 +486,9 @@ impl<'a> Widget for MaterialList<'a> {
         for action in pending_actions {
             action();
         }
+
+        // Persist drawer state
+        ui.data_mut(|d| d.insert_persisted(state_id, state));
 
         response
     }

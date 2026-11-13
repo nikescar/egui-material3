@@ -21,6 +21,7 @@ impl<'a> MaterialList<'a> {
             items: Vec::new(),
             dividers: true,
             id: None,
+            allow_drawer: false,
         }
     }
 
@@ -72,6 +73,27 @@ impl<'a> MaterialList<'a> {
         self.id = Some(id.into());
         self
     }
+
+    /// Enable drawer functionality for list items.
+    ///
+    /// When enabled, items with drawers will show an expand/collapse arrow.
+    /// Clicking the arrow toggles the drawer visibility.
+    ///
+    /// # Arguments
+    /// * `allow` - Whether to enable drawer functionality
+    ///
+    /// # Example
+    /// ```rust
+    /// let list = MaterialList::new()
+    ///     .allow_drawer(true)
+    ///     .item(ListItem::new("Item").drawer(|ui| {
+    ///         ui.label("Drawer content");
+    ///     }));
+    /// ```
+    pub fn allow_drawer(mut self, allow: bool) -> Self {
+        self.allow_drawer = allow;
+        self
+    }
 }
 
 impl<'a> ListItem<'a> {
@@ -109,6 +131,7 @@ impl<'a> ListItem<'a> {
             icon_color: None,
             text_color: None,
             action: None,
+            drawer: None,
         }
     }
 
@@ -479,6 +502,57 @@ impl<'a> ListItem<'a> {
         F: Fn() + 'a,
     {
         self.action = Some(Box::new(f));
+        self
+    }
+
+    /// Add a drawer that expands below this item when clicked.
+    ///
+    /// The drawer shows additional content in an expandable panel.
+    /// Click the arrow indicator to expand/collapse the drawer.
+    ///
+    /// # Arguments
+    /// * `f` - A function that renders the drawer content
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item with drawer")
+    ///     .drawer(|ui| {
+    ///         ui.label("Additional details");
+    ///         ui.label("More information here");
+    ///     });
+    /// ```
+    pub fn drawer<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&mut egui::Ui) + Send + Sync + 'static,
+    {
+        self.drawer = Some(std::sync::Arc::new(f));
+        self
+    }
+
+    /// Conditionally add a drawer based on a boolean condition.
+    ///
+    /// Only sets the drawer if `condition` is true.
+    /// Useful for showing drawers only on items that match certain criteria.
+    ///
+    /// # Arguments
+    /// * `condition` - Whether to add the drawer
+    /// * `f` - A function that renders the drawer content
+    ///
+    /// # Example
+    /// ```rust
+    /// let has_details = true;
+    /// let item = ListItem::new("Item")
+    ///     .drawer_if(has_details, |ui| {
+    ///         ui.label("Details shown only when condition is true");
+    ///     });
+    /// ```
+    pub fn drawer_if<F>(mut self, condition: bool, f: F) -> Self
+    where
+        F: Fn(&mut egui::Ui) + Send + Sync + 'static,
+    {
+        if condition {
+            self.drawer = Some(std::sync::Arc::new(f));
+        }
         self
     }
 }
