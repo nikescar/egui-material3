@@ -1264,37 +1264,85 @@ impl DataTableWindow {
         ui.add_space(20.0);
         ui.separator();
         ui.heading("Cell Tooltips for Long Content");
-        ui.label("Hover over cells with long text to see full content in tooltip");
+        ui.label("Three modes: disabled (default), always enabled, or smart (only truncated text)");
 
-        let tooltip_table = data_table()
-            .id(Id::new("tooltip_demo_table"))
+        ui.add_space(10.0);
+        ui.label("1. Tooltips DISABLED (default):");
+        let no_tooltip_table = data_table()
+            .id(Id::new("no_tooltip_table"))
             .column("ID", 60.0, true)
-            .column("Short Name", 100.0, false)  // Small width will truncate
-            .column("Full Description", 120.0, false)  // Small width will truncate
+            .column("Name", 100.0, false)
+            .column("Description", 120.0, false)
             .row(|row| {
                 row.cell("001")
+                   .cell("Short")
+                   .cell("This long text has no tooltip")
+            })
+            .row(|row| {
+                row.cell("002")
+                   .cell("Product Name")
+                   .cell("Very long description with no tooltip on hover")
+            });
+        ui.add(no_tooltip_table);
+
+        ui.add_space(10.0);
+        ui.label("2. Tooltips ALWAYS ENABLED:");
+        let mut always_tooltip_theme = DataTableTheme::default();
+        always_tooltip_theme.enable_cell_tooltips = true;
+
+        let always_tooltip_table = data_table()
+            .id(Id::new("always_tooltip_table"))
+            .column("ID", 60.0, true)
+            .column("Name", 100.0, false)
+            .column("Description", 120.0, false)
+            .theme(always_tooltip_theme)
+            .row(|row| {
+                row.cell("001")
+                   .cell("Short")
+                   .cell("Short text also shows tooltip")
+            })
+            .row(|row| {
+                row.cell("002")
                    .cell("Product Alpha")
                    .cell("This is a very long description that will be truncated in the cell but visible in tooltip when hovering")
+            });
+        ui.add(always_tooltip_table);
+
+        ui.add_space(10.0);
+        ui.label("3. SMART TOOLTIPS (only truncated text):");
+        let mut smart_tooltip_theme = DataTableTheme::default();
+        smart_tooltip_theme.smart_cell_tooltips = true;
+
+        let smart_tooltip_table = data_table()
+            .id(Id::new("smart_tooltip_table"))
+            .column("ID", 60.0, true)
+            .column("Name", 100.0, false)
+            .column("Description", 120.0, false)
+            .theme(smart_tooltip_theme)
+            .row(|row| {
+                row.cell("001")
+                   .cell("Short")
+                   .cell("Short - no tooltip")
             })
             .row(|row| {
                 row.cell("002")
                    .cell("Product Beta Extended Name That Wraps")
-                   .cell("Another extremely long product description with extensive details about features, specifications, and usage instructions")
+                   .cell("Another extremely long product description with extensive details - tooltip only here")
             })
             .row(|row| {
                 row.cell("003")
-                   .cell("Short")
-                   .cell("Short text")
+                   .cell("OK")
+                   .cell("Normal text")
             })
             .row(|row| {
                 row.cell("004")
                    .cell("Product Gamma Professional Edition")
                    .cell("Complete product information including warranty details, technical specifications, compatibility notes, and customer support contact information")
             });
+        ui.add(smart_tooltip_table);
 
-        ui.add(tooltip_table);
         ui.add_space(10.0);
-        ui.label("Note: Tooltips automatically show when hovering over any cell");
+        ui.label("Note: Smart mode only shows tooltips when text exceeds column width");
 
         ui.add_space(20.0);
         ui.separator();

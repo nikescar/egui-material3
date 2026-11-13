@@ -1025,20 +1025,35 @@ impl<'a> MaterialDataTable<'a> {
                                         }
                                     };
 
+                                    // Check tooltip settings before painting
+                                    // (need galley size before it's moved)
+                                    let text_width = galley.size().x;
+                                    let should_show_tooltip = if theme.enable_cell_tooltips {
+                                        // Always show tooltips when explicitly enabled
+                                        true
+                                    } else if theme.smart_cell_tooltips {
+                                        // Only show tooltip if text is truncated (wider than available space)
+                                        text_width > available_width
+                                    } else {
+                                        // Tooltips disabled
+                                        false
+                                    };
+
                                     let text_pos = egui::pos2(text_x, text_y);
                                     ui.painter().galley(text_pos, galley, text_color);
 
-                                    // Add tooltip on hover showing full cell content
-                                    let cell_interact_id = table_id.with(format!("cell_{}_{}", row_idx, cell_idx));
-                                    let cell_response = ui.interact(cell_rect, cell_interact_id, Sense::hover());
-                                    if cell_response.hovered() {
-                                        use crate::tooltip::{show_tooltip_on_hover, TooltipPosition};
-                                        show_tooltip_on_hover(
-                                            ui,
-                                            &cell_response,
-                                            cell_text.text(),
-                                            TooltipPosition::Auto,
-                                        );
+                                    if should_show_tooltip {
+                                        let cell_interact_id = table_id.with(format!("cell_{}_{}", row_idx, cell_idx));
+                                        let cell_response = ui.interact(cell_rect, cell_interact_id, Sense::hover());
+                                        if cell_response.hovered() {
+                                            use crate::tooltip::{show_tooltip_on_hover, TooltipPosition};
+                                            show_tooltip_on_hover(
+                                                ui,
+                                                &cell_response,
+                                                cell_text.text(),
+                                                TooltipPosition::Auto,
+                                            );
+                                        }
                                     }
 
                                     // Draw edit icon if requested

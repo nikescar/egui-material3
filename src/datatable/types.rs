@@ -26,6 +26,8 @@ pub struct DataTableTheme {
     pub selected_row_color: Option<Color32>,
     pub show_bottom_border: bool,
     pub show_checkbox_column: bool,
+    pub enable_cell_tooltips: bool,
+    pub smart_cell_tooltips: bool,
 }
 
 impl Default for DataTableTheme {
@@ -51,6 +53,8 @@ impl Default for DataTableTheme {
             selected_row_color: None,
             show_bottom_border: true,
             show_checkbox_column: true,
+            enable_cell_tooltips: false,
+            smart_cell_tooltips: false,
         }
     }
 }

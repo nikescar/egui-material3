@@ -1,25 +1,49 @@
 //! Tests for DataTable cell tooltip functionality
 
-// Note: These are compilation/API tests since egui UI tests require a running context
-// Visual validation happens in the stories example
+use egui_material3::DataTableTheme;
 
 #[test]
-fn test_tooltip_api_compiles() {
-    // This test ensures the tooltip implementation compiles
-    // Actual tooltip rendering is tested visually in examples/stories/datatable_window.rs
+fn test_tooltip_disabled_by_default() {
+    let theme = DataTableTheme::default();
 
-    // The implementation should:
-    // 1. Detect hover on cell rects
-    // 2. Show tooltip with full cell content on hover
-    // 3. Use TooltipPosition::Auto for smart positioning
+    // Tooltips should be disabled by default
+    assert_eq!(theme.enable_cell_tooltips, false);
+    assert_eq!(theme.smart_cell_tooltips, false);
+}
 
-    assert!(true, "Tooltip API compiles successfully");
+#[test]
+fn test_tooltip_always_enabled() {
+    let mut theme = DataTableTheme::default();
+    theme.enable_cell_tooltips = true;
+
+    assert_eq!(theme.enable_cell_tooltips, true);
+    assert_eq!(theme.smart_cell_tooltips, false);
+}
+
+#[test]
+fn test_smart_tooltips() {
+    let mut theme = DataTableTheme::default();
+    theme.smart_cell_tooltips = true;
+
+    assert_eq!(theme.enable_cell_tooltips, false);
+    assert_eq!(theme.smart_cell_tooltips, true);
+}
+
+#[test]
+fn test_both_tooltip_modes_can_coexist() {
+    // If both are enabled, enable_cell_tooltips takes precedence (always show)
+    let mut theme = DataTableTheme::default();
+    theme.enable_cell_tooltips = true;
+    theme.smart_cell_tooltips = true;
+
+    assert_eq!(theme.enable_cell_tooltips, true);
+    assert_eq!(theme.smart_cell_tooltips, true);
 }
 
 #[test]
 fn test_tooltip_imports_available() {
     // Verify required tooltip functions are accessible
-    use egui_material3::{show_tooltip_on_hover, TooltipPosition};
+    use egui_material3::TooltipPosition;
 
     // Position variants should be available
     let _pos = TooltipPosition::Top;
