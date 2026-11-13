@@ -145,6 +145,9 @@ pub struct ListItem<'a> {
     pub(crate) trailing_icon: Option<String>,
     /// Optional text displayed at the end of the item
     pub(crate) trailing_text: Option<String>,
+    /// Optional custom widget rendered in the trailing area
+    #[allow(clippy::type_complexity)]
+    pub(crate) trailing_widget: Option<std::sync::Arc<dyn Fn(&mut egui::Ui) + Send + Sync>>,
     /// Whether the item is enabled and interactive
     pub(crate) enabled: bool,
     /// Whether the item is selected

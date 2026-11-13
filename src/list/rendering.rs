@@ -393,7 +393,13 @@ impl<'a> Widget for MaterialList<'a> {
             } else {
                 0.0
             };
-            let _total_trailing_width = trailing_icon_width + trailing_text_width;
+            let trailing_widget_width = if item.trailing_widget.is_some() {
+                120.0 // Reserve space for widget (e.g., buttons)
+            } else {
+                0.0
+            };
+            let _total_trailing_width =
+                trailing_icon_width + trailing_text_width + trailing_widget_width;
 
             // Draw text content based on configuration
             match (&item.overline_text, &item.secondary_text) {
@@ -512,11 +518,12 @@ impl<'a> Widget for MaterialList<'a> {
             }
 
             // Draw drawer chevron if drawer is enabled and item has drawer
-            // Skip automatic chevron if item has custom trailing content (text or icon)
+            // Skip automatic chevron if item has custom trailing content (text, icon, or widget)
             let drawer_chevron_width = if self.allow_drawer
                 && item.drawer.is_some()
                 && item.trailing_text.is_none()
                 && item.trailing_icon.is_none()
+                && item.trailing_widget.is_none()
             {
                 let chevron_pos = Pos2::new(
                     item_rect.max.x - trailing_icon_width - trailing_text_width - 28.0,
@@ -553,6 +560,22 @@ impl<'a> Widget for MaterialList<'a> {
             } else {
                 0.0
             };
+
+            // Render custom trailing widget
+            if let Some(widget_fn) = &item.trailing_widget {
+                let widget_rect = Rect::from_min_size(
+                    Pos2::new(
+                        item_rect.max.x - trailing_widget_width - trailing_icon_width - 8.0,
+                        item_rect.min.y,
+                    ),
+                    Vec2::new(trailing_widget_width, item_rect.height()),
+                );
+                ui.allocate_ui_at_rect(widget_rect, |ui| {
+                    ui.horizontal_centered(|ui| {
+                        widget_fn(ui);
+                    });
+                });
+            }
 
             // Draw trailing icon
             if let Some(icon_name) = &item.trailing_icon {
@@ -592,7 +615,10 @@ impl<'a> Widget for MaterialList<'a> {
 
                 let mut child_ui =
                     ui.child_ui(drawer_rect, egui::Layout::top_down(egui::Align::LEFT), None);
-                child_ui.set_clip_rect(rect); // Constrain to list bounds
+                // Clip drawer to both list bounds and parent's clip rect
+                let parent_clip = ui.clip_rect();
+                let drawer_clip = rect.intersect(parent_clip);
+                child_ui.set_clip_rect(drawer_clip);
 
                 // Add padding
                 child_ui.add_space(8.0);

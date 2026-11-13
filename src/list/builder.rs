@@ -118,6 +118,7 @@ impl<'a> ListItem<'a> {
             leading_icon_label: None,
             trailing_icon: None,
             trailing_text: None,
+            trailing_widget: None,
             enabled: true,
             selected: false,
             dense: None,
@@ -241,6 +242,31 @@ impl<'a> ListItem<'a> {
     /// ```
     pub fn trailing_text(mut self, text: impl Into<String>) -> Self {
         self.trailing_text = Some(text.into());
+        self
+    }
+
+    /// Set a custom widget to render in the trailing area.
+    ///
+    /// The widget is rendered in the trailing area where icons/text normally appear.
+    /// Useful for action buttons or custom controls.
+    ///
+    /// # Arguments
+    /// * `widget` - A closure that renders the widget
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .trailing_widget(|ui| {
+    ///         if ui.button("Edit").clicked() {
+    ///             // Handle edit
+    ///         }
+    ///     });
+    /// ```
+    pub fn trailing_widget(
+        mut self,
+        widget: impl Fn(&mut egui::Ui) + Send + Sync + 'static,
+    ) -> Self {
+        self.trailing_widget = Some(std::sync::Arc::new(widget));
         self
     }
 
