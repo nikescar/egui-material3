@@ -1260,6 +1260,93 @@ impl DataTableWindow {
         ui.add(compact_selective_table);
         ui.add_space(10.0);
         ui.label("Pattern: Use `.drawer_if(condition, |ui| {...})` to conditionally enable drawers per row");
+
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Cell Tooltips for Long Content");
+        ui.label("Hover over cells with long text to see full content in tooltip");
+
+        let tooltip_table = data_table()
+            .id(Id::new("tooltip_demo_table"))
+            .column("ID", 60.0, true)
+            .column("Short Name", 100.0, false)  // Small width will truncate
+            .column("Full Description", 120.0, false)  // Small width will truncate
+            .row(|row| {
+                row.cell("001")
+                   .cell("Product Alpha")
+                   .cell("This is a very long description that will be truncated in the cell but visible in tooltip when hovering")
+            })
+            .row(|row| {
+                row.cell("002")
+                   .cell("Product Beta Extended Name That Wraps")
+                   .cell("Another extremely long product description with extensive details about features, specifications, and usage instructions")
+            })
+            .row(|row| {
+                row.cell("003")
+                   .cell("Short")
+                   .cell("Short text")
+            })
+            .row(|row| {
+                row.cell("004")
+                   .cell("Product Gamma Professional Edition")
+                   .cell("Complete product information including warranty details, technical specifications, compatibility notes, and customer support contact information")
+            });
+
+        ui.add(tooltip_table);
+        ui.add_space(10.0);
+        ui.label("Note: Tooltips automatically show when hovering over any cell");
+
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Custom Header Font Size");
+        ui.label("Headers with larger font size for better visibility");
+
+        let mut large_header_theme = DataTableTheme::default();
+        large_header_theme.header_font_size = Some(20.0);
+        large_header_theme.heading_row_height = Some(68.0);  // Taller to accommodate larger font
+
+        let large_header_table = data_table()
+            .id(Id::new("large_header_table"))
+            .column("Product Name", 180.0, false)
+            .column("Category", 120.0, false)
+            .column("Price", 100.0, true)
+            .column("Stock", 80.0, true)
+            .theme(large_header_theme)
+            .row(|row| {
+                row.cell("Laptop Pro").cell("Electronics").cell("$1299").cell("15")
+            })
+            .row(|row| {
+                row.cell("Wireless Mouse").cell("Accessories").cell("$39").cell("200")
+            })
+            .row(|row| {
+                row.cell("Keyboard").cell("Accessories").cell("$89").cell("45")
+            });
+
+        ui.add(large_header_table);
+
+        ui.add_space(10.0);
+
+        let mut small_header_theme = DataTableTheme::default();
+        small_header_theme.header_font_size = Some(12.0);
+        small_header_theme.heading_row_height = Some(40.0);  // Shorter for compact look
+
+        ui.label("Compact header with smaller font (12px):");
+        let small_header_table = data_table()
+            .id(Id::new("small_header_table"))
+            .column("Item", 120.0, false)
+            .column("Value", 80.0, true)
+            .theme(small_header_theme)
+            .row(|row| {
+                row.cell("Item A").cell("100")
+            })
+            .row(|row| {
+                row.cell("Item B").cell("200")
+            });
+
+        ui.add(small_header_table);
+        ui.add_space(10.0);
+        ui.label("Note: Use `theme.header_font_size = Some(size)` to customize header font");
+
         });
     }
 }

@@ -218,7 +218,8 @@ impl<'a> MaterialDataTable<'a> {
             let mut h: f32 = min_header_height;
             for column in &columns {
                 let available_width = column.width - 48.0; // Account for padding and sort icon
-                let header_font = FontId::new(16.0, FontFamily::Proportional);
+                let header_font_size = theme.header_font_size.unwrap_or(16.0);
+                let header_font = FontId::new(header_font_size, FontFamily::Proportional);
 
                 let galley = ui.painter().layout_job(egui::text::LayoutJob {
                     text: column.title.clone(),
@@ -481,7 +482,8 @@ impl<'a> MaterialDataTable<'a> {
 
                 // Render header text with wrapping support
                 let available_width = column.width - 48.0; // Account for padding and sort icon
-                let header_font = FontId::new(16.0, FontFamily::Proportional);
+                let header_font_size = theme.header_font_size.unwrap_or(16.0);
+                let header_font = FontId::new(header_font_size, FontFamily::Proportional);
 
                 let galley = ui.painter().layout_job(egui::text::LayoutJob {
                     text: column.title.clone(),
@@ -1025,6 +1027,19 @@ impl<'a> MaterialDataTable<'a> {
 
                                     let text_pos = egui::pos2(text_x, text_y);
                                     ui.painter().galley(text_pos, galley, text_color);
+
+                                    // Add tooltip on hover showing full cell content
+                                    let cell_interact_id = table_id.with(format!("cell_{}_{}", row_idx, cell_idx));
+                                    let cell_response = ui.interact(cell_rect, cell_interact_id, Sense::hover());
+                                    if cell_response.hovered() {
+                                        use crate::tooltip::{show_tooltip_on_hover, TooltipPosition};
+                                        show_tooltip_on_hover(
+                                            ui,
+                                            &cell_response,
+                                            cell_text.text(),
+                                            TooltipPosition::Auto,
+                                        );
+                                    }
 
                                     // Draw edit icon if requested
                                     if cell.show_edit_icon {
