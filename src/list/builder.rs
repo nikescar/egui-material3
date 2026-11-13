@@ -77,7 +77,10 @@ impl<'a> MaterialList<'a> {
     /// Enable drawer functionality for list items.
     ///
     /// When enabled, items with drawers will show an expand/collapse arrow.
-    /// Clicking the arrow toggles the drawer visibility.
+    /// Clicking anywhere on the item toggles the drawer visibility.
+    ///
+    /// **Note**: For items with both a drawer and an action callback,
+    /// the drawer toggle takes priority and the action callback is ignored.
     ///
     /// # Arguments
     /// * `allow` - Whether to enable drawer functionality
@@ -508,7 +511,10 @@ impl<'a> ListItem<'a> {
     /// Add a drawer that expands below this item when clicked.
     ///
     /// The drawer shows additional content in an expandable panel.
-    /// Click the arrow indicator to expand/collapse the drawer.
+    /// Click anywhere on the item to expand/collapse the drawer.
+    ///
+    /// **Note**: When a drawer is present, clicking the item toggles the drawer
+    /// instead of executing any action callback. The drawer toggle takes priority.
     ///
     /// # Arguments
     /// * `f` - A function that renders the drawer content

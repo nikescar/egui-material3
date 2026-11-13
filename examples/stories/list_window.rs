@@ -59,6 +59,8 @@ impl ListWindow {
                     ui.add_space(20.0);
                     self.render_drawer_demo(ui);
                     ui.add_space(20.0);
+                    self.render_text_indicator_drawer_demo(ui);
+                    ui.add_space(20.0);
                     self.render_real_world_examples(ui);
                 });
             });
@@ -653,7 +655,7 @@ impl ListWindow {
 
     fn render_drawer_demo(&mut self, ui: &mut egui::Ui) {
         ui.heading("List with Selective Drawers");
-        ui.label("Click the chevron arrow to expand/collapse drawer content");
+        ui.label("Click anywhere on the item (or the chevron) to expand/collapse drawer content");
 
         let drawer_list = MaterialList::new()
             .id("drawer_demo_list")
@@ -728,6 +730,54 @@ impl ListWindow {
                     ui.label("• Recent activity: 3 commits");
                     ui.label("• Next milestone: In 2 weeks");
                 });
+            list = list.item(item);
+        }
+
+        ui.add(list);
+    }
+
+    fn render_text_indicator_drawer_demo(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Drawer with Text Indicators & 5-Line Items");
+        ui.label("Click anywhere to toggle. Each item: overline + primary + 2-line secondary + trailing text ('Expand ▶' / 'Collapse ▼').");
+
+        let list_id = egui::Id::new("text_indicator_drawer_list");
+
+        // Get current drawer state to determine which items are expanded
+        let state = ui.data_mut(|d| {
+            d.get_persisted::<egui_material3::MaterialListState>(list_id)
+        }).unwrap_or_default();
+
+        // Department data: (department, role, description)
+        let departments = vec![
+            ("Engineering", "Backend Development", "Server infrastructure\nand API services"),
+            ("Design", "UI/UX Design", "User interface design\nand user experience"),
+            ("Marketing", "Digital Marketing", "Online campaigns\nand analytics"),
+            ("Sales", "Enterprise Sales", "B2B customer\nacquisition"),
+        ];
+
+        let mut list = MaterialList::new()
+            .id(list_id)
+            .allow_drawer(true);
+
+        for (index, (dept, role, desc)) in departments.iter().enumerate() {
+            let is_open = state.drawer_open_items.contains(&index);
+            let indicator = if is_open { "Collapse ▼" } else { "Expand ▶" };
+
+            // 5-line item: overline + primary + 2-line secondary + text indicator
+            let item = ListItem::new(*role)
+                .overline(*dept)
+                .secondary_text(*desc)  // Contains \n for multi-line
+                .trailing_text(indicator)
+                .leading_icon("folder")
+                .drawer(|ui| {
+                    ui.label("Department Details:");
+                    ui.label("• Team Size: 12 members");
+                    ui.label("• Active Projects: 3");
+                    ui.label("• Budget: $120,000");
+                    ui.label("• Location: Building A, Floor 2");
+                    ui.label("• Last Updated: Today at 3:45 PM");
+                });
+
             list = list.item(item);
         }
 
