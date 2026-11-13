@@ -723,7 +723,11 @@ impl ListWindow {
         for (name, status, is_active) in projects {
             let item = ListItem::new(name)
                 .secondary_text(format!("Status: {}", status))
-                .leading_icon(if is_active { "task_alt".to_string() } else { "radio_button_unchecked".to_string() })
+                .leading_icon(if is_active {
+                    "task_alt".to_string()
+                } else {
+                    "radio_button_unchecked".to_string()
+                })
                 .drawer_if(is_active, |ui| {
                     ui.label("Active Project Info:");
                     ui.label("• Last updated: Today");
@@ -738,37 +742,53 @@ impl ListWindow {
 
     fn render_text_indicator_drawer_demo(&mut self, ui: &mut egui::Ui) {
         ui.heading("Drawer with Text Indicators & 5-Line Items");
-        ui.label("Click anywhere to toggle. Each item: overline + primary + 2-line secondary + trailing text ('Expand ▶' / 'Collapse ▼').");
+        ui.label("Click anywhere to toggle. Icon labels show department names below folder icons.");
 
         let list_id = egui::Id::new("text_indicator_drawer_list");
 
         // Get current drawer state to determine which items are expanded
-        let state = ui.data_mut(|d| {
-            d.get_persisted::<egui_material3::MaterialListState>(list_id)
-        }).unwrap_or_default();
+        let state = ui
+            .data_mut(|d| d.get_persisted::<egui_material3::MaterialListState>(list_id))
+            .unwrap_or_default();
 
         // Department data: (department, role, description)
         let departments = vec![
-            ("Engineering", "Backend Development", "Server infrastructure\nand API services"),
-            ("Design", "UI/UX Design", "User interface design\nand user experience"),
-            ("Marketing", "Digital Marketing", "Online campaigns\nand analytics"),
+            (
+                "Engineering",
+                "Backend Development",
+                "Server infrastructure\nand API services",
+            ),
+            (
+                "Design",
+                "UI/UX Design",
+                "User interface design\nand user experience",
+            ),
+            (
+                "Marketing",
+                "Digital Marketing",
+                "Online campaigns\nand analytics",
+            ),
             ("Sales", "Enterprise Sales", "B2B customer\nacquisition"),
         ];
 
-        let mut list = MaterialList::new()
-            .id(list_id)
-            .allow_drawer(true);
+        let mut list = MaterialList::new().id(list_id).allow_drawer(true);
 
         for (index, (dept, role, desc)) in departments.iter().enumerate() {
             let is_open = state.drawer_open_items.contains(&index);
-            let indicator = if is_open { "Collapse ▼" } else { "Expand ▶" };
+            let indicator = if is_open {
+                "Collapse ▼"
+            } else {
+                "Expand ▶"
+            };
 
             // 5-line item: overline + primary + 2-line secondary + text indicator
+            // Icon label shows department name below the folder icon
             let item = ListItem::new(*role)
                 .overline(*dept)
-                .secondary_text(*desc)  // Contains \n for multi-line
+                .secondary_text(*desc) // Contains \n for multi-line
                 .trailing_text(indicator)
                 .leading_icon("folder")
+                .leading_icon_label(*dept) // Department name below icon
                 .drawer(|ui| {
                     ui.label("Department Details:");
                     ui.label("• Team Size: 12 members");

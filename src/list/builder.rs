@@ -115,6 +115,7 @@ impl<'a> ListItem<'a> {
             secondary_text: None,
             overline_text: None,
             leading_icon: None,
+            leading_icon_label: None,
             trailing_icon: None,
             trailing_text: None,
             enabled: true,
@@ -187,6 +188,25 @@ impl<'a> ListItem<'a> {
     /// ```
     pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
         self.leading_icon = Some(icon.into());
+        self
+    }
+
+    /// Set a text label to display below the leading icon.
+    ///
+    /// The label appears below the icon in a smaller font.
+    /// Only rendered when a leading icon is also present.
+    ///
+    /// # Arguments
+    /// * `label` - The text to display below the icon
+    ///
+    /// # Example
+    /// ```rust
+    /// let item = ListItem::new("Item")
+    ///     .leading_icon("folder")
+    ///     .leading_icon_label("Department");
+    /// ```
+    pub fn leading_icon_label(mut self, label: impl Into<String>) -> Self {
+        self.leading_icon_label = Some(label.into());
         self
     }
 

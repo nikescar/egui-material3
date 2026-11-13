@@ -2,21 +2,13 @@
 
 use super::{types::*, MaterialList};
 use crate::{get_global_color, material_symbol::material_symbol_text};
-use egui::{
-    ecolor::Color32, epaint::Stroke, Pos2, Rect, Response, Sense, Ui, Vec2, Widget,
-};
+use egui::{ecolor::Color32, epaint::Stroke, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Helper function to measure drawer content height
-fn measure_drawer_height(
-    drawer_fn: &dyn Fn(&mut Ui),
-    ui: &mut Ui,
-    width: f32,
-) -> f32 {
+fn measure_drawer_height(drawer_fn: &dyn Fn(&mut Ui), ui: &mut Ui, width: f32) -> f32 {
     // Create a temporary off-screen rect to measure content
-    let temp_rect = egui::Rect::from_min_size(
-        egui::pos2(-10000.0, -10000.0),
-        egui::Vec2::new(width, 0.0),
-    );
+    let temp_rect =
+        egui::Rect::from_min_size(egui::pos2(-10000.0, -10000.0), egui::Vec2::new(width, 0.0));
 
     let mut child_ui = ui.child_ui(temp_rect, egui::Layout::top_down(egui::Align::LEFT), None);
 
@@ -44,7 +36,13 @@ fn render_multiline_text(
 ) {
     for (i, line) in text.split('\n').enumerate() {
         let line_pos = Pos2::new(start_pos.x, start_pos.y + (i as f32 * line_spacing));
-        painter.text(line_pos, egui::Align2::LEFT_CENTER, line, font_id.clone(), color);
+        painter.text(
+            line_pos,
+            egui::Align2::LEFT_CENTER,
+            line,
+            font_id.clone(),
+            color,
+        );
     }
 }
 
@@ -141,7 +139,10 @@ impl<'a> Widget for MaterialList<'a> {
             total_height += item_height;
 
             // Add drawer height if drawer is open
-            if self.allow_drawer && item.drawer.is_some() && state.drawer_open_items.contains(&index) {
+            if self.allow_drawer
+                && item.drawer.is_some()
+                && state.drawer_open_items.contains(&index)
+            {
                 let drawer_fn = item.drawer.as_ref().unwrap();
                 let drawer_width = max_content_width.min(ui.available_width());
                 let drawer_height = measure_drawer_height(&**drawer_fn, ui, drawer_width);
@@ -339,17 +340,24 @@ impl<'a> Widget for MaterialList<'a> {
             let mut content_x = item_rect.min.x + 16.0;
 
             // Calculate vertical offset to center text block for balanced padding
-            let center_offset = calculate_center_offset(
-                item.overline_text.is_some(),
-                item.secondary_text.as_ref()
-            );
+            let center_offset =
+                calculate_center_offset(item.overline_text.is_some(), item.secondary_text.as_ref());
             let content_y = item_rect.center().y - center_offset;
 
-            // Draw leading icon
+            // Draw leading icon (with optional label below)
             if let Some(icon_name) = &item.leading_icon {
                 let leading_width = min_leading_width;
-                let icon_pos = Pos2::new(content_x + leading_width / 2.0, content_y);
+                let center_x = content_x + leading_width / 2.0;
 
+                // If label present, stack icon above center and label below
+                let (icon_y, label_y_opt) = if item.leading_icon_label.is_some() {
+                    (content_y - 12.0, Some(content_y + 12.0))
+                } else {
+                    (content_y, None)
+                };
+
+                // Draw icon
+                let icon_pos = Pos2::new(center_x, icon_y);
                 let icon_string = material_symbol_text(icon_name);
                 ui.painter().text(
                     icon_pos,
@@ -358,6 +366,19 @@ impl<'a> Widget for MaterialList<'a> {
                     egui::FontId::proportional(20.0),
                     icon_color,
                 );
+
+                // Draw label below icon if present
+                if let (Some(label), Some(label_y)) = (&item.leading_icon_label, label_y_opt) {
+                    let label_pos = Pos2::new(center_x, label_y);
+                    ui.painter().text(
+                        label_pos,
+                        egui::Align2::CENTER_CENTER,
+                        label,
+                        egui::FontId::proportional(10.0),
+                        on_surface_variant,
+                    );
+                }
+
                 content_x += leading_width + horizontal_title_gap;
             }
 
@@ -495,10 +516,18 @@ impl<'a> Widget for MaterialList<'a> {
             let drawer_chevron_width = if self.allow_drawer
                 && item.drawer.is_some()
                 && item.trailing_text.is_none()
-                && item.trailing_icon.is_none() {
-                let chevron_pos = Pos2::new(item_rect.max.x - trailing_icon_width - trailing_text_width - 28.0, content_y);
+                && item.trailing_icon.is_none()
+            {
+                let chevron_pos = Pos2::new(
+                    item_rect.max.x - trailing_icon_width - trailing_text_width - 28.0,
+                    content_y,
+                );
                 let is_open = state.drawer_open_items.contains(&index);
-                let chevron = if is_open { "expand_more" } else { "chevron_right" };
+                let chevron = if is_open {
+                    "expand_more"
+                } else {
+                    "chevron_right"
+                };
 
                 let chevron_rect = Rect::from_center_size(chevron_pos, Vec2::splat(24.0));
                 let chevron_id = unique_id.with("drawer_chevron");
@@ -542,7 +571,10 @@ impl<'a> Widget for MaterialList<'a> {
             current_y += item_height;
 
             // Render expanded drawer content if open
-            if self.allow_drawer && item.drawer.is_some() && state.drawer_open_items.contains(&index) {
+            if self.allow_drawer
+                && item.drawer.is_some()
+                && state.drawer_open_items.contains(&index)
+            {
                 let drawer_fn = item.drawer.as_ref().unwrap();
                 let drawer_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, current_y),
@@ -558,7 +590,8 @@ impl<'a> Widget for MaterialList<'a> {
                 // Background for drawer
                 let drawer_bg = primary_container.gamma_multiply(0.3);
 
-                let mut child_ui = ui.child_ui(drawer_rect, egui::Layout::top_down(egui::Align::LEFT), None);
+                let mut child_ui =
+                    ui.child_ui(drawer_rect, egui::Layout::top_down(egui::Align::LEFT), None);
                 child_ui.set_clip_rect(rect); // Constrain to list bounds
 
                 // Add padding
@@ -585,7 +618,8 @@ impl<'a> Widget for MaterialList<'a> {
                     Pos2::new(rect.min.x, current_y),
                     Vec2::new(4.0, drawer_height),
                 );
-                ui.painter().rect_filled(final_stripe_rect, 0.0, primary_container);
+                ui.painter()
+                    .rect_filled(final_stripe_rect, 0.0, primary_container);
 
                 current_y += drawer_height;
             }

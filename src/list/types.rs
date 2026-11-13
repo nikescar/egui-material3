@@ -139,6 +139,8 @@ pub struct ListItem<'a> {
     pub(crate) overline_text: Option<String>,
     /// Optional icon displayed at the start of the item
     pub(crate) leading_icon: Option<String>,
+    /// Optional text label displayed below the leading icon
+    pub(crate) leading_icon_label: Option<String>,
     /// Optional icon displayed at the end of the item
     pub(crate) trailing_icon: Option<String>,
     /// Optional text displayed at the end of the item
