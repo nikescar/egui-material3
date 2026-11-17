@@ -301,6 +301,10 @@ pub struct DataTableState {
     pub edit_data: HashMap<usize, Vec<String>>,
     pub drawer_open_rows: HashSet<usize>,
 
+    // Performance cache fields - not persisted to avoid serialization overhead.
+    // These are recalculated on demand when layout_cache_hash doesn't match.
+    // Note: sorted_column and sort_direction ARE persisted above, so sorting
+    // state is preserved. These cached values are recomputed as needed.
     #[serde(skip)]
     pub cached_row_heights: Vec<f32>,
     #[serde(skip)]

@@ -976,6 +976,42 @@ impl DataTableWindow {
 
         ui.add_space(20.0);
         ui.separator();
+        ui.heading("Responsive Design: Narrow Tables");
+        ui.label("Tables automatically scale fonts and padding based on width");
+        ui.add_space(10.0);
+
+        ui.label("Very Narrow Table (< 400px): 12px fonts, 32px padding, 40px header");
+        let very_narrow_table = data_table()
+            .id(Id::new("very_narrow_responsive"))
+            .column("ID", 50.0, true)
+            .column("Name", 90.0, false)
+            .column("Val", 60.0, true)
+            .row(|row| row.cell("1").cell("Alpha").cell("99"))
+            .row(|row| row.cell("2").cell("Beta").cell("150"))
+            .row(|row| row.cell("3").cell("Gamma").cell("75"))
+            .row(|row| row.cell("4").cell("Delta").cell("200"));
+
+        ui.add(very_narrow_table);
+
+        ui.add_space(15.0);
+        ui.label("Compact Table (400-500px): 14px fonts, 40px padding, 48px header");
+        let compact_table = data_table()
+            .id(Id::new("compact_responsive"))
+            .column("Product", 110.0, false)
+            .column("Category", 100.0, false)
+            .column("Price", 80.0, true)
+            .allow_selection(true)
+            .row(|row| row.cell("Laptop").cell("Electronics").cell("$999"))
+            .row(|row| row.cell("Mouse").cell("Accessories").cell("$29"))
+            .row(|row| row.cell("Cable").cell("Accessories").cell("$12"));
+
+        ui.add(compact_table);
+
+        ui.add_space(15.0);
+        ui.label("Note: Wider tables (≥ 500px) use standard 16px fonts, 48px padding, 56px header");
+
+        ui.add_space(20.0);
+        ui.separator();
         ui.heading("Data Table with Drawer");
         ui.label("Click the > arrow on a row to expand its drawer panel. Click v to collapse.");
 
@@ -1050,6 +1086,8 @@ impl DataTableWindow {
         ui.separator();
         ui.heading("Mixed Drawer Content");
         ui.label("Each row has different controls in its drawer");
+        ui.label("Note: Nested tables automatically use responsive sizing for better readability");
+        ui.add_space(5.0);
 
         let mixed_drawer_table = data_table()
             .id(Id::new("mixed_drawer_table"))

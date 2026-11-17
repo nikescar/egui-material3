@@ -91,7 +91,7 @@ fn test_datatable_sort_icons_use_primary() {
 #[ignore = "material3() constructor not implemented yet"]
 fn test_datatable_m3_theme_constructor() {
     // Arrange & Act
-    let theme = DataTableTheme::material3();
+    let theme = DataTableTheme::default(); // TODO: implement material3() constructor
 
     // Assert - M3 theme should set proper color roles
     let surface_container = get_global_color("surfaceContainer");

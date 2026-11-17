@@ -9,6 +9,12 @@ use egui::{
 };
 use std::collections::{HashMap, HashSet};
 
+// Responsive breakpoints for datatable sizing
+// Tables automatically scale fonts and padding based on total width
+const NARROW_THRESHOLD: f32 = 400.0; // Very narrow tables: 12px fonts, 12px padding
+const COMPACT_THRESHOLD: f32 = 500.0; // Compact tables: 14px fonts, 18px padding
+                                      // Wide tables (≥500px): 16px fonts, 24px padding (default)
+
 impl<'a> MaterialDataTable<'a> {
     fn get_table_style(&self) -> (Color32, Stroke) {
         let md_surface = self
@@ -123,12 +129,17 @@ impl<'a> MaterialDataTable<'a> {
         default_row_height.to_bits().hash(&mut hasher);
 
         let current_layout_hash = hasher.finish();
-        let cache_is_valid = state.layout_cache_hash == current_layout_hash
-            && state.cached_row_heights.len() == rows.len()
-            && !should_throttle;
 
-        // Mark that we need to update the cache
-        let needs_cache_update = !cache_is_valid;
+        // Check if layout has changed (structural changes requiring recalculation)
+        let layout_changed = state.layout_cache_hash != current_layout_hash
+            || state.cached_row_heights.len() != rows.len();
+
+        // Cache is valid if: layout hasn't changed AND (we have cached data OR we're throttling)
+        // When throttling, use cached data even if hash is 0 (from fresh state load)
+        let cache_is_valid = !layout_changed && (state.layout_cache_hash != 0 || should_throttle);
+
+        // Update cache only when layout changed AND not throttling
+        let needs_cache_update = layout_changed && !should_throttle;
 
         // === PERFORMANCE OPTIMIZATION: Cached Sorting ===
         // Sort rows if a column is selected for sorting
@@ -208,7 +219,26 @@ impl<'a> MaterialDataTable<'a> {
         };
         let total_width = checkbox_width + drawer_arrow_width + columns_only_width;
         let min_row_height = theme.data_row_min_height.unwrap_or(default_row_height);
-        let min_header_height = theme.heading_row_height.unwrap_or(56.0);
+
+        // Responsive header height: scale down for narrow tables
+        let base_header_height = theme.heading_row_height.unwrap_or(56.0);
+        let min_header_height = if total_width < NARROW_THRESHOLD {
+            base_header_height * 0.714 // 40px for very narrow (< 400px)
+        } else if total_width < COMPACT_THRESHOLD {
+            base_header_height * 0.857 // 48px for compact (< 500px)
+        } else {
+            base_header_height // 56px for normal (≥ 500px)
+        };
+
+        // Responsive padding: reduce padding for narrow tables
+        // This is used for header/cell padding and spacing around icons
+        let responsive_padding = if total_width < NARROW_THRESHOLD {
+            32.0 // Reduced padding for very narrow tables
+        } else if total_width < COMPACT_THRESHOLD {
+            40.0 // Medium padding for compact tables
+        } else {
+            48.0 // Full padding for normal tables
+        };
 
         // === PERFORMANCE OPTIMIZATION: Cached Header Height ===
         // Calculate header height with text wrapping (use cache if valid)
@@ -216,10 +246,21 @@ impl<'a> MaterialDataTable<'a> {
             state.cached_header_height
         } else {
             let mut h: f32 = min_header_height;
+
+            // Responsive header font size: scale down for narrow tables
+            let base_header_font_size = theme.header_font_size.unwrap_or(16.0);
+            let responsive_header_font_size = if total_width < NARROW_THRESHOLD {
+                base_header_font_size * 0.75 // 12px for very narrow
+            } else if total_width < COMPACT_THRESHOLD {
+                base_header_font_size * 0.875 // 14px for compact
+            } else {
+                base_header_font_size // 16px for normal
+            };
+
             for column in &columns {
-                let available_width = column.width - 48.0; // Account for padding and sort icon
-                let header_font_size = theme.header_font_size.unwrap_or(16.0);
-                let header_font = FontId::new(header_font_size, FontFamily::Proportional);
+                let available_width = column.width - responsive_padding; // Account for padding and sort icon
+                let header_font =
+                    FontId::new(responsive_header_font_size, FontFamily::Proportional);
 
                 let galley = ui.painter().layout_job(egui::text::LayoutJob {
                     text: column.title.clone(),
@@ -481,9 +522,19 @@ impl<'a> MaterialDataTable<'a> {
                 );
 
                 // Render header text with wrapping support
-                let available_width = column.width - 48.0; // Account for padding and sort icon
-                let header_font_size = theme.header_font_size.unwrap_or(16.0);
-                let header_font = FontId::new(header_font_size, FontFamily::Proportional);
+                let available_width = column.width - responsive_padding; // Account for padding and sort icon
+
+                // Use responsive font size (same calculation as header height computation)
+                let base_header_font_size = theme.header_font_size.unwrap_or(16.0);
+                let responsive_header_font_size = if total_width < NARROW_THRESHOLD {
+                    base_header_font_size * 0.75 // 12px for very narrow
+                } else if total_width < COMPACT_THRESHOLD {
+                    base_header_font_size * 0.875 // 14px for compact
+                } else {
+                    base_header_font_size // 16px for normal
+                };
+                let header_font =
+                    FontId::new(responsive_header_font_size, FontFamily::Proportional);
 
                 let galley = ui.painter().layout_job(egui::text::LayoutJob {
                     text: column.title.clone(),
