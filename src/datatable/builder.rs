@@ -22,6 +22,7 @@ impl<'a> MaterialDataTable<'a> {
             theme: DataTableTheme::default(),
             auto_height: false,
             refresh_interval: 0.05, // Default 50ms throttle for smooth scrolling
+            compact_mode: CompactMode::Auto,
         }
     }
 
@@ -222,6 +223,39 @@ impl<'a> MaterialDataTable<'a> {
     /// Set custom theme for this table.
     pub fn theme(mut self, theme: DataTableTheme) -> Self {
         self.theme = theme;
+        self
+    }
+
+    /// Set display mode for responsive sizing.
+    ///
+    /// By default, tables automatically detect their width and apply appropriate styling:
+    /// - Width < 400px: narrow styling (12px fonts, 32px padding, 40px header)
+    /// - Width < 500px: compact styling (14px fonts, 40px padding, 48px header)
+    /// - Width ≥ 500px: wide styling (16px fonts, 48px padding, 56px header)
+    ///
+    /// Use this method to override automatic detection:
+    /// - `CompactMode::Auto`: Automatic based on table width (default)
+    /// - `CompactMode::ForceNarrow`: Force narrow styling regardless of width
+    /// - `CompactMode::ForceCompact`: Force compact styling regardless of width
+    /// - `CompactMode::ForceWide`: Force wide styling regardless of width
+    ///
+    /// # Example
+    /// ```
+    /// # egui::__run_test_ui(|ui| {
+    /// use egui_material3::datatable::{data_table, CompactMode};
+    ///
+    /// // Wide table that uses narrow styling for compact appearance
+    /// let table = data_table()
+    ///     .compact_mode(CompactMode::ForceNarrow)
+    ///     .column("Product", 180.0, false)
+    ///     .column("Price", 100.0, true)
+    ///     .row(|row| row.cell("Laptop").cell("$999"));
+    ///
+    /// ui.add(table);
+    /// # });
+    /// ```
+    pub fn compact_mode(mut self, mode: CompactMode) -> Self {
+        self.compact_mode = mode;
         self
     }
 }

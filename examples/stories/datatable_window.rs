@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::datatable::{RowAction, SortDirection as DataTableSortDirection};
+use crate::datatable::{CompactMode, RowAction, SortDirection as DataTableSortDirection};
 use crate::{
     data_table, dialog, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton,
     MaterialCheckbox, MaterialInput,
@@ -1009,6 +1009,82 @@ impl DataTableWindow {
 
         ui.add_space(15.0);
         ui.label("Note: Wider tables (≥ 500px) use standard 16px fonts, 48px padding, 56px header");
+
+        ui.add_space(20.0);
+        ui.separator();
+        ui.heading("Compact Mode Override");
+        ui.label("Force narrow styling on a wide table using .compact_mode()");
+        ui.add_space(10.0);
+
+        ui.label("Wide table (610px+) with ForceNarrow mode:");
+        let wide_forced_narrow = data_table()
+            .id(Id::new("wide_forced_narrow"))
+            .compact_mode(CompactMode::ForceNarrow) // Force narrow despite wide width
+            .column("Product Name", 180.0, false)
+            .column("Category", 150.0, false)
+            .column("Price", 100.0, true)
+            .column("Stock", 80.0, true)
+            .column("Status", 100.0, false)
+            .row(|row| {
+                row.cell("Gaming Laptop Pro")
+                    .cell("Electronics")
+                    .cell("$1,999")
+                    .cell("15")
+                    .cell("In Stock")
+            })
+            .row(|row| {
+                row.cell("Wireless Mouse RGB")
+                    .cell("Accessories")
+                    .cell("$49")
+                    .cell("200")
+                    .cell("Available")
+            })
+            .row(|row| {
+                row.cell("Mechanical Keyboard")
+                    .cell("Accessories")
+                    .cell("$129")
+                    .cell("45")
+                    .cell("Low Stock")
+            });
+
+        ui.add(wide_forced_narrow);
+
+        ui.add_space(10.0);
+        ui.label("Note: Table is 610px wide but uses narrow styling (12px fonts, 32px padding, 40px header)");
+
+        ui.add_space(15.0);
+        ui.label("Wide table (550px+) with ForceCompact mode:");
+        let wide_forced_compact = data_table()
+            .id(Id::new("wide_forced_compact"))
+            .compact_mode(CompactMode::ForceCompact)
+            .column("Item", 150.0, false)
+            .column("Description", 200.0, false)
+            .column("Value", 100.0, true)
+            .column("Status", 100.0, false)
+            .row(|row| row.cell("Alpha").cell("First item").cell("100").cell("Active"))
+            .row(|row| row.cell("Beta").cell("Second item").cell("250").cell("Pending"))
+            .row(|row| row.cell("Gamma").cell("Third item").cell("500").cell("Complete"));
+
+        ui.add(wide_forced_compact);
+        ui.add_space(5.0);
+        ui.label("Note: Uses compact styling (14px fonts, 40px padding, 48px header)");
+
+        ui.add_space(15.0);
+        ui.label("Comparison: Same wide table with Auto mode (default):");
+        let wide_auto = data_table()
+            .id(Id::new("wide_auto"))
+            .compact_mode(CompactMode::Auto) // Explicit Auto (same as default)
+            .column("Item", 150.0, false)
+            .column("Description", 200.0, false)
+            .column("Value", 100.0, true)
+            .column("Status", 100.0, false)
+            .row(|row| row.cell("Alpha").cell("First item").cell("100").cell("Active"))
+            .row(|row| row.cell("Beta").cell("Second item").cell("250").cell("Pending"))
+            .row(|row| row.cell("Gamma").cell("Third item").cell("500").cell("Complete"));
+
+        ui.add(wide_auto);
+        ui.add_space(5.0);
+        ui.label("Note: Uses wide styling (16px fonts, 48px padding, 56px header) - automatic detection");
 
         ui.add_space(20.0);
         ui.separator();

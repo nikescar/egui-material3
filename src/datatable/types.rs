@@ -80,6 +80,34 @@ pub enum SortDirection {
     Descending,
 }
 
+/// Display mode for datatable responsive sizing
+///
+/// Controls how the table scales fonts, padding, and header heights.
+/// By default, tables automatically detect their width and apply appropriate styling.
+/// Use Force* variants to override automatic detection.
+#[derive(Clone, Debug, PartialEq, Default)]
+pub enum CompactMode {
+    /// Automatic sizing based on table width (default)
+    ///
+    /// - Width < 400px: narrow styling (12px fonts, 32px padding, 40px header)
+    /// - Width < 500px: compact styling (14px fonts, 40px padding, 48px header)
+    /// - Width ≥ 500px: wide styling (16px fonts, 48px padding, 56px header)
+    #[default]
+    Auto,
+    /// Force very narrow styling regardless of actual table width
+    ///
+    /// Uses 12px fonts, 32px padding, 40px header height
+    ForceNarrow,
+    /// Force compact styling regardless of actual table width
+    ///
+    /// Uses 14px fonts, 40px padding, 48px header height
+    ForceCompact,
+    /// Force wide styling regardless of actual table width
+    ///
+    /// Uses 16px fonts, 48px padding, 56px header height
+    ForceWide,
+}
+
 /// Vertical alignment for cells
 #[derive(Clone, Debug, PartialEq, Default)]
 pub enum VAlign {

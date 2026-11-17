@@ -58,6 +58,7 @@ pub struct MaterialDataTable<'a> {
     pub(crate) theme: DataTableTheme,
     pub(crate) auto_height: bool,
     pub(crate) refresh_interval: f32,
+    pub(crate) compact_mode: CompactMode,
 }
 
 /// Convenience function to create a new data table.

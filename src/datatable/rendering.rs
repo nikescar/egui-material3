@@ -110,6 +110,7 @@ impl<'a> MaterialDataTable<'a> {
             theme,
             auto_height,
             refresh_interval,
+            compact_mode,
             ..
         } = self;
 
@@ -215,11 +216,20 @@ impl<'a> MaterialDataTable<'a> {
         let total_width = checkbox_width + drawer_arrow_width + columns_only_width;
         let min_row_height = theme.data_row_min_height.unwrap_or(default_row_height);
 
+        // Determine effective width for responsive calculations
+        // This allows overriding automatic detection with compact_mode
+        let effective_width = match compact_mode {
+            CompactMode::Auto => total_width,
+            CompactMode::ForceNarrow => 300.0, // Below NARROW_THRESHOLD (400px)
+            CompactMode::ForceCompact => 450.0, // Between NARROW_THRESHOLD and COMPACT_THRESHOLD
+            CompactMode::ForceWide => 600.0,   // Above COMPACT_THRESHOLD (500px)
+        };
+
         // Responsive header height: scale down for narrow tables
         let base_header_height = theme.heading_row_height.unwrap_or(56.0);
-        let min_header_height = if total_width < NARROW_THRESHOLD {
+        let min_header_height = if effective_width < NARROW_THRESHOLD {
             base_header_height * 0.714 // 40px for very narrow (< 400px)
-        } else if total_width < COMPACT_THRESHOLD {
+        } else if effective_width < COMPACT_THRESHOLD {
             base_header_height * 0.857 // 48px for compact (< 500px)
         } else {
             base_header_height // 56px for normal (≥ 500px)
@@ -227,9 +237,9 @@ impl<'a> MaterialDataTable<'a> {
 
         // Responsive padding: reduce padding for narrow tables
         // This is used for header/cell padding and spacing around icons
-        let responsive_padding = if total_width < NARROW_THRESHOLD {
+        let responsive_padding = if effective_width < NARROW_THRESHOLD {
             32.0 // Reduced padding for very narrow tables
-        } else if total_width < COMPACT_THRESHOLD {
+        } else if effective_width < COMPACT_THRESHOLD {
             40.0 // Medium padding for compact tables
         } else {
             48.0 // Full padding for normal tables
@@ -244,9 +254,9 @@ impl<'a> MaterialDataTable<'a> {
 
             // Responsive header font size: scale down for narrow tables
             let base_header_font_size = theme.header_font_size.unwrap_or(16.0);
-            let responsive_header_font_size = if total_width < NARROW_THRESHOLD {
+            let responsive_header_font_size = if effective_width < NARROW_THRESHOLD {
                 base_header_font_size * 0.75 // 12px for very narrow
-            } else if total_width < COMPACT_THRESHOLD {
+            } else if effective_width < COMPACT_THRESHOLD {
                 base_header_font_size * 0.875 // 14px for compact
             } else {
                 base_header_font_size // 16px for normal
@@ -521,9 +531,9 @@ impl<'a> MaterialDataTable<'a> {
 
                 // Use responsive font size (same calculation as header height computation)
                 let base_header_font_size = theme.header_font_size.unwrap_or(16.0);
-                let responsive_header_font_size = if total_width < NARROW_THRESHOLD {
+                let responsive_header_font_size = if effective_width < NARROW_THRESHOLD {
                     base_header_font_size * 0.75 // 12px for very narrow
-                } else if total_width < COMPACT_THRESHOLD {
+                } else if effective_width < COMPACT_THRESHOLD {
                     base_header_font_size * 0.875 // 14px for compact
                 } else {
                     base_header_font_size // 16px for normal
