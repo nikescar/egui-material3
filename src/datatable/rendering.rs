@@ -141,50 +141,45 @@ impl<'a> MaterialDataTable<'a> {
         // Update cache only when layout changed AND not throttling
         let needs_cache_update = layout_changed && !should_throttle;
 
-        // === PERFORMANCE OPTIMIZATION: Cached Sorting ===
-        // Sort rows if a column is selected for sorting
-        // Only re-sort if cache is invalid
-        if needs_cache_update {
-            if let Some(sort_col_idx) = state.sorted_column {
-                if let Some(sort_column) = columns.get(sort_col_idx) {
-                    rows.sort_by(|a, b| {
-                        let cell_a_text = a
-                            .cells
-                            .get(sort_col_idx)
-                            .and_then(|c| match &c.content {
-                                CellContent::Text(t) => Some(t.text()),
-                                CellContent::Widget(_) => None,
-                            })
-                            .unwrap_or("");
-                        let cell_b_text = b
-                            .cells
-                            .get(sort_col_idx)
-                            .and_then(|c| match &c.content {
-                                CellContent::Text(t) => Some(t.text()),
-                                CellContent::Widget(_) => None,
-                            })
-                            .unwrap_or("");
+        // === SORTING: Apply sorting whenever a column is selected ===
+        // Sorting must happen on every frame (not cached) because rows come in original order
+        if let Some(sort_col_idx) = state.sorted_column {
+            if let Some(sort_column) = columns.get(sort_col_idx) {
+                rows.sort_by(|a, b| {
+                    let cell_a_text = a
+                        .cells
+                        .get(sort_col_idx)
+                        .and_then(|c| match &c.content {
+                            CellContent::Text(t) => Some(t.text()),
+                            CellContent::Widget(_) => None,
+                        })
+                        .unwrap_or("");
+                    let cell_b_text = b
+                        .cells
+                        .get(sort_col_idx)
+                        .and_then(|c| match &c.content {
+                            CellContent::Text(t) => Some(t.text()),
+                            CellContent::Widget(_) => None,
+                        })
+                        .unwrap_or("");
 
-                        let comparison = if sort_column.numeric {
-                            // Try to parse as numbers for numeric columns
-                            let a_num: f64 =
-                                cell_a_text.trim_start_matches('$').parse().unwrap_or(0.0);
-                            let b_num: f64 =
-                                cell_b_text.trim_start_matches('$').parse().unwrap_or(0.0);
-                            a_num
-                                .partial_cmp(&b_num)
-                                .unwrap_or(std::cmp::Ordering::Equal)
-                        } else {
-                            // Alphabetical comparison for text columns
-                            cell_a_text.cmp(cell_b_text)
-                        };
+                    let comparison = if sort_column.numeric {
+                        // Try to parse as numbers for numeric columns
+                        let a_num: f64 = cell_a_text.trim_start_matches('$').parse().unwrap_or(0.0);
+                        let b_num: f64 = cell_b_text.trim_start_matches('$').parse().unwrap_or(0.0);
+                        a_num
+                            .partial_cmp(&b_num)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    } else {
+                        // Alphabetical comparison for text columns
+                        cell_a_text.cmp(cell_b_text)
+                    };
 
-                        match state.sort_direction {
-                            SortDirection::Ascending => comparison,
-                            SortDirection::Descending => comparison.reverse(),
-                        }
-                    });
-                }
+                    match state.sort_direction {
+                        SortDirection::Ascending => comparison,
+                        SortDirection::Descending => comparison.reverse(),
+                    }
+                });
             }
         }
 
