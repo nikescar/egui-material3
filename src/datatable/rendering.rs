@@ -314,12 +314,26 @@ impl<'a> MaterialDataTable<'a> {
                             match &cell.content {
                                 CellContent::Text(cell_text) => {
                                     let available_width = column.width - 32.0;
-                                    let cell_font =
+
+                                    // Use responsive font size (same as rendering)
+                                    let base_cell_font_size =
                                         if let Some((ref font_id, _)) = theme.data_text_style {
-                                            font_id.clone()
+                                            font_id.size
                                         } else {
-                                            FontId::new(14.0, FontFamily::Proportional)
+                                            14.0
                                         };
+                                    let responsive_cell_font_size =
+                                        if effective_width < NARROW_THRESHOLD {
+                                            base_cell_font_size * 0.75
+                                        } else if effective_width < COMPACT_THRESHOLD {
+                                            base_cell_font_size * 0.875
+                                        } else {
+                                            base_cell_font_size
+                                        };
+                                    let cell_font = FontId::new(
+                                        responsive_cell_font_size,
+                                        FontFamily::Proportional,
+                                    );
 
                                     let galley = ui.painter().layout_job(egui::text::LayoutJob {
                                         text: cell_text.text().to_string(),
@@ -1016,12 +1030,26 @@ impl<'a> MaterialDataTable<'a> {
 
                                     // Render normal text with alignment
                                     let available_width = column.width - 32.0; // Account for padding
-                                    let cell_font =
+
+                                    // Use responsive font size (same calculation as header font size)
+                                    let base_cell_font_size =
                                         if let Some((ref font_id, _)) = theme.data_text_style {
-                                            font_id.clone()
+                                            font_id.size
                                         } else {
-                                            FontId::new(14.0, FontFamily::Proportional)
+                                            14.0
                                         };
+                                    let responsive_cell_font_size =
+                                        if effective_width < NARROW_THRESHOLD {
+                                            base_cell_font_size * 0.75 // e.g., 10.5px for very narrow
+                                        } else if effective_width < COMPACT_THRESHOLD {
+                                            base_cell_font_size * 0.875 // e.g., 12.25px for compact
+                                        } else {
+                                            base_cell_font_size // e.g., 14px for normal
+                                        };
+                                    let cell_font = FontId::new(
+                                        responsive_cell_font_size,
+                                        FontFamily::Proportional,
+                                    );
 
                                     let text_color = if cell.placeholder {
                                         let base_color = get_global_color("onSurface");
