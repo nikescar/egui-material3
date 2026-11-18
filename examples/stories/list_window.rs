@@ -62,6 +62,8 @@ impl ListWindow {
                     self.render_text_indicator_drawer_demo(ui);
                     ui.add_space(20.0);
                     self.render_real_world_examples(ui);
+                    ui.add_space(20.0);
+                    self.render_full_width_example(ui);
                 });
             });
         self.open = open;
@@ -892,5 +894,50 @@ impl ListWindow {
                     .on_click(|| println!("Play song")),
             );
         ui.add(playlist);
+    }
+
+    fn render_full_width_example(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Full Width List");
+        ui.label("This list fills the available width using .fill_width(true)");
+
+        let visual_density = self.get_visual_density();
+
+        let full_width_list = MaterialList::new()
+            .id("full_width_list")
+            .fill_width(true)
+            .item(
+                ListItem::new("Dashboard")
+                    .secondary_text("View analytics and metrics")
+                    .leading_icon("dashboard".to_string())
+                    .trailing_icon("arrow_forward".to_string())
+                    .visual_density(visual_density)
+                    .on_click(|| println!("Dashboard clicked")),
+            )
+            .item(
+                ListItem::new("Reports")
+                    .secondary_text("Monthly performance reports")
+                    .leading_icon("assessment".to_string())
+                    .trailing_icon("arrow_forward".to_string())
+                    .visual_density(visual_density)
+                    .on_click(|| println!("Reports clicked")),
+            )
+            .item(
+                ListItem::new("Settings")
+                    .secondary_text("Configure application preferences")
+                    .leading_icon("settings".to_string())
+                    .trailing_icon("arrow_forward".to_string())
+                    .visual_density(visual_density)
+                    .on_click(|| println!("Settings clicked")),
+            )
+            .item(
+                ListItem::new("Account")
+                    .secondary_text("Manage your profile and billing")
+                    .leading_icon("account_circle".to_string())
+                    .trailing_icon("arrow_forward".to_string())
+                    .visual_density(visual_density)
+                    .on_click(|| println!("Account clicked")),
+            );
+
+        ui.add(full_width_list);
     }
 }

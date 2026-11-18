@@ -184,7 +184,11 @@ impl<'a> Widget for MaterialList<'a> {
             total_height += (self.items.len() - 1) as f32;
         }
 
-        let list_width = max_content_width.min(ui.available_width());
+        let list_width = if self.fill_width {
+            ui.available_width()
+        } else {
+            max_content_width.min(ui.available_width())
+        };
         let desired_size = Vec2::new(list_width, total_height);
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
 

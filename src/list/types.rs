@@ -108,6 +108,8 @@ pub struct MaterialList<'a> {
     pub(crate) id: Option<egui::Id>,
     /// Whether to enable drawer functionality
     pub(crate) allow_drawer: bool,
+    /// Whether to fill available width instead of using content width
+    pub(crate) fill_width: bool,
 }
 
 /// Persistent state for a Material Design list

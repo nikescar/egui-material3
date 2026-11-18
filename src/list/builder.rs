@@ -22,6 +22,7 @@ impl<'a> MaterialList<'a> {
             dividers: true,
             id: None,
             allow_drawer: false,
+            fill_width: false,
         }
     }
 
@@ -95,6 +96,25 @@ impl<'a> MaterialList<'a> {
     /// ```
     pub fn allow_drawer(mut self, allow: bool) -> Self {
         self.allow_drawer = allow;
+        self
+    }
+
+    /// Set whether the list should fill the available width.
+    ///
+    /// When enabled, the list expands to fill the full available width
+    /// instead of sizing to fit its content.
+    ///
+    /// # Arguments
+    /// * `fill` - Whether to fill available width
+    ///
+    /// # Example
+    /// ```rust
+    /// let list = MaterialList::new()
+    ///     .fill_width(true)
+    ///     .item(ListItem::new("Item"));
+    /// ```
+    pub fn fill_width(mut self, fill: bool) -> Self {
+        self.fill_width = fill;
         self
     }
 }
