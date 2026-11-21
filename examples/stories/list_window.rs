@@ -1,8 +1,21 @@
 #![doc(hidden)]
 
-use crate::MaterialButton;
+use crate::{dialog, MaterialButton};
 use eframe::egui::{self, Window};
 use egui_material3::{ListItem, MaterialList, VisualDensity};
+use std::sync::{Arc, Mutex};
+
+#[derive(Clone)]
+struct ListItemData {
+    title: String,
+    description: String,
+}
+
+#[derive(Clone)]
+enum ListAction {
+    Edit(usize),
+    Delete(usize),
+}
 
 #[doc(hidden)]
 pub struct ListWindow {
@@ -16,6 +29,13 @@ pub struct ListWindow {
     trailing_icon: bool,
     visual_density_mode: usize, // 0=Standard, 1=Comfortable, 2=Compact
     selected_items: Vec<bool>,  // For selection demo
+    // Editable list state
+    editable_items: Vec<ListItemData>,
+    edit_dialog_open: bool,
+    delete_dialog_open: bool,
+    editing_index: Option<usize>,
+    edit_title: String,
+    edit_description: String,
 }
 
 impl Default for ListWindow {
@@ -31,6 +51,29 @@ impl Default for ListWindow {
             trailing_icon: false,
             visual_density_mode: 0,
             selected_items: vec![false; 5],
+            editable_items: vec![
+                ListItemData {
+                    title: "Design mockups".to_string(),
+                    description: "Create wireframes and high-fidelity designs".to_string(),
+                },
+                ListItemData {
+                    title: "API Development".to_string(),
+                    description: "Implement REST endpoints for user management".to_string(),
+                },
+                ListItemData {
+                    title: "Database Migration".to_string(),
+                    description: "Update schema to support new features".to_string(),
+                },
+                ListItemData {
+                    title: "Testing".to_string(),
+                    description: "Write unit and integration tests".to_string(),
+                },
+            ],
+            edit_dialog_open: false,
+            delete_dialog_open: false,
+            editing_index: None,
+            edit_title: String::new(),
+            edit_description: String::new(),
         }
     }
 }
@@ -64,9 +107,15 @@ impl ListWindow {
                     self.render_real_world_examples(ui);
                     ui.add_space(20.0);
                     self.render_full_width_example(ui);
+                    ui.add_space(20.0);
+                    self.render_editable_list(ui);
                 });
             });
         self.open = open;
+
+        // Show dialogs
+        self.show_edit_dialog(ctx);
+        self.show_delete_dialog(ctx);
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
@@ -939,5 +988,171 @@ impl ListWindow {
             );
 
         ui.add(full_width_list);
+    }
+
+    fn render_editable_list(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Editable List with Action Buttons");
+        ui.label("Demonstrates custom trailing widgets with Edit/Delete buttons and form dialog integration");
+
+        let action_signal: Arc<Mutex<Option<ListAction>>> = Arc::new(Mutex::new(None));
+
+        let mut list = MaterialList::new().id("editable_list");
+
+        for (index, item) in self.editable_items.iter().enumerate() {
+            let action_clone = Arc::clone(&action_signal);
+            let idx = index;
+
+            let list_item = ListItem::new(&item.title)
+                .secondary_text(&item.description)
+                .leading_icon("article".to_string())
+                .trailing_widget(move |ui| {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 8.0;
+
+                        if ui.add(MaterialButton::filled("Edit").small()).clicked() {
+                            if let Ok(mut signal) = action_clone.lock() {
+                                *signal = Some(ListAction::Edit(idx));
+                            }
+                        }
+
+                        let action_clone2 = Arc::clone(&action_clone);
+                        if ui.add(MaterialButton::filled("Delete").small()).clicked() {
+                            if let Ok(mut signal) = action_clone2.lock() {
+                                *signal = Some(ListAction::Delete(idx));
+                            }
+                        }
+                    });
+                });
+
+            list = list.item(list_item);
+        }
+
+        ui.add(list);
+
+        // Handle action after render
+        let action = {
+            if let Ok(mut signal) = action_signal.lock() {
+                signal.take()
+            } else {
+                None
+            }
+        };
+
+        if let Some(action) = action {
+            match action {
+                ListAction::Edit(idx) => {
+                    self.editing_index = Some(idx);
+                    if let Some(item) = self.editable_items.get(idx) {
+                        self.edit_title = item.title.clone();
+                        self.edit_description = item.description.clone();
+                    }
+                    self.edit_dialog_open = true;
+                }
+                ListAction::Delete(idx) => {
+                    self.editing_index = Some(idx);
+                    self.delete_dialog_open = true;
+                }
+            }
+        }
+    }
+
+    fn show_edit_dialog(&mut self, ctx: &egui::Context) {
+        if !self.edit_dialog_open {
+            return;
+        }
+
+        let was_open = self.edit_dialog_open;
+        let save_clicked = Arc::new(Mutex::new(false));
+        let save_clone = Arc::clone(&save_clicked);
+
+        dialog("edit_item_dialog", "Edit Item", &mut self.edit_dialog_open)
+            .max_width(560.0)
+            .content(|ui, _open| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Title:");
+                        ui.text_edit_singleline(&mut self.edit_title);
+                    });
+                    ui.add_space(8.0);
+                    ui.horizontal(|ui| {
+                        ui.label("Description:");
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.edit_description)
+                                .desired_width(f32::INFINITY)
+                                .desired_rows(3),
+                        );
+                    });
+                });
+            })
+            .action("Cancel", || {})
+            .primary_action("Save", move || {
+                if let Ok(mut clicked) = save_clone.lock() {
+                    *clicked = true;
+                }
+            })
+            .show(ctx);
+
+        // Commit changes only if Save was clicked
+        if was_open && !self.edit_dialog_open {
+            let should_save = save_clicked.lock().map(|v| *v).unwrap_or(false);
+            if should_save && !self.edit_title.is_empty() {
+                if let Some(idx) = self.editing_index {
+                    if let Some(item) = self.editable_items.get_mut(idx) {
+                        item.title = self.edit_title.clone();
+                        item.description = self.edit_description.clone();
+                    }
+                }
+            }
+        }
+    }
+
+    fn show_delete_dialog(&mut self, ctx: &egui::Context) {
+        if !self.delete_dialog_open {
+            return;
+        }
+
+        let item_title = self
+            .editing_index
+            .and_then(|idx| self.editable_items.get(idx))
+            .map(|item| item.title.as_str())
+            .unwrap_or("this item");
+
+        let was_open = self.delete_dialog_open;
+        let delete_confirmed = Arc::new(Mutex::new(false));
+        let delete_clone = Arc::clone(&delete_confirmed);
+
+        dialog(
+            "delete_item_dialog",
+            "Delete Item?",
+            &mut self.delete_dialog_open,
+        )
+        .icon("delete_outline")
+        .max_width(350.0)
+        .content(|ui, _open| {
+            ui.label(format!(
+                "Are you sure you want to delete '{}'? This action cannot be undone.",
+                item_title
+            ));
+        })
+        .action("Cancel", || {})
+        .primary_action("Delete", move || {
+            if let Ok(mut confirmed) = delete_clone.lock() {
+                *confirmed = true;
+            }
+        })
+        .show(ctx);
+
+        // Handle deletion only if Delete was confirmed
+        if was_open && !self.delete_dialog_open {
+            let should_delete = delete_confirmed.lock().map(|v| *v).unwrap_or(false);
+            if should_delete {
+                if let Some(idx) = self.editing_index {
+                    if idx < self.editable_items.len() {
+                        self.editable_items.remove(idx);
+                    }
+                }
+            }
+            self.editing_index = None;
+        }
     }
 }

@@ -25,7 +25,42 @@ fn measure_drawer_height(drawer_fn: &dyn Fn(&mut Ui), ui: &mut Ui, width: f32) -
     child_ui.min_rect().height()
 }
 
-/// Helper function to render multi-line text
+/// Helper function to render multi-line text with word wrapping
+fn render_wrapped_text(
+    ui: &mut Ui,
+    text: &str,
+    start_pos: Pos2,
+    max_width: f32,
+    font_id: egui::FontId,
+    color: Color32,
+) {
+    use egui::text::{LayoutJob, LayoutSection};
+
+    let mut layout_job = LayoutJob {
+        text: text.to_string(),
+        sections: vec![LayoutSection {
+            leading_space: 0.0,
+            byte_range: 0..text.len(),
+            format: egui::TextFormat {
+                font_id,
+                color,
+                ..Default::default()
+            },
+        }],
+        wrap: egui::text::TextWrapping {
+            max_width,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    layout_job.wrap.break_anywhere = false;
+
+    let galley = ui.painter().layout_job(layout_job);
+
+    ui.painter().galley(start_pos, galley, color);
+}
+
+/// Helper function to render multi-line text (manual \n breaks only)
 fn render_multiline_text(
     painter: &egui::Painter,
     text: &str,
@@ -172,6 +207,9 @@ impl<'a> Widget for MaterialList<'a> {
             }
             if item.trailing_icon.is_some() {
                 item_width += 40.0;
+            }
+            if item.trailing_widget.is_some() {
+                item_width += 150.0; // Space for custom widgets like buttons
             }
             item_width += 32.0;
 
@@ -398,12 +436,16 @@ impl<'a> Widget for MaterialList<'a> {
                 0.0
             };
             let trailing_widget_width = if item.trailing_widget.is_some() {
-                120.0 // Reserve space for widget (e.g., buttons)
+                150.0 // Reserve space for widget (e.g., multiple buttons)
             } else {
                 0.0
             };
             let _total_trailing_width =
                 trailing_icon_width + trailing_text_width + trailing_widget_width;
+
+            // Calculate available width for text wrapping
+            let available_text_width = item_rect.max.x - content_x
+                - trailing_widget_width - trailing_icon_width - trailing_text_width - 16.0;
 
             // Draw text content based on configuration
             match (&item.overline_text, &item.secondary_text) {
@@ -432,12 +474,12 @@ impl<'a> Widget for MaterialList<'a> {
                     );
 
                     // Secondary text: use onSurfaceVariant (lower emphasis supporting text)
-                    // Support multi-line text with \n
-                    render_multiline_text(
-                        ui.painter(),
+                    // Support word wrapping and multi-line text
+                    render_wrapped_text(
+                        ui,
                         secondary,
                         secondary_pos,
-                        18.0, // line spacing
+                        available_text_width,
                         egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 }),
                         on_surface_variant,
                     );
@@ -480,12 +522,12 @@ impl<'a> Widget for MaterialList<'a> {
                     );
 
                     // Secondary text: use onSurfaceVariant (lower emphasis supporting text)
-                    // Support multi-line text with \n
-                    render_multiline_text(
-                        ui.painter(),
+                    // Support word wrapping and multi-line text
+                    render_wrapped_text(
+                        ui,
                         secondary,
                         secondary_pos,
-                        18.0, // line spacing
+                        available_text_width,
                         egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 }),
                         on_surface_variant,
                     );
@@ -569,13 +611,13 @@ impl<'a> Widget for MaterialList<'a> {
             if let Some(widget_fn) = &item.trailing_widget {
                 let widget_rect = Rect::from_min_size(
                     Pos2::new(
-                        item_rect.max.x - trailing_widget_width - trailing_icon_width - 8.0,
+                        item_rect.max.x - trailing_widget_width - trailing_icon_width - 16.0,
                         item_rect.min.y,
                     ),
                     Vec2::new(trailing_widget_width, item_rect.height()),
                 );
                 ui.allocate_ui_at_rect(widget_rect, |ui| {
-                    ui.horizontal_centered(|ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         widget_fn(ui);
                     });
                 });
