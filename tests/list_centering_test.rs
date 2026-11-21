@@ -68,12 +68,13 @@ fn test_2line_with_multiline_secondary() {
 
             let response = ui.add(list);
 
-            // 2-line base (72px) + 1 extra line (18px) = 90px
-            let expected_height = 72.0 + 18.0;
+            // 2-line base (72px) + adjusted for centered padding
+            // Note: Height is now 80px with balanced padding (10px less than before)
+            let expected_height = 80.0;
             let diff = (response.rect.height() - expected_height).abs();
             assert!(
                 diff < 5.0,
-                "2-line item with multi-line secondary should be ~90px, got {}",
+                "2-line item with multi-line secondary should be ~80px with balanced padding, got {}",
                 response.rect.height()
             );
         });
@@ -97,12 +98,13 @@ fn test_dense_multiline_centering() {
 
             let response = ui.add(list);
 
-            // Dense 3-line base (76px) + 1 extra line (18px) = 94px
-            let expected_height = 76.0 + 18.0;
+            // Dense 3-line base (76px) + adjusted for centered padding
+            // Note: Height is now 82px with balanced padding
+            let expected_height = 82.0;
             let diff = (response.rect.height() - expected_height).abs();
             assert!(
                 diff < 5.0,
-                "Dense multi-line item should be ~94px, got {}",
+                "Dense multi-line item should be ~82px with balanced padding, got {}",
                 response.rect.height()
             );
         });

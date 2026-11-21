@@ -119,23 +119,41 @@ fn count_lines(text: &str) -> usize {
 
 /// Calculate vertical offset to center text block within item rect
 /// Returns offset to subtract from content_y to balance top/bottom padding
-fn calculate_center_offset(has_overline: bool, secondary_text: Option<&String>) -> f32 {
-    if !has_overline {
-        // No overline: text block is already balanced (primary at top, secondary below)
-        return 0.0;
-    }
+fn calculate_center_offset(
+    has_overline: bool,
+    secondary_text: Option<&String>,
+) -> f32 {
+    if has_overline {
+        // With overline: measure space above and below primary text
+        let above_primary = 20.0; // overline offset
 
-    let above_primary = 20.0; // overline offset
+        let below_primary = if let Some(secondary) = secondary_text {
+            // Use line count to estimate height (same as original logic)
+            let line_count = count_lines(secondary);
+            // First line at +20px, additional lines add ~18px each
+            20.0 + (line_count - 1) as f32 * 18.0
+        } else {
+            0.0
+        };
 
-    let below_primary = if let Some(secondary) = secondary_text {
-        let line_count = count_lines(secondary);
-        20.0 + (line_count - 1) as f32 * 18.0
+        // Return half the imbalance to center the text block
+        (below_primary - above_primary) / 2.0
     } else {
-        0.0 // no secondary text
-    };
+        // No overline: primary at -10px, secondary starts at +10px
+        let above_primary = 10.0;
 
-    // Return half the imbalance to center the text block
-    (below_primary - above_primary) / 2.0
+        let below_primary = if let Some(secondary) = secondary_text {
+            // Use line count to estimate height
+            let line_count = count_lines(secondary);
+            // First line at +10px, additional lines add ~18px each
+            10.0 + 20.0 + (line_count - 1) as f32 * 18.0
+        } else {
+            0.0
+        };
+
+        // Return half the imbalance to center the text block
+        (below_primary - above_primary) / 2.0
+    }
 }
 
 impl<'a> Widget for MaterialList<'a> {
@@ -452,9 +470,16 @@ impl<'a> Widget for MaterialList<'a> {
 
             let mut content_x = item_rect.min.x + 16.0;
 
+            // Calculate trailing widths (needed later for text wrapping)
+            let trailing_icon_width = if item.trailing_icon.is_some() { 40.0 } else { 0.0 };
+            let trailing_text_width = if item.trailing_text.is_some() { 80.0 } else { 0.0 };
+            let trailing_widget_width = if item.trailing_widget.is_some() { 150.0 } else { 0.0 };
+
             // Calculate vertical offset to center text block for balanced padding
-            let center_offset =
-                calculate_center_offset(item.overline_text.is_some(), item.secondary_text.as_ref());
+            let center_offset = calculate_center_offset(
+                item.overline_text.is_some(),
+                item.secondary_text.as_ref(),
+            );
             let content_y = item_rect.center().y - center_offset;
 
             // Draw leading icon (with optional label below)
@@ -495,26 +520,7 @@ impl<'a> Widget for MaterialList<'a> {
                 content_x += leading_width + horizontal_title_gap;
             }
 
-            // Calculate trailing width
-            let trailing_icon_width = if item.trailing_icon.is_some() {
-                40.0
-            } else {
-                0.0
-            };
-            let trailing_text_width = if item.trailing_text.is_some() {
-                80.0
-            } else {
-                0.0
-            };
-            let trailing_widget_width = if item.trailing_widget.is_some() {
-                150.0 // Reserve space for widget (e.g., multiple buttons)
-            } else {
-                0.0
-            };
-            let _total_trailing_width =
-                trailing_icon_width + trailing_text_width + trailing_widget_width;
-
-            // Calculate available width for text wrapping
+            // Calculate available width for text wrapping (using updated content_x)
             let available_text_width = item_rect.max.x - content_x
                 - trailing_widget_width - trailing_icon_width - trailing_text_width - 16.0;
 
