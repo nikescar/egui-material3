@@ -71,7 +71,7 @@ impl Default for ListWindow {
             editable_items: vec![
                 ListItemData {
                     title: "Design mockups".to_string(),
-                    description: "Create wireframes and high-fidelity designs".to_string(),
+                    description: "Create wireframes and high-fidelity designs for the new user dashboard. This includes mobile and desktop layouts with responsive breakpoints.".to_string(),
                 },
                 ListItemData {
                     title: "API Development".to_string(),
@@ -83,7 +83,7 @@ impl Default for ListWindow {
                 },
                 ListItemData {
                     title: "Testing".to_string(),
-                    description: "Write unit and integration tests".to_string(),
+                    description: "Write comprehensive unit and integration tests for all new API endpoints and UI components. Include edge cases and error scenarios.".to_string(),
                 },
             ],
             edit_dialog_open: false,

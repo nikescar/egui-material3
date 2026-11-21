@@ -619,9 +619,11 @@ impl<'a> Widget for MaterialList<'a> {
 
             // Draw trailing text (e.g., badges, counts)
             if let Some(ref trailing_text) = item.trailing_text {
+                // Position at top-right corner to avoid overlap with trailing_widget
+                // When both trailing_widget and trailing_text present, text goes above widget
                 let trailing_text_pos = Pos2::new(
-                    item_rect.max.x - trailing_icon_width - trailing_text_width + 10.0,
-                    content_y,
+                    item_rect.max.x - trailing_widget_width - trailing_icon_width - trailing_text_width + 10.0,
+                    item_rect.min.y + 12.0,
                 );
 
                 // Trailing text: use onSurfaceVariant (lower emphasis supporting content)
@@ -680,12 +682,15 @@ impl<'a> Widget for MaterialList<'a> {
 
             // Render custom trailing widget
             if let Some(widget_fn) = &item.trailing_widget {
+                // Align widget with primary text center (content_y), not item center
+                // Use fixed height for widget area to prevent misalignment with wrapped text
+                let widget_height = 32.0;
                 let widget_rect = Rect::from_min_size(
                     Pos2::new(
                         item_rect.max.x - trailing_widget_width - trailing_icon_width - 16.0,
-                        item_rect.min.y,
+                        content_y - widget_height / 2.0,
                     ),
-                    Vec2::new(trailing_widget_width, item_rect.height()),
+                    Vec2::new(trailing_widget_width, widget_height),
                 );
                 ui.allocate_ui_at_rect(widget_rect, |ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
