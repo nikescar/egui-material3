@@ -4,4 +4,7 @@ mod builder;
 mod rendering;
 mod types;
 
+#[cfg(test)]
+mod tests;
+
 pub use types::*;

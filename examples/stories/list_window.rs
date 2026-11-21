@@ -12,6 +12,17 @@ struct ListItemData {
 }
 
 #[derive(Clone)]
+struct EditableDrawerItemData {
+    department: String,  // overline
+    title: String,       // primary
+    description: String, // secondary (can be multiline)
+    team_size: usize,
+    projects: usize,
+    budget: String,
+    location: String,
+}
+
+#[derive(Clone)]
 enum ListAction {
     Edit(usize),
     Delete(usize),
@@ -36,6 +47,12 @@ pub struct ListWindow {
     editing_index: Option<usize>,
     edit_title: String,
     edit_description: String,
+    // Editable drawer list state
+    editable_drawer_items: Vec<EditableDrawerItemData>,
+    edit_drawer_dialog_open: bool,
+    edit_drawer_title: String,
+    edit_drawer_department: String,
+    edit_drawer_description: String,
 }
 
 impl Default for ListWindow {
@@ -74,6 +91,39 @@ impl Default for ListWindow {
             editing_index: None,
             edit_title: String::new(),
             edit_description: String::new(),
+            editable_drawer_items: vec![
+                EditableDrawerItemData {
+                    department: "Engineering".to_string(),
+                    title: "Backend Development".to_string(),
+                    description: "Server infrastructure and API services development".to_string(),
+                    team_size: 12,
+                    projects: 3,
+                    budget: "$120,000".to_string(),
+                    location: "Building A, Floor 2".to_string(),
+                },
+                EditableDrawerItemData {
+                    department: "Design".to_string(),
+                    title: "UI/UX Design".to_string(),
+                    description: "User interface and experience design for all products".to_string(),
+                    team_size: 8,
+                    projects: 5,
+                    budget: "$85,000".to_string(),
+                    location: "Building B, Floor 1".to_string(),
+                },
+                EditableDrawerItemData {
+                    department: "Marketing".to_string(),
+                    title: "Digital Marketing".to_string(),
+                    description: "Online campaigns and analytics across multiple channels".to_string(),
+                    team_size: 6,
+                    projects: 4,
+                    budget: "$65,000".to_string(),
+                    location: "Building A, Floor 3".to_string(),
+                },
+            ],
+            edit_drawer_dialog_open: false,
+            edit_drawer_title: String::new(),
+            edit_drawer_department: String::new(),
+            edit_drawer_description: String::new(),
         }
     }
 }
@@ -109,6 +159,8 @@ impl ListWindow {
                     self.render_full_width_example(ui);
                     ui.add_space(20.0);
                     self.render_editable_list(ui);
+                    ui.add_space(20.0);
+                    self.render_editable_drawer_list(ui);
                 });
             });
         self.open = open;
@@ -116,6 +168,7 @@ impl ListWindow {
         // Show dialogs
         self.show_edit_dialog(ctx);
         self.show_delete_dialog(ctx);
+        self.show_edit_drawer_dialog(ctx);
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
@@ -1153,6 +1206,158 @@ impl ListWindow {
                 }
             }
             self.editing_index = None;
+        }
+    }
+
+    fn render_editable_drawer_list(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Editable Drawer List with 5-Line Items");
+        ui.label("Combines Edit/Delete buttons, expandable drawers, and 5-line layout (overline + primary + 2-line secondary + text indicator)");
+
+        let list_id = "editable_drawer_list";
+        let state = ui
+            .data_mut(|d| d.get_persisted::<egui_material3::MaterialListState>(
+                egui::Id::new(list_id)
+            ))
+            .unwrap_or_default();
+
+        let action_signal: Arc<Mutex<Option<ListAction>>> = Arc::new(Mutex::new(None));
+
+        let mut list = MaterialList::new().id(list_id).allow_drawer(true);
+
+        for (index, item) in self.editable_drawer_items.iter().enumerate() {
+            let action_clone = Arc::clone(&action_signal);
+            let idx = index;
+            let is_open = state.drawer_open_items.contains(&index);
+            let indicator = if is_open {
+                "Collapse ▼"
+            } else {
+                "Expand ▶"
+            };
+
+            let team_size = item.team_size;
+            let projects = item.projects;
+            let budget = item.budget.clone();
+            let location = item.location.clone();
+
+            let list_item = ListItem::new(&item.title)
+                .overline(&item.department)
+                .secondary_text(&item.description)
+                .trailing_text(indicator)
+                .leading_icon("folder".to_string())
+                .leading_icon_label(&item.department)
+                .drawer(move |ui| {
+                    ui.label("Department Details:");
+                    ui.label(format!("• Team Size: {} members", team_size));
+                    ui.label(format!("• Active Projects: {}", projects));
+                    ui.label(format!("• Budget: {}", budget));
+                    ui.label(format!("• Location: {}", location));
+                })
+                .trailing_widget(move |ui| {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 8.0;
+
+                        if ui.add(MaterialButton::filled("Edit").small()).clicked() {
+                            if let Ok(mut signal) = action_clone.lock() {
+                                *signal = Some(ListAction::Edit(idx));
+                            }
+                        }
+
+                        let action_clone2 = Arc::clone(&action_clone);
+                        if ui.add(MaterialButton::filled("Delete").small()).clicked() {
+                            if let Ok(mut signal) = action_clone2.lock() {
+                                *signal = Some(ListAction::Delete(idx));
+                            }
+                        }
+                    });
+                });
+
+            list = list.item(list_item);
+        }
+
+        ui.add(list);
+
+        // Handle action after render
+        let action = {
+            if let Ok(mut signal) = action_signal.lock() {
+                signal.take()
+            } else {
+                None
+            }
+        };
+
+        if let Some(action) = action {
+            match action {
+                ListAction::Edit(idx) => {
+                    self.editing_index = Some(idx);
+                    if let Some(item) = self.editable_drawer_items.get(idx) {
+                        self.edit_drawer_title = item.title.clone();
+                        self.edit_drawer_department = item.department.clone();
+                        self.edit_drawer_description = item.description.clone();
+                    }
+                    self.edit_drawer_dialog_open = true;
+                }
+                ListAction::Delete(idx) => {
+                    if idx < self.editable_drawer_items.len() {
+                        self.editable_drawer_items.remove(idx);
+                    }
+                }
+            }
+        }
+    }
+
+    fn show_edit_drawer_dialog(&mut self, ctx: &egui::Context) {
+        if !self.edit_drawer_dialog_open {
+            return;
+        }
+
+        let was_open = self.edit_drawer_dialog_open;
+        let save_clicked = Arc::new(Mutex::new(false));
+        let save_clone = Arc::clone(&save_clicked);
+
+        dialog("edit_drawer_dialog", "Edit Department", &mut self.edit_drawer_dialog_open)
+            .max_width(560.0)
+            .content(|ui, _open| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("Department:");
+                        ui.text_edit_singleline(&mut self.edit_drawer_department);
+                    });
+                    ui.add_space(8.0);
+                    ui.horizontal(|ui| {
+                        ui.label("Title:");
+                        ui.text_edit_singleline(&mut self.edit_drawer_title);
+                    });
+                    ui.add_space(8.0);
+                    ui.horizontal(|ui| {
+                        ui.label("Description:");
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.edit_drawer_description)
+                                .desired_width(f32::INFINITY)
+                                .desired_rows(3),
+                        );
+                    });
+                });
+            })
+            .action("Cancel", || {})
+            .primary_action("Save", move || {
+                if let Ok(mut clicked) = save_clone.lock() {
+                    *clicked = true;
+                }
+            })
+            .show(ctx);
+
+        // Commit changes only if Save was clicked
+        if was_open && !self.edit_drawer_dialog_open {
+            let should_save = save_clicked.lock().map(|v| *v).unwrap_or(false);
+            if should_save && !self.edit_drawer_title.is_empty() {
+                if let Some(idx) = self.editing_index {
+                    if let Some(item) = self.editable_drawer_items.get_mut(idx) {
+                        item.title = self.edit_drawer_title.clone();
+                        item.department = self.edit_drawer_department.clone();
+                        item.description = self.edit_drawer_description.clone();
+                    }
+                }
+            }
         }
     }
 }

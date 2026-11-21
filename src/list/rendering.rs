@@ -25,6 +25,37 @@ fn measure_drawer_height(drawer_fn: &dyn Fn(&mut Ui), ui: &mut Ui, width: f32) -
     child_ui.min_rect().height()
 }
 
+/// Helper function to measure wrapped text height without rendering
+fn measure_wrapped_text_height(
+    ui: &mut Ui,
+    text: &str,
+    max_width: f32,
+    font_id: egui::FontId,
+) -> f32 {
+    use egui::text::{LayoutJob, LayoutSection};
+
+    let layout_job = LayoutJob {
+        text: text.to_string(),
+        sections: vec![LayoutSection {
+            leading_space: 0.0,
+            byte_range: 0..text.len(),
+            format: egui::TextFormat {
+                font_id,
+                color: egui::Color32::WHITE, // Color doesn't matter for measurement
+                ..Default::default()
+            },
+        }],
+        wrap: egui::text::TextWrapping {
+            max_width,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    let galley = ui.painter().layout_job(layout_job);
+    galley.rect.height()
+}
+
 /// Helper function to render multi-line text with word wrapping
 fn render_wrapped_text(
     ui: &mut Ui,
@@ -158,16 +189,35 @@ impl<'a> Widget for MaterialList<'a> {
                 }
             };
 
-            // Add extra height for multi-line secondary text
+            // Calculate trailing widths to determine available text width
+            let trailing_icon_width = if item.trailing_icon.is_some() { 40.0 } else { 0.0 };
+            let trailing_text_width = if item.trailing_text.is_some() { 80.0 } else { 0.0 };
+            let trailing_widget_width = if item.trailing_widget.is_some() { 150.0 } else { 0.0 };
+
+            // Calculate available width for text (approximate for height calculation)
+            let leading_width = if item.leading_icon.is_some() {
+                item.min_leading_width.unwrap_or(40.0) + item.horizontal_title_gap.unwrap_or(16.0)
+            } else {
+                0.0
+            };
+            let available_text_width = ui.available_width().min(800.0) - leading_width
+                - trailing_widget_width - trailing_icon_width - trailing_text_width - 32.0;
+
+            // Add extra height for multi-line secondary text with wrapping
             let mut item_height = item
                 .min_tile_height
                 .unwrap_or(base_height + density_adjustment);
 
             if let Some(ref secondary) = item.secondary_text {
-                let line_count = count_lines(secondary);
-                if line_count > 1 {
-                    // Add 18px for each additional line beyond the first
-                    item_height += (line_count - 1) as f32 * 18.0;
+                // Measure actual wrapped text height
+                let font_id = egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 });
+                let wrapped_height = measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
+
+                // Secondary text starts at +20px from center, so we need to add the wrapped height
+                // minus the base allocation (which assumes ~1 line = 20px)
+                let base_secondary_height = 20.0;
+                if wrapped_height > base_secondary_height {
+                    item_height += wrapped_height - base_secondary_height;
                 }
             }
 
@@ -278,16 +328,37 @@ impl<'a> Widget for MaterialList<'a> {
                 }
             };
 
+            // Calculate trailing widths for available text width
+            let trailing_icon_width = if item.trailing_icon.is_some() { 40.0 } else { 0.0 };
+            let trailing_text_width = if item.trailing_text.is_some() { 80.0 } else { 0.0 };
+            let trailing_widget_width = if item.trailing_widget.is_some() { 150.0 } else { 0.0 };
+
+            // Calculate available width for text
+            let horizontal_title_gap = item.horizontal_title_gap.unwrap_or(16.0) + visual_density.horizontal * 2.0;
+            let min_leading_width = item.min_leading_width.unwrap_or(40.0);
+            let leading_width = if item.leading_icon.is_some() {
+                min_leading_width + horizontal_title_gap
+            } else {
+                0.0
+            };
+            let available_text_width = rect.width() - 16.0 - leading_width
+                - trailing_widget_width - trailing_icon_width - trailing_text_width - 16.0;
+
             let mut item_height = item
                 .min_tile_height
                 .unwrap_or(base_height + density_adjustment);
 
-            // Add extra height for multi-line secondary text
+            // Add extra height for multi-line secondary text with wrapping
             if let Some(ref secondary) = item.secondary_text {
-                let line_count = count_lines(secondary);
-                if line_count > 1 {
-                    // Add 18px for each additional line beyond the first
-                    item_height += (line_count - 1) as f32 * 18.0;
+                // Measure actual wrapped text height
+                let font_id = egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 });
+                let wrapped_height = measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
+
+                // Secondary text starts at +20px from center for 3-line, +10px for 2-line
+                // Add the difference between wrapped height and base allocation
+                let base_secondary_height = 20.0;
+                if wrapped_height > base_secondary_height {
+                    item_height += wrapped_height - base_secondary_height;
                 }
             }
 
