@@ -1210,6 +1210,7 @@ impl ListWindow {
     }
 
     fn render_editable_drawer_list(&mut self, ui: &mut egui::Ui) {
+        ui.add_space(20.0); // Add spacing to prevent overlap with previous list
         ui.heading("Editable Drawer List with 5-Line Items");
         ui.label("Combines Edit/Delete buttons, expandable drawers, and 5-line layout (overline + primary + 2-line secondary + text indicator)");
 
@@ -1242,7 +1243,6 @@ impl ListWindow {
             let list_item = ListItem::new(&item.title)
                 .overline(&item.department)
                 .secondary_text(&item.description)
-                .trailing_text(indicator)
                 .leading_icon("folder".to_string())
                 .leading_icon_label(&item.department)
                 .drawer(move |ui| {
@@ -1253,21 +1253,32 @@ impl ListWindow {
                     ui.label(format!("• Location: {}", location));
                 })
                 .trailing_widget(move |ui| {
-                    ui.horizontal(|ui| {
-                        ui.spacing_mut().item_spacing.x = 8.0;
+                    // Vertical layout: indicator at top, buttons at center
+                    ui.vertical(|ui| {
+                        // Indicator at top
+                        ui.add_space(2.0);
+                        ui.label(indicator);
 
-                        if ui.add(MaterialButton::filled("Edit").small()).clicked() {
-                            if let Ok(mut signal) = action_clone.lock() {
-                                *signal = Some(ListAction::Edit(idx));
-                            }
-                        }
+                        // Spacer to push buttons to center
+                        ui.add_space(8.0);
 
-                        let action_clone2 = Arc::clone(&action_clone);
-                        if ui.add(MaterialButton::filled("Delete").small()).clicked() {
-                            if let Ok(mut signal) = action_clone2.lock() {
-                                *signal = Some(ListAction::Delete(idx));
+                        // Buttons horizontally aligned
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = 8.0;
+
+                            if ui.add(MaterialButton::filled("Edit").small()).clicked() {
+                                if let Ok(mut signal) = action_clone.lock() {
+                                    *signal = Some(ListAction::Edit(idx));
+                                }
                             }
-                        }
+
+                            let action_clone2 = Arc::clone(&action_clone);
+                            if ui.add(MaterialButton::filled("Delete").small()).clicked() {
+                                if let Ok(mut signal) = action_clone2.lock() {
+                                    *signal = Some(ListAction::Delete(idx));
+                                }
+                            }
+                        });
                     });
                 });
 
