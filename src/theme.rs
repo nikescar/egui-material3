@@ -992,18 +992,9 @@ impl MaterialThemeContext {
         ctx.set_fonts(fonts);
     }
 
+    /// Scheme for the current mode (Light/Dark, or `dark_mode` when Auto) and contrast level.
     pub fn get_current_scheme(&self) -> Option<&MaterialScheme> {
-        if let Some(ref theme) = self.material_theme {
-            // Always use light scheme with selected contrast level
-            let scheme_key = match self.contrast_level {
-                ContrastLevel::Normal => "light",
-                ContrastLevel::Medium => "light-medium-contrast",
-                ContrastLevel::High => "light-high-contrast",
-            };
-            theme.schemes.get(scheme_key)
-        } else {
-            None
-        }
+        self.get_scheme_for_mode(self.dark_mode)
     }
 
     /// Get scheme for a specific dark_mode state, respecting Auto mode
@@ -1512,6 +1503,7 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
                 resolved_theme.theme_mode = ThemeMode::Light;
             }
         }
+        resolved_theme.dark_mode = resolved_theme.theme_mode == ThemeMode::Dark;
 
         // Get the appropriate background color from the material theme
         let background_color = match (resolved_theme.theme_mode, resolved_theme.contrast_level) {
@@ -1687,6 +1679,13 @@ where
             }
         }
     };
+
+    // Keep resolved dark state in sync so every color lookup (visuals and widgets) uses
+    // the same light/dark scheme, including Auto mode.
+    theme.dark_mode = visuals.dark_mode;
+    if let Ok(mut global) = GLOBAL_THEME.lock() {
+        global.dark_mode = visuals.dark_mode;
+    }
 
     // Extract Material Design 3 color roles
     let primary = theme.get_primary_color();
