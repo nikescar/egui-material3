@@ -1611,7 +1611,7 @@ pub fn detect_os_theme() -> ThemeMode {
 ///
 /// ## Backgrounds
 /// - **window_fill**: surface
-/// - **panel_fill**: surfaceContainer
+/// - **panel_fill**: surface
 /// - **faint_bg_color**: surfaceContainerLow
 /// - **extreme_bg_color**: surfaceContainerLowest
 /// - **code_bg_color**: surfaceContainerHighest
@@ -1770,7 +1770,7 @@ where
 
     // === Background colors ===
     visuals.window_fill = surface;
-    visuals.panel_fill = surface_container;
+    visuals.panel_fill = surface;
     visuals.faint_bg_color = surface_container_low;
     visuals.extreme_bg_color = surface_container_lowest;
     visuals.code_bg_color = surface_container_highest;
