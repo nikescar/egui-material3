@@ -4,6 +4,11 @@ fn lum(c: egui::Color32) -> u32 { c.r() as u32 + c.g() as u32 + c.b() as u32 }
 
 #[test]
 fn dark_mode_visuals_use_dark_scheme() {
+    explicit_modes();
+    auto_mode_follows_detector();
+}
+
+fn explicit_modes() {
     let ctx = egui::Context::default();
     set_theme_mode(ThemeMode::Light);
     apply_theme(&ctx, None::<fn() -> ThemeMode>);
@@ -15,7 +20,7 @@ fn dark_mode_visuals_use_dark_scheme() {
     assert!(lum(dark) < lum(light), "panel_fill not darker in Dark mode");
 }
 
-#[test]
+// Global theme state is shared, so run as one sequential test.
 fn auto_mode_follows_detector() {
     let ctx = egui::Context::default();
     set_theme_mode(ThemeMode::Auto);
