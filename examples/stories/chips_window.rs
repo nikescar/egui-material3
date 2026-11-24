@@ -20,6 +20,11 @@ pub struct ChipsWindow {
     filter_icon_selected: bool,
     filter_removable_selected: bool,
     filter_elevated_selected: bool,
+    // Font testing
+    system_fonts: Vec<(String, String)>,
+    system_fonts_loaded: bool,
+    selected_font_name: String,
+    font_load_requested: bool,
 }
 
 impl Default for ChipsWindow {
@@ -34,12 +39,128 @@ impl Default for ChipsWindow {
             filter_icon_selected: false,
             filter_removable_selected: true,
             filter_elevated_selected: false,
+            system_fonts: Vec::new(),
+            system_fonts_loaded: false,
+            selected_font_name: "Default".to_string(),
+            font_load_requested: false,
         }
     }
 }
 
 impl ChipsWindow {
+    fn enumerate_system_fonts() -> Vec<(String, String)> {
+        let mut fonts: Vec<(String, String)> = Vec::new();
+
+        let font_dirs: Vec<&str> = if cfg!(target_os = "linux") {
+            vec![
+                "/usr/share/fonts",
+                "/usr/local/share/fonts",
+                "/usr/X11R6/lib/X11/fonts", // OpenBSD/BSD
+            ]
+        } else if cfg!(target_os = "macos") {
+            vec!["/System/Library/Fonts", "/Library/Fonts"]
+        } else if cfg!(target_os = "windows") {
+            vec!["C:\\Windows\\Fonts"]
+        } else {
+            // Generic Unix/BSD paths
+            vec![
+                "/usr/share/fonts",
+                "/usr/local/share/fonts",
+                "/usr/X11R6/lib/X11/fonts",
+            ]
+        };
+
+        println!("Scanning font directories: {:?}", font_dirs);
+
+        for dir in font_dirs {
+            match std::fs::read_dir(dir) {
+                Ok(entries) => {
+                    println!("  Scanning: {}", dir);
+                    let mut dir_font_count = 0;
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                            let ext_lower = ext.to_lowercase();
+                            if ext_lower == "ttf" || ext_lower == "otf" {
+                                if let Some(name) = path.file_stem().and_then(|n| n.to_str()) {
+                                    fonts.push((name.to_string(), path.to_string_lossy().to_string()));
+                                    dir_font_count += 1;
+                                }
+                            }
+                        }
+                        // Scan subdirectories one level deep
+                        if path.is_dir() {
+                            if let Ok(sub_entries) = std::fs::read_dir(&path) {
+                                for sub_entry in sub_entries.flatten() {
+                                    let sub_path = sub_entry.path();
+                                    if let Some(ext) = sub_path.extension().and_then(|e| e.to_str()) {
+                                        let ext_lower = ext.to_lowercase();
+                                        if ext_lower == "ttf" || ext_lower == "otf" {
+                                            if let Some(name) =
+                                                sub_path.file_stem().and_then(|n| n.to_str())
+                                            {
+                                                fonts.push((
+                                                    name.to_string(),
+                                                    sub_path.to_string_lossy().to_string(),
+                                                ));
+                                                dir_font_count += 1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    println!("    Found {} fonts", dir_font_count);
+                }
+                Err(e) => {
+                    println!("  Cannot access {}: {}", dir, e);
+                }
+            }
+        }
+
+        fonts.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+        println!("Total fonts found: {}", fonts.len());
+        fonts
+    }
+
     pub fn show(&mut self, ctx: &egui::Context) {
+        // Load system fonts on first show
+        if !self.system_fonts_loaded {
+            self.system_fonts = Self::enumerate_system_fonts();
+            self.system_fonts_loaded = true;
+        }
+
+        // Handle font loading if requested
+        if self.font_load_requested {
+            self.font_load_requested = false;
+            if self.selected_font_name == "Default" {
+                // Reset to default fonts
+                ctx.style_mut(|style| {
+                    style.override_font_id = None;
+                });
+            } else if let Some((_, path)) = self
+                .system_fonts
+                .iter()
+                .find(|(name, _)| name == &self.selected_font_name)
+            {
+                // Load custom font
+                if let Ok(font_data) = std::fs::read(path) {
+                    let mut fonts = egui::FontDefinitions::default();
+                    fonts.font_data.insert(
+                        "custom".to_owned(),
+                        std::sync::Arc::new(egui::FontData::from_owned(font_data)),
+                    );
+                    fonts
+                        .families
+                        .get_mut(&egui::FontFamily::Proportional)
+                        .unwrap()
+                        .insert(0, "custom".to_owned());
+                    ctx.set_fonts(fonts);
+                }
+            }
+        }
+
         let mut open = self.open;
         Window::new("Chips Stories")
             .open(&mut open)
@@ -61,6 +182,8 @@ impl ChipsWindow {
                     self.render_input_chips(ui);
                     ui.add_space(20.0);
                     self.render_suggestion_chips(ui);
+                    ui.add_space(20.0);
+                    self.render_font_variations(ui);
                 });
             });
         self.open = open;
@@ -82,6 +205,36 @@ impl ChipsWindow {
 
         ui.add(MaterialCheckbox::new(&mut self.elevated, "Elevated"));
         ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
+
+        ui.separator();
+        ui.label("System Font (for testing vertical centering):");
+        ui.horizontal(|ui| {
+            ui.label("Font:");
+            let mut selected = self.selected_font_name.clone();
+            egui::ComboBox::from_id_salt("font_selector")
+                .selected_text(&selected)
+                .show_ui(ui, |ui| {
+                    if ui
+                        .selectable_value(&mut selected, "Default".to_string(), "Default")
+                        .clicked()
+                    {
+                        self.selected_font_name = selected.clone();
+                        self.font_load_requested = true;
+                    }
+                    for (name, _) in &self.system_fonts {
+                        if ui
+                            .selectable_value(&mut selected, name.clone(), name.as_str())
+                            .clicked()
+                        {
+                            self.selected_font_name = selected.clone();
+                            self.font_load_requested = true;
+                        }
+                    }
+                });
+            if self.selected_font_name != "Default" {
+                ui.label(format!("({})", self.selected_font_name));
+            }
+        });
     }
 
     fn render_chips(&mut self, ui: &mut egui::Ui) {
@@ -485,5 +638,128 @@ impl ChipsWindow {
             // Soft-disabled
             ui.add(suggestion_chip(l("Soft-disabled")).soft_disabled(true));
         });
+    }
+
+    fn render_font_variations(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Font Variations (Vertical Centering Test)");
+        ui.label("Chips with different fonts/sizes should maintain vertical centering:");
+
+        // Test with different text styles
+        ui.add_space(12.0);
+        ui.strong("Text Style Variations:");
+
+        let text_styles = [
+            (egui::TextStyle::Small, "Small"),
+            (egui::TextStyle::Body, "Body"),
+            (egui::TextStyle::Button, "Button"),
+            (egui::TextStyle::Heading, "Heading"),
+            (egui::TextStyle::Monospace, "Monospace"),
+        ];
+
+        for (text_style, label) in text_styles {
+            ui.add_space(8.0);
+            ui.label(format!("  {} style:", label));
+
+            ui.horizontal_wrapped(|ui| {
+                ui.scope(|ui| {
+                    ui.style_mut().override_text_style = Some(text_style.clone());
+
+                    let mut filter_selected = true;
+                    ui.add(filter_chip("Filter", &mut filter_selected).elevated(true));
+                    ui.add_space(8.0);
+
+                    ui.add(
+                        assist_chip("Assist")
+                            .elevated(true)
+                            .leading_icon(image_utils::material_icons::EVENT),
+                    );
+                    ui.add_space(8.0);
+
+                    ui.add(input_chip("Input").elevated(true).removable(true));
+                    ui.add_space(8.0);
+
+                    ui.add(suggestion_chip("Suggestion").elevated(true));
+                });
+            });
+        }
+
+        // Test with custom font sizes (Proportional family)
+        ui.add_space(16.0);
+        ui.strong("Proportional Font - Custom Sizes:");
+
+        let font_sizes = [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0];
+
+        for size in font_sizes {
+            ui.add_space(8.0);
+            ui.label(format!("  {}px:", size));
+
+            ui.horizontal_wrapped(|ui| {
+                ui.scope(|ui| {
+                    let font_id = egui::FontId::proportional(size);
+                    ui.style_mut().override_text_style = None;
+                    // Store font_id in temporary var to modify text rendering
+                    let old_text_styles = ui.style().text_styles.clone();
+                    ui.style_mut()
+                        .text_styles
+                        .insert(egui::TextStyle::Body, font_id.clone());
+
+                    let mut filter_selected = true;
+                    ui.add(filter_chip("Filter", &mut filter_selected).elevated(true));
+                    ui.add_space(8.0);
+
+                    ui.add(
+                        assist_chip("Assist")
+                            .elevated(true)
+                            .leading_icon(image_utils::material_icons::EVENT),
+                    );
+                    ui.add_space(8.0);
+
+                    ui.add(input_chip("Input").elevated(true).removable(true));
+                    ui.add_space(8.0);
+
+                    ui.add(suggestion_chip("Suggestion").elevated(true));
+
+                    ui.style_mut().text_styles = old_text_styles;
+                });
+            });
+        }
+
+        // Test with custom font sizes (Monospace family)
+        ui.add_space(16.0);
+        ui.strong("Monospace Font - Custom Sizes:");
+
+        for size in [10.0, 12.0, 14.0, 16.0, 18.0, 20.0] {
+            ui.add_space(8.0);
+            ui.label(format!("  {}px:", size));
+
+            ui.horizontal_wrapped(|ui| {
+                ui.scope(|ui| {
+                    let font_id = egui::FontId::monospace(size);
+                    ui.style_mut().override_text_style = None;
+                    let old_text_styles = ui.style().text_styles.clone();
+                    ui.style_mut()
+                        .text_styles
+                        .insert(egui::TextStyle::Body, font_id.clone());
+
+                    let mut filter_selected = false;
+                    ui.add(filter_chip("Filter", &mut filter_selected).elevated(true));
+                    ui.add_space(8.0);
+
+                    ui.add(
+                        assist_chip("Assist")
+                            .elevated(true)
+                            .leading_icon(image_utils::material_icons::EVENT),
+                    );
+                    ui.add_space(8.0);
+
+                    ui.add(input_chip("Code").elevated(true).removable(true));
+                    ui.add_space(8.0);
+
+                    ui.add(suggestion_chip("Terminal").elevated(true));
+
+                    ui.style_mut().text_styles = old_text_styles;
+                });
+            });
+        }
     }
 }

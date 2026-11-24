@@ -428,15 +428,21 @@ impl<'a> Widget for MaterialChip<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let is_selected = self.selected.as_ref().is_some_and(|s| **s);
 
-        let text_width = ui
+        // Get the actual font ID from UI style (respects override_text_style)
+        let font_id = ui.style().override_text_style
+            .as_ref()
+            .and_then(|style| ui.style().text_styles.get(style))
+            .unwrap_or_else(|| &ui.style().text_styles[&egui::TextStyle::Body])
+            .clone();
+
+        let text_galley = ui
             .painter()
             .layout_no_wrap(
                 self.text.clone(),
-                egui::FontId::default(),
+                font_id.clone(),
                 egui::Color32::WHITE,
-            )
-            .rect
-            .width();
+            );
+        let text_width = text_galley.rect.width();
 
         let has_leading =
             self.leading_icon.is_some() || (self.variant == ChipVariant::Filter && is_selected);
@@ -586,13 +592,17 @@ impl<'a> Widget for MaterialChip<'a> {
             content_x += icon_size;
         }
 
-        // Draw text (offset by 1px to visually center, compensating for font descender space)
-        let text_pos = Pos2::new(content_x, rect.center().y + 2.0);
+        // Draw text vertically centered using visual bounds
+        // Position text so visual center (not row center) aligns with chip center
+        // galley.rect gives visual bounds from layout with actual font metrics
+        let text_top_y = rect.center().y - text_galley.rect.center().y;
+
+        let text_pos = Pos2::new(content_x, text_top_y);
         ui.painter().text(
             text_pos,
-            egui::Align2::LEFT_CENTER,
+            egui::Align2::LEFT_TOP,
             &self.text,
-            egui::FontId::default(),
+            font_id,
             colors.text,
         );
 
