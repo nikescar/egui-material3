@@ -9,16 +9,18 @@ fn test_icon_without_label_renders() {
     ctx.set_pixels_per_point(1.0);
 
     // Act & Assert
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
-                .id("test_icon_only")
+                .id(egui::Id::unique("test_icon_only"))
                 .item(ListItem::new("Test Item").leading_icon("folder"));
 
             let response = ui.add(list);
             assert!(response.rect.height() > 0.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
@@ -28,17 +30,19 @@ fn test_label_without_icon_ignored() {
     ctx.set_pixels_per_point(1.0);
 
     // Act & Assert
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
-                .id("test_label_only")
+                .id(egui::Id::unique("test_label_only"))
                 .item(ListItem::new("Test Item").leading_icon_label("Label"));
 
             let response = ui.add(list);
             // Label without icon renders without crash
             assert!(response.rect.height() > 0.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
@@ -48,18 +52,22 @@ fn test_icon_with_label_renders_both() {
     ctx.set_pixels_per_point(1.0);
 
     // Act & Assert
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list = MaterialList::new().id("test_icon_and_label").item(
-                ListItem::new("Test Item")
-                    .leading_icon("folder")
-                    .leading_icon_label("Department"),
-            );
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list = MaterialList::new()
+                .id(egui::Id::unique("test_icon_and_label"))
+                .item(
+                    ListItem::new("Test Item")
+                        .leading_icon("folder")
+                        .leading_icon_label("Department"),
+                );
 
             let response = ui.add(list);
             assert!(response.rect.height() > 0.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
@@ -79,10 +87,10 @@ fn test_multiple_items_with_labels() {
     ctx.set_pixels_per_point(1.0);
 
     // Act & Assert
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
-                .id("test_multiple_labels")
+                .id(egui::Id::unique("test_multiple_labels"))
                 .item(
                     ListItem::new("Item 1")
                         .leading_icon("folder")
@@ -98,5 +106,7 @@ fn test_multiple_items_with_labels() {
             let response = ui.add(list);
             assert!(response.rect.height() > 0.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }

@@ -1,13 +1,15 @@
 // Tests for Filled button text color in light and dark modes
 // Verifies Material Design 3 spec compliance
 
-use egui_material3::theme::{get_global_color, get_global_theme, MaterialThemeContext, ThemeMode};
+use egui_material3::theme::{get_global_color, get_global_theme, MaterialThemeContext};
 
 #[test]
 fn test_filled_button_text_color_light_mode() {
     // Arrange - Set light mode
-    let mut theme = MaterialThemeContext::default();
-    theme.dark_mode = false;
+    let theme = MaterialThemeContext {
+        dark_mode: false,
+        ..Default::default()
+    };
     egui_material3::theme::update_global_theme(theme);
 
     // Act - Get the color that Filled buttons should use
@@ -25,8 +27,10 @@ fn test_filled_button_text_color_light_mode() {
 #[test]
 fn test_filled_button_text_color_dark_mode() {
     // Arrange - Set dark mode
-    let mut theme = MaterialThemeContext::default();
-    theme.dark_mode = true;
+    let theme = MaterialThemeContext {
+        dark_mode: true,
+        ..Default::default()
+    };
     egui_material3::theme::update_global_theme(theme);
 
     // Act - Get the colors
@@ -44,14 +48,16 @@ fn test_filled_button_text_color_dark_mode() {
 #[test]
 fn test_theme_dark_mode_detection() {
     // Arrange
-    let mut theme = MaterialThemeContext::default();
+    let mut theme = MaterialThemeContext {
+        dark_mode: false,
+        ..Default::default()
+    };
 
     // Act & Assert - Light mode
-    theme.dark_mode = false;
     egui_material3::theme::update_global_theme(theme.clone());
 
     if let Ok(global) = get_global_theme().lock() {
-        assert_eq!(global.dark_mode, false, "Should be in light mode");
+        assert!(!global.dark_mode, "Should be in light mode");
     }
 
     // Act & Assert - Dark mode
@@ -59,6 +65,6 @@ fn test_theme_dark_mode_detection() {
     egui_material3::theme::update_global_theme(theme);
 
     if let Ok(global) = get_global_theme().lock() {
-        assert_eq!(global.dark_mode, true, "Should be in dark mode");
+        assert!(global.dark_mode, "Should be in dark mode");
     }
 }

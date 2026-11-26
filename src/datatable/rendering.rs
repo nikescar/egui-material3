@@ -5,7 +5,7 @@ use crate::{button::MaterialButton, theme::get_global_color};
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Stroke},
-    FontFamily, FontId, Id, Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
+    FontFamily, FontId, Id, Rect, Response, Sense, Ui, Vec2, Widget,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -54,7 +54,7 @@ impl<'a> MaterialDataTable<'a> {
                 }
             }
             self.rows.len().hash(&mut hasher);
-            Id::new(format!("datatable_{}", hasher.finish()))
+            Id::unique(format!("datatable_{}", hasher.finish()))
         });
 
         // Get or create persistent state
@@ -85,9 +85,9 @@ impl<'a> MaterialDataTable<'a> {
 
         // Sync selection state only for rows where the caller explicitly set `.selected()`.
         // Rows without an explicit `.selected()` call preserve their internally-clicked state.
-        for (i, row) in self.rows.iter().enumerate() {
-            if i < state.selected_rows.len() && row.selection_externally_set {
-                state.selected_rows[i] = row.selected;
+        for (selected, row) in state.selected_rows.iter_mut().zip(self.rows.iter()) {
+            if row.selection_externally_set {
+                *selected = row.selected;
             }
         }
 
@@ -109,7 +109,7 @@ impl<'a> MaterialDataTable<'a> {
             default_row_height,
             theme,
             auto_height,
-            refresh_interval,
+            refresh_interval: _,
             compact_mode,
             ..
         } = self;
@@ -271,7 +271,8 @@ impl<'a> MaterialDataTable<'a> {
                     text: column.title.clone(),
                     sections: vec![egui::text::LayoutSection {
                         leading_space: 0.0,
-                        byte_range: 0..column.title.len(),
+                        byte_range: egui::text::ByteIndex(0)
+                            ..egui::text::ByteIndex(column.title.len()),
                         format: egui::TextFormat {
                             font_id: header_font,
                             color: get_global_color("onSurface"),
@@ -287,6 +288,7 @@ impl<'a> MaterialDataTable<'a> {
                     justify: false,
                     first_row_min_height: 0.0,
                     round_output_to_gui: true,
+                    keep_trailing_whitespace: false,
                 });
 
                 let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -339,7 +341,8 @@ impl<'a> MaterialDataTable<'a> {
                                         text: cell_text.text().to_string(),
                                         sections: vec![egui::text::LayoutSection {
                                             leading_space: 0.0,
-                                            byte_range: 0..cell_text.text().len(),
+                                            byte_range: egui::text::ByteIndex(0)
+                                                ..egui::text::ByteIndex(cell_text.text().len()),
                                             format: egui::TextFormat {
                                                 font_id: cell_font,
                                                 color: get_global_color("onSurface"),
@@ -355,6 +358,7 @@ impl<'a> MaterialDataTable<'a> {
                                         justify: false,
                                         first_row_min_height: 0.0,
                                         round_output_to_gui: true,
+                                        keep_trailing_whitespace: false,
                                     });
 
                                     let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -414,7 +418,10 @@ impl<'a> MaterialDataTable<'a> {
         let on_surface = get_global_color("onSurface");
         let primary = get_global_color("primary");
 
-        let mut style = (*ui.ctx().style()).clone();
+        // Style only this table's drawing: the caller's style is restored
+        // before returning, and the app's global style is never touched.
+        let previous_style = ui.style().clone();
+        let mut style = (**ui.style()).clone();
         style.visuals.widgets.noninteractive.bg_fill = surface;
         style.visuals.widgets.inactive.bg_fill = surface;
         style.visuals.widgets.hovered.bg_fill =
@@ -433,7 +440,7 @@ impl<'a> MaterialDataTable<'a> {
             on_surface.b(),
             10,
         );
-        ui.ctx().set_style(style);
+        ui.set_style(style);
 
         let desired_size = Vec2::new(total_width, total_height);
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
@@ -559,7 +566,8 @@ impl<'a> MaterialDataTable<'a> {
                     text: column.title.clone(),
                     sections: vec![egui::text::LayoutSection {
                         leading_space: 0.0,
-                        byte_range: 0..column.title.len(),
+                        byte_range: egui::text::ByteIndex(0)
+                            ..egui::text::ByteIndex(column.title.len()),
                         format: egui::TextFormat {
                             font_id: header_font,
                             color: get_global_color("onSurface"),
@@ -575,6 +583,7 @@ impl<'a> MaterialDataTable<'a> {
                     justify: false,
                     first_row_min_height: 0.0,
                     round_output_to_gui: true,
+                    keep_trailing_whitespace: false,
                 });
 
                 let text_pos = egui::pos2(
@@ -1008,14 +1017,17 @@ impl<'a> MaterialDataTable<'a> {
                                 edit_data.resize(cell_idx + 1, String::new());
                             }
 
-                            let edit_text = &mut edit_data[cell_idx];
-
-                            ui.scope_builder(egui::UiBuilder::new().max_rect(edit_rect), |ui| {
-                                ui.add(
-                                    egui::TextEdit::singleline(edit_text)
-                                        .desired_width(column.width - 16.0),
+                            if let Some(edit_text) = edit_data.get_mut(cell_idx) {
+                                ui.scope_builder(
+                                    egui::UiBuilder::new().max_rect(edit_rect),
+                                    |ui| {
+                                        ui.add(
+                                            egui::TextEdit::singleline(edit_text)
+                                                .desired_width(column.width - 16.0),
+                                        );
+                                    },
                                 );
-                            });
+                            }
                         } else {
                             // Determine alignment from cell or column
                             let h_align = cell.h_align.as_ref().unwrap_or(&column.h_align);
@@ -1069,7 +1081,8 @@ impl<'a> MaterialDataTable<'a> {
                                         text: cell_text.text().to_string(),
                                         sections: vec![egui::text::LayoutSection {
                                             leading_space: 0.0,
-                                            byte_range: 0..cell_text.text().len(),
+                                            byte_range: egui::text::ByteIndex(0)
+                                                ..egui::text::ByteIndex(cell_text.text().len()),
                                             format: egui::TextFormat {
                                                 font_id: cell_font,
                                                 color: text_color,
@@ -1085,6 +1098,7 @@ impl<'a> MaterialDataTable<'a> {
                                         justify: false,
                                         first_row_min_height: 0.0,
                                         round_output_to_gui: true,
+                                        keep_trailing_whitespace: false,
                                     });
 
                                     // Calculate horizontal position based on alignment
@@ -1325,7 +1339,6 @@ impl<'a> MaterialDataTable<'a> {
                             child_ui.set_clip_rect(clipped_rect);
 
                             // Remove default top spacing for visual consistency
-                            let original_spacing = child_ui.spacing().clone();
                             child_ui.style_mut().spacing.item_spacing.y = 0.0;
 
                             drawer_fn(&mut child_ui);
@@ -1420,6 +1433,7 @@ impl<'a> MaterialDataTable<'a> {
         // Ensure the UI cursor is advanced past the full table height
         // This is critical when child UIs are used for drawer content
         ui.expand_to_include_rect(rect);
+        ui.set_style(previous_style);
 
         DataTableResponse {
             response,
@@ -1435,5 +1449,43 @@ impl<'a> MaterialDataTable<'a> {
 impl Widget for MaterialDataTable<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         self.show(ui).response
+    }
+}
+
+#[cfg(test)]
+mod style_tests {
+    use crate::datatable::data_table;
+
+    /// Regression test for nikescar/egui-material3#20: showing a data table
+    /// changes neither the global style nor the style of widgets after it.
+    #[test]
+    fn test_table_does_not_leak_style() {
+        let ctx = egui::Context::default();
+        let marker = egui::Color32::from_rgb(1, 2, 3);
+        ctx.global_style_mut(|style| {
+            style.visuals.widgets.inactive.bg_fill = marker;
+            style.visuals.striped = false;
+        });
+        let mut after = None;
+        ctx.run_ui(Default::default(), |ui| {
+            data_table()
+                .column("Col", 100.0, false)
+                .row(|row| row.cell("A"))
+                .show(ui);
+            after = Some(ui.style().visuals.clone());
+        })
+        .textures_delta
+        .clear();
+        let global = ctx.global_style().visuals.clone();
+        assert_eq!(
+            global.widgets.inactive.bg_fill, marker,
+            "the global style must keep the app's colours"
+        );
+        assert!(!global.striped, "the global style must not become striped");
+        assert_eq!(
+            after.map(|v| (v.widgets.inactive.bg_fill, v.striped)),
+            Some((marker, false)),
+            "widgets after the table must keep the caller's style"
+        );
     }
 }

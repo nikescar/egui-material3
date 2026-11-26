@@ -154,11 +154,9 @@ impl NotificationWindow {
                 self.show_basic = true;
                 self.basic_show_time = Some(Instant::now());
             }
-            if self.show_basic {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_basic = false;
-                    self.basic_show_time = None;
-                }
+            if self.show_basic && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_basic = false;
+                self.basic_show_time = None;
             }
         });
 
@@ -199,11 +197,9 @@ impl NotificationWindow {
                 self.show_with_icon = true;
                 self.with_icon_show_time = Some(Instant::now());
             }
-            if self.show_with_icon {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_with_icon = false;
-                    self.with_icon_show_time = None;
-                }
+            if self.show_with_icon && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_with_icon = false;
+                self.with_icon_show_time = None;
             }
         });
 
@@ -247,11 +243,9 @@ impl NotificationWindow {
                 self.show_with_subtitle = true;
                 self.with_subtitle_show_time = Some(Instant::now());
             }
-            if self.show_with_subtitle {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_with_subtitle = false;
-                    self.with_subtitle_show_time = None;
-                }
+            if self.show_with_subtitle && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_with_subtitle = false;
+                self.with_subtitle_show_time = None;
             }
         });
 
@@ -292,11 +286,9 @@ impl NotificationWindow {
                 self.show_full = true;
                 self.full_show_time = Some(Instant::now());
             }
-            if self.show_full {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_full = false;
-                    self.full_show_time = None;
-                }
+            if self.show_full && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_full = false;
+                self.full_show_time = None;
             }
         });
 
