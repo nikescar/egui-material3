@@ -772,10 +772,8 @@ impl MaterialThemeContext {
         for line in css_content.lines() {
             if line.contains("src:") && line.contains("url(") && line.contains("format('truetype')")
             {
-                if let Some(start) = line.find("url(") {
-                    let start = start + 4; // Skip "url("
-                    if let Some(end) = line[start..].find(")") {
-                        let url = &line[start..start + end];
+                if let Some((_, rest)) = line.split_once("url(") {
+                    if let Some((url, _)) = rest.split_once(')') {
                         return Some(url.to_string());
                     }
                 }
@@ -1031,16 +1029,14 @@ impl MaterialThemeContext {
     }
 
     pub fn hex_to_color32(hex: &str) -> Option<Color32> {
-        if hex.starts_with('#') && hex.len() == 7 {
-            if let Ok(r) = u8::from_str_radix(&hex[1..3], 16) {
-                if let Ok(g) = u8::from_str_radix(&hex[3..5], 16) {
-                    if let Ok(b) = u8::from_str_radix(&hex[5..7], 16) {
-                        return Some(Color32::from_rgb(r, g, b));
-                    }
-                }
-            }
-        }
-        None
+        let digits = hex.strip_prefix('#').filter(|d| d.len() == 6)?;
+        let channel =
+            |range: std::ops::Range<usize>| u8::from_str_radix(digits.get(range)?, 16).ok();
+        Some(Color32::from_rgb(
+            channel(0..2)?,
+            channel(2..4)?,
+            channel(4..6)?,
+        ))
     }
 
     pub fn color32_to_hex(color: Color32) -> String {
@@ -1497,7 +1493,7 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         // Resolve Auto mode to actual mode based on context
         let mut resolved_theme = theme.clone();
         if resolved_theme.theme_mode == ThemeMode::Auto {
-            if ctx.style().visuals.dark_mode {
+            if ctx.global_style().visuals.dark_mode {
                 resolved_theme.theme_mode = ThemeMode::Dark;
             } else {
                 resolved_theme.theme_mode = ThemeMode::Light;
@@ -1525,14 +1521,14 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         };
 
         // Apply the background color to the context
-        let mut visuals = ctx.style().visuals.clone();
+        let mut visuals = ctx.global_style().visuals.clone();
         visuals.window_fill = background_color;
         visuals.panel_fill = background_color;
         visuals.extreme_bg_color = background_color;
 
-        let mut style = (*ctx.style()).clone();
+        let mut style = (*ctx.global_style()).clone();
         style.visuals = visuals;
-        ctx.set_style(style);
+        ctx.set_global_style(style);
     }
 }
 
@@ -1693,22 +1689,15 @@ where
     let primary_container = theme.get_color_by_name("primaryContainer");
     let on_primary_container = theme.get_color_by_name("onPrimaryContainer");
 
-    let secondary = theme.get_color_by_name("secondary");
-    let on_secondary = theme.get_color_by_name("onSecondary");
-    let secondary_container = theme.get_color_by_name("secondaryContainer");
-
     let tertiary = theme.get_color_by_name("tertiary");
 
     let error = theme.get_color_by_name("error");
-    let on_error = theme.get_color_by_name("onError");
-    let error_container = theme.get_color_by_name("errorContainer");
 
     let surface = theme.get_surface_color(visuals.dark_mode);
     let on_surface = theme.get_color_by_name("onSurface");
     let surface_variant = theme.get_color_by_name("surfaceVariant");
     let on_surface_variant = theme.get_color_by_name("onSurfaceVariant");
 
-    let surface_container = theme.get_color_by_name("surfaceContainer");
     let surface_container_high = theme.get_color_by_name("surfaceContainerHigh");
     let surface_container_highest = theme.get_color_by_name("surfaceContainerHighest");
     let surface_container_low = theme.get_color_by_name("surfaceContainerLow");
@@ -1718,7 +1707,6 @@ where
     let outline_variant = theme.get_color_by_name("outlineVariant");
 
     let inverse_surface = theme.get_color_by_name("inverseSurface");
-    let inverse_on_surface = theme.get_color_by_name("inverseOnSurface");
     let inverse_primary = theme.get_color_by_name("inversePrimary");
 
     let shadow = theme.get_color_by_name("shadow");

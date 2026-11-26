@@ -1,6 +1,6 @@
 //! Tests for Material Design 3 color role compliance in DataTable
 
-use egui_material3::{data_table, theme::get_global_color, DataTableCell, DataTableTheme};
+use egui_material3::{theme::get_global_color, DataTableTheme};
 
 #[test]
 fn test_datatable_default_theme_uses_surface_container() {
