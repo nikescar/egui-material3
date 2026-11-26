@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 egui-material3 = { path = "../../" , features = ["ondemand"] }
-eframe = "0.32"
-egui_extras = { version = "0.32", default-features = false, features = ["image", "svg", "svg_text"] }
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "glow", "links"] }
+egui_extras = { version = "0.37", default-features = false, features = ["image", "svg", "svg_text"] }
 glob = "0.3"

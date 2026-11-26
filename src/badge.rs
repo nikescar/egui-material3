@@ -227,7 +227,7 @@ impl MaterialBadge {
             );
         }
 
-        ui.interact(badge_rect, ui.id().with("badge"), Sense::hover())
+        ui.interact(badge_rect, ui.scope_id().with("badge"), Sense::hover())
     }
 
     fn get_colors(&self) -> (Color32, Color32) {

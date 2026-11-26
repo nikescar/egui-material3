@@ -226,10 +226,13 @@ impl<'a> Widget for MaterialCheckbox<'a> {
 
         // Determine colors based on state
         let (bg_color, border_color, check_color, border_width) = if !self.enabled {
-            // Disabled state: onSurface @ 38% opacity for all elements (M3 spec)
+            // Disabled state: onSurface @ 38% opacity (M3 spec). A selected
+            // disabled box draws its mark in `surface`
+            // (CheckboxTokens.SelectedDisabledIconColor), so it stays visible.
             let disabled_color = on_surface.linear_multiply(0.38);
             if *self.checked || self.indeterminate {
-                (disabled_color, Color32::TRANSPARENT, disabled_color, 0.0)
+                let surface = get_global_color("surface");
+                (disabled_color, Color32::TRANSPARENT, surface, 0.0)
             } else {
                 (
                     Color32::TRANSPARENT,
@@ -381,4 +384,39 @@ impl<'a> Widget for MaterialCheckbox<'a> {
 
 pub fn checkbox(checked: &mut bool, text: impl Into<String>) -> MaterialCheckbox<'_> {
     MaterialCheckbox::new(checked, text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression test for nikescar/egui-material3#11: the check mark of a
+    /// disabled, checked box is drawn in `surface`, not the container colour.
+    #[test]
+    fn test_disabled_checked_mark_is_visible() {
+        let ctx = egui::Context::default();
+        let mut checked = true;
+        let mut output = ctx.run_ui(Default::default(), |ui| {
+            ui.add(MaterialCheckbox::new(&mut checked, "x").enabled(false));
+        });
+        output.textures_delta.clear();
+        let surface = get_global_color("surface");
+        let container = get_global_color("onSurface").linear_multiply(0.38);
+        let mark_colors: Vec<Color32> = output
+            .shapes
+            .iter()
+            .filter_map(|clipped| {
+                if let egui::Shape::LineSegment { stroke, .. } = &clipped.shape {
+                    Some(stroke.color)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert!(!mark_colors.is_empty(), "a checked box should draw a mark");
+        assert!(
+            mark_colors.iter().all(|c| *c == surface && *c != container),
+            "the disabled check mark should use surface, got {mark_colors:?}"
+        );
+    }
 }

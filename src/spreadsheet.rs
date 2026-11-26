@@ -748,7 +748,7 @@ impl MaterialSpreadsheet {
         set_theme_mode(ThemeMode::Light);
 
         Ok(Self {
-            id: Id::new(id),
+            id: Id::unique(id),
             data_model: Arc::new(Mutex::new(data_model)),
             cached_rows: Vec::new(),
             editing_cell: None,
