@@ -429,7 +429,7 @@ impl MaterialProgress {
             get_global_color("tertiaryContainer"),
         ];
         let cycle = (time * 0.5) as usize % 4; // Change color roughly every 2 seconds
-        colors[cycle]
+        colors.get(cycle).copied().unwrap_or(colors[0])
     }
 
     fn render_linear(&self, ui: &mut Ui, rect: Rect) {

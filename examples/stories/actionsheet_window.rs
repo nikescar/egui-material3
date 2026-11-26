@@ -103,7 +103,7 @@ impl ActionSheetWindow {
     fn show_action_sheets(&mut self, ctx: &egui::Context) {
         // One Group Action Sheet
         if self.one_group_open {
-            action_sheet("one_group", &mut self.one_group_open)
+            action_sheet(egui::Id::unique("one_group"), &mut self.one_group_open)
                 .label("Do something")
                 .bold_button("Button 1", || {
                     println!("Button 1 clicked!");
@@ -119,7 +119,7 @@ impl ActionSheetWindow {
 
         // Two Groups Action Sheet
         if self.two_groups_open {
-            action_sheet("two_groups", &mut self.two_groups_open)
+            action_sheet(egui::Id::unique("two_groups"), &mut self.two_groups_open)
                 .label("Do something")
                 .bold_button("Button 1", || {
                     println!("Button 1 clicked!");
@@ -136,7 +136,7 @@ impl ActionSheetWindow {
 
         // With Labels Action Sheet
         if self.with_labels_open {
-            action_sheet("with_labels", &mut self.with_labels_open)
+            action_sheet(egui::Id::unique("with_labels"), &mut self.with_labels_open)
                 .label("Choose an action")
                 .button("Share", || {
                     println!("Share clicked!");
@@ -158,8 +158,11 @@ impl ActionSheetWindow {
 
         // Many Actions Action Sheet
         if self.many_actions_open {
-            let mut sheet =
-                action_sheet("many_actions", &mut self.many_actions_open).label("Choose an option");
+            let mut sheet = action_sheet(
+                egui::Id::unique("many_actions"),
+                &mut self.many_actions_open,
+            )
+            .label("Choose an option");
 
             // Add many buttons
             for i in 1..=10 {
@@ -178,7 +181,7 @@ impl ActionSheetWindow {
 
         // Custom Options Action Sheet
         if self.custom_open {
-            action_sheet("custom", &mut self.custom_open)
+            action_sheet(egui::Id::unique("custom"), &mut self.custom_open)
                 .backdrop(self.backdrop)
                 .backdrop_dismissible(self.backdrop_dismissible)
                 .max_width(self.max_width)

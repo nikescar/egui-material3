@@ -4,19 +4,19 @@
 /// - Width < 400px: 12px fonts, 12px padding, 40px header height
 /// - Width < 500px: 14px fonts, 18px padding, 48px header height
 /// - Width ≥ 500px: 16px fonts, 24px padding, 56px header height
-use egui::{Context, Id, Vec2};
+use egui::{Context, Id};
 use egui_material3::datatable::data_table;
 
 #[test]
 fn test_very_narrow_table_uses_small_fonts() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Create very narrow table (< 400px total width)
             // Columns: 50 + 80 + 60 = 190px (well under 400px)
             let table = data_table()
-                .id(Id::new("very_narrow_test"))
+                .id(Id::unique("very_narrow_test"))
                 .column("ID", 50.0, true)
                 .column("Name", 80.0, false)
                 .column("Val", 60.0, true)
@@ -34,19 +34,21 @@ fn test_very_narrow_table_uses_small_fonts() {
                 "Table should render with non-zero width"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_compact_table_uses_medium_fonts() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Create compact table (400-500px total width)
             // Columns: 100 + 120 + 100 = 320px (< 500px with checkboxes/padding)
             let table = data_table()
-                .id(Id::new("compact_test"))
+                .id(Id::unique("compact_test"))
                 .column("Product", 100.0, false)
                 .column("Category", 120.0, false)
                 .column("Price", 100.0, true)
@@ -64,19 +66,21 @@ fn test_compact_table_uses_medium_fonts() {
                 "Should be in compact range"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_wide_table_uses_full_size_fonts() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Create wide table (≥ 500px total width)
             // Columns: 180 + 150 + 120 + 100 = 550px
             let table = data_table()
-                .id(Id::new("wide_test"))
+                .id(Id::unique("wide_test"))
                 .column("Product Name", 180.0, false)
                 .column("Category", 150.0, false)
                 .column("Description", 120.0, false)
@@ -102,18 +106,20 @@ fn test_wide_table_uses_full_size_fonts() {
                 "Should be in wide range"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_nested_table_in_drawer_uses_appropriate_scaling() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Parent table
             let parent_table = data_table()
-                .id(Id::new("parent_table"))
+                .id(Id::unique("parent_table"))
                 .allow_drawer(true)
                 .column("Item", 150.0, false)
                 .column("Type", 120.0, false)
@@ -123,7 +129,7 @@ fn test_nested_table_in_drawer_uses_appropriate_scaling() {
                         .drawer(|drawer_ui| {
                             // Nested table inside drawer (should be narrow)
                             let nested = data_table()
-                                .id(Id::new("nested_table_in_drawer"))
+                                .id(Id::unique("nested_table_in_drawer"))
                                 .column("Sub-Item", 80.0, false)
                                 .column("Value", 60.0, true)
                                 .row(|r| r.cell("A").cell("100"))
@@ -141,22 +147,24 @@ fn test_nested_table_in_drawer_uses_appropriate_scaling() {
                 "Parent table should render"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_table_width_calculation_includes_all_components() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Test that total_width calculation includes:
             // - Checkbox column (if selection enabled)
             // - Drawer arrow column (if drawer enabled)
             // - All data columns
 
             let table_with_all = data_table()
-                .id(Id::new("full_components_test"))
+                .id(Id::unique("full_components_test"))
                 .column("Col1", 100.0, false)
                 .column("Col2", 100.0, false)
                 .allow_selection(true) // Adds ~48px checkbox column
@@ -174,7 +182,9 @@ fn test_table_width_calculation_includes_all_components() {
                 width
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
@@ -182,11 +192,11 @@ fn test_responsive_breakpoint_boundaries() {
     let ctx = Context::default();
 
     // Test right at 400px boundary
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Columns totaling close to 400px
             let table = data_table()
-                .id(Id::new("boundary_400_test"))
+                .id(Id::unique("boundary_400_test"))
                 .column("A", 130.0, false)
                 .column("B", 130.0, false)
                 .column("C", 130.0, false) // Total: 390px
@@ -194,14 +204,16 @@ fn test_responsive_breakpoint_boundaries() {
 
             let _response = table.show(ui);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 
     // Test right at 500px boundary
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Columns totaling close to 500px
             let table = data_table()
-                .id(Id::new("boundary_500_test"))
+                .id(Id::unique("boundary_500_test"))
                 .column("A", 160.0, false)
                 .column("B", 160.0, false)
                 .column("C", 160.0, false) // Total: 480px
@@ -209,5 +221,7 @@ fn test_responsive_breakpoint_boundaries() {
 
             let _response = table.show(ui);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }

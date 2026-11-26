@@ -97,17 +97,4 @@ fn test_m3_inverse_colors_exist() {
 /// Integration test: Verify component doc comments reference M3 color roles
 /// This is a smoke test - actual color usage is tested visually in stories
 #[test]
-fn test_components_document_m3_colors() {
-    // This test exists to document that components should specify M3 color usage
-    // in their doc comments. Examples:
-    //
-    // - Chips: Filter selected uses secondaryContainer, text uses onSecondaryContainer
-    // - Tabs: Primary uses surfaceContainer background, indicator uses primary
-    // - Toolbar: Uses surfaceContainer for elevated feel
-    // - Carousel: Items use surface, indicators use primary/onSurfaceVariant
-    // - Dashboard: Cards use surfaceContainerHighest
-    // - Notification: Uses surfaceContainer background
-    //
-    // See notes/m3guide.md for complete color role specifications
-    assert!(true);
-}
+fn test_components_document_m3_colors() {}
