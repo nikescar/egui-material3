@@ -83,7 +83,10 @@ impl ChipsWindow {
                             let ext_lower = ext.to_lowercase();
                             if ext_lower == "ttf" || ext_lower == "otf" {
                                 if let Some(name) = path.file_stem().and_then(|n| n.to_str()) {
-                                    fonts.push((name.to_string(), path.to_string_lossy().to_string()));
+                                    fonts.push((
+                                        name.to_string(),
+                                        path.to_string_lossy().to_string(),
+                                    ));
                                     dir_font_count += 1;
                                 }
                             }
@@ -93,7 +96,8 @@ impl ChipsWindow {
                             if let Ok(sub_entries) = std::fs::read_dir(&path) {
                                 for sub_entry in sub_entries.flatten() {
                                     let sub_path = sub_entry.path();
-                                    if let Some(ext) = sub_path.extension().and_then(|e| e.to_str()) {
+                                    if let Some(ext) = sub_path.extension().and_then(|e| e.to_str())
+                                    {
                                         let ext_lower = ext.to_lowercase();
                                         if ext_lower == "ttf" || ext_lower == "otf" {
                                             if let Some(name) =
@@ -119,7 +123,7 @@ impl ChipsWindow {
             }
         }
 
-        fonts.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+        fonts.sort_by_key(|a| a.0.to_lowercase());
         println!("Total fonts found: {}", fonts.len());
         fonts
     }
@@ -136,7 +140,7 @@ impl ChipsWindow {
             self.font_load_requested = false;
             if self.selected_font_name == "Default" {
                 // Reset to default fonts
-                ctx.style_mut(|style| {
+                ctx.global_style_mut(|style| {
                     style.override_font_id = None;
                 });
             } else if let Some((_, path)) = self
@@ -368,7 +372,9 @@ impl ChipsWindow {
     fn render_small_assist_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Small Assist Chips");
 
+        #[cfg(feature = "svg_emoji")]
         let label = self.label.clone();
+        #[cfg(feature = "svg_emoji")]
         let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
@@ -469,7 +475,9 @@ impl ChipsWindow {
     fn render_small_filter_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Small Filter Chips");
 
+        #[cfg(feature = "svg_emoji")]
         let label = self.label.clone();
+        #[cfg(feature = "svg_emoji")]
         let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()

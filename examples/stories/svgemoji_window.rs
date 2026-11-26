@@ -18,8 +18,9 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
 #[cfg(feature = "svg_emoji")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 enum CollectionKind {
+    #[default]
     Solar,
     Noto,
     Twemoji,
@@ -49,6 +50,7 @@ impl CollectionKind {
 }
 
 #[doc(hidden)]
+#[derive(Default)]
 pub struct SvgEmojiWindow {
     pub open: bool,
     #[cfg(feature = "svg_emoji")]
@@ -67,31 +69,6 @@ pub struct SvgEmojiWindow {
     #[cfg(feature = "svg_emoji")]
     /// Demo state for filter chip
     filter_selected_1: bool,
-    #[cfg(feature = "svg_emoji")]
-    /// Pinned item name (stays open on click until another item is hovered)
-    pinned_item: Option<String>,
-}
-
-impl Default for SvgEmojiWindow {
-    fn default() -> Self {
-        #[cfg(feature = "svg_emoji")]
-        {
-            Self {
-                open: false,
-                active_kind: CollectionKind::Solar,
-                filter: String::new(),
-                svg_textures: HashMap::new(),
-                cached_kind: None,
-                all_icons: Vec::new(),
-                filter_selected_1: false,
-                pinned_item: None,
-            }
-        }
-        #[cfg(not(feature = "svg_emoji"))]
-        {
-            Self { open: false }
-        }
-    }
 }
 
 impl SvgEmojiWindow {
@@ -180,7 +157,7 @@ impl SvgEmojiWindow {
 
         let available_width = ui.available_width();
         let cols = ((available_width / CELL_W) as usize).max(1);
-        let total_rows = (filtered.len() + cols - 1) / cols;
+        let total_rows = filtered.len().div_ceil(cols);
 
         egui::ScrollArea::vertical().auto_shrink(false).show_rows(
             ui,
@@ -349,10 +326,10 @@ impl SvgEmojiWindow {
         size: u32,
     ) -> Option<TextureId> {
         let key = Self::texture_key(svg_data, size);
-        if !self.svg_textures.contains_key(&key) {
+        if let std::collections::hash_map::Entry::Vacant(slot) = self.svg_textures.entry(key) {
             match Self::render_svg(ctx, svg_data, size, &format!("svgem_{key:x}")) {
                 Ok(tex) => {
-                    self.svg_textures.insert(key, tex);
+                    slot.insert(tex);
                 }
                 Err(e) => {
                     eprintln!("SVG render error ({size}px): {e}");

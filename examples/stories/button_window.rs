@@ -2,26 +2,22 @@
 
 #[cfg(feature = "svg_emoji")]
 use crate::svg_emoji::SOLAR_ICONS;
-use crate::MaterialButton;
+use crate::{
+    ButtonGroup, ButtonShape, ButtonSize, MaterialButton, MaterialButtonVariant, SplitButton,
+};
 use eframe::egui::{self, epaint::Stroke, Ui, Vec2, Window};
 
 #[doc(hidden)]
+#[derive(Default)]
 pub struct ButtonWindow {
     pub open: bool,
     label: String,
     disabled: bool,
     soft_disabled: bool,
-}
-
-impl Default for ButtonWindow {
-    fn default() -> Self {
-        Self {
-            open: false,
-            label: String::new(),
-            disabled: false,
-            soft_disabled: false,
-        }
-    }
+    toggles: [bool; 5],
+    view: Option<usize>,
+    formats: [bool; 3],
+    split_open: bool,
 }
 
 impl ButtonWindow {
@@ -48,7 +44,15 @@ impl ButtonWindow {
                     ui.add_space(20.0);
                     self.render_custom_stroke_buttons(ui);
                     ui.add_space(20.0);
-                    self.render_frameless_buttons(ui);
+                    self.render_sizes(ui);
+                    ui.add_space(20.0);
+                    self.render_shapes(ui);
+                    ui.add_space(20.0);
+                    self.render_toggle_buttons(ui);
+                    ui.add_space(20.0);
+                    self.render_button_groups(ui);
+                    ui.add_space(20.0);
+                    self.render_split_buttons(ui);
                     ui.add_space(20.0);
                     self.render_custom_size_buttons(ui);
                     ui.add_space(20.0);
@@ -192,10 +196,9 @@ impl ButtonWindow {
     fn render_small_buttons_with_svg_icons(&mut self, ui: &mut Ui) {
         ui.heading("Small Buttons with SVG Icons");
 
-        let disabled = self.is_disabled();
-
         #[cfg(feature = "svg_emoji")]
         {
+            let disabled = self.is_disabled();
             // Leading SVG icons
             ui.label("With leading SVG icon:");
             ui.horizontal_wrapped(|ui| {
@@ -359,16 +362,103 @@ impl ButtonWindow {
         });
     }
 
-    fn render_frameless_buttons(&mut self, ui: &mut Ui) {
-        ui.heading("Frameless Buttons (frame=false)");
+    fn render_sizes(&mut self, ui: &mut Ui) {
+        ui.heading("Sizes (XS, S, M, L, XL)");
+        let disabled = self.is_disabled();
+        for size in ButtonSize::ALL {
+            ui.horizontal(|ui| {
+                for variant in MaterialButtonVariant::ALL {
+                    let _ = ui.add(
+                        MaterialButton::opt_image_and_text_with_variant(
+                            variant,
+                            None,
+                            Some(self.label_or("Button").into()),
+                        )
+                        .leading_icon("add")
+                        .size(size)
+                        .enabled(!disabled),
+                    );
+                }
+            });
+        }
+    }
 
+    fn render_shapes(&mut self, ui: &mut Ui) {
+        ui.heading("Round and square (press to see the shape morph)");
+        let disabled = self.is_disabled();
         ui.horizontal(|ui| {
-            for (label, button) in self.all_variants() {
-                let button = button.frame(false);
-                let _ = ui.add(button);
-                ui.label(format!("({label})"));
+            for shape in [ButtonShape::Round, ButtonShape::Square] {
+                for size in [ButtonSize::Small, ButtonSize::Medium] {
+                    let _ = ui.add(
+                        MaterialButton::filled(self.label_or(&format!("{shape:?}")))
+                            .shape(shape)
+                            .size(size)
+                            .enabled(!disabled),
+                    );
+                }
             }
         });
+    }
+
+    fn render_toggle_buttons(&mut self, ui: &mut Ui) {
+        ui.heading("Toggle buttons");
+        let disabled = self.is_disabled();
+        ui.horizontal(|ui| {
+            for (variant, selected) in MaterialButtonVariant::ALL
+                .into_iter()
+                .zip(&mut self.toggles)
+            {
+                let _ = ui.add(
+                    MaterialButton::opt_image_and_text_with_variant(
+                        variant,
+                        None,
+                        Some(format!("{variant:?}").into()),
+                    )
+                    .toggle(selected)
+                    .enabled(!disabled),
+                );
+            }
+        });
+    }
+
+    fn render_button_groups(&mut self, ui: &mut Ui) {
+        ui.heading("Button groups");
+        ui.label("Connected, single select (arrow keys move focus):");
+        ButtonGroup::connected()
+            .id_salt("story_view")
+            .single_select(&mut self.view)
+            .button(MaterialButton::outlined("Day"))
+            .button(MaterialButton::outlined("Week"))
+            .button(MaterialButton::outlined("Month"))
+            .show(ui);
+        ui.label("Standard, multi select (press one to see it grow):");
+        ButtonGroup::standard()
+            .id_salt("story_format")
+            .multi_select(&mut self.formats)
+            .button(MaterialButton::filled_tonal("Bold").leading_icon("format_bold"))
+            .button(MaterialButton::filled_tonal("Italic").leading_icon("format_italic"))
+            .button(MaterialButton::filled_tonal("Underline").leading_icon("format_underlined"))
+            .show(ui);
+    }
+
+    fn render_split_buttons(&mut self, ui: &mut Ui) {
+        ui.heading("Split buttons");
+        let disabled = self.is_disabled();
+        for size in ButtonSize::ALL {
+            let label = if self.label.is_empty() {
+                "Send".to_owned()
+            } else {
+                self.label.clone()
+            };
+            SplitButton::filled(label, &mut self.split_open)
+                .leading_icon("send")
+                .size(size)
+                .enabled(!disabled)
+                .show(ui);
+        }
+        if self.split_open {
+            ui.label("(menu open: show your menu under the trailing button)");
+        }
     }
 
     fn render_custom_size_buttons(&mut self, ui: &mut Ui) {

@@ -1,156 +1,135 @@
 use std::env;
+use std::error::Error;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-fn main() {
-    let out_dir = env::var("OUT_DIR").unwrap();
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+type BuildResult<T = ()> = Result<T, Box<dyn Error>>;
 
-    // Check which features are enabled
-    let svg_solar = env::var("CARGO_FEATURE_SVG_SOLAR").is_ok();
-    let svg_noto = env::var("CARGO_FEATURE_SVG_NOTO").is_ok();
-    let svg_twemoji = env::var("CARGO_FEATURE_SVG_TWEMOJI").is_ok();
+/// One embeddable SVG collection behind a cargo feature.
+struct Collection {
+    /// Directory name under `resources/`, also the feature suffix.
+    name: &'static str,
+    /// Prefix of the generated `const` names.
+    prefix: &'static str,
+    /// Name of the generated lookup map.
+    map: &'static str,
+    /// Comment above the generated constants.
+    heading: &'static str,
+    /// Doc comment on the map when the feature is enabled.
+    doc: &'static str,
+    /// Doc comment on the empty map when the feature is disabled.
+    disabled_doc: &'static str,
+}
+
+const COLLECTIONS: [Collection; 3] = [
+    Collection {
+        name: "solar",
+        prefix: "SOLAR",
+        map: "SOLAR_ICONS",
+        heading: "// Solar icons (UI/UX icons)",
+        doc: "/// Get Solar icon by name (without .svg extension)",
+        disabled_doc: "/// Solar icons (disabled - enable with svg_solar feature)",
+    },
+    Collection {
+        name: "noto",
+        prefix: "NOTO",
+        map: "NOTO_EMOJIS",
+        heading: "// Noto emoji (Google emoji)",
+        doc: "/// Get Noto emoji by filename (without .svg extension, e.g., \"emoji_u1f600\")",
+        disabled_doc: "/// Noto emoji (disabled - enable with svg_noto feature)",
+    },
+    Collection {
+        name: "twemoji",
+        prefix: "TWEMOJI",
+        map: "TWEMOJI",
+        heading: "// Twemoji (Twitter emoji)",
+        doc: "/// Get Twemoji by filename (without .svg extension, e.g., \"1f600\")",
+        disabled_doc: "/// Twemoji (disabled - enable with svg_twemoji feature)",
+    },
+];
+
+fn main() -> BuildResult {
+    let out_dir = env::var("OUT_DIR")?;
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
 
     // Prepare resource directories
     let resources_dir = Path::new(&manifest_dir).join("resources");
     let cache_dir = Path::new(&out_dir).join("svg_cache");
     fs::create_dir_all(&cache_dir).ok();
 
-    // Ensure resources are available for enabled features
-    if svg_solar {
-        ensure_resources(&resources_dir, &cache_dir, "solar");
-    }
-    if svg_noto {
-        ensure_resources(&resources_dir, &cache_dir, "noto");
-    }
-    if svg_twemoji {
-        ensure_resources(&resources_dir, &cache_dir, "twemoji");
-    }
-
     // Generate the Rust code
     let dest_path = Path::new(&out_dir).join("svg_emoji_generated.rs");
-    let mut f = fs::File::create(&dest_path).unwrap();
+    let mut f = fs::File::create(&dest_path)?;
 
-    writeln!(f, "// Auto-generated file - do not edit manually").unwrap();
-    writeln!(f, "use std::collections::HashMap;").unwrap();
-    writeln!(f, "pub use once_cell::sync::Lazy;").unwrap();
-    writeln!(f).unwrap();
-
-    // Generate code only for enabled features
-    if svg_solar {
-        writeln!(f, "// Solar icons (UI/UX icons)").unwrap();
-        let solar_dir = get_resource_dir(&resources_dir, &cache_dir, "solar");
-        generate_includes(&mut f, &solar_dir, "SOLAR");
-        writeln!(f).unwrap();
-        writeln!(f, "/// Get Solar icon by name (without .svg extension)").unwrap();
-        writeln!(
-            f,
-            "pub static SOLAR_ICONS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{"
-        )
-        .unwrap();
-        writeln!(f, "    let mut map = HashMap::new();").unwrap();
-        generate_map_entries(&mut f, &solar_dir, "SOLAR");
-        writeln!(f, "    map").unwrap();
-        writeln!(f, "}});").unwrap();
-        writeln!(f).unwrap();
-    } else {
-        // Provide empty stubs
-        writeln!(
-            f,
-            "/// Solar icons (disabled - enable with svg_solar feature)"
-        )
-        .unwrap();
-        writeln!(f, "pub static SOLAR_ICONS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| HashMap::new());").unwrap();
-        writeln!(f).unwrap();
-    }
-
-    if svg_noto {
-        writeln!(f, "// Noto emoji (Google emoji)").unwrap();
-        let noto_dir = get_resource_dir(&resources_dir, &cache_dir, "noto");
-        generate_includes(&mut f, &noto_dir, "NOTO");
-        writeln!(f).unwrap();
-        writeln!(
-            f,
-            "/// Get Noto emoji by filename (without .svg extension, e.g., \"emoji_u1f600\")"
-        )
-        .unwrap();
-        writeln!(
-            f,
-            "pub static NOTO_EMOJIS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{"
-        )
-        .unwrap();
-        writeln!(f, "    let mut map = HashMap::new();").unwrap();
-        generate_map_entries(&mut f, &noto_dir, "NOTO");
-        writeln!(f, "    map").unwrap();
-        writeln!(f, "}});").unwrap();
-        writeln!(f).unwrap();
-    } else {
-        writeln!(
-            f,
-            "/// Noto emoji (disabled - enable with svg_noto feature)"
-        )
-        .unwrap();
-        writeln!(f, "pub static NOTO_EMOJIS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| HashMap::new());").unwrap();
-        writeln!(f).unwrap();
-    }
-
-    if svg_twemoji {
-        writeln!(f, "// Twemoji (Twitter emoji)").unwrap();
-        let twemoji_dir = get_resource_dir(&resources_dir, &cache_dir, "twemoji");
-        generate_includes(&mut f, &twemoji_dir, "TWEMOJI");
-        writeln!(f).unwrap();
-        writeln!(
-            f,
-            "/// Get Twemoji by filename (without .svg extension, e.g., \"1f600\")"
-        )
-        .unwrap();
-        writeln!(
-            f,
-            "pub static TWEMOJI: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{"
-        )
-        .unwrap();
-        writeln!(f, "    let mut map = HashMap::new();").unwrap();
-        generate_map_entries(&mut f, &twemoji_dir, "TWEMOJI");
-        writeln!(f, "    map").unwrap();
-        writeln!(f, "}});").unwrap();
-        writeln!(f).unwrap();
-    } else {
-        writeln!(
-            f,
-            "/// Twemoji (disabled - enable with svg_twemoji feature)"
-        )
-        .unwrap();
-        writeln!(f, "pub static TWEMOJI: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| HashMap::new());").unwrap();
-        writeln!(f).unwrap();
-    }
+    writeln!(f, "// Auto-generated file - do not edit manually")?;
+    writeln!(f, "use std::collections::HashMap;")?;
+    writeln!(f, "pub use once_cell::sync::Lazy;")?;
+    writeln!(f)?;
 
     // Set rerun triggers
     println!("cargo:rerun-if-changed=build.rs");
-    if svg_solar {
-        println!("cargo:rerun-if-changed=resources/solar");
+
+    for collection in &COLLECTIONS {
+        let feature = format!("CARGO_FEATURE_SVG_{}", collection.name.to_uppercase());
+        if env::var(feature).is_ok() {
+            // Ensure resources are available for the enabled feature
+            ensure_resources(&resources_dir, &cache_dir, collection.name)?;
+            generate_collection(&mut f, &resources_dir, &cache_dir, collection)?;
+            println!("cargo:rerun-if-changed=resources/{}", collection.name);
+        } else {
+            // Provide an empty stub
+            writeln!(f, "{}", collection.disabled_doc)?;
+            writeln!(
+                f,
+                "pub static {}: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| HashMap::new());",
+                collection.map
+            )?;
+            writeln!(f)?;
+        }
     }
-    if svg_noto {
-        println!("cargo:rerun-if-changed=resources/noto");
-    }
-    if svg_twemoji {
-        println!("cargo:rerun-if-changed=resources/twemoji");
-    }
+
+    Ok(())
+}
+
+/// Write the constants and the lookup map for one enabled collection.
+fn generate_collection(
+    f: &mut fs::File,
+    resources_dir: &Path,
+    cache_dir: &Path,
+    collection: &Collection,
+) -> BuildResult {
+    writeln!(f, "{}", collection.heading)?;
+    let dir = get_resource_dir(resources_dir, cache_dir, collection.name);
+    generate_includes(f, &dir, collection.prefix)?;
+    writeln!(f)?;
+    writeln!(f, "{}", collection.doc)?;
+    writeln!(
+        f,
+        "pub static {}: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {{",
+        collection.map
+    )?;
+    writeln!(f, "    let mut map = HashMap::new();")?;
+    generate_map_entries(f, &dir, collection.prefix)?;
+    writeln!(f, "    map")?;
+    writeln!(f, "}});")?;
+    writeln!(f)?;
+    Ok(())
 }
 
 /// Ensure resources are available (either from local checkout or download)
-fn ensure_resources(resources_dir: &Path, cache_dir: &Path, name: &str) {
+fn ensure_resources(resources_dir: &Path, cache_dir: &Path, name: &str) -> BuildResult {
     let local_dir = resources_dir.join(name);
     let cache_subdir = cache_dir.join(name);
 
     // If local resources exist (git checkout), nothing to do
     if local_dir.exists() && has_svg_files(&local_dir) {
-        return;
+        return Ok(());
     }
 
     // If cached, nothing to do
     if cache_subdir.exists() && has_svg_files(&cache_subdir) {
-        return;
+        return Ok(());
     }
 
     // Download from GitHub
@@ -158,8 +137,8 @@ fn ensure_resources(resources_dir: &Path, cache_dir: &Path, name: &str) {
         "cargo:warning=Downloading {} SVG assets from GitHub (this is a one-time download)...",
         name
     );
-    if let Err(e) = download_resources(&cache_subdir, name) {
-        panic!(
+    download_resources(&cache_subdir, name).map_err(|e| {
+        format!(
             "Failed to download {} resources: {}\n\
             \n\
             To use the svg_{} feature, you need the SVG files which are not included in the published crate.\n\
@@ -171,8 +150,9 @@ fn ensure_resources(resources_dir: &Path, cache_dir: &Path, name: &str) {
             \n\
             Error: {}",
             name, e, name, e
-        );
-    }
+        )
+        .into()
+    })
 }
 
 /// Get the directory containing resources (local or cached)
@@ -197,7 +177,7 @@ fn has_svg_files(dir: &Path) -> bool {
 }
 
 /// Download resources from GitHub
-fn download_resources(target_dir: &Path, name: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn download_resources(target_dir: &Path, name: &str) -> BuildResult {
     use serde_json::Value;
 
     fs::create_dir_all(target_dir)?;
@@ -222,8 +202,8 @@ fn download_resources(target_dir: &Path, name: &str) -> Result<(), Box<dyn std::
         let svg_files: Vec<_> = files_array
             .iter()
             .filter_map(|f| {
-                let name = f["name"].as_str()?;
-                let download_url = f["download_url"].as_str()?;
+                let name = f.get("name")?.as_str()?;
+                let download_url = f.get("download_url")?.as_str()?;
                 if name.ends_with(".svg") {
                     Some((name.to_string(), download_url.to_string()))
                 } else {
@@ -262,17 +242,25 @@ fn download_resources(target_dir: &Path, name: &str) -> Result<(), Box<dyn std::
     Ok(())
 }
 
-fn generate_includes(f: &mut fs::File, dir: &Path, prefix: &str) {
+/// The SVG files in `dir`, each with the `const` name generated for it.
+///
+/// A missing directory yields nothing, as before; an unreadable entry or a
+/// file name that is not UTF-8 is an error rather than a panic.
+fn svg_entries(dir: &Path, prefix: &str) -> BuildResult<Vec<(PathBuf, String, String)>> {
     let entries = match fs::read_dir(dir) {
         Ok(e) => e,
-        Err(_) => return,
+        Err(_) => return Ok(Vec::new()),
     };
 
+    let mut found = Vec::new();
     for entry in entries {
-        let entry = entry.unwrap();
-        let path = entry.path();
+        let path = entry?.path();
         if path.extension().and_then(|s| s.to_str()) == Some("svg") {
-            let filename = path.file_stem().unwrap().to_str().unwrap();
+            let filename = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .ok_or_else(|| format!("non-UTF-8 file name: {}", path.display()))?
+                .to_string();
             let const_name = format!(
                 "{}_{}",
                 prefix,
@@ -286,42 +274,30 @@ fn generate_includes(f: &mut fs::File, dir: &Path, prefix: &str) {
                     })
                     .collect::<String>()
             );
-            let path_str = path.to_str().unwrap().replace("\\", "/");
-            writeln!(
-                f,
-                "const {}: &str = include_str!(\"{}\");",
-                const_name, path_str
-            )
-            .unwrap();
+            found.push((path, filename, const_name));
         }
     }
+    Ok(found)
 }
 
-fn generate_map_entries(f: &mut fs::File, dir: &Path, prefix: &str) {
-    let entries = match fs::read_dir(dir) {
-        Ok(e) => e,
-        Err(_) => return,
-    };
-
-    for entry in entries {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) == Some("svg") {
-            let filename = path.file_stem().unwrap().to_str().unwrap();
-            let const_name = format!(
-                "{}_{}",
-                prefix,
-                filename
-                    .to_uppercase()
-                    .chars()
-                    .map(|c| if c.is_alphanumeric() || c == '_' {
-                        c
-                    } else {
-                        '_'
-                    })
-                    .collect::<String>()
-            );
-            writeln!(f, "    map.insert(\"{}\", {});", filename, const_name).unwrap();
-        }
+fn generate_includes(f: &mut fs::File, dir: &Path, prefix: &str) -> BuildResult {
+    for (path, _, const_name) in svg_entries(dir, prefix)? {
+        let path_str = path
+            .to_str()
+            .ok_or_else(|| format!("non-UTF-8 path: {}", path.display()))?
+            .replace("\\", "/");
+        writeln!(
+            f,
+            "const {}: &str = include_str!(\"{}\");",
+            const_name, path_str
+        )?;
     }
+    Ok(())
+}
+
+fn generate_map_entries(f: &mut fs::File, dir: &Path, prefix: &str) -> BuildResult {
+    for (_, filename, const_name) in svg_entries(dir, prefix)? {
+        writeln!(f, "    map.insert(\"{}\", {});", filename, const_name)?;
+    }
+    Ok(())
 }
