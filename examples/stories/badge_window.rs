@@ -280,7 +280,7 @@ impl BadgeWindow {
                                         MaterialIconButton::standard(noto_emoji::E_MAIL_SYMBOL)
                                             .size(32.0),
                                     );
-                                    badge(&format!("{}", self.inbox_count))
+                                    badge(format!("{}", self.inbox_count))
                                         .color(BadgeColor::Success)
                                         .size(BadgeSize::Small)
                                         .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
@@ -296,7 +296,7 @@ impl BadgeWindow {
                                         MaterialIconButton::standard(noto_emoji::CALENDAR)
                                             .size(32.0),
                                     );
-                                    badge(&format!("{}", self.calendar_count))
+                                    badge(format!("{}", self.calendar_count))
                                         .color(BadgeColor::Error)
                                         .size(BadgeSize::Small)
                                         .draw_on(ui, icon_response.rect, BadgePosition::TopRight);
@@ -314,7 +314,7 @@ impl BadgeWindow {
                                         )
                                         .size(32.0),
                                     );
-                                    badge(&format!("{}", self.upload_count))
+                                    badge(format!("{}", self.upload_count))
                                         .color(BadgeColor::Error)
                                         .size(BadgeSize::Small)
                                         .draw_on(ui, icon_response.rect, BadgePosition::TopRight);

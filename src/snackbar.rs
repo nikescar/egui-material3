@@ -394,9 +394,9 @@ impl Widget for MaterialSnackbar<'_> {
         } = self;
 
         // Material 3 design tokens
-        let label_text_color = get_global_color("onInverseSurface");
+        let label_text_color = get_global_color("inverseOnSurface");
         let action_text_color = get_global_color("inversePrimary");
-        let _default_close_icon_color = get_global_color("onInverseSurface");
+        let _default_close_icon_color = get_global_color("inverseOnSurface");
 
         // Calculate leading icon size if present
         let icon_galley = leading_icon.as_ref().map(|icon| {
@@ -684,9 +684,9 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
         } = self.snackbar;
 
         // Material 3 design tokens
-        let label_text_color = get_global_color("onInverseSurface");
+        let label_text_color = get_global_color("inverseOnSurface");
         let action_text_color = get_global_color("inversePrimary");
-        let default_close_icon_color = get_global_color("onInverseSurface");
+        let default_close_icon_color = get_global_color("inverseOnSurface");
 
         // Calculate leading icon size if present
         let icon_galley = leading_icon.as_ref().map(|icon| {

@@ -477,7 +477,9 @@ impl<'a> Widget for MaterialIconButton<'a> {
 
                 // Try to get cached ColorImage, or create it if not exists
                 let color_image = {
-                    let mut cache = SVG_IMAGE_CACHE.lock().unwrap();
+                    let mut cache = SVG_IMAGE_CACHE
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
 
                     if let Some(cached_image) = cache.get(&texture_id) {
                         // Image already rendered, use cached version

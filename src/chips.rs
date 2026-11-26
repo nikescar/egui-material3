@@ -429,19 +429,18 @@ impl<'a> Widget for MaterialChip<'a> {
         let is_selected = self.selected.as_ref().is_some_and(|s| **s);
 
         // Get the actual font ID from UI style (respects override_text_style)
-        let font_id = ui.style().override_text_style
+        let font_id = ui
+            .style()
+            .override_text_style
             .as_ref()
             .and_then(|style| ui.style().text_styles.get(style))
-            .unwrap_or_else(|| &ui.style().text_styles[&egui::TextStyle::Body])
-            .clone();
+            .or_else(|| ui.style().text_styles.get(&egui::TextStyle::Body))
+            .cloned()
+            .unwrap_or_else(|| egui::FontId::proportional(14.0));
 
-        let text_galley = ui
-            .painter()
-            .layout_no_wrap(
-                self.text.clone(),
-                font_id.clone(),
-                egui::Color32::WHITE,
-            );
+        let text_galley =
+            ui.painter()
+                .layout_no_wrap(self.text.clone(), font_id.clone(), egui::Color32::WHITE);
         let text_width = text_galley.rect.width();
 
         let has_leading =
