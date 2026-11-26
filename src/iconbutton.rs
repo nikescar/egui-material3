@@ -97,6 +97,8 @@ pub struct MaterialIconButton<'a> {
     variant: IconButtonVariant,
     /// Optional toggle state for the button
     selected: Option<&'a mut bool>,
+    /// Accessible name; defaults to the icon name
+    label: Option<String>,
     /// Whether the button is enabled for interaction
     enabled: bool,
     /// Size of the button (width and height)
@@ -131,6 +133,7 @@ impl<'a> MaterialIconButton<'a> {
             icon: icon.into(),
             variant,
             selected: None,
+            label: None,
             enabled: true,
             size: 40.0,
             container: false, // circular by default
@@ -238,6 +241,14 @@ impl<'a> MaterialIconButton<'a> {
         self
     }
 
+    /// Accessible name for screen readers and UI tests. The visible content
+    /// is an icon glyph, so set this to say what the button does
+    /// (defaults to the icon name).
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
     /// Enable or disable the icon button.
     ///
     /// # Arguments
@@ -319,7 +330,21 @@ impl<'a> MaterialIconButton<'a> {
 impl<'a> Widget for MaterialIconButton<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
         let desired_size = Vec2::splat(self.size);
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        let (rect, mut response) = ui.allocate_exact_size(
+            desired_size,
+            crate::a11y::sense(self.enabled, Sense::click()),
+        );
+        let a11y_label = self.label.as_deref().unwrap_or(&self.icon);
+        match self.selected.as_deref() {
+            Some(selected) => crate::a11y::toggle(
+                &response,
+                egui::Role::Button,
+                self.enabled,
+                a11y_label,
+                *selected,
+            ),
+            None => crate::a11y::button(&response, self.enabled, a11y_label),
+        }
 
         let is_selected = self.selected.as_ref().is_some_and(|s| **s);
 
@@ -380,16 +405,24 @@ impl<'a> Widget for MaterialIconButton<'a> {
                         // Selected state: same as default for filled variant
                         (base_color, content_color, Color32::TRANSPARENT)
                     } else if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onPrimary overlay (M3 interaction state)
+                        // Pressed state: 10% onPrimary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.12),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::PRESSED_OPACITY,
+                            ),
                             content_color,
                             Color32::TRANSPARENT,
                         )
                     } else if response.hovered() {
                         // Hover state: 8% onPrimary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.08),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::HOVER_OPACITY,
+                            ),
                             content_color,
                             Color32::TRANSPARENT,
                         )
@@ -405,16 +438,24 @@ impl<'a> Widget for MaterialIconButton<'a> {
                         // Selected state: same as default for tonal variant
                         (base_color, content_color, Color32::TRANSPARENT)
                     } else if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onSecondaryContainer overlay (M3 interaction state)
+                        // Pressed state: 10% onSecondaryContainer overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.12),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::PRESSED_OPACITY,
+                            ),
                             content_color,
                             Color32::TRANSPARENT,
                         )
                     } else if response.hovered() {
                         // Hover state: 8% onSecondaryContainer overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.08),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::HOVER_OPACITY,
+                            ),
                             content_color,
                             Color32::TRANSPARENT,
                         )
@@ -567,12 +608,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
 
         // Add ripple effect on hover (skip for Filled variant as it already has state changes)
         if response.hovered() && self.enabled && self.variant != IconButtonVariant::Filled {
-            let ripple_color = Color32::from_rgba_premultiplied(
-                icon_color.r(),
-                icon_color.g(),
-                icon_color.b(),
-                30,
-            );
+            let ripple_color = icon_color.gamma_multiply(crate::tokens::state::HOVER_OPACITY);
             ui.painter().rect_filled(rect, corner_radius, ripple_color);
         }
 
@@ -584,20 +620,7 @@ impl<'a> Widget for MaterialIconButton<'a> {
 ///
 /// Used for M3 interactive states (hover: 8%, press: 12%).
 fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
-    let alpha = (opacity * 255.0) as u8;
-    let overlay_with_alpha =
-        Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
-    // Alpha blending
-    let inv_alpha = 255 - alpha;
-    Color32::from_rgba_unmultiplied(
-        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255)
-            as u8,
-        base.a(),
-    )
+    crate::paint::state_layer_over(base, overlay, opacity)
 }
 
 /// Convenience function to create a standard icon button.

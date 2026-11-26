@@ -744,7 +744,18 @@ impl<'a> MaterialDrawer<'a> {
             Vec2::new(self.width - horizontal_padding * 2.0, item_height),
         );
 
-        let item_response = ui.interact(item_outer_rect, item_id, Sense::click());
+        let item_response = ui.interact(
+            item_outer_rect,
+            item_id,
+            crate::a11y::sense(item.enabled, Sense::click()),
+        );
+        crate::a11y::toggle(
+            &item_response,
+            egui::Role::Button,
+            item.enabled,
+            &item.text,
+            item.active,
+        );
 
         // Active indicator (rounded rectangle on the left)
         if item.active {

@@ -188,7 +188,7 @@ impl MenuButtonThemeData {
     fn resolve(&self) -> ResolvedMenuButtonTheme {
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
-        let disabled_color = Color32::from_rgba_premultiplied(
+        let disabled_color = Color32::from_rgba_unmultiplied(
             on_surface.r(),
             on_surface.g(),
             on_surface.b(),
@@ -660,7 +660,7 @@ fn render_menu_content<'a>(
     ui.painter().rect_filled(
         shadow_rect,
         style.corner_radius,
-        Color32::from_rgba_premultiplied(
+        Color32::from_rgba_unmultiplied(
             style.shadow_color.r(),
             style.shadow_color.g(),
             style.shadow_color.b(),
@@ -693,7 +693,14 @@ fn render_menu_content<'a>(
         let item_response = ui.interact(
             item_rect,
             egui::Id::unique(format!("menu_item_{}_{}", rect.min.x as i32, index)),
-            Sense::click(),
+            crate::a11y::sense(item.enabled, Sense::click()),
+        );
+        crate::a11y::describe(
+            &item_response,
+            egui::Role::MenuItem,
+            item.enabled,
+            &item.text,
+            None,
         );
 
         // Draw item background on hover/press
@@ -709,7 +716,7 @@ fn render_menu_content<'a>(
             if overlay_opacity > 0.0 {
                 let on_surface = button_theme.foreground_color;
                 let overlay_alpha = (overlay_opacity * 255.0) as u8;
-                let hover_color = Color32::from_rgba_premultiplied(
+                let hover_color = Color32::from_rgba_unmultiplied(
                     on_surface.r(),
                     on_surface.g(),
                     on_surface.b(),

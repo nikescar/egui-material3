@@ -401,6 +401,7 @@ impl MaterialNotification {
 
                     let close_response =
                         ui.interact(close_rect, response.id.with("close"), Sense::click());
+                    crate::a11y::button(&close_response, true, "Close");
 
                     if close_response.hovered() {
                         ui.painter().circle_filled(

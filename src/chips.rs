@@ -380,11 +380,11 @@ fn resolve_chip_colors(
         on_surface_variant // Unselected chips use onSurfaceVariant for state layers
     };
     let state_layer = if is_pressed {
-        // Pressed state: 12% opacity (M3 interaction state)
-        state_layer_base.linear_multiply(0.12)
+        // Pressed state: 10% opacity (StateLayerTokens.PressedOpacity)
+        state_layer_base.gamma_multiply(crate::tokens::state::PRESSED_OPACITY)
     } else if is_hovered {
         // Hover state: 8% opacity (M3 interaction state)
-        state_layer_base.linear_multiply(0.08)
+        state_layer_base.gamma_multiply(crate::tokens::state::HOVER_OPACITY)
     } else {
         Color32::TRANSPARENT
     };
@@ -456,7 +456,20 @@ impl<'a> Widget for MaterialChip<'a> {
             height,
         );
 
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        let (rect, mut response) = ui.allocate_exact_size(
+            desired_size,
+            crate::a11y::sense(self.enabled, Sense::click()),
+        );
+        match self.selected.as_deref() {
+            Some(selected) => crate::a11y::toggle(
+                &response,
+                egui::Role::CheckBox,
+                self.enabled,
+                &self.text,
+                *selected,
+            ),
+            None => crate::a11y::button(&response, self.enabled, &self.text),
+        }
 
         let is_pressed = response.is_pointer_button_down_on();
         let is_hovered = response.hovered();

@@ -508,6 +508,7 @@ impl Widget for MaterialImageList<'_> {
                 };
 
                 let item_response = ui.interact(item_rect, item_id, Sense::click());
+                crate::a11y::button(&item_response, true, &item.label);
                 if item_response.hovered() {
                     let hover_color = get_global_color("primary").linear_multiply(0.08);
                     ui.painter()

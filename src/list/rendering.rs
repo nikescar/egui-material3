@@ -408,13 +408,24 @@ impl<'a> Widget for MaterialList<'a> {
                 .id
                 .unwrap_or_else(|| ui.scope_id().with("material_list"));
             let unique_id = list_id.with(("item", index));
-            let item_response = ui.interact(item_rect, unique_id, Sense::click());
+            let item_response = ui.interact(
+                item_rect,
+                unique_id,
+                crate::a11y::sense(item.enabled, Sense::click()),
+            );
+            crate::a11y::toggle(
+                &item_response,
+                egui::Role::ListItem,
+                item.enabled,
+                &item.primary_text,
+                item.selected,
+            );
 
             // Determine background color using M3 color roles
             let bg_color = if item.selected {
                 // Selected state: use primaryContainer (less emphasized fill for selected elements)
                 item.selected_tile_color.unwrap_or_else(|| {
-                    Color32::from_rgba_premultiplied(
+                    Color32::from_rgba_unmultiplied(
                         primary_container.r(),
                         primary_container.g(),
                         primary_container.b(),
@@ -434,7 +445,7 @@ impl<'a> Widget for MaterialList<'a> {
             // Draw hover state layer (M3 interaction state overlay)
             if item_response.hovered() && item.enabled {
                 // Use onSurface with 8% opacity for hover state layer (M3 spec)
-                let hover_color = Color32::from_rgba_premultiplied(
+                let hover_color = Color32::from_rgba_unmultiplied(
                     on_surface.r(),
                     on_surface.g(),
                     on_surface.b(),
@@ -702,6 +713,13 @@ impl<'a> Widget for MaterialList<'a> {
                 let chevron_rect = Rect::from_center_size(chevron_pos, Vec2::splat(24.0));
                 let chevron_id = unique_id.with("drawer_chevron");
                 let chevron_response = ui.interact(chevron_rect, chevron_id, Sense::click());
+                crate::a11y::toggle(
+                    &chevron_response,
+                    egui::Role::Button,
+                    true,
+                    "Expand",
+                    is_open,
+                );
 
                 if chevron_response.clicked() {
                     if is_open {

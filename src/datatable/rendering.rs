@@ -422,16 +422,16 @@ impl<'a> MaterialDataTable<'a> {
         style.visuals.widgets.noninteractive.bg_fill = surface;
         style.visuals.widgets.inactive.bg_fill = surface;
         style.visuals.widgets.hovered.bg_fill =
-            egui::Color32::from_rgba_premultiplied(primary.r(), primary.g(), primary.b(), 20);
+            egui::Color32::from_rgba_unmultiplied(primary.r(), primary.g(), primary.b(), 20);
         style.visuals.widgets.active.bg_fill =
-            egui::Color32::from_rgba_premultiplied(primary.r(), primary.g(), primary.b(), 40);
+            egui::Color32::from_rgba_unmultiplied(primary.r(), primary.g(), primary.b(), 40);
         style.visuals.selection.bg_fill = primary;
         style.visuals.widgets.noninteractive.fg_stroke.color = on_surface;
         style.visuals.widgets.inactive.fg_stroke.color = on_surface;
         style.visuals.widgets.hovered.fg_stroke.color = on_surface;
         style.visuals.widgets.active.fg_stroke.color = on_surface;
         style.visuals.striped = true;
-        style.visuals.faint_bg_color = egui::Color32::from_rgba_premultiplied(
+        style.visuals.faint_bg_color = egui::Color32::from_rgba_unmultiplied(
             on_surface.r(),
             on_surface.g(),
             on_surface.b(),
@@ -759,7 +759,7 @@ impl<'a> MaterialDataTable<'a> {
                 } else if row.readonly {
                     // Subtle background for readonly rows
                     let surface_variant = get_global_color("surfaceVariant");
-                    Color32::from_rgba_premultiplied(
+                    Color32::from_rgba_unmultiplied(
                         surface_variant.r(),
                         surface_variant.g(),
                         surface_variant.b(),
@@ -1062,7 +1062,7 @@ impl<'a> MaterialDataTable<'a> {
 
                                     let text_color = if cell.placeholder {
                                         let base_color = get_global_color("onSurface");
-                                        Color32::from_rgba_premultiplied(
+                                        Color32::from_rgba_unmultiplied(
                                             base_color.r(),
                                             base_color.g(),
                                             base_color.b(),
@@ -1289,7 +1289,7 @@ impl<'a> MaterialDataTable<'a> {
                             } else if row.readonly {
                                 // Subtle background for readonly rows
                                 let surface_variant = get_global_color("surfaceVariant");
-                                Color32::from_rgba_premultiplied(
+                                Color32::from_rgba_unmultiplied(
                                     surface_variant.r(),
                                     surface_variant.g(),
                                     surface_variant.b(),
