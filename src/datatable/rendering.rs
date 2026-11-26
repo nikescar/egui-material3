@@ -418,7 +418,10 @@ impl<'a> MaterialDataTable<'a> {
         let on_surface = get_global_color("onSurface");
         let primary = get_global_color("primary");
 
-        let mut style = (*ui.ctx().global_style()).clone();
+        // Style only this table's drawing: the caller's style is restored
+        // before returning, and the app's global style is never touched.
+        let previous_style = ui.style().clone();
+        let mut style = (**ui.style()).clone();
         style.visuals.widgets.noninteractive.bg_fill = surface;
         style.visuals.widgets.inactive.bg_fill = surface;
         style.visuals.widgets.hovered.bg_fill =
@@ -437,7 +440,7 @@ impl<'a> MaterialDataTable<'a> {
             on_surface.b(),
             10,
         );
-        ui.ctx().set_global_style(style);
+        ui.set_style(style);
 
         let desired_size = Vec2::new(total_width, total_height);
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
@@ -1430,6 +1433,7 @@ impl<'a> MaterialDataTable<'a> {
         // Ensure the UI cursor is advanced past the full table height
         // This is critical when child UIs are used for drawer content
         ui.expand_to_include_rect(rect);
+        ui.set_style(previous_style);
 
         DataTableResponse {
             response,
@@ -1445,5 +1449,43 @@ impl<'a> MaterialDataTable<'a> {
 impl Widget for MaterialDataTable<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         self.show(ui).response
+    }
+}
+
+#[cfg(test)]
+mod style_tests {
+    use crate::datatable::data_table;
+
+    /// Regression test for nikescar/egui-material3#20: showing a data table
+    /// changes neither the global style nor the style of widgets after it.
+    #[test]
+    fn test_table_does_not_leak_style() {
+        let ctx = egui::Context::default();
+        let marker = egui::Color32::from_rgb(1, 2, 3);
+        ctx.global_style_mut(|style| {
+            style.visuals.widgets.inactive.bg_fill = marker;
+            style.visuals.striped = false;
+        });
+        let mut after = None;
+        ctx.run_ui(Default::default(), |ui| {
+            data_table()
+                .column("Col", 100.0, false)
+                .row(|row| row.cell("A"))
+                .show(ui);
+            after = Some(ui.style().visuals.clone());
+        })
+        .textures_delta
+        .clear();
+        let global = ctx.global_style().visuals.clone();
+        assert_eq!(
+            global.widgets.inactive.bg_fill, marker,
+            "the global style must keep the app's colours"
+        );
+        assert!(!global.striped, "the global style must not become striped");
+        assert_eq!(
+            after.map(|v| (v.widgets.inactive.bg_fill, v.striped)),
+            Some((marker, false)),
+            "widgets after the table must keep the caller's style"
+        );
     }
 }
