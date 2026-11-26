@@ -1,96 +1,82 @@
-//! Material Design 3 Switch Components
+//! Material Design 3 switch.
 //!
-//! This module implements switch toggle controls following Material Design 3 color system.
+//! Geometry, colours and opacities follow Compose's `SwitchTokens`:
 //!
-//! # M3 Color Role Usage
-//!
-//! ## Selected State (On)
-//! - **primary**: Track background when on
-//! - **onPrimary**: Thumb color (default state)
-//! - **primaryContainer**: Thumb color (hover/press/focus states)
-//! - **onPrimaryContainer**: Icon color on thumb
-//! - **State layers**: primary @ 8% (hover), 10% (press/focus)
-//!
-//! ## Unselected State (Off)
-//! - **surfaceContainerHighest**: Track background when off
-//! - **outline**: Thumb color (default state), track outline (2dp stroke)
-//! - **onSurfaceVariant**: Thumb color (hover/press/focus states)
-//! - **surfaceContainerHighest**: Icon color on thumb when off
-//! - **State layers**: onSurface @ 8% (hover), 10% (press/focus)
-//!
-//! ## Disabled State
-//! - **Selected (on)**: onSurface @ 100% thumb, onSurface @ 12% track, onSurface @ 38% icon
-//! - **Unselected (off)**: onSurface @ 38% thumb, surfaceContainerHighest @ 12% track, onSurface @ 12% outline
-//!
-//! ## Dimensions
-//! - **Track**: 52x32dp, fully rounded (16dp radius)
-//! - **Thumb**: 16dp off (no icon), 24dp on or with icon, 28dp pressed
-//! - **Touch target**: 48x48dp minimum (40dp state layer)
-//! - **Icon**: 16dp on thumb
+//! - a 52 × 32 dp track with full corners in a 48 dp tall touch target, with
+//!   a 2 dp outline drawn *inside* it when unselected;
+//! - the thumb (handle) is 16 dp unselected, 24 dp selected or when showing
+//!   an icon, and 28 dp while pressed. Its centre sits 16 dp from the
+//!   track's start when off and 36 dp when on, whatever its size;
+//! - the thumb moves and resizes with the fast spatial spring of the theme's
+//!   motion scheme;
+//! - selected: `primary` track, `onPrimary` thumb (`primaryContainer` when
+//!   hovered, focused or pressed), `onPrimaryContainer` icon (`primary` when
+//!   hovered, focused or pressed);
+//! - unselected: `surfaceContainerHighest` track, `outline` outline and
+//!   thumb (`onSurfaceVariant` when hovered, focused or pressed),
+//!   `surfaceContainerHighest` icon;
+//! - disabled: track at 12 %; selected thumb `surface` at full opacity with
+//!   an `onSurface` icon at 38 %; unselected thumb `onSurface` at 38 %;
+//! - a 40 dp circular state layer centred on the thumb, and a focus ring
+//!   around the track.
 
-use crate::get_global_color;
+use crate::checkbox::{focus_ring, full_corner, label_color, label_galley, TOUCH_TARGET};
+use crate::tokens::state::DISABLED_CONTENT_OPACITY;
+use crate::tokens::{animate_value_with_spring, ColorRole, InteractionState, SpringSpeed};
+use crate::MaterialTheme;
 use egui::{
     self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2, Widget,
 };
 
-/// Material Design switch component following Material Design 3 specifications
+/// `SwitchTokens.TrackWidth`.
+pub const TRACK_WIDTH: f32 = 52.0;
+/// `SwitchTokens.TrackHeight`.
+pub const TRACK_HEIGHT: f32 = 32.0;
+/// `SwitchTokens.TrackOutlineWidth`: drawn inside the track.
+pub const TRACK_OUTLINE_WIDTH: f32 = 2.0;
+/// `SwitchTokens.UnselectedHandleWidth`.
+pub const UNSELECTED_HANDLE_SIZE: f32 = 16.0;
+/// `SwitchTokens.SelectedHandleWidth` (and `HandleWidth`, with an icon).
+pub const SELECTED_HANDLE_SIZE: f32 = 24.0;
+/// `SwitchTokens.PressedHandleWidth`.
+pub const PRESSED_HANDLE_SIZE: f32 = 28.0;
+/// `SwitchTokens.SelectedIconSize` / `UnselectedIconSize`.
+pub const ICON_SIZE: f32 = 16.0;
+/// `SwitchTokens.StateLayerSize`.
+pub const STATE_LAYER_SIZE: f32 = 40.0;
+/// `SwitchTokens.DisabledTrackOpacity`.
+pub const DISABLED_TRACK_OPACITY: f32 = 0.12;
+/// Thumb centre, from the track's start, when off: half the track height.
+pub const THUMB_CENTER_OFF: f32 = TRACK_HEIGHT / 2.0;
+/// Thumb centre, from the track's start, when on.
+pub const THUMB_CENTER_ON: f32 = TRACK_WIDTH - TRACK_HEIGHT / 2.0;
+/// Gap between the track and the label.
+const LABEL_GAP: f32 = 8.0;
+
+/// Material Design 3 switch.
 ///
-/// Switches toggle the state of a single item on or off. They are the preferred way to
-/// adjust settings on mobile and should be used instead of checkboxes in most cases.
-///
-/// ## Usage Examples
 /// ```rust
+/// # use egui_material3::MaterialSwitch;
 /// # egui::__run_test_ui(|ui| {
-/// let mut wifi_enabled = false;
-/// let mut bluetooth_enabled = true;
+/// let mut wifi = false;
+/// ui.add(MaterialSwitch::new(&mut wifi).text("Wi-Fi"));
 ///
-/// // Basic switch
-/// ui.add(MaterialSwitch::new(&mut wifi_enabled));
-///
-/// // Switch with label text
-/// ui.add(MaterialSwitch::new(&mut bluetooth_enabled)
-///     .text("Enable Bluetooth"));
-///
-/// // Disabled switch
-/// let mut disabled_option = false;
-/// ui.add(MaterialSwitch::new(&mut disabled_option)
-///     .text("Unavailable option")
-///     .enabled(false));
+/// let mut locked = true;
+/// ui.add(MaterialSwitch::new(&mut locked).text("Locked").enabled(false));
 /// # });
 /// ```
-///
-/// ## Material Design Spec (Material 3)
-/// - Track width: 52dp, height: 32dp
-/// - Thumb diameter: 24dp when on, 16dp when off, 28dp when pressed
-/// - Corner radius: 16dp (fully rounded)
-/// - Touch target: 48x48dp minimum
-/// - Colors: Primary when on, surfaceContainerHighest when off
-/// - Track outline: 2dp when off, transparent when on
-/// - Icons: 16dp, displayed on thumb
-/// - Animation: 300ms cubic-bezier transition
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialSwitch<'a> {
-    /// Mutable reference to the switch state (on/off)
     selected: &'a mut bool,
-    /// Optional text label displayed next to the switch
     text: Option<String>,
-    /// Whether the switch is interactive (enabled/disabled)
     enabled: bool,
-    /// Optional icon displayed on thumb when selected
     selected_icon: Option<char>,
-    /// Optional icon displayed on thumb when unselected
     unselected_icon: Option<char>,
-    /// Whether to show track outline (Material 3: true, Material 2: false)
     show_track_outline: bool,
 }
 
 impl<'a> MaterialSwitch<'a> {
-    /// Create a new Material Design switch
-    ///
-    /// ## Parameters
-    /// - `selected`: Mutable reference to boolean state representing on/off
-    ///
-    /// ## Returns
-    /// A new MaterialSwitch instance with default settings
+    /// A switch bound to `selected`.
     pub fn new(selected: &'a mut bool) -> Self {
         Self {
             selected,
@@ -98,298 +84,243 @@ impl<'a> MaterialSwitch<'a> {
             enabled: true,
             selected_icon: None,
             unselected_icon: None,
-            show_track_outline: true, // Material 3 default
+            show_track_outline: true,
         }
     }
 
-    /// Set optional text label for the switch
-    ///
-    /// The text will be displayed to the right of the switch component.
-    ///
-    /// ## Parameters
-    /// - `text`: Label text to display next to the switch
+    /// A label after the switch; also its accessible name.
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
         self
     }
 
-    /// Set whether the switch is enabled or disabled
-    ///
-    /// Disabled switches cannot be interacted with and are visually dimmed.
-    ///
-    /// ## Parameters
-    /// - `enabled`: True for interactive, false for disabled
+    /// Enables or disables the switch. A disabled switch is dimmed, is not
+    /// focusable and ignores clicks.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
-    /// Set an icon to display on the thumb when the switch is selected (on)
-    ///
-    /// ## Parameters
-    /// - `icon`: Character representing a Material icon to display on selected thumb
+    /// An icon on the thumb while on. The thumb is then 24 dp.
     pub fn selected_icon(mut self, icon: char) -> Self {
         self.selected_icon = Some(icon);
         self
     }
 
-    /// Set an icon to display on the thumb when the switch is unselected (off)
-    ///
-    /// ## Parameters
-    /// - `icon`: Character representing a Material icon to display on unselected thumb
+    /// An icon on the thumb while off. The thumb is then 24 dp, not 16.
     pub fn unselected_icon(mut self, icon: char) -> Self {
         self.unselected_icon = Some(icon);
         self
     }
 
-    /// Set icons for both selected and unselected states
-    ///
-    /// ## Parameters
-    /// - `selected`: Character representing a Material icon to display when on
-    /// - `unselected`: Character representing a Material icon to display when off
+    /// Icons for both states.
     pub fn with_icons(mut self, selected: char, unselected: char) -> Self {
         self.selected_icon = Some(selected);
         self.unselected_icon = Some(unselected);
         self
     }
 
-    /// Set whether to show track outline (Material 3 style)
-    ///
-    /// ## Parameters
-    /// - `show`: True to show outline when off, false for no outline
+    /// Whether to draw the unselected track outline (default `true`).
     pub fn show_track_outline(mut self, show: bool) -> Self {
         self.show_track_outline = show;
         self
     }
 }
 
-impl<'a> Widget for MaterialSwitch<'a> {
+/// The colours of one switch state.
+struct Colors {
+    track: Color32,
+    outline: Color32,
+    handle: Color32,
+    icon: Color32,
+}
+
+fn colors(theme: &MaterialTheme, selected: bool, enabled: bool, active: bool) -> Colors {
+    let c = |role| theme.color(role);
+    let dim = |color: Color32| color.gamma_multiply(DISABLED_CONTENT_OPACITY);
+    match (enabled, selected) {
+        (false, true) => Colors {
+            track: c(ColorRole::OnSurface).gamma_multiply(DISABLED_TRACK_OPACITY),
+            outline: Color32::TRANSPARENT,
+            handle: c(ColorRole::Surface),
+            icon: dim(c(ColorRole::OnSurface)),
+        },
+        (false, false) => Colors {
+            track: c(ColorRole::SurfaceContainerHighest).gamma_multiply(DISABLED_TRACK_OPACITY),
+            outline: c(ColorRole::OnSurface).gamma_multiply(DISABLED_TRACK_OPACITY),
+            handle: dim(c(ColorRole::OnSurface)),
+            icon: dim(c(ColorRole::SurfaceContainerHighest)),
+        },
+        (true, true) => Colors {
+            track: c(ColorRole::Primary),
+            outline: Color32::TRANSPARENT,
+            handle: if active {
+                c(ColorRole::PrimaryContainer)
+            } else {
+                c(ColorRole::OnPrimary)
+            },
+            icon: if active {
+                c(ColorRole::Primary)
+            } else {
+                c(ColorRole::OnPrimaryContainer)
+            },
+        },
+        (true, false) => Colors {
+            track: c(ColorRole::SurfaceContainerHighest),
+            outline: c(ColorRole::Outline),
+            handle: if active {
+                c(ColorRole::OnSurfaceVariant)
+            } else {
+                c(ColorRole::Outline)
+            },
+            icon: c(ColorRole::SurfaceContainerHighest),
+        },
+    }
+}
+
+impl Widget for MaterialSwitch<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        // Material 3 specifications
-        let switch_width = 52.0;
-        let switch_height = 32.0;
-        let track_height = 32.0;
+        let theme = MaterialTheme::of(ui.ctx());
+        let text_color = label_color(&theme, self.enabled);
+        let galley = self
+            .text
+            .as_deref()
+            .and_then(|text| label_galley(ui, text, text_color));
+        let label_width = galley.as_ref().map_or(0.0, |g| LABEL_GAP + g.size().x);
+        let desired_size = Vec2::new(TRACK_WIDTH + label_width, TOUCH_TARGET);
 
-        let desired_size = if let Some(ref text) = self.text {
-            let text_width = ui
-                .painter()
-                .layout_no_wrap(text.clone(), egui::FontId::default(), egui::Color32::WHITE)
-                .size()
-                .x;
-            Vec2::new(switch_width + 8.0 + text_width, switch_height)
-        } else {
-            Vec2::new(switch_width, switch_height)
-        };
-
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        let (rect, mut response) = ui.allocate_exact_size(
+            desired_size,
+            crate::a11y::sense(self.enabled, Sense::click()),
+        );
 
         if response.clicked() && self.enabled {
             *self.selected = !*self.selected;
             response.mark_changed();
         }
-
-        // Track interaction states
-        let is_pressed = response.is_pointer_button_down_on();
-        let is_hovered = response.hovered();
-        let is_focused = response.has_focus();
-
-        // M3 Color Roles - Switch States
-        let primary = get_global_color("primary"); // Track when on
-        let on_primary = get_global_color("onPrimary"); // Thumb when on (default)
-        let primary_container = get_global_color("primaryContainer"); // Thumb when on (hover/press/focus)
-        let on_primary_container = get_global_color("onPrimaryContainer"); // Icon on thumb when on
-        let surface_container_highest = get_global_color("surfaceContainerHighest"); // Track when off, icon when off
-        let on_surface = get_global_color("onSurface"); // Text label, disabled elements, state layers
-        let on_surface_variant = get_global_color("onSurfaceVariant"); // Thumb when off (hover/press/focus)
-        let outline = get_global_color("outline"); // Thumb when off (default), track outline
-
-        // Calculate switch area
-        let switch_rect = Rect::from_min_size(
-            Pos2::new(rect.min.x, rect.center().y - switch_height / 2.0),
-            Vec2::new(switch_width, switch_height),
+        let selected = *self.selected;
+        crate::a11y::toggle(
+            &response,
+            egui::Role::Switch,
+            self.enabled,
+            self.text.as_deref().unwrap_or_default(),
+            selected,
         );
 
-        let track_rect =
-            Rect::from_center_size(switch_rect.center(), Vec2::new(switch_width, track_height));
-
-        // M3 thumb sizing: 16dp off (no icon), 24dp on or with icon, 28dp pressed
-        let has_icon = if *self.selected {
-            self.selected_icon.is_some()
-        } else {
-            self.unselected_icon.is_some()
-        };
-
-        let base_thumb_size_on = 24.0;
-        let base_thumb_size_off = if has_icon { 24.0 } else { 16.0 };
-        let pressed_thumb_size = 28.0;
-
-        let thumb_size = if is_pressed {
-            pressed_thumb_size
-        } else if *self.selected {
-            base_thumb_size_on
-        } else {
-            base_thumb_size_off
-        };
-
-        let thumb_travel = switch_width - base_thumb_size_on - 4.0;
-        let thumb_x = if *self.selected {
-            switch_rect.min.x + 2.0 + thumb_travel
-        } else {
-            switch_rect.min.x + 2.0
-        };
-
-        let thumb_center = Pos2::new(thumb_x + thumb_size / 2.0, switch_rect.center().y);
-
-        // M3 color resolution based on state
-        let (track_color, thumb_color, track_outline_color, icon_color) = if !self.enabled {
-            // Disabled state (M3 spec)
-            let disabled_track = if *self.selected {
-                // Disabled on: onSurface @ 12% track
-                on_surface.linear_multiply(0.12)
-            } else {
-                // Disabled off: surfaceContainerHighest @ 12% track
-                surface_container_highest.linear_multiply(0.12)
-            };
-            let disabled_thumb = if *self.selected {
-                // Disabled on: onSurface @ 100% thumb
-                on_surface
-            } else {
-                // Disabled off: onSurface @ 38% thumb
-                on_surface.linear_multiply(0.38)
-            };
-            let disabled_outline = on_surface.linear_multiply(0.12); // Disabled outline @ 12%
-            let disabled_icon = if *self.selected {
-                // Disabled on: onSurface @ 38% icon
-                on_surface.linear_multiply(0.38)
-            } else {
-                // Disabled off: surfaceContainerHighest @ 38% icon
-                surface_container_highest.linear_multiply(0.38)
-            };
-            (
-                disabled_track,
-                disabled_thumb,
-                disabled_outline,
-                disabled_icon,
-            )
-        } else if *self.selected {
-            // Selected (on) state: primary track, onPrimary/primaryContainer thumb
-            let track = primary; // Track uses primary when on
-            let thumb = if is_pressed || is_hovered || is_focused {
-                primary_container // Thumb uses primaryContainer on interaction
-            } else {
-                on_primary // Thumb uses onPrimary in default state
-            };
-            let track_outline = Color32::TRANSPARENT; // No outline when on
-            let icon = on_primary_container; // Icon uses onPrimaryContainer when on
-            (track, thumb, track_outline, icon)
-        } else {
-            // Unselected (off) state: surfaceContainerHighest track, outline/onSurfaceVariant thumb
-            let track = surface_container_highest; // Track uses surfaceContainerHighest when off
-            let thumb = if is_pressed || is_hovered || is_focused {
-                on_surface_variant // Thumb uses onSurfaceVariant on interaction
-            } else {
-                outline // Thumb uses outline in default state
-            };
-            let track_outline = outline; // Track outline uses outline (2dp stroke) when off
-            let icon = surface_container_highest; // Icon uses surfaceContainerHighest when off
-            (track, thumb, track_outline, icon)
-        };
-
-        // Draw track
-        ui.painter()
-            .rect_filled(track_rect, track_height / 2.0, track_color);
-
-        // Draw track outline (Material 3)
-        if self.show_track_outline && track_outline_color != Color32::TRANSPARENT {
-            ui.painter().rect_stroke(
-                track_rect,
-                track_height / 2.0,
-                Stroke::new(2.0, track_outline_color),
-                StrokeKind::Outside,
-            );
-        }
-
-        // M3 state layer (ripple/overlay effect) - 40dp diameter touch target
-        if self.enabled {
-            let overlay_radius = 20.0; // 40dp diameter / 2
-            let overlay_color = if *self.selected {
-                // Selected state layers: primary color
-                if is_pressed || is_focused {
-                    // Press/focus state: 10% opacity (M3 interaction state)
-                    primary.linear_multiply(0.10)
-                } else if is_hovered {
-                    // Hover state: 8% opacity (M3 interaction state)
-                    primary.linear_multiply(0.08)
-                } else {
-                    Color32::TRANSPARENT
-                }
-            } else {
-                // Unselected state layers: onSurface color
-                if is_pressed || is_focused {
-                    // Press/focus state: 10% opacity (M3 interaction state)
-                    on_surface.linear_multiply(0.10)
-                } else if is_hovered {
-                    // Hover state: 8% opacity (M3 interaction state)
-                    on_surface.linear_multiply(0.08)
-                } else {
-                    Color32::TRANSPARENT
-                }
-            };
-
-            if overlay_color != Color32::TRANSPARENT {
-                ui.painter()
-                    .circle_filled(thumb_center, overlay_radius, overlay_color);
-            }
-        }
-
-        // Draw thumb
-        ui.painter()
-            .circle_filled(thumb_center, thumb_size / 2.0, thumb_color);
-
-        // Draw icon on thumb if present
-        let current_icon = if *self.selected {
+        let interaction = InteractionState::from_response(&response);
+        let active = interaction.hovered || interaction.focused || interaction.pressed;
+        let icon = if selected {
             self.selected_icon
         } else {
             self.unselected_icon
         };
 
-        if let Some(icon) = current_icon {
-            let icon_size = 16.0;
-            let icon_font = FontId::proportional(icon_size);
+        // Position and size both follow the fast spatial spring.
+        let spring = theme.motion.spatial(SpringSpeed::Fast);
+        let ctx = ui.ctx().clone();
+        let progress = animate_value_with_spring(
+            &ctx,
+            response.id.with("thumb_position"),
+            if selected { 1.0 } else { 0.0 },
+            spring,
+        );
+        let target_size = if interaction.pressed {
+            PRESSED_HANDLE_SIZE
+        } else if selected || icon.is_some() {
+            SELECTED_HANDLE_SIZE
+        } else {
+            UNSELECTED_HANDLE_SIZE
+        };
+        let handle_size =
+            animate_value_with_spring(&ctx, response.id.with("thumb_size"), target_size, spring);
 
-            ui.painter().text(
+        let track_rect = Rect::from_min_size(
+            Pos2::new(rect.min.x, rect.center().y - TRACK_HEIGHT / 2.0),
+            Vec2::new(TRACK_WIDTH, TRACK_HEIGHT),
+        );
+        let (start, end) = match theme.layout_direction {
+            crate::tokens::LayoutDirection::Ltr => (
+                track_rect.min.x + THUMB_CENTER_OFF,
+                track_rect.min.x + THUMB_CENTER_ON,
+            ),
+            crate::tokens::LayoutDirection::Rtl => (
+                track_rect.max.x - THUMB_CENTER_OFF,
+                track_rect.max.x - THUMB_CENTER_ON,
+            ),
+        };
+        let thumb_center = Pos2::new(start + (end - start) * progress, track_rect.center().y);
+
+        let off = colors(&theme, false, self.enabled, active);
+        let on = colors(&theme, true, self.enabled, active);
+        let t = progress.clamp(0.0, 1.0);
+        let mix = |a: Color32, b: Color32| a.lerp_to_gamma(b, t);
+        let track = mix(off.track, on.track);
+        let outline = mix(off.outline, on.outline);
+        let handle = mix(off.handle, on.handle);
+        let icon_color = if selected { on.icon } else { off.icon };
+
+        let painter = ui.painter();
+        let track_corner = full_corner(TRACK_HEIGHT);
+        painter.rect_filled(track_rect, track_corner, track);
+        if self.show_track_outline && outline.a() > 0 {
+            painter.rect_stroke(
+                track_rect,
+                track_corner,
+                Stroke::new(TRACK_OUTLINE_WIDTH, outline),
+                StrokeKind::Inside,
+            );
+        }
+
+        let layer_color = if selected {
+            theme.color(ColorRole::Primary)
+        } else {
+            theme.color(ColorRole::OnSurface)
+        };
+        crate::paint::paint_state_layer(
+            painter,
+            Rect::from_center_size(thumb_center, Vec2::splat(STATE_LAYER_SIZE)),
+            full_corner(STATE_LAYER_SIZE),
+            layer_color,
+            interaction,
+        );
+
+        painter.circle_filled(thumb_center, handle_size / 2.0, handle);
+        if let Some(icon) = icon {
+            painter.text(
                 thumb_center,
                 egui::Align2::CENTER_CENTER,
                 icon.to_string(),
-                icon_font,
+                FontId::proportional(ICON_SIZE),
                 icon_color,
             );
         }
 
-        // Draw label text
-        if let Some(ref text) = self.text {
-            let text_pos = Pos2::new(switch_rect.max.x + 8.0, rect.center().y);
+        focus_ring(painter, &theme, &response, track_rect, TRACK_HEIGHT);
 
-            // Label text: onSurface for enabled, onSurface @ 38% for disabled (M3 spec)
-            let text_color = if self.enabled {
-                on_surface
-            } else {
-                on_surface.linear_multiply(0.38)
-            };
-
-            ui.painter().text(
-                text_pos,
-                egui::Align2::LEFT_CENTER,
-                text,
-                egui::FontId::default(),
-                text_color,
+        if let Some(galley) = galley {
+            let pos = Pos2::new(
+                track_rect.max.x + LABEL_GAP,
+                rect.center().y - galley.size().y / 2.0,
             );
+            painter.galley(pos, galley, text_color);
         }
 
         response
     }
 }
 
+/// Shorthand for [`MaterialSwitch::new`].
 pub fn switch(selected: &mut bool) -> MaterialSwitch<'_> {
     MaterialSwitch::new(selected)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn thumb_centres_match_compose() {
+        assert_eq!(THUMB_CENTER_OFF, 16.0, "off thumb centre");
+        assert_eq!(THUMB_CENTER_ON, 36.0, "on thumb centre");
+    }
 }

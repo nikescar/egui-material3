@@ -276,7 +276,7 @@ impl<'a> Widget for MaterialToolbar<'a> {
 
         // Determine background color based on position, elevation, and M3 guidelines
         // M3 uses surface container levels to create visual hierarchy without relying on shadows
-        let bg_color = self.bg_color.unwrap_or_else(|| {
+        let bg_color = self.bg_color.unwrap_or({
             // If elevation is explicitly set, use it to determine surface container
             if let Some(elev) = self.elevation {
                 match elev {

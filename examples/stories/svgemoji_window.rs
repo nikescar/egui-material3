@@ -18,8 +18,9 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
 #[cfg(feature = "svg_emoji")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 enum CollectionKind {
+    #[default]
     Solar,
     Noto,
     Twemoji,
@@ -49,6 +50,7 @@ impl CollectionKind {
 }
 
 #[doc(hidden)]
+#[derive(Default)]
 pub struct SvgEmojiWindow {
     pub open: bool,
     #[cfg(feature = "svg_emoji")]
@@ -70,28 +72,6 @@ pub struct SvgEmojiWindow {
     #[cfg(feature = "svg_emoji")]
     /// Pinned item name (stays open on click until another item is hovered)
     pinned_item: Option<String>,
-}
-
-impl Default for SvgEmojiWindow {
-    fn default() -> Self {
-        #[cfg(feature = "svg_emoji")]
-        {
-            Self {
-                open: false,
-                active_kind: CollectionKind::Solar,
-                filter: String::new(),
-                svg_textures: HashMap::new(),
-                cached_kind: None,
-                all_icons: Vec::new(),
-                filter_selected_1: false,
-                pinned_item: None,
-            }
-        }
-        #[cfg(not(feature = "svg_emoji"))]
-        {
-            Self { open: false }
-        }
-    }
 }
 
 impl SvgEmojiWindow {

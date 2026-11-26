@@ -160,11 +160,13 @@ impl RadioWindow {
 
     fn render_radio_groups(&mut self, ui: &mut egui::Ui) {
         ui.heading("Radio Groups with Enums");
+        ui.label("Each group is one Tab stop; the arrow keys move the selection.");
 
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label("Animals:");
                 let mut animals_group = radio_group(&mut self.animals_selected)
+                    .id_salt("animals")
                     .option(Animal::Birds, "Birds")
                     .option(Animal::Cats, "Cats")
                     .option(Animal::Dogs, "Dogs");
@@ -181,6 +183,7 @@ impl RadioWindow {
             ui.vertical(|ui| {
                 ui.label("Music Genres:");
                 let mut music_group = radio_group(&mut self.music_selected)
+                    .id_salt("music")
                     .option(MusicGenre::Rock, "Rock")
                     .option(MusicGenre::Jazz, "Jazz")
                     .option(MusicGenre::Classical, "Classical")
