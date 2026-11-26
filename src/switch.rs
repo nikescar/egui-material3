@@ -40,6 +40,7 @@ use egui::{
 ///
 /// ## Usage Examples
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut wifi_enabled = false;
 /// let mut bluetooth_enabled = true;

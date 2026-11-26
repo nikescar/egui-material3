@@ -38,6 +38,7 @@ use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget}
 ///
 /// ## Usage Examples
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut checked = false;
 ///

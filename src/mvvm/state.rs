@@ -107,15 +107,12 @@ impl<T: Clone + Default> Default for ValState<T> {
 /// });
 ///
 /// // Read the value
-/// let name = smol::block_on(async {
-///     state.with(|user| user.name.clone()).await
-/// });
+/// let name = state.with(|user| user.name.clone());
 /// assert_eq!(name, "Alice");
 ///
 /// // Update the value
-/// smol::block_on(async {
-///     state.update(|user| user.age += 1).await;
-/// });
+/// state.update(|user| user.age += 1);
+/// assert_eq!(state.with(|user| user.age), 31);
 /// ```
 #[derive(Clone, Debug)]
 pub struct RefState<T> {

@@ -248,7 +248,7 @@ impl SymbolWindow {
         // List with material symbol icons
         ui.label("List:");
         let symbol_list = MaterialList::new()
-            .id("material_symbol_list")
+            .id(egui::Id::unique("material_symbol_list"))
             .item(
                 ListItem::new("Home")
                     .leading_icon("home")

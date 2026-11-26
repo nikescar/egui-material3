@@ -46,6 +46,8 @@ pub enum ProgressVariant {
 ///
 /// ## Usage Examples
 /// ```rust
+/// # use egui::{Color32, Vec2};
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// // Linear progress with value
 /// ui.add(MaterialProgress::linear()

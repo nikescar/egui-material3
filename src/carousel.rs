@@ -19,6 +19,7 @@ use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
 ///
 /// # Example
 /// ```rust,no_run
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut offset = 0.0f32;
 /// ui.add(MaterialCarousel::new(&mut offset)
@@ -301,6 +302,7 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
 ///
 /// # Example
 /// ```rust,no_run
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut offset = 0.0f32;
 /// ui.add(carousel(&mut offset)

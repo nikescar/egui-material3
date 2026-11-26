@@ -78,6 +78,7 @@ pub enum IconType {
 ///
 /// ## Usage Examples
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// // Assist chip - helps users with contextual actions
 /// if ui.add(MaterialChip::assist("Settings")).clicked() {
@@ -86,8 +87,7 @@ pub enum IconType {
 ///
 /// // Filter chip - for filtering content
 /// let mut filter_active = false;
-/// ui.add(MaterialChip::filter("Photos")
-///     .selected(&mut filter_active));
+/// ui.add(MaterialChip::filter("Photos", &mut filter_active));
 ///
 /// // Input chip - represents entered data
 /// ui.add(MaterialChip::input("john@example.com")

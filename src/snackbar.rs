@@ -39,6 +39,7 @@ pub enum SnackBarBehavior {
 /// They inform users of a process that an app has performed or will perform.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut snackbar_visible = true;
 /// let mut snackbar = MaterialSnackbar::new("File deleted successfully")
@@ -83,6 +84,7 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let snackbar = MaterialSnackbar::new("File saved successfully");
     /// # });
@@ -117,6 +119,7 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let snackbar = MaterialSnackbar::new("File deleted")
     ///     .action("Undo", || println!("Undo action performed"));
@@ -139,6 +142,7 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// use std::time::Duration;
     /// # egui::__run_test_ui(|ui| {
     /// // Auto-dismiss after 6 seconds
@@ -162,6 +166,7 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let snackbar = MaterialSnackbar::new("Top notification")
     ///     .position(SnackbarPosition::Top);
@@ -179,6 +184,7 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let snackbar = MaterialSnackbar::new("Rounded snackbar")
     ///     .corner_radius(8.0);
@@ -196,9 +202,15 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// use egui::epaint::Shadow;
-    /// let shadow = Shadow::small_dark();
+    /// let shadow = Shadow {
+    ///     offset: [0, 2],
+    ///     blur: 8,
+    ///     spread: 0,
+    ///     color: egui::Color32::from_black_alpha(60),
+    /// };
     /// let snackbar = MaterialSnackbar::new("Elevated snackbar")
     ///     .elevation(shadow);
     /// # });
@@ -296,6 +308,7 @@ impl<'a> MaterialSnackbar<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut show_notification = true;
     /// let snackbar = MaterialSnackbar::new("Conditional message")

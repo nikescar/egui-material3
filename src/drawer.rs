@@ -19,7 +19,7 @@ use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Stroke},
-    pos2, Area, Id, Order, Rect, Response, Sense, SidePanel, Ui, Vec2, Widget,
+    pos2, Area, Id, Order, Rect, Response, Sense, Ui, Vec2, Widget,
 };
 
 /// Material Design navigation drawer variants.
@@ -197,7 +197,7 @@ impl DrawerHeader {
             );
         }
 
-        ui.interact(rect, ui.id().with("drawer_header"), Sense::hover())
+        ui.interact(rect, ui.scope_id().with("drawer_header"), Sense::hover())
     }
 }
 
@@ -207,6 +207,7 @@ impl DrawerHeader {
 /// They can be permanently on-screen or controlled by navigation triggers.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut drawer_open = true;
 ///
@@ -216,7 +217,7 @@ impl DrawerHeader {
 ///     .item("Sent", Some("send"), false)
 ///     .item("Drafts", Some("drafts"), false);
 ///
-/// drawer.show(ui.ctx());
+/// drawer.show(ui);
 /// # });
 /// ```
 pub struct MaterialDrawer<'a> {
@@ -298,7 +299,7 @@ impl DrawerItem {
 impl<'a> MaterialDrawer<'a> {
     /// Create a new navigation drawer with Material 3 defaults.
     pub fn new(variant: DrawerVariant, open: &'a mut bool) -> Self {
-        let id = Id::new(format!("material_drawer_{:?}", variant));
+        let id = Id::unique(format!("material_drawer_{:?}", variant));
         let theme = DrawerThemeData::material3_defaults();
         let width = theme.width.unwrap_or(360.0);
         let corner_radius = theme.shape.unwrap_or(CornerRadius::same(16));
@@ -511,34 +512,39 @@ impl<'a> MaterialDrawer<'a> {
     }
 
     /// Show the drawer using appropriate egui layout.
-    pub fn show(self, ctx: &egui::Context) -> Response {
+    ///
+    /// Permanent and dismissible drawers are shown as a left [`egui::Panel`]
+    /// inside `ui` (typically the root `Ui` passed to `eframe::App::ui`);
+    /// modal drawers are shown as overlay areas.
+    pub fn show(self, ui: &mut Ui) -> Response {
         match self.variant {
-            DrawerVariant::Permanent => self.show_permanent(ctx),
-            DrawerVariant::Dismissible => self.show_dismissible(ctx),
-            DrawerVariant::Modal => self.show_modal(ctx),
+            DrawerVariant::Permanent => self.show_permanent(ui),
+            DrawerVariant::Dismissible => self.show_dismissible(ui),
+            DrawerVariant::Modal => self.show_modal(ui.ctx()),
         }
     }
 
-    fn show_permanent(self, ctx: &egui::Context) -> Response {
-        SidePanel::left(self.id.with("permanent"))
-            .default_width(self.width)
+    fn show_permanent(self, ui: &mut Ui) -> Response {
+        egui::Panel::left(self.id.with("permanent"))
+            .default_size(self.width)
             .resizable(false)
-            .show(ctx, |ui| self.render_drawer_content(ui))
+            .show(ui, |ui| self.render_drawer_content(ui))
             .response
     }
 
-    fn show_dismissible(self, ctx: &egui::Context) -> Response {
+    fn show_dismissible(self, ui: &mut Ui) -> Response {
+        let ctx = ui.ctx().clone();
         if *self.open {
-            SidePanel::left(self.id.with("dismissible"))
-                .default_width(self.width)
+            egui::Panel::left(self.id.with("dismissible"))
+                .default_size(self.width)
                 .resizable(false)
-                .show(ctx, |ui| self.render_drawer_content(ui))
+                .show(ui, |ui| self.render_drawer_content(ui))
                 .response
         } else {
             // Return empty response when closed
             Area::new(self.id.with("dismissible_dummy"))
                 .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
-                .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
+                .show(&ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
                 .response
         }
     }

@@ -72,24 +72,25 @@ pub enum FabSize {
 ///
 /// ## Usage Examples
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// // Primary FAB with add icon
 /// ui.add(MaterialFab::primary()
 ///     .icon("add")
-///     .action(|| println!("Add clicked")));
+///     .on_click(|| println!("Add clicked")));
 ///
 /// // Extended FAB with text
 /// ui.add(MaterialFab::primary()
 ///     .size(FabSize::Extended)
 ///     .icon("edit")
 ///     .text("Compose")
-///     .action(|| println!("Compose clicked")));
+///     .on_click(|| println!("Compose clicked")));
 ///
 /// // Large FAB for prominent action
 /// ui.add(MaterialFab::primary()
 ///     .size(FabSize::Large)
 ///     .icon("camera")
-///     .action(|| println!("Camera clicked")));
+///     .on_click(|| println!("Camera clicked")));
 /// # });
 /// ```
 ///

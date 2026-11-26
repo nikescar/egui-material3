@@ -22,6 +22,7 @@
 //!     load_fonts, load_themes, update_window_background
 //! };
 //!
+//! # let egui_ctx = egui::Context::default();
 //! // Setup fonts and themes (typically during app initialization)
 //! setup_google_fonts(Some("Roboto"));
 //! setup_local_fonts(Some("path/to/MaterialSymbols.ttf"));
@@ -29,7 +30,7 @@
 //!
 //! // Load prepared fonts and themes (accepts both &egui::Context and egui::Context)
 //! load_fonts(&egui_ctx);  // With reference
-//! load_fonts(egui_ctx);   // With owned context  
+//! load_fonts(egui_ctx.clone()); // With owned context
 //! load_themes();
 //!
 //! // Apply theme background (also flexible with context types)
@@ -1285,6 +1286,7 @@ pub fn get_global_theme() -> Arc<Mutex<MaterialThemeContext>> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// let mut theme_context = MaterialThemeContext::default();
 /// theme_context.theme_mode = ThemeMode::Dark;
 /// theme_context.contrast_level = ContrastLevel::High;
@@ -1344,6 +1346,7 @@ pub fn setup_local_fonts_from_bytes(font_name: &str, font_data: &[u8]) {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::theme::setup_local_theme;
 /// // Use build-time included themes (recommended for production)
 /// setup_local_theme(None);
 ///
@@ -1371,6 +1374,7 @@ pub fn setup_local_theme(theme_path: Option<&str>) {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::theme::{load_themes, setup_local_theme};
 /// // Setup and load themes during app initialization
 /// setup_local_theme(Some("resources/my-theme.json"));
 /// load_themes();  // Apply the prepared theme globally
@@ -1397,10 +1401,10 @@ pub fn load_themes() {
 /// - `Err(String)` with an error message if parsing or loading failed
 ///
 /// # Example
-/// ```rust,no_run
+/// ```rust
 /// use egui_material3::theme::load_theme_from_json_str;
 ///
-/// const MY_THEME: &str = include_str!("../resources/my-theme.json");
+/// const MY_THEME: &str = include_str!("../resources/material-theme1.json");
 ///
 /// // Load the theme
 /// if let Err(e) = load_theme_from_json_str(MY_THEME) {
@@ -1474,16 +1478,22 @@ pub fn load_fonts<C: ContextRef>(ctx: C) {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::theme::{load_themes, setup_local_theme, update_window_background};
 /// // During app initialization in eframe::run_native
+/// # fn init(cc: &eframe::CreationContext<'_>) {
 /// setup_local_theme(Some("my-theme.json"));
 /// load_themes();
 /// update_window_background(&cc.egui_ctx);  // Apply initial background
+/// # }
 ///
 /// // When theme settings change at runtime
+/// # struct MyApp;
+/// # impl MyApp {
 /// fn change_theme_mode(&mut self, ctx: &egui::Context) {
 ///     // Update theme mode in global context...
 ///     update_window_background(ctx);  // Apply new background
 /// }
+/// # }
 /// ```
 ///
 /// # Effects
@@ -1497,7 +1507,7 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         // Resolve Auto mode to actual mode based on context
         let mut resolved_theme = theme.clone();
         if resolved_theme.theme_mode == ThemeMode::Auto {
-            if ctx.style().visuals.dark_mode {
+            if ctx.global_style().visuals.dark_mode {
                 resolved_theme.theme_mode = ThemeMode::Dark;
             } else {
                 resolved_theme.theme_mode = ThemeMode::Light;
@@ -1525,14 +1535,14 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         };
 
         // Apply the background color to the context
-        let mut visuals = ctx.style().visuals.clone();
+        let mut visuals = ctx.global_style().visuals.clone();
         visuals.window_fill = background_color;
         visuals.panel_fill = background_color;
         visuals.extreme_bg_color = background_color;
 
-        let mut style = (*ctx.style()).clone();
+        let mut style = (*ctx.global_style()).clone();
         style.visuals = visuals;
-        ctx.set_style(style);
+        ctx.set_global_style(style);
     }
 }
 
@@ -1640,8 +1650,9 @@ pub fn detect_os_theme() -> ThemeMode {
 /// ```rust,no_run
 /// use egui_material3::theme::{apply_theme, ThemeMode};
 ///
+/// # let egui_ctx = egui::Context::default();
 /// // Use default OS theme detection
-/// apply_theme(&egui_ctx, None);
+/// apply_theme(&egui_ctx, None::<fn() -> ThemeMode>);
 ///
 /// // Provide custom theme detection (e.g., for Android)
 /// apply_theme(&egui_ctx, Some(|| {

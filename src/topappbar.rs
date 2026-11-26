@@ -53,6 +53,7 @@ pub enum TopAppBarVariant {
 ///
 /// Using icon names:
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let top_bar = MaterialTopAppBar::regular("My App")
 ///     .navigation_icon("menu", || println!("Menu clicked!"))
@@ -66,6 +67,7 @@ pub enum TopAppBarVariant {
 /// Using material symbol constants:
 /// ```
 /// # egui::__run_test_ui(|ui| {
+/// use egui_material3::MaterialTopAppBar;
 /// use egui_material3::material_symbol::{ICON_MENU, ICON_SEARCH, ICON_MORE_VERT};
 ///
 /// let top_bar = MaterialTopAppBar::regular("My App")
@@ -336,9 +338,9 @@ impl Widget for MaterialTopAppBar<'_> {
                     Rect::from_min_size(egui::pos2(left_x, icon_y), Vec2::splat(icon_total_size));
 
                 let nav_id = if let Some(ref salt) = id_salt {
-                    egui::Id::new((salt, "nav_icon"))
+                    egui::Id::unique((salt, "nav_icon"))
                 } else {
-                    egui::Id::new(("top_app_bar_nav", &title))
+                    egui::Id::unique(("top_app_bar_nav", &title))
                 };
                 let nav_response = ui.interact(nav_rect, nav_id, Sense::click());
 
@@ -444,9 +446,9 @@ impl Widget for MaterialTopAppBar<'_> {
                     Rect::from_min_size(egui::pos2(right_x, icon_y), Vec2::splat(icon_total_size));
 
                 let action_id = if let Some(ref salt) = id_salt {
-                    egui::Id::new((salt, "action_icon", action_index))
+                    egui::Id::unique((salt, "action_icon", action_index))
                 } else {
-                    egui::Id::new(("top_app_bar_action", &title, action_index))
+                    egui::Id::unique(("top_app_bar_action", &title, action_index))
                 };
                 let action_response = ui.interact(action_rect, action_id, Sense::click());
 

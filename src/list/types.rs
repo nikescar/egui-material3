@@ -85,6 +85,7 @@ impl Default for VisualDensity {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let list = MaterialList::new()
 ///     .item(ListItem::new("Inbox")
@@ -126,6 +127,7 @@ pub struct MaterialListState {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// let item = ListItem::new("Primary Text")
 ///     .secondary_text("Secondary supporting text")
 ///     .leading_icon("person")
