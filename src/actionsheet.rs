@@ -226,7 +226,6 @@ impl<'a> MaterialActionSheet<'a> {
         }
 
         // Draw action sheet
-        let open_ptr = self.open as *mut bool;
         Area::new(self.id.with("sheet"))
             .order(Order::Foreground)
             .anchor(egui::Align2::CENTER_BOTTOM, Vec2::new(0.0, 0.0))
@@ -234,14 +233,12 @@ impl<'a> MaterialActionSheet<'a> {
                 let width = self.max_width.min(screen_rect.width());
                 ui.set_width(width);
 
-                // SAFETY: We're only using this pointer within this closure
-                // and it doesn't outlive the mutable borrow
-                unsafe { self.render_content(ui, &mut *open_ptr) }
+                self.render_content(ui)
             })
             .response
     }
 
-    fn render_content(self, ui: &mut Ui, open: &'a mut bool) -> Response {
+    fn render_content(self, ui: &mut Ui) -> Response {
         let background_color = get_global_color("surfaceContainer");
         let corner_radius = CornerRadius {
             nw: 16,
@@ -345,7 +342,7 @@ impl<'a> MaterialActionSheet<'a> {
 
                 // Handle click
                 if button_response.clicked() && button.enabled {
-                    *open = false;
+                    *self.open = false;
                     if let Some(callback) = button.on_click.take() {
                         callbacks_to_execute.push(callback);
                     }
