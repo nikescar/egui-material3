@@ -475,7 +475,10 @@ impl<'a> MaterialDialog<'a> {
         let title = self.title.clone();
         let icon = self.icon.clone();
         let actions = std::mem::take(&mut self.actions);
-        let open_ref = self.open as *mut bool;
+        // Move the content callback and the open flag out of `self`, so the
+        // modal closure can borrow `open` while `self.id` is still readable.
+        let content = self.content;
+        let open = self.open;
 
         let title_padding = self.title_padding;
         let content_padding = self.content_padding;
@@ -588,9 +591,7 @@ impl<'a> MaterialDialog<'a> {
                                         if content_top > 0.0 {
                                             ui.add_space(content_top);
                                         }
-                                        unsafe {
-                                            (self.content)(ui, &mut *open_ref);
-                                        }
+                                        content(ui, open);
                                     });
                             },
                         );
@@ -608,9 +609,7 @@ impl<'a> MaterialDialog<'a> {
                             if content_top > 0.0 {
                                 ui.add_space(content_top);
                             }
-                            unsafe {
-                                (self.content)(ui, &mut *open_ref);
-                            }
+                            content(ui, open);
                             // Don't consume remaining vertical space - let content size naturally
                         });
                         ui.add_space(content_right);
@@ -664,9 +663,7 @@ impl<'a> MaterialDialog<'a> {
 
         // Handle modal close events (escape key, click outside, etc.)
         if modal.should_close() || should_close {
-            unsafe {
-                *open_ref = false;
-            }
+            *open = false;
         }
     }
 
