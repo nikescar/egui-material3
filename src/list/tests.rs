@@ -55,7 +55,9 @@ mod tests {
             .id(egui::Id::unique("test_multiline_trailing"))
             .item(
                 ListItem::new("Design mockups")
-                    .secondary_text("Create wireframes\nDesign high-fidelity mockups\nGet stakeholder approval")
+                    .secondary_text(
+                        "Create wireframes\nDesign high-fidelity mockups\nGet stakeholder approval",
+                    )
                     .leading_icon("article".to_string())
                     .trailing_widget(|ui| {
                         ui.horizontal(|ui| {
@@ -126,6 +128,9 @@ mod tests {
         let secondary_lines = item.secondary_text.as_ref().unwrap().split('\n').count();
         let total_text_lines = 1 + 1 + secondary_lines; // overline + primary + secondary
 
-        assert_eq!(total_text_lines, 4, "Should have 4 text lines (overline + primary + 2 secondary)");
+        assert_eq!(
+            total_text_lines, 4,
+            "Should have 4 text lines (overline + primary + 2 secondary)"
+        );
     }
 }

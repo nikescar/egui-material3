@@ -83,7 +83,10 @@ impl ChipsWindow {
                             let ext_lower = ext.to_lowercase();
                             if ext_lower == "ttf" || ext_lower == "otf" {
                                 if let Some(name) = path.file_stem().and_then(|n| n.to_str()) {
-                                    fonts.push((name.to_string(), path.to_string_lossy().to_string()));
+                                    fonts.push((
+                                        name.to_string(),
+                                        path.to_string_lossy().to_string(),
+                                    ));
                                     dir_font_count += 1;
                                 }
                             }
@@ -93,7 +96,8 @@ impl ChipsWindow {
                             if let Ok(sub_entries) = std::fs::read_dir(&path) {
                                 for sub_entry in sub_entries.flatten() {
                                     let sub_path = sub_entry.path();
-                                    if let Some(ext) = sub_path.extension().and_then(|e| e.to_str()) {
+                                    if let Some(ext) = sub_path.extension().and_then(|e| e.to_str())
+                                    {
                                         let ext_lower = ext.to_lowercase();
                                         if ext_lower == "ttf" || ext_lower == "otf" {
                                             if let Some(name) =

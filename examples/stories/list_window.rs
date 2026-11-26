@@ -1118,32 +1118,36 @@ impl ListWindow {
         let save_clicked = Arc::new(Mutex::new(false));
         let save_clone = Arc::clone(&save_clicked);
 
-        dialog(egui::Id::unique("edit_item_dialog"), "Edit Item", &mut self.edit_dialog_open)
-            .max_width(560.0)
-            .content(|ui, _open| {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Title:");
-                        ui.text_edit_singleline(&mut self.edit_title);
-                    });
-                    ui.add_space(8.0);
-                    ui.horizontal(|ui| {
-                        ui.label("Description:");
-                        ui.add(
-                            egui::TextEdit::multiline(&mut self.edit_description)
-                                .desired_width(f32::INFINITY)
-                                .desired_rows(3),
-                        );
-                    });
+        dialog(
+            egui::Id::unique("edit_item_dialog"),
+            "Edit Item",
+            &mut self.edit_dialog_open,
+        )
+        .max_width(560.0)
+        .content(|ui, _open| {
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Title:");
+                    ui.text_edit_singleline(&mut self.edit_title);
                 });
-            })
-            .action("Cancel", || {})
-            .primary_action("Save", move || {
-                if let Ok(mut clicked) = save_clone.lock() {
-                    *clicked = true;
-                }
-            })
-            .show(ctx);
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    ui.label("Description:");
+                    ui.add(
+                        egui::TextEdit::multiline(&mut self.edit_description)
+                            .desired_width(f32::INFINITY)
+                            .desired_rows(3),
+                    );
+                });
+            });
+        })
+        .action("Cancel", || {})
+        .primary_action("Save", move || {
+            if let Ok(mut clicked) = save_clone.lock() {
+                *clicked = true;
+            }
+        })
+        .show(ctx);
 
         // Commit changes only if Save was clicked
         if was_open && !self.edit_dialog_open {
@@ -1216,14 +1220,16 @@ impl ListWindow {
 
         let list_id = "editable_drawer_list";
         let state = ui
-            .data_mut(|d| d.get_persisted::<egui_material3::MaterialListState>(
-                egui::Id::unique(list_id)
-            ))
+            .data_mut(|d| {
+                d.get_persisted::<egui_material3::MaterialListState>(egui::Id::unique(list_id))
+            })
             .unwrap_or_default();
 
         let action_signal: Arc<Mutex<Option<ListAction>>> = Arc::new(Mutex::new(None));
 
-        let mut list = MaterialList::new().id(egui::Id::unique(list_id)).allow_drawer(true);
+        let mut list = MaterialList::new()
+            .id(egui::Id::unique(list_id))
+            .allow_drawer(true);
 
         for (index, item) in self.editable_drawer_items.iter().enumerate() {
             let action_clone = Arc::clone(&action_signal);
@@ -1325,37 +1331,41 @@ impl ListWindow {
         let save_clicked = Arc::new(Mutex::new(false));
         let save_clone = Arc::clone(&save_clicked);
 
-        dialog(egui::Id::unique("edit_drawer_dialog"), "Edit Department", &mut self.edit_drawer_dialog_open)
-            .max_width(560.0)
-            .content(|ui, _open| {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Department:");
-                        ui.text_edit_singleline(&mut self.edit_drawer_department);
-                    });
-                    ui.add_space(8.0);
-                    ui.horizontal(|ui| {
-                        ui.label("Title:");
-                        ui.text_edit_singleline(&mut self.edit_drawer_title);
-                    });
-                    ui.add_space(8.0);
-                    ui.horizontal(|ui| {
-                        ui.label("Description:");
-                        ui.add(
-                            egui::TextEdit::multiline(&mut self.edit_drawer_description)
-                                .desired_width(f32::INFINITY)
-                                .desired_rows(3),
-                        );
-                    });
+        dialog(
+            egui::Id::unique("edit_drawer_dialog"),
+            "Edit Department",
+            &mut self.edit_drawer_dialog_open,
+        )
+        .max_width(560.0)
+        .content(|ui, _open| {
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Department:");
+                    ui.text_edit_singleline(&mut self.edit_drawer_department);
                 });
-            })
-            .action("Cancel", || {})
-            .primary_action("Save", move || {
-                if let Ok(mut clicked) = save_clone.lock() {
-                    *clicked = true;
-                }
-            })
-            .show(ctx);
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    ui.label("Title:");
+                    ui.text_edit_singleline(&mut self.edit_drawer_title);
+                });
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    ui.label("Description:");
+                    ui.add(
+                        egui::TextEdit::multiline(&mut self.edit_drawer_description)
+                            .desired_width(f32::INFINITY)
+                            .desired_rows(3),
+                    );
+                });
+            });
+        })
+        .action("Cancel", || {})
+        .primary_action("Save", move || {
+            if let Ok(mut clicked) = save_clone.lock() {
+                *clicked = true;
+            }
+        })
+        .show(ctx);
 
         // Commit changes only if Save was clicked
         if was_open && !self.edit_drawer_dialog_open {
