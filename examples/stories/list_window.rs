@@ -221,7 +221,7 @@ impl ListWindow {
     fn render_standard_list(&mut self, ui: &mut egui::Ui) {
         ui.heading("Standard List");
 
-        let mut single_line_list = MaterialList::new().id("standard_list_main");
+        let mut single_line_list = MaterialList::new().id(egui::Id::unique("standard_list_main"));
         let visual_density = self.get_visual_density();
 
         // Single line item
@@ -298,7 +298,7 @@ impl ListWindow {
     fn render_interactive_list(&mut self, ui: &mut egui::Ui) {
         ui.heading("Interactive List");
 
-        let mut interactive_list = MaterialList::new().id("interactive_list");
+        let mut interactive_list = MaterialList::new().id(egui::Id::unique("interactive_list"));
         let visual_density = self.get_visual_density();
 
         // Link item
@@ -375,7 +375,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Dense List:");
                 let small_list = MaterialList::new()
-                    .id("small_dense_list")
+                    .id(egui::Id::unique("small_dense_list"))
                     .item(
                         ListItem::new("Inbox")
                             .leading_icon("inbox".to_string())
@@ -409,7 +409,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Compact Visual Density:");
                 let compact_list = MaterialList::new()
-                    .id("compact_density_list")
+                    .id(egui::Id::unique("compact_density_list"))
                     .item(
                         ListItem::new("Starred")
                             .leading_icon("star".to_string())
@@ -440,7 +440,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Custom Small Height:");
                 let custom_small_list = MaterialList::new()
-                    .id("custom_small_list")
+                    .id(egui::Id::unique("custom_small_list"))
                     .item(
                         ListItem::new("Tasks")
                             .leading_icon("task_alt".to_string())
@@ -479,7 +479,7 @@ impl ListWindow {
         ui.add_space(10.0);
         ui.label("Dense lists with secondary text:");
         let dense_two_line = MaterialList::new()
-            .id("dense_two_line_list")
+            .id(egui::Id::unique("dense_two_line_list"))
             .item(
                 ListItem::new("Meeting Tomorrow")
                     .secondary_text("Conference Room A, 10:00 AM")
@@ -511,7 +511,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Narrow Leading Width:");
                 let narrow_list = MaterialList::new()
-                    .id("narrow_leading_list")
+                    .id(egui::Id::unique("narrow_leading_list"))
                     .item(
                         ListItem::new("Photos")
                             .leading_icon("photo".to_string())
@@ -550,7 +550,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Compact Horizontal Spacing:");
                 let compact_spacing_list = MaterialList::new()
-                    .id("compact_spacing_list")
+                    .id(egui::Id::unique("compact_spacing_list"))
                     .item(
                         ListItem::new("Downloads")
                             .leading_icon("download".to_string())
@@ -585,7 +585,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Ultra-Narrow (Combined):");
                 let ultra_narrow_list = MaterialList::new()
-                    .id("ultra_narrow_list")
+                    .id(egui::Id::unique("ultra_narrow_list"))
                     .item(
                         ListItem::new("Home")
                             .leading_icon("home".to_string())
@@ -629,7 +629,7 @@ impl ListWindow {
         ui.add_space(10.0);
         ui.label("Narrow list with secondary text:");
         let narrow_two_line = MaterialList::new()
-            .id("narrow_two_line_list")
+            .id(egui::Id::unique("narrow_two_line_list"))
             .item(
                 ListItem::new("Inbox")
                     .secondary_text("12 unread messages")
@@ -663,7 +663,7 @@ impl ListWindow {
     fn render_selection_demo(&mut self, ui: &mut egui::Ui) {
         ui.heading("Selection Demo (Click to Toggle)");
 
-        let mut selection_list = MaterialList::new().id("selection_list");
+        let mut selection_list = MaterialList::new().id(egui::Id::unique("selection_list"));
 
         for i in 0..5 {
             let item_text = format!("Selectable Item {}", i + 1);
@@ -707,7 +707,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Standard");
                 let standard_list = MaterialList::new()
-                    .id("standard_list")
+                    .id(egui::Id::unique("standard_list"))
                     .item(
                         ListItem::new("Item 1")
                             .leading_icon("inbox".to_string())
@@ -724,7 +724,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Comfortable");
                 let comfortable_list = MaterialList::new()
-                    .id("comfortable_list")
+                    .id(egui::Id::unique("comfortable_list"))
                     .item(
                         ListItem::new("Item 1")
                             .leading_icon("inbox".to_string())
@@ -741,7 +741,7 @@ impl ListWindow {
             ui.vertical(|ui| {
                 ui.label("Compact");
                 let compact_list = MaterialList::new()
-                    .id("compact_list")
+                    .id(egui::Id::unique("compact_list"))
                     .item(
                         ListItem::new("Item 1")
                             .leading_icon("inbox".to_string())
@@ -762,7 +762,7 @@ impl ListWindow {
         ui.label("Click anywhere on the item (or the chevron) to expand/collapse drawer content");
 
         let drawer_list = MaterialList::new()
-            .id("drawer_demo_list")
+            .id(egui::Id::unique("drawer_demo_list"))
             .allow_drawer(true)
             .item(
                 ListItem::new("Project Alpha")
@@ -820,7 +820,7 @@ impl ListWindow {
         ];
 
         let conditional_drawer_list = MaterialList::new()
-            .id("conditional_drawer_list")
+            .id(egui::Id::unique("conditional_drawer_list"))
             .allow_drawer(true);
 
         let mut list = conditional_drawer_list;
@@ -848,7 +848,7 @@ impl ListWindow {
         ui.heading("Drawer with Text Indicators & 5-Line Items");
         ui.label("Click anywhere to toggle. Icon labels show department names below folder icons.");
 
-        let list_id = egui::Id::new("text_indicator_drawer_list");
+        let list_id = egui::Id::unique("text_indicator_drawer_list");
 
         // Get current drawer state to determine which items are expanded
         let state = ui
@@ -913,7 +913,7 @@ impl ListWindow {
 
         ui.label("Settings List:");
         let settings_list = MaterialList::new()
-            .id("settings_list")
+            .id(egui::Id::unique("settings_list"))
             .item(
                 ListItem::new("Wi-Fi")
                     .secondary_text("Connected to Network")
@@ -941,7 +941,7 @@ impl ListWindow {
 
         ui.label("Inbox List:");
         let inbox_list = MaterialList::new()
-            .id("inbox_list")
+            .id(egui::Id::unique("inbox_list"))
             .item(
                 ListItem::new("Meeting Tomorrow")
                     .overline("John Doe")
@@ -972,7 +972,7 @@ impl ListWindow {
 
         ui.label("Music Playlist:");
         let playlist = MaterialList::new()
-            .id("playlist")
+            .id(egui::Id::unique("playlist"))
             .item(
                 ListItem::new("Bohemian Rhapsody")
                     .secondary_text("Queen • A Night at the Opera")
@@ -1005,7 +1005,7 @@ impl ListWindow {
         let visual_density = self.get_visual_density();
 
         let full_width_list = MaterialList::new()
-            .id("full_width_list")
+            .id(egui::Id::unique("full_width_list"))
             .fill_width(true)
             .item(
                 ListItem::new("Dashboard")
@@ -1049,7 +1049,7 @@ impl ListWindow {
 
         let action_signal: Arc<Mutex<Option<ListAction>>> = Arc::new(Mutex::new(None));
 
-        let mut list = MaterialList::new().id("editable_list");
+        let mut list = MaterialList::new().id(egui::Id::unique("editable_list"));
 
         for (index, item) in self.editable_items.iter().enumerate() {
             let action_clone = Arc::clone(&action_signal);
@@ -1118,7 +1118,7 @@ impl ListWindow {
         let save_clicked = Arc::new(Mutex::new(false));
         let save_clone = Arc::clone(&save_clicked);
 
-        dialog("edit_item_dialog", "Edit Item", &mut self.edit_dialog_open)
+        dialog(egui::Id::unique("edit_item_dialog"), "Edit Item", &mut self.edit_dialog_open)
             .max_width(560.0)
             .content(|ui, _open| {
                 ui.vertical(|ui| {
@@ -1175,7 +1175,7 @@ impl ListWindow {
         let delete_clone = Arc::clone(&delete_confirmed);
 
         dialog(
-            "delete_item_dialog",
+            egui::Id::unique("delete_item_dialog"),
             "Delete Item?",
             &mut self.delete_dialog_open,
         )
@@ -1217,13 +1217,13 @@ impl ListWindow {
         let list_id = "editable_drawer_list";
         let state = ui
             .data_mut(|d| d.get_persisted::<egui_material3::MaterialListState>(
-                egui::Id::new(list_id)
+                egui::Id::unique(list_id)
             ))
             .unwrap_or_default();
 
         let action_signal: Arc<Mutex<Option<ListAction>>> = Arc::new(Mutex::new(None));
 
-        let mut list = MaterialList::new().id(list_id).allow_drawer(true);
+        let mut list = MaterialList::new().id(egui::Id::unique(list_id)).allow_drawer(true);
 
         for (index, item) in self.editable_drawer_items.iter().enumerate() {
             let action_clone = Arc::clone(&action_signal);
@@ -1325,7 +1325,7 @@ impl ListWindow {
         let save_clicked = Arc::new(Mutex::new(false));
         let save_clone = Arc::clone(&save_clicked);
 
-        dialog("edit_drawer_dialog", "Edit Department", &mut self.edit_drawer_dialog_open)
+        dialog(egui::Id::unique("edit_drawer_dialog"), "Edit Department", &mut self.edit_drawer_dialog_open)
             .max_width(560.0)
             .content(|ui, _open| {
                 ui.vertical(|ui| {

@@ -6,7 +6,7 @@ fn test_trailing_widget_structure() {
     // The actual positioning fix is validated visually in examples/stories
 
     let _list = MaterialList::new()
-        .id("test_list")
+        .id(egui::Id::unique("test_list"))
         .item(
             ListItem::new("Short Title")
                 .secondary_text("Multiline\nDescription\nText")
@@ -25,7 +25,7 @@ fn test_trailing_text_top_right_structure() {
     // Position verification is done visually in examples
 
     let _list = MaterialList::new()
-        .id("test_trailing_text")
+        .id(egui::Id::unique("test_trailing_text"))
         .item(
             ListItem::new("Department")
                 .secondary_text("Description text")
@@ -44,15 +44,15 @@ fn test_trailing_text_and_widget_no_overlap_structure() {
     // Visual overlap check is done in examples/stories
 
     let _list = MaterialList::new()
-        .id("test_no_overlap")
+        .id(egui::Id::unique("test_no_overlap"))
         .item(
             ListItem::new("Title")
                 .secondary_text("Description")
                 .trailing_text("Status")
                 .trailing_widget(|ui| {
                     ui.horizontal(|ui| {
-                        ui.button("Edit");
-                        ui.button("Delete");
+                        let _ = ui.button("Edit");
+                        let _ = ui.button("Delete");
                     });
                 })
         );
@@ -66,7 +66,7 @@ fn test_multiline_secondary_text_structure() {
     // Padding balance is validated visually in examples
 
     let _list = MaterialList::new()
-        .id("test_padding")
+        .id(egui::Id::unique("test_padding"))
         .item(
             ListItem::new("Title")
                 .secondary_text("Line 1\nLine 2\nLine 3")
@@ -81,14 +81,14 @@ fn test_wrapped_text_with_trailing_widget() {
     let long_text = "This is a very long description that will definitely wrap to multiple lines when rendered in a normal width list item, and it should handle the wrapping gracefully without breaking the layout.";
 
     let _list = MaterialList::new()
-        .id("test_wrapped")
+        .id(egui::Id::unique("test_wrapped"))
         .item(
             ListItem::new("Title")
                 .secondary_text(long_text)
                 .trailing_widget(|ui| {
                     ui.horizontal(|ui| {
-                        ui.button("Edit");
-                        ui.button("Delete");
+                        let _ = ui.button("Edit");
+                        let _ = ui.button("Delete");
                     });
                 })
         );

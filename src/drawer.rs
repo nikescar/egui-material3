@@ -19,7 +19,7 @@ use crate::theme::get_global_color;
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Stroke},
-    pos2, Area, Id, Order, Rect, Response, Sense, SidePanel, Ui, Vec2, Widget,
+    pos2, Area, Id, Order, Rect, Response, Sense, Ui, Vec2, Widget,
 };
 
 /// Material Design navigation drawer variants.
@@ -197,7 +197,7 @@ impl DrawerHeader {
             );
         }
 
-        ui.interact(rect, ui.id().with("drawer_header"), Sense::hover())
+        ui.interact(rect, ui.scope_id().with("drawer_header"), Sense::hover())
     }
 }
 
@@ -298,7 +298,7 @@ impl DrawerItem {
 impl<'a> MaterialDrawer<'a> {
     /// Create a new navigation drawer with Material 3 defaults.
     pub fn new(variant: DrawerVariant, open: &'a mut bool) -> Self {
-        let id = Id::new(format!("material_drawer_{:?}", variant));
+        let id = Id::unique(format!("material_drawer_{:?}", variant));
         let theme = DrawerThemeData::material3_defaults();
         let width = theme.width.unwrap_or(360.0);
         let corner_radius = theme.shape.unwrap_or(CornerRadius::same(16));
@@ -511,34 +511,39 @@ impl<'a> MaterialDrawer<'a> {
     }
 
     /// Show the drawer using appropriate egui layout.
-    pub fn show(self, ctx: &egui::Context) -> Response {
+    ///
+    /// Permanent and dismissible drawers are shown as a left [`egui::Panel`]
+    /// inside `ui` (typically the root `Ui` passed to `eframe::App::ui`);
+    /// modal drawers are shown as overlay areas.
+    pub fn show(self, ui: &mut Ui) -> Response {
         match self.variant {
-            DrawerVariant::Permanent => self.show_permanent(ctx),
-            DrawerVariant::Dismissible => self.show_dismissible(ctx),
-            DrawerVariant::Modal => self.show_modal(ctx),
+            DrawerVariant::Permanent => self.show_permanent(ui),
+            DrawerVariant::Dismissible => self.show_dismissible(ui),
+            DrawerVariant::Modal => self.show_modal(ui.ctx()),
         }
     }
 
-    fn show_permanent(self, ctx: &egui::Context) -> Response {
-        SidePanel::left(self.id.with("permanent"))
-            .default_width(self.width)
+    fn show_permanent(self, ui: &mut Ui) -> Response {
+        egui::Panel::left(self.id.with("permanent"))
+            .default_size(self.width)
             .resizable(false)
-            .show(ctx, |ui| self.render_drawer_content(ui))
+            .show(ui, |ui| self.render_drawer_content(ui))
             .response
     }
 
-    fn show_dismissible(self, ctx: &egui::Context) -> Response {
+    fn show_dismissible(self, ui: &mut Ui) -> Response {
+        let ctx = ui.ctx().clone();
         if *self.open {
-            SidePanel::left(self.id.with("dismissible"))
-                .default_width(self.width)
+            egui::Panel::left(self.id.with("dismissible"))
+                .default_size(self.width)
                 .resizable(false)
-                .show(ctx, |ui| self.render_drawer_content(ui))
+                .show(ui, |ui| self.render_drawer_content(ui))
                 .response
         } else {
             // Return empty response when closed
             Area::new(self.id.with("dismissible_dummy"))
                 .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
-                .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
+                .show(&ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
                 .response
         }
     }
@@ -552,8 +557,11 @@ impl<'a> MaterialDrawer<'a> {
                 .scrim_color
                 .unwrap_or(Color32::from_rgba_unmultiplied(0, 0, 0, 138));
 
+            // The scrim covers the whole page, above panels and windows, so
+            // it dims the page and blocks interaction with it.
             Area::new(self.id.with("modal_scrim"))
-                .order(Order::Background)
+                .order(Order::Foreground)
+                .fixed_pos(screen_rect.min)
                 .show(ctx, |ui| {
                     let scrim_response = ui.allocate_response(screen_rect.size(), Sense::click());
                     ui.painter()
@@ -565,8 +573,10 @@ impl<'a> MaterialDrawer<'a> {
                     }
                 });
 
-            // Draw the actual modal drawer
-            Area::new(self.id.with("modal_drawer"))
+            // Draw the actual modal drawer, kept above its scrim
+            let drawer_id = self.id.with("modal_drawer");
+            ctx.move_to_top(egui::LayerId::new(Order::Foreground, drawer_id));
+            Area::new(drawer_id)
                 .order(Order::Foreground)
                 .fixed_pos(pos2(0.0, 0.0))
                 .show(ctx, |ui| {
@@ -862,4 +872,72 @@ pub fn modal_drawer(open: &mut bool) -> MaterialDrawer<'_> {
 // Legacy support - these will be deprecated
 pub fn standard_drawer(open: &mut bool) -> MaterialDrawer<'_> {
     permanent_drawer(open)
+}
+
+#[cfg(test)]
+mod modal_tests {
+    use super::*;
+
+    /// Regression test for nikescar/egui-material3#14: the modal drawer's
+    /// scrim sits above the page, so a click outside the drawer dismisses
+    /// it and does not reach the page underneath.
+    #[test]
+    fn test_modal_scrim_blocks_page_and_dismisses() {
+        let ctx = egui::Context::default();
+        let mut open = true;
+        let mut page_clicked = false;
+        let frame = |events: Vec<egui::Event>, open: &mut bool, page_clicked: &mut bool| {
+            let input = egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    Vec2::new(800.0, 600.0),
+                )),
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                egui::CentralPanel::default().show(ui, |ui| {
+                    let size = ui.available_size();
+                    if ui.add_sized(size, egui::Button::new("page")).clicked() {
+                        *page_clicked = true;
+                    }
+                });
+                egui::Window::new("window")
+                    .fixed_pos(pos2(400.0, 200.0))
+                    .show(ui.ctx(), |ui| {
+                        let button = egui::Button::new("window button");
+                        if ui.add_sized(Vec2::new(200.0, 200.0), button).clicked() {
+                            *page_clicked = true;
+                        }
+                    });
+                MaterialDrawer::new(DrawerVariant::Modal, open)
+                    .width(200.0)
+                    .show(ui);
+            })
+            .textures_delta
+            .clear();
+        };
+        let pos = pos2(500.0, 300.0);
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        // Two frames: a new area is invisible on its first frame.
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            &mut open,
+            &mut page_clicked,
+        );
+        frame(vec![button(false)], &mut open, &mut page_clicked);
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        assert!(
+            !page_clicked,
+            "the page and windows under a modal drawer must not get the click"
+        );
+        assert!(!open, "clicking the scrim should dismiss the drawer");
+    }
 }

@@ -8,8 +8,8 @@ fn test_multiline_secondary_text_renders() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
                 .item(ListItem::new("Primary Text").secondary_text("Line 1\nLine 2"));
 
@@ -17,7 +17,9 @@ fn test_multiline_secondary_text_renders() {
             // If it compiles and renders without panic, test passes
             assert!(true);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that single-line secondary text still works
@@ -26,15 +28,17 @@ fn test_single_line_secondary_text_unchanged() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
                 .item(ListItem::new("Primary Text").secondary_text("Single line only"));
 
             ui.add(list);
             assert!(true);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that multi-line secondary text increases item height
@@ -43,8 +47,8 @@ fn test_multiline_increases_height() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let single_line =
                 MaterialList::new().item(ListItem::new("Item").secondary_text("One line"));
 
@@ -57,7 +61,9 @@ fn test_multiline_increases_height() {
             // Multi-line should be taller
             assert!(multi_response.rect.height() > single_response.rect.height());
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that empty secondary text works
@@ -66,14 +72,16 @@ fn test_no_secondary_text() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new().item(ListItem::new("Primary only"));
 
             ui.add(list);
             assert!(true);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test 5-line item: overline + primary + 2-line secondary + trailing
@@ -82,8 +90,8 @@ fn test_five_line_item_with_all_fields() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new().item(
                 ListItem::new("Primary Text")
                     .overline("Overline")
@@ -94,5 +102,7 @@ fn test_five_line_item_with_all_fields() {
             ui.add(list);
             assert!(true);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }

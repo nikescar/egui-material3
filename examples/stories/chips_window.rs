@@ -136,7 +136,7 @@ impl ChipsWindow {
             self.font_load_requested = false;
             if self.selected_font_name == "Default" {
                 // Reset to default fonts
-                ctx.style_mut(|style| {
+                ctx.global_style_mut(|style| {
                     style.override_font_id = None;
                 });
             } else if let Some((_, path)) = self
