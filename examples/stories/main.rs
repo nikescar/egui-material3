@@ -105,10 +105,6 @@ fn main() -> Result<(), eframe::Error> {
                 "MaterialSymbolsOutlined",
                 include_bytes!("../../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"),
             );
-            setup_local_fonts_from_bytes(
-                "Nanum Gothic",
-                include_bytes!("../../resources/nanum-gothic.ttf"),
-            );
             // Prepare Google Sans Code font for Material Design (default)
             setup_google_fonts(Some("Google Sans Code"));
             setup_google_fonts(Some("Nanum Gothic"));
