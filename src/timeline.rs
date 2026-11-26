@@ -178,7 +178,7 @@ impl<'a> MaterialTimeline<'a> {
     /// # Example
     /// ```rust
     /// let timeline = MaterialTimeline::new()
-    ///     .id(egui::Id::new("my_timeline"));
+    ///     .id(egui::Id::unique("my_timeline"));
     /// ```
     pub fn id(mut self, id: egui::Id) -> Self {
         self.id = Some(id);

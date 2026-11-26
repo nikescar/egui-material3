@@ -392,7 +392,7 @@ impl DrawerWindow {
             .resizable(true)
             .show(ctx, |ui| {
                 // Top menu with hamburger button
-                egui::TopBottomPanel::top("dismissible_top_panel").show_inside(ui, |ui| {
+                egui::Panel::top("dismissible_top_panel").show(ui, |ui| {
                     ui.horizontal(|ui| {
                         if ui.add(MaterialButton::filled("☰").small()).clicked() {
                             self.is_dismissible_sidebar_open = !self.is_dismissible_sidebar_open;
@@ -434,7 +434,7 @@ impl DrawerWindow {
 
                                 // Create a proper menu item with correct sizing
                                 let item_rect = ui.allocate_space([ui.available_width(), item_height].into()).1;
-                                let response = ui.interact(item_rect, egui::Id::new(format!("dismissible_{}", item_name)), egui::Sense::click());
+                                let response = ui.interact(item_rect, egui::Id::unique(format!("dismissible_{}", item_name)), egui::Sense::click());
 
                                 // Style based on selection and hover state
                                 if is_selected {
@@ -573,7 +573,7 @@ impl DrawerWindow {
             .resizable(true)
             .show(ctx, |ui| {
                 // Top menu with hamburger button
-                egui::TopBottomPanel::top("modal_top_panel").show_inside(ui, |ui| {
+                egui::Panel::top("modal_top_panel").show(ui, |ui| {
                     ui.horizontal(|ui| {
                         if ui.add(MaterialButton::filled("☰").small()).clicked() {
                             self.is_modal_sidebar_open = !self.is_modal_sidebar_open;
@@ -843,7 +843,10 @@ impl DrawerWindow {
                                                     .1;
                                                 let response = ui.interact(
                                                     item_rect,
-                                                    egui::Id::new(format!("modal_{}", item_name)),
+                                                    egui::Id::unique(format!(
+                                                        "modal_{}",
+                                                        item_name
+                                                    )),
                                                     egui::Sense::click(),
                                                 );
 

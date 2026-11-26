@@ -32,9 +32,7 @@
 //! - **Label font**: 16sp (placeholder), 12sp (floating)
 
 use crate::get_global_color;
-use egui::{
-    self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, TextStyle, Ui, Vec2, Widget,
-};
+use egui::{self, FontId, Pos2, Rect, Response, Sense, Stroke, TextStyle, Ui, Vec2, Widget};
 
 /// Material Design text input field following Material Design 3 specifications
 ///
@@ -326,7 +324,7 @@ impl<'a> Widget for MaterialInput<'a> {
 
                 ui.painter().rect_filled(
                     rect,
-                    egui::Rounding {
+                    egui::CornerRadius {
                         nw: INPUT_CORNER_RADIUS as u8,
                         ne: INPUT_CORNER_RADIUS as u8,
                         sw: 0,
@@ -432,13 +430,13 @@ impl<'a> Widget for MaterialInput<'a> {
 
         // Draw text input
         let text_response = ui
-            .allocate_ui_at_rect(text_rect, |ui| {
+            .scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
                 ui.style_mut().spacing.interact_size.y = 0.0;
 
                 let mut text_edit = egui::TextEdit::singleline(self.text)
                     .font(TextStyle::Body)
                     .desired_width(text_rect.width())
-                    .frame(false);
+                    .frame(egui::Frame::NONE.inner_margin(egui::Margin::symmetric(4, 2)));
 
                 if self.password {
                     text_edit = text_edit.password(true);
@@ -498,11 +496,11 @@ impl<'a> Widget for MaterialInput<'a> {
         }
 
         // Draw helper/error text below input
-        ui.allocate_ui_at_rect(
-            Rect::from_min_size(
+        ui.scope_builder(
+            egui::UiBuilder::new().max_rect(Rect::from_min_size(
                 Pos2::new(rect.min.x + HORIZONTAL_PADDING, rect.max.y + 4.0),
                 Vec2::new(rect.width() - HORIZONTAL_PADDING * 2.0, 16.0),
-            ),
+            )),
             |ui| {
                 ui.horizontal(|ui| {
                     if self.is_error {

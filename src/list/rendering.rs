@@ -10,7 +10,11 @@ fn measure_drawer_height(drawer_fn: &dyn Fn(&mut Ui), ui: &mut Ui, width: f32) -
     let temp_rect =
         egui::Rect::from_min_size(egui::pos2(-10000.0, -10000.0), egui::Vec2::new(width, 0.0));
 
-    let mut child_ui = ui.child_ui(temp_rect, egui::Layout::top_down(egui::Align::LEFT), None);
+    let mut child_ui = ui.new_child(
+        egui::UiBuilder::new()
+            .max_rect(temp_rect)
+            .layout(egui::Layout::top_down(egui::Align::LEFT)),
+    );
 
     // Add the same padding as in actual rendering
     child_ui.add_space(8.0);
@@ -38,7 +42,7 @@ fn measure_wrapped_text_height(
         text: text.to_string(),
         sections: vec![LayoutSection {
             leading_space: 0.0,
-            byte_range: 0..text.len(),
+            byte_range: egui::text::ByteIndex(0)..egui::text::ByteIndex(text.len()),
             format: egui::TextFormat {
                 font_id,
                 color: egui::Color32::WHITE, // Color doesn't matter for measurement
@@ -71,7 +75,7 @@ fn render_wrapped_text(
         text: text.to_string(),
         sections: vec![LayoutSection {
             leading_space: 0.0,
-            byte_range: 0..text.len(),
+            byte_range: egui::text::ByteIndex(0)..egui::text::ByteIndex(text.len()),
             format: egui::TextFormat {
                 font_id,
                 color,
@@ -91,27 +95,6 @@ fn render_wrapped_text(
     ui.painter().galley(start_pos, galley, color);
 }
 
-/// Helper function to render multi-line text (manual \n breaks only)
-fn render_multiline_text(
-    painter: &egui::Painter,
-    text: &str,
-    start_pos: Pos2,
-    line_spacing: f32,
-    font_id: egui::FontId,
-    color: Color32,
-) {
-    for (i, line) in text.split('\n').enumerate() {
-        let line_pos = Pos2::new(start_pos.x, start_pos.y + (i as f32 * line_spacing));
-        painter.text(
-            line_pos,
-            egui::Align2::LEFT_CENTER,
-            line,
-            font_id.clone(),
-            color,
-        );
-    }
-}
-
 /// Count lines in text (1 for no \n, 2 for one \n, etc.)
 fn count_lines(text: &str) -> usize {
     text.split('\n').count()
@@ -119,10 +102,7 @@ fn count_lines(text: &str) -> usize {
 
 /// Calculate vertical offset to center text block within item rect
 /// Returns offset to subtract from content_y to balance top/bottom padding
-fn calculate_center_offset(
-    has_overline: bool,
-    secondary_text: Option<&String>,
-) -> f32 {
+fn calculate_center_offset(has_overline: bool, secondary_text: Option<&String>) -> f32 {
     if has_overline {
         // With overline: measure space above and below primary text
         let above_primary = 20.0; // overline offset
@@ -170,7 +150,9 @@ impl<'a> Widget for MaterialList<'a> {
         let on_primary_container = get_global_color("onPrimaryContainer"); // Content on selected
 
         // Load persistent drawer state BEFORE calculating total height
-        let state_id = self.id.unwrap_or_else(|| ui.id().with("material_list"));
+        let state_id = self
+            .id
+            .unwrap_or_else(|| ui.scope_id().with("material_list"));
         let state = ui
             .data_mut(|d| d.get_persisted::<MaterialListState>(state_id))
             .unwrap_or_default();
@@ -208,9 +190,21 @@ impl<'a> Widget for MaterialList<'a> {
             };
 
             // Calculate trailing widths to determine available text width
-            let trailing_icon_width = if item.trailing_icon.is_some() { 40.0 } else { 0.0 };
-            let trailing_text_width = if item.trailing_text.is_some() { 80.0 } else { 0.0 };
-            let trailing_widget_width = if item.trailing_widget.is_some() { 150.0 } else { 0.0 };
+            let trailing_icon_width = if item.trailing_icon.is_some() {
+                40.0
+            } else {
+                0.0
+            };
+            let trailing_text_width = if item.trailing_text.is_some() {
+                80.0
+            } else {
+                0.0
+            };
+            let trailing_widget_width = if item.trailing_widget.is_some() {
+                150.0
+            } else {
+                0.0
+            };
 
             // Calculate available width for text (approximate for height calculation)
             let leading_width = if item.leading_icon.is_some() {
@@ -218,8 +212,12 @@ impl<'a> Widget for MaterialList<'a> {
             } else {
                 0.0
             };
-            let available_text_width = ui.available_width().min(800.0) - leading_width
-                - trailing_widget_width - trailing_icon_width - trailing_text_width - 32.0;
+            let available_text_width = ui.available_width().min(800.0)
+                - leading_width
+                - trailing_widget_width
+                - trailing_icon_width
+                - trailing_text_width
+                - 32.0;
 
             // Add extra height for multi-line secondary text with wrapping
             let mut item_height = item
@@ -229,7 +227,8 @@ impl<'a> Widget for MaterialList<'a> {
             if let Some(ref secondary) = item.secondary_text {
                 // Measure actual wrapped text height
                 let font_id = egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 });
-                let wrapped_height = measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
+                let wrapped_height =
+                    measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
 
                 // Secondary text starts at +20px from center, so we need to add the wrapped height
                 // minus the base allocation (which assumes ~1 line = 20px)
@@ -242,11 +241,11 @@ impl<'a> Widget for MaterialList<'a> {
             total_height += item_height;
 
             // Add drawer height if drawer is open
-            if self.allow_drawer
-                && item.drawer.is_some()
-                && state.drawer_open_items.contains(&index)
+            if let Some(drawer_fn) = item
+                .drawer
+                .as_ref()
+                .filter(|_| self.allow_drawer && state.drawer_open_items.contains(&index))
             {
-                let drawer_fn = item.drawer.as_ref().unwrap();
                 let drawer_width = max_content_width.min(ui.available_width());
                 let drawer_height = measure_drawer_height(&**drawer_fn, ui, drawer_width);
                 total_height += drawer_height;
@@ -347,20 +346,38 @@ impl<'a> Widget for MaterialList<'a> {
             };
 
             // Calculate trailing widths for available text width
-            let trailing_icon_width = if item.trailing_icon.is_some() { 40.0 } else { 0.0 };
-            let trailing_text_width = if item.trailing_text.is_some() { 80.0 } else { 0.0 };
-            let trailing_widget_width = if item.trailing_widget.is_some() { 150.0 } else { 0.0 };
+            let trailing_icon_width = if item.trailing_icon.is_some() {
+                40.0
+            } else {
+                0.0
+            };
+            let trailing_text_width = if item.trailing_text.is_some() {
+                80.0
+            } else {
+                0.0
+            };
+            let trailing_widget_width = if item.trailing_widget.is_some() {
+                150.0
+            } else {
+                0.0
+            };
 
             // Calculate available width for text
-            let horizontal_title_gap = item.horizontal_title_gap.unwrap_or(16.0) + visual_density.horizontal * 2.0;
+            let horizontal_title_gap =
+                item.horizontal_title_gap.unwrap_or(16.0) + visual_density.horizontal * 2.0;
             let min_leading_width = item.min_leading_width.unwrap_or(40.0);
             let leading_width = if item.leading_icon.is_some() {
                 min_leading_width + horizontal_title_gap
             } else {
                 0.0
             };
-            let available_text_width = rect.width() - 16.0 - leading_width
-                - trailing_widget_width - trailing_icon_width - trailing_text_width - 16.0;
+            let available_text_width = rect.width()
+                - 16.0
+                - leading_width
+                - trailing_widget_width
+                - trailing_icon_width
+                - trailing_text_width
+                - 16.0;
 
             let mut item_height = item
                 .min_tile_height
@@ -370,7 +387,8 @@ impl<'a> Widget for MaterialList<'a> {
             if let Some(ref secondary) = item.secondary_text {
                 // Measure actual wrapped text height
                 let font_id = egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 });
-                let wrapped_height = measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
+                let wrapped_height =
+                    measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
 
                 // Secondary text starts at +20px from center for 3-line, +10px for 2-line
                 // Add the difference between wrapped height and base allocation
@@ -386,7 +404,9 @@ impl<'a> Widget for MaterialList<'a> {
             );
 
             // Use list's ID (or auto-generate one) to scope item IDs and avoid collisions
-            let list_id = self.id.unwrap_or_else(|| ui.id().with("material_list"));
+            let list_id = self
+                .id
+                .unwrap_or_else(|| ui.scope_id().with("material_list"));
             let unique_id = list_id.with(("item", index));
             let item_response = ui.interact(item_rect, unique_id, Sense::click());
 
@@ -471,15 +491,25 @@ impl<'a> Widget for MaterialList<'a> {
             let mut content_x = item_rect.min.x + 16.0;
 
             // Calculate trailing widths (needed later for text wrapping)
-            let trailing_icon_width = if item.trailing_icon.is_some() { 40.0 } else { 0.0 };
-            let trailing_text_width = if item.trailing_text.is_some() { 80.0 } else { 0.0 };
-            let trailing_widget_width = if item.trailing_widget.is_some() { 150.0 } else { 0.0 };
+            let trailing_icon_width = if item.trailing_icon.is_some() {
+                40.0
+            } else {
+                0.0
+            };
+            let trailing_text_width = if item.trailing_text.is_some() {
+                80.0
+            } else {
+                0.0
+            };
+            let trailing_widget_width = if item.trailing_widget.is_some() {
+                150.0
+            } else {
+                0.0
+            };
 
             // Calculate vertical offset to center text block for balanced padding
-            let center_offset = calculate_center_offset(
-                item.overline_text.is_some(),
-                item.secondary_text.as_ref(),
-            );
+            let center_offset =
+                calculate_center_offset(item.overline_text.is_some(), item.secondary_text.as_ref());
             let content_y = item_rect.center().y - center_offset;
 
             // Draw leading icon (with optional label below)
@@ -521,8 +551,12 @@ impl<'a> Widget for MaterialList<'a> {
             }
 
             // Calculate available width for text wrapping (using updated content_x)
-            let available_text_width = item_rect.max.x - content_x
-                - trailing_widget_width - trailing_icon_width - trailing_text_width - 16.0;
+            let available_text_width = item_rect.max.x
+                - content_x
+                - trailing_widget_width
+                - trailing_icon_width
+                - trailing_text_width
+                - 16.0;
 
             // Draw text content based on configuration
             match (&item.overline_text, &item.secondary_text) {
@@ -628,7 +662,11 @@ impl<'a> Widget for MaterialList<'a> {
                 // Position at top-right corner to avoid overlap with trailing_widget
                 // When both trailing_widget and trailing_text present, text goes above widget
                 let trailing_text_pos = Pos2::new(
-                    item_rect.max.x - trailing_widget_width - trailing_icon_width - trailing_text_width + 10.0,
+                    item_rect.max.x
+                        - trailing_widget_width
+                        - trailing_icon_width
+                        - trailing_text_width
+                        + 10.0,
                     item_rect.min.y + 12.0,
                 );
 
@@ -644,7 +682,7 @@ impl<'a> Widget for MaterialList<'a> {
 
             // Draw drawer chevron if drawer is enabled and item has drawer
             // Skip automatic chevron if item has custom trailing content (text, icon, or widget)
-            let drawer_chevron_width = if self.allow_drawer
+            if self.allow_drawer
                 && item.drawer.is_some()
                 && item.trailing_text.is_none()
                 && item.trailing_icon.is_none()
@@ -681,10 +719,7 @@ impl<'a> Widget for MaterialList<'a> {
                     egui::FontId::proportional(20.0),
                     icon_color,
                 );
-                32.0
-            } else {
-                0.0
-            };
+            }
 
             // Render custom trailing widget
             if let Some(widget_fn) = &item.trailing_widget {
@@ -698,7 +733,7 @@ impl<'a> Widget for MaterialList<'a> {
                     ),
                     Vec2::new(trailing_widget_width, widget_height),
                 );
-                ui.allocate_ui_at_rect(widget_rect, |ui| {
+                ui.scope_builder(egui::UiBuilder::new().max_rect(widget_rect), |ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         widget_fn(ui);
                     });
@@ -722,27 +757,24 @@ impl<'a> Widget for MaterialList<'a> {
             current_y += item_height;
 
             // Render expanded drawer content if open
-            if self.allow_drawer
-                && item.drawer.is_some()
-                && state.drawer_open_items.contains(&index)
+            if let Some(drawer_fn) = item
+                .drawer
+                .as_ref()
+                .filter(|_| self.allow_drawer && state.drawer_open_items.contains(&index))
             {
-                let drawer_fn = item.drawer.as_ref().unwrap();
                 let drawer_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, current_y),
                     Vec2::new(rect.width(), 0.0), // Height will be determined by content
                 );
 
-                // Accent stripe on the left
-                let stripe_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, current_y),
-                    Vec2::new(4.0, 0.0), // Height updated after content
-                );
-
                 // Background for drawer
                 let drawer_bg = primary_container.gamma_multiply(0.3);
 
-                let mut child_ui =
-                    ui.child_ui(drawer_rect, egui::Layout::top_down(egui::Align::LEFT), None);
+                let mut child_ui = ui.new_child(
+                    egui::UiBuilder::new()
+                        .max_rect(drawer_rect)
+                        .layout(egui::Layout::top_down(egui::Align::LEFT)),
+                );
                 // Clip drawer to both list bounds and parent's clip rect
                 let parent_clip = ui.clip_rect();
                 let drawer_clip = rect.intersect(parent_clip);
@@ -805,10 +837,12 @@ impl<'a> Widget for MaterialList<'a> {
     }
 }
 
+/// Create a new list item with the given primary text.
 pub fn list_item(primary_text: impl Into<String>) -> ListItem<'static> {
     ListItem::new(primary_text)
 }
 
+/// Create a new, empty Material Design list.
 pub fn list() -> MaterialList<'static> {
     MaterialList::new()
 }

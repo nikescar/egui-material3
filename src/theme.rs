@@ -1497,7 +1497,7 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         // Resolve Auto mode to actual mode based on context
         let mut resolved_theme = theme.clone();
         if resolved_theme.theme_mode == ThemeMode::Auto {
-            if ctx.style().visuals.dark_mode {
+            if ctx.global_style().visuals.dark_mode {
                 resolved_theme.theme_mode = ThemeMode::Dark;
             } else {
                 resolved_theme.theme_mode = ThemeMode::Light;
@@ -1525,14 +1525,14 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         };
 
         // Apply the background color to the context
-        let mut visuals = ctx.style().visuals.clone();
+        let mut visuals = ctx.global_style().visuals.clone();
         visuals.window_fill = background_color;
         visuals.panel_fill = background_color;
         visuals.extreme_bg_color = background_color;
 
-        let mut style = (*ctx.style()).clone();
+        let mut style = (*ctx.global_style()).clone();
         style.visuals = visuals;
-        ctx.set_style(style);
+        ctx.set_global_style(style);
     }
 }
 
@@ -1693,22 +1693,15 @@ where
     let primary_container = theme.get_color_by_name("primaryContainer");
     let on_primary_container = theme.get_color_by_name("onPrimaryContainer");
 
-    let secondary = theme.get_color_by_name("secondary");
-    let on_secondary = theme.get_color_by_name("onSecondary");
-    let secondary_container = theme.get_color_by_name("secondaryContainer");
-
     let tertiary = theme.get_color_by_name("tertiary");
 
     let error = theme.get_color_by_name("error");
-    let on_error = theme.get_color_by_name("onError");
-    let error_container = theme.get_color_by_name("errorContainer");
 
     let surface = theme.get_surface_color(visuals.dark_mode);
     let on_surface = theme.get_color_by_name("onSurface");
     let surface_variant = theme.get_color_by_name("surfaceVariant");
     let on_surface_variant = theme.get_color_by_name("onSurfaceVariant");
 
-    let surface_container = theme.get_color_by_name("surfaceContainer");
     let surface_container_high = theme.get_color_by_name("surfaceContainerHigh");
     let surface_container_highest = theme.get_color_by_name("surfaceContainerHighest");
     let surface_container_low = theme.get_color_by_name("surfaceContainerLow");
@@ -1718,7 +1711,6 @@ where
     let outline_variant = theme.get_color_by_name("outlineVariant");
 
     let inverse_surface = theme.get_color_by_name("inverseSurface");
-    let inverse_on_surface = theme.get_color_by_name("inverseOnSurface");
     let inverse_primary = theme.get_color_by_name("inversePrimary");
 
     let shadow = theme.get_color_by_name("shadow");
