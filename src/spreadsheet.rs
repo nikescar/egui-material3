@@ -130,7 +130,9 @@ impl SpreadsheetDataModel {
         #[cfg(target_family = "wasm")]
         let conn = {
             // WASM: use diesel with WASM VFS
-            let (vfs, _once) = &*VFS.lock().unwrap();
+            let (vfs, _once) = &*VFS
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let url = match vfs {
                 0 => ":memory:", // in-memory for spreadsheet
                 1 => "file:spreadsheet.db?vfs=opfs-sahpool",
@@ -247,7 +249,16 @@ impl SpreadsheetDataModel {
 
         let mut value_strs = Vec::new();
         for (idx, value) in values.iter().enumerate() {
-            let col_type = &self.columns[idx].col_type;
+            let col_type = &self
+                .columns
+                .get(idx)
+                .ok_or_else(|| {
+                    format!(
+                        "Too many values: the table has {} columns",
+                        self.columns.len()
+                    )
+                })?
+                .col_type;
             let value_str = match col_type {
                 ColumnType::Text => format!("'{}'", value.replace('\'', "''")),
                 ColumnType::Integer => {
@@ -395,11 +406,10 @@ impl SpreadsheetDataModel {
         col_idx: usize,
         value: String,
     ) -> Result<(), String> {
-        if col_idx >= self.columns.len() {
-            return Err("Invalid column index".to_string());
-        }
-
-        let col = &self.columns[col_idx];
+        let col = self
+            .columns
+            .get(col_idx)
+            .ok_or_else(|| "Invalid column index".to_string())?;
         let col_name = col.name.replace('"', "\"\"");
 
         // Validate value against column type
@@ -554,9 +564,11 @@ impl SpreadsheetDataModel {
             return Err("CSV file has only one line".to_string());
         }
 
-        let first_line = &all_lines[0];
-        let second_line = &all_lines[1];
-        let last_line = all_lines.last().unwrap();
+        let (Some(first_line), Some(second_line), Some(last_line)) =
+            (all_lines.first(), all_lines.get(1), all_lines.last())
+        else {
+            return Err("CSV file has only one line".to_string());
+        };
 
         // Detect delimiter by comparing counts in first, second, and last lines
         let delimiters = [',', ';', '\t'];
@@ -591,13 +603,6 @@ impl SpreadsheetDataModel {
         }
 
         let delimiter = best_delimiter;
-        let delimiter_name = match delimiter {
-            ',' => "comma",
-            ';' => "semicolon",
-            '\t' => "tab",
-            _ => "unknown",
-        };
-
         let first_values: Vec<&str> = first_line.split(delimiter).collect();
         let second_values: Vec<&str> = second_line.split(delimiter).collect();
 
@@ -633,8 +638,7 @@ impl SpreadsheetDataModel {
         let new_columns: Vec<ColumnDef> = if first_line_is_header {
             first_values
                 .iter()
-                .enumerate()
-                .map(|(_i, name)| ColumnDef {
+                .map(|name| ColumnDef {
                     name: name.trim().to_string(),
                     col_type: ColumnType::Text,
                     width: 100.0,
@@ -748,7 +752,7 @@ impl MaterialSpreadsheet {
         set_theme_mode(ThemeMode::Light);
 
         Ok(Self {
-            id: Id::new(id),
+            id: Id::unique(id),
             data_model: Arc::new(Mutex::new(data_model)),
             cached_rows: Vec::new(),
             editing_cell: None,

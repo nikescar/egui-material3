@@ -144,7 +144,10 @@ impl<T> RefState<T> {
     where
         F: FnOnce(&T) -> R,
     {
-        let guard = self.value.lock().unwrap();
+        let guard = self
+            .value
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         f(&guard)
     }
 
@@ -163,7 +166,10 @@ impl<T> RefState<T> {
     where
         F: FnOnce(&mut T),
     {
-        let mut guard = self.value.lock().unwrap();
+        let mut guard = self
+            .value
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         f(&mut guard);
     }
 

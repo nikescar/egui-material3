@@ -429,19 +429,18 @@ impl<'a> Widget for MaterialChip<'a> {
         let is_selected = self.selected.as_ref().is_some_and(|s| **s);
 
         // Get the actual font ID from UI style (respects override_text_style)
-        let font_id = ui.style().override_text_style
+        let font_id = ui
+            .style()
+            .override_text_style
             .as_ref()
             .and_then(|style| ui.style().text_styles.get(style))
-            .unwrap_or_else(|| &ui.style().text_styles[&egui::TextStyle::Body])
-            .clone();
+            .or_else(|| ui.style().text_styles.get(&egui::TextStyle::Body))
+            .cloned()
+            .unwrap_or_else(|| egui::FontId::proportional(14.0));
 
-        let text_galley = ui
-            .painter()
-            .layout_no_wrap(
-                self.text.clone(),
-                font_id.clone(),
-                egui::Color32::WHITE,
-            );
+        let text_galley =
+            ui.painter()
+                .layout_no_wrap(self.text.clone(), font_id.clone(), egui::Color32::WHITE);
         let text_width = text_galley.rect.width();
 
         let has_leading =
@@ -644,6 +643,9 @@ impl<'a> Widget for MaterialChip<'a> {
                         *selected = !*selected;
                         response.mark_changed();
                     }
+                    if let Some(action) = self.action {
+                        action();
+                    }
                 }
                 _ => {
                     if let Some(action) = self.action {
@@ -671,4 +673,52 @@ pub fn input_chip(text: impl Into<String>) -> MaterialChip<'static> {
 
 pub fn suggestion_chip(text: impl Into<String>) -> MaterialChip<'static> {
     MaterialChip::suggestion(text)
+}
+
+#[cfg(test)]
+mod click_tests {
+    use super::*;
+    use std::cell::Cell;
+
+    /// Regression test for nikescar/egui-material3#15: clicking a filter
+    /// chip toggles it and calls its `on_click` callback.
+    #[test]
+    fn test_filter_chip_calls_on_click() {
+        let ctx = egui::Context::default();
+        let mut selected = false;
+        let clicks = Cell::new(0);
+        let frame = |events: Vec<egui::Event>, selected: &mut bool| {
+            let mut rect = Rect::NOTHING;
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                let chip = MaterialChip::filter("Filter", selected)
+                    .on_click(|| clicks.set(clicks.get() + 1));
+                rect = ui.add(chip).rect;
+            })
+            .textures_delta
+            .clear();
+            rect
+        };
+        let pos = frame(Vec::new(), &mut selected).center();
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            &mut selected,
+        );
+        frame(vec![button(false)], &mut selected);
+        assert!(selected, "clicking a filter chip should select it");
+        assert_eq!(
+            clicks.get(),
+            1,
+            "clicking a filter chip should call on_click"
+        );
+    }
 }
