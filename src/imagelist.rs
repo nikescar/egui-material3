@@ -6,7 +6,7 @@
 //! ## Features
 //!
 //! - **Multiple image sources**: Local files, online URLs, and embedded byte arrays
-//! - **Smart caching**: Downloaded images are cached with proper file extensions
+//! - **Caching**: Downloaded images are kept in memory for the life of the process
 //! - **Format detection**: Automatic detection of PNG, JPEG, GIF, and WebP formats
 //! - **Performance optimized**: Efficient loading and UI repainting
 //! - **Error handling**: Graceful fallback with visual indicators
@@ -60,19 +60,14 @@
 //!
 //! When the `ondemand` feature is enabled, the image list provides:
 //!
-//! - **Automatic downloading**: Images are downloaded from URLs on first access
-//! - **Smart caching**: Downloaded images are saved to `/tmp/egui_material3_img/` with proper extensions
-//! - **Format detection**: File extensions are determined from content (PNG, JPEG, GIF, WebP)
-//! - **Efficient reuse**: Cached images are reused without re-downloading
-//! - **Performance optimization**: UI only repaints when new images are available
+//! - **Background downloading**: Images are downloaded on a background thread on
+//!   first access; the UI never waits for the network, and repaints when an
+//!   image arrives
+//! - **Bounded**: A response larger than 16 MiB, or an image larger than
+//!   8192 x 8192, is rejected
+//! - **In-memory cache**: Each URL is downloaded once per process; a failed
+//!   download is not retried, and nothing is written to disk
 //! - **Error handling**: Failed downloads show visual indicators instead of crashing
-//!
-//! ### Cache Management
-//!
-//! - Cache directory: `/tmp/egui_material3_img/`
-//! - File naming: `img_{hash}.{extension}` (e.g., `img_abc123.png`)
-//! - Automatic cleanup: Cache persists between runs for efficiency
-//! - Manual cleanup: Remove `/tmp/egui_material3_img/` to clear cache
 
 use crate::theme::get_global_color;
 use egui::{
@@ -81,7 +76,6 @@ use egui::{
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
 use image::GenericImageView;
-use std::env;
 
 /// Material Design image list variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -116,7 +110,6 @@ pub struct MaterialImageList<'a> {
     text_protected: bool,
     corner_radius: CornerRadius,
     id_salt: Option<String>,
-    tmppath: String,
 }
 
 pub struct ImageListItem<'a> {
@@ -183,90 +176,123 @@ fn load_image_from_file(file_path: &str) -> Option<egui::ColorImage> {
     }
 }
 
-/// Load image from URL (requires ondemand feature)
+/// Largest response body accepted for a remote image.
 #[cfg(feature = "ondemand")]
-fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
-    use std::hash::{Hash, Hasher};
+const MAX_DOWNLOAD_BYTES: u64 = 16 * 1024 * 1024;
+
+/// Largest width or height accepted when decoding a remote image.
+#[cfg(feature = "ondemand")]
+const MAX_DECODED_DIMENSION: u32 = 8192;
+
+/// State of one remote image download.
+#[cfg(feature = "ondemand")]
+#[derive(Clone)]
+enum Download {
+    Loading,
+    Ready(egui::ColorImage),
+    Failed,
+}
+
+/// The remote image cache type: download state by URL.
+#[cfg(feature = "ondemand")]
+type DownloadMap = std::sync::Mutex<std::collections::HashMap<String, Download>>;
+
+/// Remote images by URL, shared by every image list in the process.
+#[cfg(feature = "ondemand")]
+fn downloads() -> &'static DownloadMap {
+    static DOWNLOADS: std::sync::OnceLock<DownloadMap> = std::sync::OnceLock::new();
+    DOWNLOADS.get_or_init(Default::default)
+}
+
+/// Returns the image for `url` if it has been downloaded. The first call
+/// for a URL starts the download on a background thread and returns
+/// `Ok(None)`; a failed download returns `Err(())` and is not retried.
+#[cfg(feature = "ondemand")]
+fn load_image_from_url(ctx: &egui::Context, url: &str) -> Result<Option<egui::ColorImage>, ()> {
+    let mut map = downloads()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    match map.get(url) {
+        Some(Download::Ready(image)) => return Ok(Some(image.clone())),
+        Some(Download::Failed) => return Err(()),
+        Some(Download::Loading) => return Ok(None),
+        None => {}
+    }
+    map.insert(url.to_owned(), Download::Loading);
+    drop(map);
+
+    let ctx = ctx.clone();
+    let url = url.to_owned();
+    let spawned = std::thread::Builder::new()
+        .name("egui-material3-image".to_owned())
+        .spawn(move || {
+            let state = download_image(&url).map_or(Download::Failed, Download::Ready);
+            downloads()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .insert(url, state);
+            ctx.request_repaint();
+        });
+    if spawned.is_err() {
+        return Err(());
+    }
+    Ok(None)
+}
+
+/// Downloads and decodes one image. Runs on a background thread.
+#[cfg(feature = "ondemand")]
+fn download_image(url: &str) -> Option<egui::ColorImage> {
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(std::time::Duration::from_secs(10))
+        .timeout_read(std::time::Duration::from_secs(10))
+        .timeout_write(std::time::Duration::from_secs(10))
+        .user_agent("egui-material3/1.0")
+        .build();
+    let response = agent.get(url).call().ok()?;
+    if response.status() != 200 {
+        return None;
+    }
+    let bytes = read_capped(response.into_reader(), MAX_DOWNLOAD_BYTES)?;
+    decode_limited(&bytes)
+}
+
+/// Reads at most `limit` bytes; a longer or empty body is rejected.
+#[cfg(feature = "ondemand")]
+fn read_capped(reader: impl std::io::Read, limit: u64) -> Option<Vec<u8>> {
     use std::io::Read;
-
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    url.hash(&mut hasher);
-    let url_hash = format!("{:x}", hasher.finish());
-    let filename = format!("img_{}", url_hash);
-    let filepath = std::path::Path::new(tmppath).join(&filename);
-
-    // Check if file already exists with any extension
-    let possible_files = [
-        filepath.with_extension("png"),
-        filepath.with_extension("jpg"),
-        filepath.with_extension("gif"),
-        filepath.with_extension("webp"),
-        filepath.clone(),
-    ];
-
-    let existing_file = possible_files.iter().find(|f| f.exists());
-
-    if existing_file.is_none() {
-        // Try to download the image with timeout and user agent
-        let agent = ureq::AgentBuilder::new()
-            .timeout_read(std::time::Duration::from_secs(10))
-            .timeout_write(std::time::Duration::from_secs(10))
-            .user_agent("egui-material3/1.0")
-            .build();
-
-        if let Ok(response) = agent.get(url).call() {
-            let status = response.status();
-            if status == 200 {
-                let mut bytes = Vec::new();
-                if response.into_reader().read_to_end(&mut bytes).is_ok() && !bytes.is_empty() {
-                    // Detect image format from content and add appropriate extension
-                    let extension = if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
-                        "png"
-                    } else if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
-                        "jpg"
-                    } else if bytes.starts_with(&[0x47, 0x49, 0x46]) {
-                        "gif"
-                    } else if bytes.starts_with(&[0x52, 0x49, 0x46, 0x46])
-                        && bytes.get(8..12) == Some(b"WEBP".as_slice())
-                    {
-                        "webp"
-                    } else {
-                        "png"
-                    };
-
-                    let filepath_with_ext = filepath.with_extension(extension);
-                    let _ = std::fs::write(&filepath_with_ext, &bytes);
-                }
-            }
-        }
+    let mut bytes = Vec::new();
+    reader
+        .take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .ok()?;
+    if bytes.is_empty() || bytes.len() as u64 > limit {
+        return None;
     }
+    Some(bytes)
+}
 
-    // Try to load the image from cache
-    if let Some(existing_filepath) = possible_files.iter().find(|f| f.exists()) {
-        match image::open(existing_filepath) {
-            Ok(image) => {
-                let original_size = image.dimensions();
-
-                // Resize large images to max 512x512 to avoid memory issues
-                let resized_image = if original_size.0 > 512 || original_size.1 > 512 {
-                    image.resize(512, 512, image::imageops::FilterType::Lanczos3)
-                } else {
-                    image
-                };
-
-                let size = resized_image.dimensions();
-                let image_buffer = resized_image.to_rgba8();
-                let pixels = image_buffer.into_raw();
-                Some(egui::ColorImage::from_rgba_unmultiplied(
-                    [size.0 as usize, size.1 as usize],
-                    &pixels,
-                ))
-            }
-            Err(_) => None,
-        }
+/// Decodes an image with dimension limits, resized to at most 512 x 512.
+#[cfg(feature = "ondemand")]
+fn decode_limited(bytes: &[u8]) -> Option<egui::ColorImage> {
+    let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
+        .with_guessed_format()
+        .ok()?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(MAX_DECODED_DIMENSION);
+    limits.max_image_height = Some(MAX_DECODED_DIMENSION);
+    reader.limits(limits);
+    let image = reader.decode().ok()?;
+    let image = if image.width() > 512 || image.height() > 512 {
+        image.resize(512, 512, image::imageops::FilterType::Lanczos3)
     } else {
-        None
-    }
+        image
+    };
+    let size = image.dimensions();
+    let pixels = image.to_rgba8().into_raw();
+    Some(egui::ColorImage::from_rgba_unmultiplied(
+        [size.0 as usize, size.1 as usize],
+        &pixels,
+    ))
 }
 
 /// Load image from data URL (base64 encoded)
@@ -322,10 +348,6 @@ impl<'a> MaterialImageList<'a> {
     }
 
     fn new(variant: ImageListVariant) -> Self {
-        // create img folder in tmp dir using let dir = env::temp_dir(), save the path to tmppath on MaterialImageList
-        let tmppath = env::temp_dir().join("egui_material3_img");
-        let _ = std::fs::create_dir_all(&tmppath);
-
         Self {
             variant,
             items: Vec::new(),
@@ -334,7 +356,6 @@ impl<'a> MaterialImageList<'a> {
             text_protected: false,
             corner_radius: CornerRadius::from(4.0),
             id_salt: None,
-            tmppath: tmppath.to_string_lossy().to_string(),
         }
     }
 
@@ -458,8 +479,6 @@ impl Widget for MaterialImageList<'_> {
             text_protected,
             corner_radius,
             id_salt,
-            #[cfg_attr(not(feature = "ondemand"), allow(unused_variables))]
-            tmppath,
         } = self;
 
         if items.is_empty() {
@@ -535,6 +554,7 @@ impl Widget for MaterialImageList<'_> {
                 );
 
                 // Load and cache image if not already loaded
+                let mut loading = false;
                 if item.loaded_image.is_none() {
                     if let Some(ref image_source) = item.image_source {
                         let loaded_image = if image_source.starts_with("http://")
@@ -542,10 +562,19 @@ impl Widget for MaterialImageList<'_> {
                         {
                             #[cfg(feature = "ondemand")]
                             {
-                                load_image_from_url(image_source, &tmppath)
+                                match load_image_from_url(ui.ctx(), image_source) {
+                                    Ok(Some(image)) => Some(image),
+                                    // Still downloading: draw the placeholder only.
+                                    Ok(None) => {
+                                        loading = true;
+                                        None
+                                    }
+                                    Err(()) => None,
+                                }
                             }
                             #[cfg(not(feature = "ondemand"))]
                             {
+                                loading = false;
                                 None
                             }
                         } else if image_source.starts_with("data:") {
@@ -578,7 +607,7 @@ impl Widget for MaterialImageList<'_> {
                         Color32::WHITE,
                     );
                 } else {
-                    failed = true;
+                    failed = !loading;
                 }
 
                 if failed {
@@ -692,4 +721,49 @@ pub fn masonry_image_list() -> MaterialImageList<'static> {
 /// Convenience function to create a woven image list.
 pub fn woven_image_list() -> MaterialImageList<'static> {
     MaterialImageList::woven()
+}
+
+#[cfg(all(test, feature = "ondemand"))]
+mod download_tests {
+    use super::*;
+    use std::time::{Duration, Instant};
+
+    /// Regression test for nikescar/egui-material3#19: drawing an image list
+    /// with a remote image does not wait for the server.
+    #[test]
+    fn test_remote_image_does_not_block_the_frame() -> std::io::Result<()> {
+        // A server that accepts the connection and never answers.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+        let url = format!("http://{}/image.png", listener.local_addr()?);
+        let ctx = egui::Context::default();
+        let started = Instant::now();
+        for _ in 0..3 {
+            ctx.run_ui(Default::default(), |ui| {
+                ui.add(image_list().item("Remote", url.clone()));
+            })
+            .textures_delta
+            .clear();
+        }
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "drawing the list should not wait for the download"
+        );
+        Ok(())
+    }
+
+    /// Regression test for nikescar/egui-material3#19: a body over the cap is
+    /// rejected rather than buffered.
+    #[test]
+    fn test_body_over_the_cap_is_rejected() {
+        let body = vec![0_u8; 101];
+        assert!(
+            read_capped(body.as_slice(), 100).is_none(),
+            "a body over the cap should be rejected"
+        );
+        assert_eq!(
+            read_capped(body.get(..100).unwrap_or_default(), 100).map(|b| b.len()),
+            Some(100),
+            "a body at the cap should be read"
+        );
+    }
 }
