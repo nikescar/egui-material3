@@ -958,7 +958,7 @@ impl MaterialSpreadsheet {
 
         // Get theme colors
         let primary = get_global_color("primary");
-        let on_primary = get_global_color("on-primary");
+        let on_primary = get_global_color("onPrimary");
 
         // Build table
         let available_height = ui.available_height();

@@ -66,6 +66,8 @@ futures = { version = "0.3", optional = true } # for spreadsheet feature (async 
 # async-std for native spreadsheet feature - moved to target-specific section below
 
 [dev-dependencies]
+# Headless widget tests: AccessKit queries, simulated input, wgpu snapshots.
+egui_kittest = { version = "0.37", features = ["snapshot", "wgpu"] }
 egui_extras = { version = "0.37", default-features = false, features = ["image", "svg", "svg_text"] }
 # egui_extras = { git = "https://github.com/emilk/egui", default-features = false, features = ["image", "svg", "svg_text"] }
 

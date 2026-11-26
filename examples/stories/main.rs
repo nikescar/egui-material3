@@ -47,9 +47,6 @@ mod tooltip_window;
 mod topappbar_window;
 mod treeview_window;
 
-#[cfg(test)]
-mod theme_test;
-
 use actionsheet_window::ActionSheetWindow;
 use badge_window::BadgeWindow;
 use breadcrumbs_window::BreadcrumbsWindow;
