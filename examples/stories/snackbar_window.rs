@@ -318,7 +318,7 @@ impl SnackbarWindow {
 
         // Render bottom-positioned snackbars with stacking
         if self.show_basic_snackbar {
-            egui::Area::new("basic_snackbar".into())
+            egui::Area::new(egui::Id::unique("basic_snackbar"))
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
                     ui.set_clip_rect(ctx.content_rect());
@@ -359,7 +359,7 @@ impl SnackbarWindow {
         }
 
         if self.show_action_snackbar {
-            egui::Area::new("action_snackbar".into())
+            egui::Area::new(egui::Id::unique("action_snackbar"))
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
                     ui.set_clip_rect(ctx.content_rect());
@@ -406,7 +406,7 @@ impl SnackbarWindow {
 
         // Render top-positioned snackbars with stacking
         if self.show_top_snackbar {
-            egui::Area::new("top_snackbar".into())
+            egui::Area::new(egui::Id::unique("top_snackbar"))
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
                     ui.set_clip_rect(ctx.content_rect());
