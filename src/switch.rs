@@ -181,7 +181,17 @@ impl<'a> Widget for MaterialSwitch<'a> {
             Vec2::new(switch_width, switch_height)
         };
 
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        let (rect, mut response) = ui.allocate_exact_size(
+            desired_size,
+            crate::a11y::sense(self.enabled, Sense::click()),
+        );
+        crate::a11y::toggle(
+            &response,
+            egui::Role::Switch,
+            self.enabled,
+            self.text.as_deref().unwrap_or_default(),
+            *self.selected,
+        );
 
         if response.clicked() && self.enabled {
             *self.selected = !*self.selected;

@@ -328,10 +328,8 @@ impl SelectWindow {
 
                     ui.add(validation_select);
 
-                    if ui.button("Validate").clicked() {
-                        if self.validation_demo.is_none() {
-                            // Trigger error state
-                        }
+                    if ui.button("Validate").clicked() && self.validation_demo.is_none() {
+                        // Trigger error state
                     }
                 });
 

@@ -1,20 +1,54 @@
-//! Material Design 3 Select/Dropdown Components
+//! Material Design 3 exposed dropdown menu (select and autocomplete).
 //!
-//! # M3 Color Role Usage
+//! The field is a text field ([`crate::input`] draws both, from the same
+//! tokens); the menu follows Compose's `MenuTokens`:
 //!
-//! - **surfaceContainerHighest**: Filled select background
-//! - **onSurface**: Select text, dropdown text
-//! - **onSurfaceVariant**: Label text, supporting text
-//! - **outline**: Outlined select border
-//! - **primary**: Selected item indicator, focused state
-//! - **secondaryContainer**: Selected item background in dropdown
-//! - **onSecondaryContainer**: Selected item text
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//! - **Menu**: `surfaceContainer`, extra-small corners (4 dp), elevation
+//!   level 2, 8 dp vertical padding, 48 dp items with 12 dp horizontal
+//!   padding and LabelLarge text in `onSurface`.
+//! - **Items**: hover and keyboard highlight paint `onSurface` state layers
+//!   (8% and 10%); the selected item sits on `secondaryContainer`.
+//! - **Trailing icon**: a 24 dp drop-down arrow that turns half a turn as
+//!   the menu opens.
+//!
+//! The menu opens on click, Space, Enter or the arrow keys, moves with
+//! Up/Down/Home/End, selects with Enter and closes with Escape or a click
+//! outside it. Typing jumps to the first option starting with the typed
+//! text (typeahead). With [`MaterialSelect::enable_filter`] the field is an
+//! editable text field and the menu shows only the options that contain the
+//! typed text (autocomplete). Screen readers see a combo box with its
+//! value, its expanded state and list-box options.
 
-use crate::theme::get_global_color;
-use egui::{
-    self, Color32, FontFamily, FontId, Key, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
+use crate::input::{
+    container_shape, field_colors, floated_label_pos, label_progress, notch_for, paint_icon,
+    paint_label, paint_supporting, FieldState, InputVariant, LabelGeometry, HORIZONTAL_PADDING,
+    ICON_PADDING, ICON_SIZE, TEXT_PADDING_WITH_ICON,
 };
+use crate::paint::{paint_elevation, paint_state_layer};
+use crate::tokens::state::{FOCUS_OPACITY, HOVER_OPACITY};
+use crate::tokens::{ColorRole, Elevation, TypeRole};
+use crate::MaterialTheme;
+use egui::{
+    self, Align2, Color32, EventFilter, Id, Key, Modifiers, Pos2, Rect, Response, RichText, Sense,
+    Ui, Vec2, Widget,
+};
+
+/// `MenuTokens.ContainerElevation`.
+pub const MENU_ELEVATION: Elevation = Elevation::Level2;
+/// `MenuTokens.ContainerShape`: extra-small corners.
+pub const MENU_CORNER_RADIUS: f32 = 4.0;
+/// `DropdownMenuVerticalPadding`: space above the first and below the last
+/// item.
+pub const MENU_VERTICAL_PADDING: f32 = 8.0;
+/// `MenuListItemContainerHeight`.
+pub const MENU_ITEM_HEIGHT: f32 = 48.0;
+/// `DropdownMenuItemHorizontalPadding`.
+pub const MENU_ITEM_HORIZONTAL_PADDING: f32 = 12.0;
+/// Typed characters within this many seconds of each other build one
+/// typeahead search.
+const TYPEAHEAD_RESET_SECONDS: f64 = 1.0;
+/// The menu keeps this far from the window edges.
+const MENU_SCREEN_MARGIN: f32 = 8.0;
 
 /// Material Design select/dropdown component.
 ///
@@ -23,10 +57,11 @@ use egui::{
 /// and show all options in a dropdown menu when activated.
 ///
 /// Supports Material Design 3 variants (filled and outlined), filtering,
-/// validation, and comprehensive keyboard navigation.
+/// validation, and keyboard navigation.
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::{MaterialSelect, SelectVariant};
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(1);
 ///
@@ -39,6 +74,31 @@ use egui::{
 ///     .helper_text("Select your preferred option"));
 /// # });
 /// ```
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
+pub struct MaterialSelect<'a> {
+    selected: &'a mut Option<usize>,
+    options: Vec<SelectOption>,
+    placeholder: String,
+    label: Option<String>,
+    variant: SelectVariant,
+    enabled: bool,
+    width: Option<f32>,
+    error_text: Option<String>,
+    helper_text: Option<String>,
+    leading_icon: Option<String>,
+    trailing_icon: Option<String>,
+    keep_open_on_select: bool,
+    enable_filter: bool,
+    enable_search: bool,
+    required: bool,
+    menu_width: Option<f32>,
+    menu_max_height: Option<f32>,
+    border_radius: Option<f32>,
+    menu_alignment: MenuAlignment,
+    compact: bool,
+    id_salt: Option<egui::IdSalt>,
+}
+
 /// Visual variant of the select component.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SelectVariant {
@@ -47,6 +107,15 @@ pub enum SelectVariant {
     Filled,
     /// Outlined variant with border
     Outlined,
+}
+
+impl From<SelectVariant> for InputVariant {
+    fn from(variant: SelectVariant) -> Self {
+        match variant {
+            SelectVariant::Filled => InputVariant::Filled,
+            SelectVariant::Outlined => InputVariant::Outlined,
+        }
+    }
 }
 
 /// Menu alignment options.
@@ -59,57 +128,29 @@ pub enum MenuAlignment {
     End,
 }
 
-#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
-pub struct MaterialSelect<'a> {
-    /// Reference to the currently selected option
-    selected: &'a mut Option<usize>,
-    /// List of available options
-    options: Vec<SelectOption>,
-    /// Placeholder text when no option is selected
-    placeholder: String,
-    /// Label text (floats above when focused or has content)
-    label: Option<String>,
-    /// Visual variant (filled or outlined)
-    variant: SelectVariant,
-    /// Whether the select is enabled for interaction
-    enabled: bool,
-    /// Fixed width of the select component
-    width: Option<f32>,
-    /// Error message to display below the select
-    error_text: Option<String>,
-    /// Helper text to display below the select
-    helper_text: Option<String>,
-    /// Icon to show at the start of the select field
-    leading_icon: Option<String>,
-    /// Icon to show at the end of the select field (overrides default dropdown arrow)
-    trailing_icon: Option<String>,
-    /// Whether to keep the dropdown open after selecting an option
-    keep_open_on_select: bool,
-    /// Enable filtering of options by typing
-    enable_filter: bool,
-    /// Enable search highlighting while typing
-    enable_search: bool,
-    /// Mark field as required
-    required: bool,
-    /// Independent menu width
-    menu_width: Option<f32>,
-    /// Maximum menu height
-    menu_max_height: Option<f32>,
-    /// Border radius for menu
-    border_radius: Option<f32>,
-    /// Menu alignment
-    menu_alignment: MenuAlignment,
-    /// Enable compact mode with minimal padding
-    compact: bool,
+/// Individual option in a select component.
+#[derive(Clone, Debug)]
+pub struct SelectOption {
+    value: usize,
+    text: String,
 }
 
-/// Individual option in a select component.
-#[derive(Clone)]
-pub struct SelectOption {
-    /// Unique identifier for this option
-    value: usize,
-    /// Display text for this option
-    text: String,
+/// What a select remembers between frames.
+#[derive(Clone, Debug, Default)]
+struct SelectState {
+    open: bool,
+    /// The keyboard-highlighted option, as an index into `options`.
+    highlighted: Option<usize>,
+    /// The text in the editable field (filter mode).
+    filter: String,
+    /// The user has typed since the menu opened, so the menu filters.
+    filtering: bool,
+    typeahead: String,
+    typeahead_time: f64,
+    /// Where the menu was drawn last frame, for click-outside.
+    menu_rect: Option<Rect>,
+    /// The highlight moved by keyboard: scroll it into view.
+    scroll_to_highlight: bool,
 }
 
 impl<'a> MaterialSelect<'a> {
@@ -117,14 +158,6 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Arguments
     /// * `selected` - Mutable reference to the currently selected option value
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// let select = MaterialSelect::new(&mut selection);
-    /// # });
-    /// ```
     pub fn new(selected: &'a mut Option<usize>) -> Self {
         Self {
             selected,
@@ -147,24 +180,11 @@ impl<'a> MaterialSelect<'a> {
             border_radius: None,
             menu_alignment: MenuAlignment::default(),
             compact: false,
+            id_salt: None,
         }
     }
 
-    /// Add an option to the select component.
-    ///
-    /// # Arguments
-    /// * `value` - Unique identifier for this option
-    /// * `text` - Display text for this option
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .option(1, "First Option")
-    ///     .option(2, "Second Option"));
-    /// # });
-    /// ```
+    /// Add an option: `value` is what `selected` is set to, `text` is shown.
     pub fn option(mut self, value: usize, text: impl Into<String>) -> Self {
         self.options.push(SelectOption {
             value,
@@ -174,838 +194,776 @@ impl<'a> MaterialSelect<'a> {
     }
 
     /// Set placeholder text shown when no option is selected.
-    ///
-    /// # Arguments
-    /// * `placeholder` - The placeholder text to display
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .placeholder("Choose your option"));
-    /// # });
-    /// ```
     pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
     /// Set label text that floats above the field when focused or has content.
-    ///
-    /// # Arguments
-    /// * `label` - The label text to display
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .label("Color"));
-    /// # });
-    /// ```
     pub fn label(mut self, label: impl Into<String>) -> Self {
         self.label = Some(label.into());
         self
     }
 
     /// Set the visual variant of the select component.
-    ///
-    /// # Arguments
-    /// * `variant` - The variant (Filled or Outlined)
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .variant(SelectVariant::Outlined));
-    /// # });
-    /// ```
     pub fn variant(mut self, variant: SelectVariant) -> Self {
         self.variant = variant;
         self
     }
 
     /// Enable or disable the select component.
-    ///
-    /// # Arguments
-    /// * `enabled` - Whether the select should be enabled (true) or disabled (false)
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .enabled(false)); // Disabled select
-    /// # });
-    /// ```
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
-    /// Set a fixed width for the select component.
-    ///
-    /// # Arguments
-    /// * `width` - The width in pixels
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .width(300.0)); // Fixed width of 300 pixels
-    /// # });
-    /// ```
+    /// Set a fixed width for the select component (default 200).
     pub fn width(mut self, width: f32) -> Self {
         self.width = Some(width);
         self
     }
 
-    /// Set error text to display below the select component.
-    ///
-    /// # Arguments
-    /// * `text` - The error message text
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .error_text("This field is required")); // Error message
-    /// # });
-    /// ```
+    /// Set error text to display below the select; the field shows its
+    /// error colours while it is set.
     pub fn error_text(mut self, text: impl Into<String>) -> Self {
         self.error_text = Some(text.into());
         self
     }
 
     /// Set helper text to display below the select component.
-    ///
-    /// # Arguments
-    /// * `text` - The helper message text
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .helper_text("Select an option from the list")); // Helper text
-    /// # });
-    /// ```
     pub fn helper_text(mut self, text: impl Into<String>) -> Self {
         self.helper_text = Some(text.into());
         self
     }
 
     /// Set an icon to display at the start of the select field.
-    ///
-    /// # Arguments
-    /// * `icon` - The icon identifier (e.g., "home", "settings")
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .leading_icon("settings")); // Gear icon on the left
-    /// # });
-    /// ```
     pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
         self.leading_icon = Some(icon.into());
         self
     }
 
-    /// Set an icon to display at the end of the select field (overrides default dropdown arrow).
-    ///
-    /// # Arguments
-    /// * `icon` - The icon identifier (e.g., "check", "close")
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .trailing_icon("check")); // Check icon on the right
-    /// # });
-    /// ```
+    /// Set an icon to display at the end of the select field, in place of
+    /// the drop-down arrow.
     pub fn trailing_icon(mut self, icon: impl Into<String>) -> Self {
         self.trailing_icon = Some(icon.into());
         self
     }
 
-    /// Set whether to keep the dropdown open after selecting an option.
-    ///
-    /// # Arguments
-    /// * `keep_open` - If true, the dropdown remains open after selection;
-    ///   if false, it closes (default behavior)
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .keep_open_on_select(true)); // Dropdown stays open after selection
-    /// # });
-    /// ```
+    /// Keep the menu open after an option is selected.
     pub fn keep_open_on_select(mut self, keep_open: bool) -> Self {
         self.keep_open_on_select = keep_open;
         self
     }
 
-    /// Enable filtering of options by typing.
-    ///
-    /// # Arguments
-    /// * `enable` - If true, allows filtering options by text input
+    /// Make the field editable: the menu shows only the options containing
+    /// the typed text, and Enter picks the highlighted (first) match.
     pub fn enable_filter(mut self, enable: bool) -> Self {
         self.enable_filter = enable;
         self
     }
 
-    /// Enable search highlighting while typing.
-    ///
-    /// # Arguments
-    /// * `enable` - If true, highlights matching options while typing
+    /// Typeahead: typing while the (non-editable) field is focused jumps to
+    /// the first option starting with the typed text. On by default.
     pub fn enable_search(mut self, enable: bool) -> Self {
         self.enable_search = enable;
         self
     }
 
-    /// Mark the field as required.
-    ///
-    /// # Arguments
-    /// * `required` - If true, marks the field as required
+    /// Mark the field as required (reported to screen readers).
     pub fn required(mut self, required: bool) -> Self {
         self.required = required;
         self
     }
 
     /// Set independent menu width.
-    ///
-    /// # Arguments
-    /// * `width` - The width of the menu in pixels
     pub fn menu_width(mut self, width: f32) -> Self {
         self.menu_width = Some(width);
         self
     }
 
     /// Set maximum menu height.
-    ///
-    /// # Arguments
-    /// * `height` - The maximum height of the menu in pixels
     pub fn menu_max_height(mut self, height: f32) -> Self {
         self.menu_max_height = Some(height);
         self
     }
 
-    /// Set border radius for menu.
-    ///
-    /// # Arguments
-    /// * `radius` - The border radius in pixels
+    /// Override the menu corner radius (default 4, `MenuTokens.ContainerShape`).
     pub fn border_radius(mut self, radius: f32) -> Self {
         self.border_radius = Some(radius);
         self
     }
 
     /// Set menu alignment.
-    ///
-    /// # Arguments
-    /// * `alignment` - The menu alignment (Start or End)
     pub fn menu_alignment(mut self, alignment: MenuAlignment) -> Self {
         self.menu_alignment = alignment;
         self
     }
 
-    /// Enable compact mode with minimal padding.
-    ///
-    /// Compact mode reduces vertical padding to create a smaller select component
-    /// with height closer to the text height. Useful for inline selections, data tables,
-    /// or space-constrained UIs.
-    ///
-    /// # Arguments
-    /// * `compact` - If true, uses minimal padding; if false, uses standard Material Design padding
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut selection = None;
-    /// ui.add(MaterialSelect::new(&mut selection)
-    ///     .compact(true)); // Compact mode with minimal height
-    /// # });
-    /// ```
+    /// Compact mode: a 32 dp field without a floating label, for tables and
+    /// toolbars.
     pub fn compact(mut self, compact: bool) -> Self {
         self.compact = compact;
         self
     }
+
+    /// Derive the select's ids from `salt` instead of its position in the
+    /// layout.
+    pub fn id_salt(mut self, salt: impl egui::AsIdSalt) -> Self {
+        self.id_salt = Some(egui::IdSalt::new(salt));
+        self
+    }
 }
 
-impl<'a> Widget for MaterialSelect<'a> {
+/// Indices into `options` of the options to show for `state`.
+fn visible_options(options: &[SelectOption], state: &SelectState) -> Vec<usize> {
+    if !state.filtering || state.filter.is_empty() {
+        return (0..options.len()).collect();
+    }
+    let needle = state.filter.to_lowercase();
+    options
+        .iter()
+        .enumerate()
+        .filter(|(_, option)| option.text.to_lowercase().contains(&needle))
+        .map(|(i, _)| i)
+        .collect()
+}
+
+/// The first option whose text starts with `prefix`, ignoring case.
+fn typeahead_match(options: &[SelectOption], prefix: &str) -> Option<usize> {
+    let prefix = prefix.to_lowercase();
+    if prefix.is_empty() {
+        return None;
+    }
+    options
+        .iter()
+        .position(|option| option.text.to_lowercase().starts_with(&prefix))
+}
+
+/// Moves `highlighted` by `step` within `visible` (clamped at the ends).
+fn step_highlight(visible: &[usize], highlighted: Option<usize>, step: isize) -> Option<usize> {
+    let last = visible.len().checked_sub(1)?;
+    let current = highlighted.and_then(|h| visible.iter().position(|&v| v == h));
+    let next = match current {
+        None if step >= 0 => 0,
+        None => last,
+        Some(i) => i.saturating_add_signed(step).min(last),
+    };
+    visible.get(next).copied()
+}
+
+/// The id remembering which select is open, so opening one closes others.
+fn open_select_id() -> Id {
+    Id::unique("egui_material3::open_select")
+}
+
+impl Widget for MaterialSelect<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
+        let ctx = ui.ctx().clone();
+        let theme = MaterialTheme::of(&ctx);
+        let enabled = self.enabled && ui.is_enabled();
+        let variant = InputVariant::from(self.variant);
+        let is_error = self.error_text.is_some();
+        let body = TypeRole::BodyLarge.style();
+        let font = body.font_id(&ctx);
+
         let width = self.width.unwrap_or(200.0);
-        // Standard Material Design height: 56.0
-        // Compact mode: ~32.0 (closer to text height with minimal padding)
         let height = if self.compact { 32.0 } else { 56.0 };
-        let desired_size = Vec2::new(width, height);
-
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
-
-        // Use persistent state for dropdown open/close with global coordination
-        let select_id = egui::Id::new((
-            "select_widget",
-            rect.min.x as i32,
-            rect.min.y as i32,
-            self.placeholder.clone(),
-            self.label.clone(),
-        ));
-        let mut open = ui.memory(|mem| mem.data.get_temp::<bool>(select_id).unwrap_or(false));
-
-        // Handle Escape key to close dropdown
-        if open && ui.input(|i| i.key_pressed(Key::Escape)) {
-            open = false;
-            ui.memory_mut(|mem| mem.data.insert_temp(select_id, false));
-        }
-
-        // Global state to close other select menus
-        let global_open_select_id = egui::Id::new("global_open_select");
-        let current_open_select =
-            ui.memory(|mem| mem.data.get_temp::<egui::Id>(global_open_select_id));
-
-        if response.clicked() && self.enabled {
-            if open {
-                // Close this select
-                open = false;
-                ui.memory_mut(|mem| mem.data.remove::<egui::Id>(global_open_select_id));
-            } else {
-                // Close any other open select and open this one
-                if let Some(other_id) = current_open_select {
-                    if other_id != select_id {
-                        ui.memory_mut(|mem| mem.data.insert_temp(other_id, false));
-                    }
-                }
-                open = true;
-                ui.memory_mut(|mem| mem.data.insert_temp(global_open_select_id, select_id));
-            }
-            ui.memory_mut(|mem| mem.data.insert_temp(select_id, open));
-        }
-
-        // Material Design colors
-        let primary_color = get_global_color("primary");
-        let surface = get_global_color("surface");
-        let surface_variant = get_global_color("surfaceVariant");
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline = get_global_color("outline");
-        let error_color = get_global_color("error");
-
-        // Determine if we should show floating label
-        let has_content = self.selected.is_some();
-        let should_float_label = has_content || open || response.hovered();
-
-        // Hide label if field is empty and not focused (placeholder will be shown instead)
-        let should_show_label = self.label.is_some() && should_float_label;
-
-        // Determine colors based on state
-        let (bg_color, border_color, text_color) = if !self.enabled {
-            (
-                surface_variant.linear_multiply(0.38),
-                outline.linear_multiply(0.38),
-                on_surface.linear_multiply(0.38),
-            )
-        } else if self.error_text.is_some() {
-            match self.variant {
-                SelectVariant::Filled => (surface_variant, error_color, on_surface),
-                SelectVariant::Outlined => (surface, error_color, on_surface),
-            }
-        } else if response.hovered() || open {
-            match self.variant {
-                SelectVariant::Filled => (surface_variant, primary_color, on_surface),
-                SelectVariant::Outlined => (surface, primary_color, on_surface),
-            }
-        } else {
-            match self.variant {
-                SelectVariant::Filled => (surface_variant, outline, on_surface_variant),
-                SelectVariant::Outlined => (surface, outline, on_surface_variant),
-            }
-        };
-
-        // Draw select field background
-        match self.variant {
-            SelectVariant::Filled => {
-                ui.painter().rect_filled(rect, 4.0, bg_color);
-                // Draw bottom border for filled variant
-                if !self.enabled {
-                    ui.painter().line_segment(
-                        [
-                            Pos2::new(rect.min.x, rect.max.y),
-                            Pos2::new(rect.max.x, rect.max.y),
-                        ],
-                        Stroke::new(1.0, border_color),
-                    );
-                } else {
-                    ui.painter().line_segment(
-                        [
-                            Pos2::new(rect.min.x, rect.max.y),
-                            Pos2::new(rect.max.x, rect.max.y),
-                        ],
-                        Stroke::new(
-                            if open || response.hovered() { 2.0 } else { 1.0 },
-                            border_color,
-                        ),
-                    );
-                }
-            }
-            SelectVariant::Outlined => {
-                ui.painter().rect_filled(rect, 4.0, bg_color);
-                ui.painter().rect_stroke(
-                    rect,
-                    4.0,
-                    Stroke::new(
-                        if open || response.hovered() { 2.0 } else { 1.0 },
-                        border_color,
-                    ),
-                    egui::epaint::StrokeKind::Outside,
-                );
-            }
-        }
-
-        // Draw floating label if present and should be shown
-        if should_show_label {
-            let label_text = self.label.as_ref().unwrap();
-            let label_font = if should_float_label {
-                FontId::new(12.0, FontFamily::Proportional)
-            } else {
-                FontId::new(16.0, FontFamily::Proportional)
-            };
-
-            let label_color = if !self.enabled {
-                on_surface.linear_multiply(0.38)
-            } else if self.error_text.is_some() {
-                error_color
-            } else if open {
-                primary_color
-            } else {
-                on_surface_variant
-            };
-
-            let label_pos = if should_float_label {
-                // Compact mode: minimal top padding (1px), standard: 8px
-                let top_padding = if self.compact { 1.0 } else { 8.0 };
-                Pos2::new(rect.min.x + 16.0, rect.min.y + top_padding)
-            } else {
-                Pos2::new(rect.min.x + 16.0, rect.center().y)
-            };
-
-            ui.painter().text(
-                label_pos,
-                egui::Align2::LEFT_TOP,
-                label_text,
-                label_font,
-                label_color,
-            );
-        }
-
-        // Draw selected text or placeholder
-        let display_text = if let Some(selected_value) = *self.selected {
-            self.options
-                .iter()
-                .find(|option| option.value == selected_value)
-                .map(|option| option.text.as_str())
-                .unwrap_or(&self.placeholder)
-        } else {
-            &self.placeholder
-        };
-
-        // Use consistent font styling for select field
-        let select_font = FontId::new(16.0, FontFamily::Proportional);
-        let text_y_offset = if should_show_label && should_float_label {
-            // Compact mode: 6.5px offset centers text in space below label
-            // Standard mode: 12px offset centers text in space below label
-            if self.compact {
-                6.5
-            } else {
-                12.0
-            }
+        let supporting = self.error_text.as_deref().or(self.helper_text.as_deref());
+        let supporting_height = if supporting.is_some() {
+            4.0 + TypeRole::BodySmall.style().line_height
         } else {
             0.0
         };
-        let text_pos = Pos2::new(rect.min.x + 16.0, rect.center().y + text_y_offset);
+        let (total_rect, allocated) =
+            ui.allocate_exact_size(Vec2::new(width, height + supporting_height), Sense::hover());
+        let id = self
+            .id_salt
+            .map_or(allocated.id, |salt| ui.make_persistent_id(salt))
+            .with("select_widget");
+        let edit_id = id.with("filter");
+        let rect = Rect::from_min_size(total_rect.min, Vec2::new(width, height));
+        let mut response = ui.interact(
+            rect,
+            id,
+            crate::a11y::sense(
+                enabled,
+                if self.enable_filter {
+                    Sense::CLICK
+                } else {
+                    Sense::click()
+                },
+            ),
+        );
 
-        let display_color = if self.selected.is_none() {
-            on_surface_variant.linear_multiply(0.6)
-        } else {
-            text_color
+        let mut state = ctx
+            .data(|d| d.get_temp::<SelectState>(id))
+            .unwrap_or_default();
+        let selected_index = |selected: &Option<usize>| {
+            selected.and_then(|value| self.options.iter().position(|o| o.value == value))
+        };
+        let selected_text = |selected: &Option<usize>| {
+            selected_index(selected)
+                .and_then(|i| self.options.get(i))
+                .map(|o| o.text.clone())
         };
 
-        // Clip text to prevent overflow - leave space for dropdown arrow
-        let text_clip_rect = Rect::from_min_max(
-            Pos2::new(rect.min.x + 16.0, rect.min.y),
-            Pos2::new(rect.max.x - 48.0, rect.max.y), // 48px space for arrow
-        );
-
-        ui.painter().with_clip_rect(text_clip_rect).text(
-            text_pos,
-            egui::Align2::LEFT_CENTER,
-            display_text,
-            select_font.clone(),
-            display_color,
-        );
-
-        // Draw dropdown arrow
-        let arrow_center = Pos2::new(rect.max.x - 24.0, rect.center().y);
-        let arrow_size = 8.0;
-
-        if open {
-            // Up arrow
-            ui.painter().line_segment(
-                [
-                    Pos2::new(
-                        arrow_center.x - arrow_size / 2.0,
-                        arrow_center.y + arrow_size / 4.0,
-                    ),
-                    Pos2::new(arrow_center.x, arrow_center.y - arrow_size / 4.0),
-                ],
-                Stroke::new(2.0, text_color),
-            );
-            ui.painter().line_segment(
-                [
-                    Pos2::new(arrow_center.x, arrow_center.y - arrow_size / 4.0),
-                    Pos2::new(
-                        arrow_center.x + arrow_size / 2.0,
-                        arrow_center.y + arrow_size / 4.0,
-                    ),
-                ],
-                Stroke::new(2.0, text_color),
-            );
-        } else {
-            // Down arrow
-            ui.painter().line_segment(
-                [
-                    Pos2::new(
-                        arrow_center.x - arrow_size / 2.0,
-                        arrow_center.y - arrow_size / 4.0,
-                    ),
-                    Pos2::new(arrow_center.x, arrow_center.y + arrow_size / 4.0),
-                ],
-                Stroke::new(2.0, text_color),
-            );
-            ui.painter().line_segment(
-                [
-                    Pos2::new(arrow_center.x, arrow_center.y + arrow_size / 4.0),
-                    Pos2::new(
-                        arrow_center.x + arrow_size / 2.0,
-                        arrow_center.y - arrow_size / 4.0,
-                    ),
-                ],
-                Stroke::new(2.0, text_color),
-            );
+        // Only one select is open at a time.
+        let open_elsewhere = ctx
+            .data(|d| d.get_temp::<Id>(open_select_id()))
+            .is_some_and(|open| open != id);
+        if state.open && open_elsewhere {
+            state.open = false;
+        }
+        if !enabled {
+            state.open = false;
         }
 
-        // Show dropdown if open - using Area for proper z-layering like menu component
-        if open {
-            // Calculate available space below and above using viewport for accurate detection
-            // This ensures dropdown opens upward when select is at bottom of screen
-            let viewport_rect = ui.ctx().content_rect();
-            let available_space_below = viewport_rect.max.y - rect.max.y - 4.0;
-            let available_space_above = rect.min.y - viewport_rect.min.y - 4.0;
+        let focus_id = if self.enable_filter { edit_id } else { id };
+        let focused = ctx.memory(|m| m.has_focus(focus_id));
+        let open_menu = |state: &mut SelectState, selected: &Option<usize>| {
+            if !state.open {
+                state.open = true;
+                state.filtering = false;
+                state.highlighted = selected_index(selected)
+                    .or(Some(0))
+                    .filter(|_| !self.options.is_empty());
+                state.scroll_to_highlight = true;
+            }
+        };
 
-            let item_height = 48.0;
-            let dropdown_padding = 16.0;
-
-            // Use menu_max_height if specified, otherwise use available space
-            let effective_max_height = if let Some(max_h) = self.menu_max_height {
-                max_h
+        // Pointer clicks only: Enter and Space (which egui also reports as
+        // clicks on a focused widget) are handled with the other keys below.
+        if response.clicked_by(egui::PointerButton::Primary) {
+            if state.open {
+                state.open = false;
             } else {
-                available_space_below.max(available_space_above)
+                open_menu(&mut state, self.selected);
+            }
+            ctx.memory_mut(|m| m.request_focus(focus_id));
+        }
+
+        // Keyboard, while the field has focus. Arrow keys and Escape are
+        // taken before egui's focus navigation and the text edit see them.
+        let mut picked: Option<usize> = None;
+        if focused && enabled {
+            let filter = EventFilter {
+                tab: false,
+                horizontal_arrows: self.enable_filter,
+                vertical_arrows: true,
+                escape: true,
             };
+            ctx.memory_mut(|m| m.set_focus_lock_filter(focus_id, filter));
+            let pressed = |key| ui.input_mut(|i| i.consume_key(Modifiers::NONE, key));
+            let visible = visible_options(&self.options, &state);
+            if pressed(Key::ArrowDown) {
+                if state.open {
+                    state.highlighted = step_highlight(&visible, state.highlighted, 1);
+                } else {
+                    open_menu(&mut state, self.selected);
+                }
+                state.scroll_to_highlight = true;
+            }
+            if pressed(Key::ArrowUp) {
+                if state.open {
+                    state.highlighted = step_highlight(&visible, state.highlighted, -1);
+                } else {
+                    open_menu(&mut state, self.selected);
+                }
+                state.scroll_to_highlight = true;
+            }
+            if state.open && pressed(Key::Home) {
+                state.highlighted = visible.first().copied();
+                state.scroll_to_highlight = true;
+            }
+            if state.open && pressed(Key::End) {
+                state.highlighted = visible.last().copied();
+                state.scroll_to_highlight = true;
+            }
+            if state.open && pressed(Key::Escape) {
+                state.open = false;
+            }
+            let activate = pressed(Key::Enter) || (!self.enable_filter && pressed(Key::Space));
+            if activate {
+                if state.open {
+                    picked = state.highlighted.filter(|h| visible.contains(h));
+                    if picked.is_none() {
+                        state.open = false;
+                    }
+                } else if !self.enable_filter {
+                    open_menu(&mut state, self.selected);
+                }
+            }
+            if !self.enable_filter && self.enable_search {
+                let typed: String = ui.input(|i| {
+                    i.events
+                        .iter()
+                        .filter_map(|e| match e {
+                            egui::Event::Text(t) => Some(t.as_str()),
+                            _ => None,
+                        })
+                        .collect()
+                });
+                if !typed.trim().is_empty() {
+                    let now = ui.input(|i| i.time);
+                    if now - state.typeahead_time > TYPEAHEAD_RESET_SECONDS {
+                        state.typeahead.clear();
+                    }
+                    state.typeahead.push_str(&typed);
+                    state.typeahead_time = now;
+                    if let Some(i) = typeahead_match(&self.options, &state.typeahead) {
+                        open_menu(&mut state, self.selected);
+                        state.highlighted = Some(i);
+                        state.scroll_to_highlight = true;
+                    }
+                }
+            }
+        }
 
-            let max_items_below = ((available_space_below.min(effective_max_height)
-                - dropdown_padding)
-                / item_height)
-                .floor() as usize;
-            let max_items_above = ((available_space_above.min(effective_max_height)
-                - dropdown_padding)
-                / item_height)
-                .floor() as usize;
+        // Focus moved to another widget (Tab): close.
+        let focus_now = ctx.memory(|m| m.focused());
+        if state.open && focus_now.is_some_and(|f| f != focus_id) {
+            state.open = false;
+        }
 
-            // Determine dropdown position and size
-            let (dropdown_y, visible_items, scroll_needed) = if max_items_below
-                >= self.options.len()
-            {
-                // Fit below
-                (rect.max.y + 4.0, self.options.len(), false)
-            } else if max_items_above >= self.options.len() {
-                // Fit above
-                let dropdown_height = self.options.len() as f32 * item_height + dropdown_padding;
-                (
-                    rect.min.y - 4.0 - dropdown_height,
-                    self.options.len(),
-                    false,
-                )
-            } else if max_items_below >= max_items_above {
-                // Partial fit below with scroll
-                (rect.max.y + 4.0, max_items_below.max(3), true)
-            } else {
-                // Partial fit above with scroll
-                let visible_items = max_items_above.max(3);
-                let dropdown_height = visible_items as f32 * item_height + dropdown_padding;
-                (rect.min.y - 4.0 - dropdown_height, visible_items, true)
+        // A press outside the field and the menu closes it.
+        if state.open {
+            let press = ui.input(|i| {
+                if i.pointer.any_pressed() {
+                    i.pointer.press_origin()
+                } else {
+                    None
+                }
+            });
+            if let Some(pos) = press {
+                let in_menu = state.menu_rect.is_some_and(|r| r.contains(pos));
+                if !rect.contains(pos) && !in_menu {
+                    state.open = false;
+                }
+            }
+        }
+
+        // Colours and layout of the field.
+        let hovered = enabled && response.hovered();
+        let colors = field_colors(
+            &theme,
+            variant,
+            FieldState {
+                enabled,
+                error: is_error,
+                focused: focused || state.open,
+                hovered,
+            },
+        );
+        let text_start = if self.leading_icon.is_some() {
+            TEXT_PADDING_WITH_ICON
+        } else {
+            HORIZONTAL_PADDING
+        };
+        let text_end = TEXT_PADDING_WITH_ICON;
+        let container_slot = ui.painter().add(egui::Shape::Noop);
+        let has_label = self.label.is_some() && !self.compact;
+        let input_top = if variant == InputVariant::Filled && has_label {
+            rect.top() + 24.0
+        } else {
+            rect.center().y - body.line_height / 2.0
+        };
+        let input_rect = Rect::from_min_size(
+            Pos2::new(rect.left() + text_start, input_top),
+            Vec2::new((width - text_start - text_end).max(1.0), body.line_height),
+        );
+
+        // The field's text: an editable filter, or the selected option.
+        let mut edit_response = None;
+        if self.enable_filter {
+            if !(focused || state.open) {
+                state.filter = selected_text(self.selected).unwrap_or_default();
+                state.filtering = false;
+            }
+            let show_placeholder = !has_label || focused;
+            let mut filter = std::mem::take(&mut state.filter);
+            let edit = {
+                // A child that does not allocate: the field already holds its space.
+                let mut child = ui.new_child(egui::UiBuilder::new().max_rect(input_rect));
+                let ui = &mut child;
+                ui.visuals_mut().text_cursor.stroke.color = colors.caret;
+                let mut edit = egui::TextEdit::singleline(&mut filter)
+                    .id(edit_id)
+                    .font(font.clone())
+                    .text_color(colors.input)
+                    .frame(egui::Frame::NONE)
+                    .margin(egui::Margin::ZERO)
+                    .desired_width(input_rect.width())
+                    .min_size(input_rect.size())
+                    .align(Align2::LEFT_CENTER)
+                    .interactive(enabled);
+                if show_placeholder {
+                    edit = edit.hint_text(
+                        RichText::new(&self.placeholder)
+                            .font(font.clone())
+                            .color(colors.placeholder),
+                    );
+                }
+                ui.add(edit)
             };
+            state.filter = filter;
+            if edit.changed() {
+                open_menu(&mut state, self.selected);
+                state.filtering = true;
+                let visible = visible_options(&self.options, &state);
+                state.highlighted = visible.first().copied();
+                state.scroll_to_highlight = true;
+            }
+            if edit.clicked() && !state.open {
+                open_menu(&mut state, self.selected);
+            }
+            edit_response = Some(edit);
+        } else {
+            let display = selected_text(self.selected);
+            let show_placeholder = !has_label || state.open || focused;
+            let (text, color) = match &display {
+                Some(text) => (Some(text.as_str()), colors.input),
+                None if show_placeholder => (Some(self.placeholder.as_str()), colors.placeholder),
+                None => (None, colors.input),
+            };
+            if let Some(text) = text {
+                ui.painter()
+                    .with_clip_rect(input_rect.intersect(ui.clip_rect()))
+                    .text(
+                        Pos2::new(input_rect.left(), input_rect.center().y),
+                        Align2::LEFT_CENTER,
+                        text,
+                        font.clone(),
+                        color,
+                    );
+            }
+        }
 
-            let dropdown_height = visible_items as f32 * item_height + dropdown_padding;
+        let painter = ui.painter().clone();
+        let has_content = if self.enable_filter {
+            !state.filter.is_empty()
+        } else {
+            self.selected.is_some()
+        };
+        let floated = has_content || focused || state.open;
+        let progress = if has_label {
+            label_progress(&ctx, id.with("label"), floated)
+        } else {
+            0.0
+        };
+        let label_geometry = LabelGeometry {
+            rest: Pos2::new(rect.left() + text_start, rect.center().y),
+            floated: floated_label_pos(variant, rect, text_start),
+        };
+        let notch = match (&self.label, variant) {
+            (Some(label), InputVariant::Outlined) if has_label => {
+                notch_for(&painter, &ctx, label, label_geometry.floated, progress)
+            }
+            _ => None,
+        };
+        painter.set(
+            container_slot,
+            container_shape(rect, variant, &colors, notch),
+        );
+        if let Some(label) = self.label.as_ref().filter(|_| has_label) {
+            paint_label(
+                &painter,
+                &ctx,
+                label,
+                label_geometry,
+                progress,
+                colors.label,
+            );
+        }
+        if let Some(icon) = &self.leading_icon {
+            let center = Pos2::new(
+                rect.left() + ICON_PADDING + ICON_SIZE / 2.0,
+                rect.center().y,
+            );
+            paint_icon(&painter, center, icon, colors.leading_icon);
+        }
+        let trailing_center = Pos2::new(
+            rect.right() - ICON_PADDING - ICON_SIZE / 2.0,
+            rect.center().y,
+        );
+        // In filter mode the arrow is the way to open the full list.
+        if self.enable_filter && enabled {
+            let arrow = ui.interact(
+                Rect::from_center_size(trailing_center, Vec2::splat(40.0)),
+                id.with("arrow"),
+                Sense::CLICK,
+            );
+            if arrow.clicked() {
+                if state.open {
+                    state.open = false;
+                } else {
+                    open_menu(&mut state, self.selected);
+                    state.filtering = false;
+                }
+                ctx.memory_mut(|m| m.request_focus(edit_id));
+            }
+        }
+        match &self.trailing_icon {
+            Some(icon) => paint_icon(&painter, trailing_center, icon, colors.trailing_icon),
+            None => {
+                let turn = ctx.animate_bool_with_time(
+                    id.with("arrow_turn"),
+                    state.open,
+                    crate::input::LABEL_ANIMATION_SECONDS,
+                );
+                paint_drop_down_arrow(&painter, trailing_center, turn, colors.trailing_icon);
+            }
+        }
+        if let Some(text) = supporting {
+            let row = Rect::from_min_max(
+                Pos2::new(total_rect.left(), rect.bottom() + 4.0),
+                total_rect.max,
+            );
+            paint_supporting(&painter, &ctx, row, Some(text), None, colors.supporting);
+        }
 
-            // Use menu_width if specified, otherwise use field width
-            let menu_width = self.menu_width.unwrap_or(width);
-            let menu_border_radius = self.border_radius.unwrap_or(8.0);
-
-            let dropdown_pos = Pos2::new(rect.min.x, dropdown_y);
-            let dropdown_size = Vec2::new(menu_width, dropdown_height);
-
-            // Use page background color as specified
-            let dropdown_bg_color = ui.visuals().window_fill;
-
-            // Clone/copy data needed in the Area closure
-            let ctx = ui.ctx().clone();
-            let options = self.options.clone();
-            let selected = self.selected;
-            let keep_open_on_select = self.keep_open_on_select;
-
-            // Use Area widget for proper z-layering (like menu component)
-            egui::Area::new(select_id.with("dropdown"))
-                .fixed_pos(dropdown_pos)
+        // The menu.
+        let visible = visible_options(&self.options, &state);
+        state.menu_rect = None;
+        if state.open && !visible.is_empty() {
+            let menu = MenuLayout::new(
+                &ctx,
+                rect,
+                visible.len(),
+                self.menu_width.unwrap_or(width),
+                self.menu_max_height,
+                self.menu_alignment,
+            );
+            state.menu_rect = Some(menu.rect);
+            let radius = self.border_radius.unwrap_or(MENU_CORNER_RADIUS);
+            let label_font = TypeRole::LabelLarge.style().font_id(&ctx);
+            let on_surface = theme.color(ColorRole::OnSurface);
+            let scroll_to_highlight = std::mem::take(&mut state.scroll_to_highlight);
+            let selected_now = selected_index(self.selected);
+            egui::Area::new(id.with("menu"))
                 .order(egui::Order::Foreground)
-                .interactable(true)
+                .fixed_pos(menu.rect.min)
+                .constrain(false)
                 .show(&ctx, |ui| {
-                    let dropdown_rect = Rect::from_min_size(dropdown_pos, dropdown_size);
-
-                    // Draw subtle elevation shadow
-                    let shadow_color = Color32::from_rgba_premultiplied(0, 0, 0, 30);
-                    ui.painter().rect_filled(
-                        dropdown_rect.translate(Vec2::new(0.0, 2.0)),
-                        menu_border_radius,
-                        shadow_color,
+                    let painter = ui.painter();
+                    paint_elevation(
+                        painter,
+                        menu.rect,
+                        radius,
+                        MENU_ELEVATION,
+                        theme.color(ColorRole::Shadow),
                     );
-
-                    // Draw dropdown background
-                    ui.painter()
-                        .rect_filled(dropdown_rect, menu_border_radius, dropdown_bg_color);
-
-                    // Draw dropdown border
-                    ui.painter().rect_stroke(
-                        dropdown_rect,
-                        menu_border_radius,
-                        Stroke::new(1.0, outline),
-                        egui::epaint::StrokeKind::Outside,
+                    painter.rect_filled(
+                        menu.rect,
+                        radius,
+                        theme.color(ColorRole::SurfaceContainer),
                     );
-
-                    // Render options with scrolling support
-                    if scroll_needed && visible_items < options.len() {
-                        let scroll_area_rect = Rect::from_min_size(
-                            Pos2::new(dropdown_rect.min.x + 8.0, dropdown_rect.min.y + 8.0),
-                            Vec2::new(menu_width - 16.0, dropdown_height - 16.0),
-                        );
-
-                        ui.scope_builder(egui::UiBuilder::new().max_rect(scroll_area_rect), |ui| {
-                            egui::ScrollArea::vertical()
-                                .max_height(dropdown_height - 16.0)
-                                .scroll_bar_visibility(
-                                    egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded,
-                                )
-                                .auto_shrink([false; 2])
-                                .show(ui, |ui| {
-                                    for option in &options {
-                                        // Fixed height for all options - no text wrapping
-                                        let option_height = 48.0;
-                                        let is_selected = *selected == Some(option.value);
-                                        let text_color = if is_selected {
-                                            get_global_color("primary")
-                                        } else {
-                                            on_surface
-                                        };
-
-                                        let (option_rect, option_response) = ui
-                                            .allocate_exact_size(
-                                                Vec2::new(ui.available_width(), option_height),
-                                                Sense::click(),
-                                            );
-
-                                        let option_bg_color = if is_selected {
-                                            Color32::from_rgba_premultiplied(
-                                                on_surface.r(),
-                                                on_surface.g(),
-                                                on_surface.b(),
-                                                30,
-                                            )
-                                        } else if option_response.hovered() {
-                                            Color32::from_rgba_premultiplied(
-                                                on_surface.r(),
-                                                on_surface.g(),
-                                                on_surface.b(),
-                                                20,
-                                            )
-                                        } else {
-                                            Color32::TRANSPARENT
-                                        };
-
-                                        if option_bg_color != Color32::TRANSPARENT {
-                                            ui.painter().rect_filled(
-                                                option_rect,
-                                                4.0,
-                                                option_bg_color,
-                                            );
-                                        }
-
-                                        // Clip text to option bounds
-                                        let text_clip_rect = Rect::from_min_max(
-                                            Pos2::new(option_rect.min.x + 16.0, option_rect.min.y),
-                                            Pos2::new(option_rect.max.x - 16.0, option_rect.max.y),
+                    let list_rect = menu.rect.shrink2(Vec2::new(0.0, MENU_VERTICAL_PADDING));
+                    ui.scope_builder(egui::UiBuilder::new().max_rect(list_rect), |ui| {
+                        ui.spacing_mut().item_spacing = Vec2::ZERO;
+                        egui::ScrollArea::vertical()
+                            .id_salt(id.with("menu_scroll"))
+                            .max_height(list_rect.height())
+                            .auto_shrink([false, true])
+                            .show(ui, |ui| {
+                                for &index in &visible {
+                                    let Some(option) = self.options.get(index) else {
+                                        continue;
+                                    };
+                                    let (item_rect, item) = ui.allocate_exact_size(
+                                        Vec2::new(list_rect.width(), MENU_ITEM_HEIGHT),
+                                        Sense::CLICK,
+                                    );
+                                    let is_selected = selected_now == Some(index);
+                                    let is_highlighted = state.highlighted == Some(index);
+                                    crate::a11y::toggle(
+                                        &item,
+                                        egui::Role::ListBoxOption,
+                                        true,
+                                        &option.text,
+                                        is_selected,
+                                    );
+                                    let text_color = if is_selected {
+                                        ui.painter().rect_filled(
+                                            item_rect,
+                                            0.0,
+                                            theme.color(ColorRole::SecondaryContainer),
                                         );
-
-                                        let text_pos = Pos2::new(
-                                            option_rect.min.x + 16.0,
-                                            option_rect.center().y,
+                                        theme.color(ColorRole::OnSecondaryContainer)
+                                    } else {
+                                        on_surface
+                                    };
+                                    let opacity = if is_highlighted {
+                                        FOCUS_OPACITY
+                                    } else if item.hovered() {
+                                        HOVER_OPACITY
+                                    } else {
+                                        0.0
+                                    };
+                                    if opacity > 0.0 {
+                                        let layer = crate::tokens::InteractionState {
+                                            focused: is_highlighted,
+                                            hovered: item.hovered(),
+                                            ..Default::default()
+                                        };
+                                        paint_state_layer(
+                                            ui.painter(),
+                                            item_rect,
+                                            0,
+                                            text_color,
+                                            layer,
                                         );
-                                        ui.painter().with_clip_rect(text_clip_rect).text(
-                                            text_pos,
-                                            egui::Align2::LEFT_CENTER,
+                                    }
+                                    let text_rect = item_rect
+                                        .shrink2(Vec2::new(MENU_ITEM_HORIZONTAL_PADDING, 0.0));
+                                    ui.painter()
+                                        .with_clip_rect(text_rect.intersect(ui.clip_rect()))
+                                        .text(
+                                            Pos2::new(text_rect.left(), text_rect.center().y),
+                                            Align2::LEFT_CENTER,
                                             &option.text,
-                                            select_font.clone(),
+                                            label_font.clone(),
                                             text_color,
                                         );
-
-                                        if option_response.clicked() {
-                                            *selected = Some(option.value);
-                                            if !keep_open_on_select {
-                                                open = false;
-                                                ui.memory_mut(|mem| {
-                                                    mem.data.insert_temp(select_id, open);
-                                                    mem.data
-                                                        .remove::<egui::Id>(global_open_select_id);
-                                                });
-                                            }
-                                            response.mark_changed();
-                                        }
+                                    if is_highlighted && scroll_to_highlight {
+                                        ui.scroll_to_rect(item_rect, None);
                                     }
-                                });
-                        });
-                    } else {
-                        // Draw options without scrolling
-                        let mut current_y = dropdown_rect.min.y + 8.0;
-                        let items_to_show = visible_items.min(options.len());
-
-                        for option in options.iter().take(items_to_show) {
-                            // Fixed height for all options - no text wrapping
-                            let option_height = 48.0;
-                            let is_selected = *selected == Some(option.value);
-                            let text_color = if is_selected {
-                                get_global_color("primary")
-                            } else {
-                                on_surface
-                            };
-
-                            let option_rect = Rect::from_min_size(
-                                Pos2::new(dropdown_rect.min.x + 8.0, current_y),
-                                Vec2::new(menu_width - 16.0, option_height),
-                            );
-
-                            let option_response = ui.interact(
-                                option_rect,
-                                egui::Id::new(("select_option", option.value, option.text.clone())),
-                                Sense::click(),
-                            );
-
-                            let option_bg_color = if is_selected {
-                                Color32::from_rgba_premultiplied(
-                                    on_surface.r(),
-                                    on_surface.g(),
-                                    on_surface.b(),
-                                    30,
-                                )
-                            } else if option_response.hovered() {
-                                Color32::from_rgba_premultiplied(
-                                    on_surface.r(),
-                                    on_surface.g(),
-                                    on_surface.b(),
-                                    20,
-                                )
-                            } else {
-                                Color32::TRANSPARENT
-                            };
-
-                            if option_bg_color != Color32::TRANSPARENT {
-                                ui.painter().rect_filled(option_rect, 4.0, option_bg_color);
-                            }
-
-                            if option_response.clicked() {
-                                *selected = Some(option.value);
-                                if !keep_open_on_select {
-                                    open = false;
-                                    ui.memory_mut(|mem| {
-                                        mem.data.insert_temp(select_id, open);
-                                        mem.data.remove::<egui::Id>(global_open_select_id);
-                                    });
+                                    if item.clicked() {
+                                        picked = Some(index);
+                                    }
                                 }
-                                response.mark_changed();
-                            }
-
-                            // Clip text to option bounds
-                            let text_clip_rect = Rect::from_min_max(
-                                Pos2::new(option_rect.min.x + 16.0, option_rect.min.y),
-                                Pos2::new(option_rect.max.x - 16.0, option_rect.max.y),
-                            );
-
-                            let text_pos =
-                                Pos2::new(option_rect.min.x + 16.0, option_rect.center().y);
-                            ui.painter().with_clip_rect(text_clip_rect).text(
-                                text_pos,
-                                egui::Align2::LEFT_CENTER,
-                                &option.text,
-                                select_font.clone(),
-                                text_color,
-                            );
-
-                            current_y += option_height;
-                        }
-                    }
+                            });
+                    });
                 });
         }
 
-        // Draw helper text or error text below the field
-        if let Some(ref error) = self.error_text {
-            let error_font = FontId::new(12.0, FontFamily::Proportional);
-            let error_pos = Pos2::new(rect.min.x + 16.0, rect.max.y + 4.0);
-            ui.painter().text(
-                error_pos,
-                egui::Align2::LEFT_TOP,
-                error,
-                error_font,
-                error_color,
-            );
-        } else if let Some(ref helper) = self.helper_text {
-            let helper_font = FontId::new(12.0, FontFamily::Proportional);
-            let helper_pos = Pos2::new(rect.min.x + 16.0, rect.max.y + 4.0);
-            ui.painter().text(
-                helper_pos,
-                egui::Align2::LEFT_TOP,
-                helper,
-                helper_font,
-                on_surface_variant,
-            );
+        if let Some(index) = picked {
+            if let Some(option) = self.options.get(index) {
+                if *self.selected != Some(option.value) {
+                    response.mark_changed();
+                }
+                *self.selected = Some(option.value);
+                state.filter = option.text.clone();
+                state.filtering = false;
+                state.highlighted = Some(index);
+            }
+            if !self.keep_open_on_select {
+                state.open = false;
+            }
+            ctx.memory_mut(|m| m.request_focus(focus_id));
         }
 
-        response
+        // Publish which select is open.
+        ctx.data_mut(|d| {
+            let current = d.get_temp::<Id>(open_select_id());
+            if state.open {
+                d.insert_temp(open_select_id(), id);
+            } else if current == Some(id) {
+                d.remove::<Id>(open_select_id());
+            }
+        });
+        let open = state.open;
+        ctx.data_mut(|d| d.insert_temp(id, state));
+
+        // Accessibility: a combo box named by its label, with its value and
+        // whether the list is expanded.
+        let name = self
+            .label
+            .clone()
+            .unwrap_or_else(|| self.placeholder.clone());
+        let value = selected_text(self.selected).unwrap_or_default();
+        let a11y_id = match &edit_response {
+            Some(edit) => edit.id,
+            None => {
+                let value = value.clone();
+                let name = name.clone();
+                response.widget_info(move || {
+                    let mut info =
+                        egui::WidgetInfo::labeled(egui::Role::ComboBox, enabled, name.clone());
+                    info.current_text_value = Some(value.clone());
+                    info
+                });
+                id
+            }
+        };
+        let required = self.required;
+        ctx.accesskit_node_builder(a11y_id, |node| {
+            node.set_role(egui::accesskit::Role::ComboBox);
+            node.set_label(name);
+            node.set_expanded(open);
+            if required {
+                node.set_required();
+            }
+        });
+
+        match edit_response {
+            Some(edit) => edit.union(response),
+            None => response,
+        }
     }
+}
+
+/// Where the menu goes: below the field if it fits, else above, else on
+/// the side with more room, scrolling.
+struct MenuLayout {
+    rect: Rect,
+}
+
+impl MenuLayout {
+    fn new(
+        ctx: &egui::Context,
+        field: Rect,
+        items: usize,
+        width: f32,
+        max_height: Option<f32>,
+        alignment: MenuAlignment,
+    ) -> Self {
+        let screen = ctx.content_rect().shrink(MENU_SCREEN_MARGIN);
+        let full = items as f32 * MENU_ITEM_HEIGHT + 2.0 * MENU_VERTICAL_PADDING;
+        let wanted = max_height.map_or(full, |max| full.min(max.max(MENU_ITEM_HEIGHT)));
+        let below = (screen.bottom() - field.bottom()).max(0.0);
+        let above = (field.top() - screen.top()).max(0.0);
+        let (top, height) = if wanted <= below || below >= above {
+            let height = wanted.min(below).max(MENU_ITEM_HEIGHT.min(wanted));
+            (field.bottom(), height)
+        } else {
+            let height = wanted.min(above);
+            (field.top() - height, height)
+        };
+        let left = match alignment {
+            MenuAlignment::Start => field.left(),
+            MenuAlignment::End => field.right() - width,
+        };
+        Self {
+            rect: Rect::from_min_size(Pos2::new(left, top), Vec2::new(width, height)),
+        }
+    }
+}
+
+/// Paints the Material `arrow_drop_down` glyph (a 10 x 5 dp triangle in a
+/// 24 dp box) centred on `center`, turned `turn` of a half turn.
+fn paint_drop_down_arrow(painter: &egui::Painter, center: Pos2, turn: f32, color: Color32) {
+    let angle = std::f32::consts::PI * turn;
+    let (sin, cos) = angle.sin_cos();
+    let rotate = |v: Vec2| center + Vec2::new(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
+    let points = vec![
+        rotate(Vec2::new(-5.0, -2.5)),
+        rotate(Vec2::new(5.0, -2.5)),
+        rotate(Vec2::new(0.0, 2.5)),
+    ];
+    painter.add(egui::Shape::convex_polygon(
+        points,
+        color,
+        egui::Stroke::NONE,
+    ));
 }
 
 /// Convenience function to create a select component.
 ///
 /// Shorthand for `MaterialSelect::new()`.
 ///
-/// # Arguments
-/// * `selected` - Mutable reference to the currently selected option value
-///
 /// # Example
 /// ```rust
+/// # use egui_material3::select;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selection = Some(1);
 /// ui.add(select(&mut selection)
@@ -1015,4 +973,144 @@ impl<'a> Widget for MaterialSelect<'a> {
 /// ```
 pub fn select<'a>(selected: &'a mut Option<usize>) -> MaterialSelect<'a> {
     MaterialSelect::new(selected)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn options(names: &[&str]) -> Vec<SelectOption> {
+        names
+            .iter()
+            .enumerate()
+            .map(|(value, text)| SelectOption {
+                value,
+                text: (*text).to_owned(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn filter_keeps_options_containing_the_text() {
+        let options = options(&["Apple", "Banana", "Grape", "Pineapple"]);
+        let state = SelectState {
+            filter: "APP".to_owned(),
+            filtering: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            visible_options(&options, &state),
+            vec![0, 3],
+            "case-insensitive contains"
+        );
+        let unfiltered = SelectState {
+            filter: "APP".to_owned(),
+            ..Default::default()
+        };
+        assert_eq!(
+            visible_options(&options, &unfiltered).len(),
+            4,
+            "before typing, every option shows"
+        );
+    }
+
+    #[test]
+    fn typeahead_finds_the_first_prefix_match() {
+        let options = options(&["Apple", "Banana", "Blueberry"]);
+        assert_eq!(typeahead_match(&options, "b"), Some(1), "first b");
+        assert_eq!(typeahead_match(&options, "BL"), Some(2), "bl");
+        assert_eq!(typeahead_match(&options, "x"), None, "no match");
+        assert_eq!(typeahead_match(&options, ""), None, "empty");
+    }
+
+    #[test]
+    fn highlight_steps_and_clamps() {
+        let visible = [2, 5, 7];
+        assert_eq!(
+            step_highlight(&visible, None, 1),
+            Some(2),
+            "down from nothing"
+        );
+        assert_eq!(
+            step_highlight(&visible, None, -1),
+            Some(7),
+            "up from nothing"
+        );
+        assert_eq!(step_highlight(&visible, Some(2), 1), Some(5), "down");
+        assert_eq!(
+            step_highlight(&visible, Some(7), 1),
+            Some(7),
+            "clamped at end"
+        );
+        assert_eq!(
+            step_highlight(&visible, Some(2), -1),
+            Some(2),
+            "clamped at start"
+        );
+        assert_eq!(step_highlight(&[], Some(2), 1), None, "no options");
+    }
+
+    #[test]
+    fn menu_tokens() {
+        assert_eq!(MENU_CORNER_RADIUS, 4.0, "extra-small corners");
+        assert_eq!(MENU_ELEVATION, Elevation::Level2, "level 2");
+        assert_eq!(MENU_ITEM_HEIGHT, 48.0, "48 dp items");
+    }
+
+    /// Regression test for nikescar/egui-material3#16: an open dropdown stays
+    /// open when the select moves on screen.
+    #[test]
+    fn test_dropdown_stays_open_when_select_moves() {
+        let ctx = egui::Context::default();
+        let mut selected = None;
+        let frame = |events: Vec<egui::Event>, offset: f32, selected: &mut Option<usize>| {
+            let mut rect = Rect::NOTHING;
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            let mut output = ctx.run_ui(input, |ui| {
+                ui.add_space(offset);
+                let select = MaterialSelect::new(selected)
+                    .placeholder("Pick")
+                    .option(0, "Alpha")
+                    .option(1, "Beta");
+                rect = ui.add(select).rect;
+            });
+            output.textures_delta.clear();
+            let shows_options = output.shapes.iter().any(|clipped| {
+                if let egui::Shape::Text(text) = &clipped.shape {
+                    text.galley.text() == "Beta"
+                } else {
+                    false
+                }
+            });
+            (rect, shows_options)
+        };
+        let (rect, _) = frame(Vec::new(), 0.0, &mut selected);
+        let pos = rect.center();
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            0.0,
+            &mut selected,
+        );
+        let (_, open) = frame(vec![button(false)], 0.0, &mut selected);
+        let (_, open_after) = frame(Vec::new(), 0.0, &mut selected);
+        assert!(
+            open || open_after,
+            "clicking the select should open its dropdown"
+        );
+        frame(Vec::new(), 30.0, &mut selected);
+        let (_, still_open) = frame(Vec::new(), 30.0, &mut selected);
+        assert!(
+            still_open,
+            "the dropdown should stay open after the select moves"
+        );
+    }
 }
