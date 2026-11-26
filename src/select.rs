@@ -570,8 +570,7 @@ impl<'a> Widget for MaterialSelect<'a> {
         }
 
         // Draw floating label if present and should be shown
-        if should_show_label {
-            let label_text = self.label.as_ref().unwrap();
+        if let Some(label_text) = self.label.as_ref().filter(|_| should_show_label) {
             let label_font = if should_float_label {
                 FontId::new(12.0, FontFamily::Proportional)
             } else {

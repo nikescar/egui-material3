@@ -24,6 +24,13 @@ pub enum TimelinePosition {
     AlternateReverse,
 }
 
+/// The side an item's content is laid out on, once alternation is resolved.
+#[derive(Clone, Copy)]
+enum Side {
+    Left,
+    Right,
+}
+
 /// Variant for timeline dot appearance.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TimelineDotVariant {
@@ -508,20 +515,20 @@ impl<'a> Widget for MaterialTimeline<'a> {
         for (index, item) in self.items.iter().enumerate() {
             // Determine position for this item
             let item_position = match self.position {
-                TimelinePosition::Left => TimelinePosition::Left,
-                TimelinePosition::Right => TimelinePosition::Right,
+                TimelinePosition::Left => Side::Left,
+                TimelinePosition::Right => Side::Right,
                 TimelinePosition::Alternate => {
                     if index % 2 == 0 {
-                        TimelinePosition::Right
+                        Side::Right
                     } else {
-                        TimelinePosition::Left
+                        Side::Left
                     }
                 }
                 TimelinePosition::AlternateReverse => {
                     if index % 2 == 0 {
-                        TimelinePosition::Left
+                        Side::Left
                     } else {
-                        TimelinePosition::Right
+                        Side::Right
                     }
                 }
             };
@@ -543,7 +550,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                 let center_x = rect.center().x;
 
                 match item_position {
-                    TimelinePosition::Right => {
+                    Side::Right => {
                         if has_opposite {
                             (
                                 center_x
@@ -563,7 +570,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                             )
                         }
                     }
-                    TimelinePosition::Left => {
+                    Side::Left => {
                         // For left-positioned items in alternate mode, calculate content_x
                         // so the content rect ends near the separator
                         let half_width = available_width / 2.0;
@@ -589,12 +596,11 @@ impl<'a> Widget for MaterialTimeline<'a> {
                             (center_x + DOT_SIZE / 2.0, center_x, content_start_x, false)
                         }
                     }
-                    _ => unreachable!(),
                 }
             } else {
                 // For non-alternate mode (Left or Right), use edge-based layout
                 match item_position {
-                    TimelinePosition::Right => {
+                    Side::Right => {
                         if has_opposite {
                             (
                                 rect.min.x,
@@ -614,7 +620,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                             )
                         }
                     }
-                    TimelinePosition::Left => {
+                    Side::Left => {
                         if has_opposite {
                             (
                                 rect.max.x - OPPOSITE_CONTENT_WIDTH,
@@ -626,7 +632,6 @@ impl<'a> Widget for MaterialTimeline<'a> {
                             (rect.max.x, rect.max.x, rect.min.x, false)
                         }
                     }
-                    _ => unreachable!(),
                 }
             };
 

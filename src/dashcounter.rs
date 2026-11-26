@@ -396,8 +396,13 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             (((scroll + available_width) / card_step).ceil() as usize).min(card_count);
 
         // Draw cards
-        for i in first_visible..last_visible {
-            let card = &self.cards[i];
+        for (i, card) in self
+            .cards
+            .iter()
+            .enumerate()
+            .take(last_visible)
+            .skip(first_visible)
+        {
             let card_left = i as f32 * card_step + self.padding - scroll;
             let screen_x = outer_rect.left() + card_left;
 

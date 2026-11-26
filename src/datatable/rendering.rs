@@ -85,9 +85,9 @@ impl<'a> MaterialDataTable<'a> {
 
         // Sync selection state only for rows where the caller explicitly set `.selected()`.
         // Rows without an explicit `.selected()` call preserve their internally-clicked state.
-        for (i, row) in self.rows.iter().enumerate() {
-            if i < state.selected_rows.len() && row.selection_externally_set {
-                state.selected_rows[i] = row.selected;
+        for (selected, row) in state.selected_rows.iter_mut().zip(self.rows.iter()) {
+            if row.selection_externally_set {
+                *selected = row.selected;
             }
         }
 
@@ -1014,14 +1014,17 @@ impl<'a> MaterialDataTable<'a> {
                                 edit_data.resize(cell_idx + 1, String::new());
                             }
 
-                            let edit_text = &mut edit_data[cell_idx];
-
-                            ui.scope_builder(egui::UiBuilder::new().max_rect(edit_rect), |ui| {
-                                ui.add(
-                                    egui::TextEdit::singleline(edit_text)
-                                        .desired_width(column.width - 16.0),
+                            if let Some(edit_text) = edit_data.get_mut(cell_idx) {
+                                ui.scope_builder(
+                                    egui::UiBuilder::new().max_rect(edit_rect),
+                                    |ui| {
+                                        ui.add(
+                                            egui::TextEdit::singleline(edit_text)
+                                                .desired_width(column.width - 16.0),
+                                        );
+                                    },
                                 );
-                            });
+                            }
                         } else {
                             // Determine alignment from cell or column
                             let h_align = cell.h_align.as_ref().unwrap_or(&column.h_align);

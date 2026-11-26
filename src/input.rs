@@ -453,9 +453,11 @@ impl<'a> Widget for MaterialInput<'a> {
         response = response.union(text_response);
 
         // Enforce max length
+        // `max_length` counts characters; truncating on a byte index would
+        // panic inside a multi-byte character.
         if let Some(max) = self.max_length {
-            if self.text.len() > max {
-                self.text.truncate(max);
+            if let Some((cut, _)) = self.text.char_indices().nth(max) {
+                self.text.truncate(cut);
             }
         }
 
@@ -519,9 +521,9 @@ impl<'a> Widget for MaterialInput<'a> {
                     if self.show_character_count {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             let counter_text = if let Some(max) = self.max_length {
-                                format!("{}/{}", self.text.len(), max)
+                                format!("{}/{}", self.text.chars().count(), max)
                             } else {
-                                format!("{}", self.text.len())
+                                format!("{}", self.text.chars().count())
                             };
                             ui.label(
                                 egui::RichText::new(counter_text)

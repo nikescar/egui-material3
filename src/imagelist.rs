@@ -227,8 +227,7 @@ fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
                     } else if bytes.starts_with(&[0x47, 0x49, 0x46]) {
                         "gif"
                     } else if bytes.starts_with(&[0x52, 0x49, 0x46, 0x46])
-                        && bytes.len() > 12
-                        && &bytes[8..12] == b"WEBP"
+                        && bytes.get(8..12) == Some(b"WEBP".as_slice())
                     {
                         "webp"
                     } else {
@@ -272,8 +271,7 @@ fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
 
 /// Load image from data URL (base64 encoded)
 fn load_image_from_data_url(data_url: &str) -> Option<egui::ColorImage> {
-    if let Some(comma_pos) = data_url.find(',') {
-        let data_part = &data_url[comma_pos + 1..];
+    if let Some((_, data_part)) = data_url.split_once(',') {
         if let Ok(bytes) =
             base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data_part)
         {

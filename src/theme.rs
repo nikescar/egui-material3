@@ -772,10 +772,8 @@ impl MaterialThemeContext {
         for line in css_content.lines() {
             if line.contains("src:") && line.contains("url(") && line.contains("format('truetype')")
             {
-                if let Some(start) = line.find("url(") {
-                    let start = start + 4; // Skip "url("
-                    if let Some(end) = line[start..].find(")") {
-                        let url = &line[start..start + end];
+                if let Some((_, rest)) = line.split_once("url(") {
+                    if let Some((url, _)) = rest.split_once(')') {
                         return Some(url.to_string());
                     }
                 }
@@ -1031,16 +1029,14 @@ impl MaterialThemeContext {
     }
 
     pub fn hex_to_color32(hex: &str) -> Option<Color32> {
-        if hex.starts_with('#') && hex.len() == 7 {
-            if let Ok(r) = u8::from_str_radix(&hex[1..3], 16) {
-                if let Ok(g) = u8::from_str_radix(&hex[3..5], 16) {
-                    if let Ok(b) = u8::from_str_radix(&hex[5..7], 16) {
-                        return Some(Color32::from_rgb(r, g, b));
-                    }
-                }
-            }
-        }
-        None
+        let digits = hex.strip_prefix('#').filter(|d| d.len() == 6)?;
+        let channel =
+            |range: std::ops::Range<usize>| u8::from_str_radix(digits.get(range)?, 16).ok();
+        Some(Color32::from_rgb(
+            channel(0..2)?,
+            channel(2..4)?,
+            channel(4..6)?,
+        ))
     }
 
     pub fn color32_to_hex(color: Color32) -> String {
