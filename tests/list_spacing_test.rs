@@ -81,9 +81,10 @@ fn test_no_accumulated_bottom_spacing() {
 
             let response = ui.add(list);
 
-            // Each item: base 72px + 1 extra line * 18px = 90px
-            // 3 items * 90px = 270px total
-            let expected_height = 3.0 * (72.0 + 18.0);
+            // Headline + two lines of supporting text is an M3 three-line
+            // item: 88dp (Compose ListTokens.ListItemThreeLineContainerHeight)
+            // 3 items * 88px = 264px total
+            let expected_height = 3.0 * 88.0;
 
             // Allow small tolerance for rounding
             let diff = (response.rect.height() - expected_height).abs();
@@ -115,8 +116,8 @@ fn test_dividers_with_multiline() {
 
             let response = ui.add(list);
 
-            // 2 items * 90px + 1 divider * 1px = 181px
-            let expected_height = 2.0 * (72.0 + 18.0) + 1.0;
+            // 2 three-line items * 88px + 1 divider * 1px = 177px
+            let expected_height = 2.0 * 88.0 + 1.0;
 
             let diff = (response.rect.height() - expected_height).abs();
             assert!(

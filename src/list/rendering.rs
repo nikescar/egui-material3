@@ -29,6 +29,68 @@ fn measure_drawer_height(drawer_fn: &dyn Fn(&mut Ui), ui: &mut Ui, width: f32) -
     child_ui.min_rect().height()
 }
 
+/// Height of a list item, grown for wrapped supporting text.
+///
+/// An item whose text takes three or more lines (overline, headline and
+/// supporting text together) is at least the M3 three-line height, 88 dp
+/// (Compose `ListTokens.ListItemThreeLineContainerHeight`; 76 when dense),
+/// and grows by one supporting-text line, 20 dp
+/// (`TypeScaleTokens.BodyMediumLineHeight`), for each line beyond three.
+fn grown_item_height(
+    ui: &mut Ui,
+    item: &ListItem<'_>,
+    base_height: f32,
+    density_adjustment: f32,
+    available_text_width: f32,
+) -> f32 {
+    const THREE_LINE_HEIGHT: f32 = 88.0;
+    const DENSE_THREE_LINE_HEIGHT: f32 = 76.0;
+    const SUPPORTING_LINE_HEIGHT: f32 = 20.0;
+
+    let is_dense = item.dense.unwrap_or(false);
+    let mut item_height = item
+        .min_tile_height
+        .unwrap_or(base_height + density_adjustment);
+
+    let Some(ref secondary) = item.secondary_text else {
+        return item_height;
+    };
+    let font_size = if is_dense { 11.0 } else { 12.0 };
+    let font_id = egui::FontId::proportional(font_size);
+    let wrapped_height =
+        measure_wrapped_text_height(ui, secondary, available_text_width, font_id.clone());
+
+    // Supporting text starts below the headline; the base height allows
+    // about one 20px line of it.
+    let base_secondary_height = 20.0;
+    if wrapped_height > base_secondary_height {
+        item_height += wrapped_height - base_secondary_height;
+    }
+
+    let line_height = measure_wrapped_text_height(ui, "A", f32::INFINITY, font_id);
+    if line_height <= 0.0 {
+        return item_height;
+    }
+    let secondary_lines = (wrapped_height / line_height).round().max(1.0);
+    let overline_lines = if item.overline_text.is_some() {
+        1.0
+    } else {
+        0.0
+    };
+    let text_lines = 1.0 + overline_lines + secondary_lines;
+    if text_lines >= 3.0 {
+        let three_line = if is_dense {
+            DENSE_THREE_LINE_HEIGHT
+        } else {
+            THREE_LINE_HEIGHT
+        };
+        let spec_height =
+            three_line + density_adjustment + (text_lines - 3.0) * SUPPORTING_LINE_HEIGHT;
+        item_height = item_height.max(spec_height);
+    }
+    item_height
+}
+
 /// Helper function to measure wrapped text height without rendering
 fn measure_wrapped_text_height(
     ui: &mut Ui,
@@ -219,24 +281,13 @@ impl<'a> Widget for MaterialList<'a> {
                 - trailing_text_width
                 - 32.0;
 
-            // Add extra height for multi-line secondary text with wrapping
-            let mut item_height = item
-                .min_tile_height
-                .unwrap_or(base_height + density_adjustment);
-
-            if let Some(ref secondary) = item.secondary_text {
-                // Measure actual wrapped text height
-                let font_id = egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 });
-                let wrapped_height =
-                    measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
-
-                // Secondary text starts at +20px from center, so we need to add the wrapped height
-                // minus the base allocation (which assumes ~1 line = 20px)
-                let base_secondary_height = 20.0;
-                if wrapped_height > base_secondary_height {
-                    item_height += wrapped_height - base_secondary_height;
-                }
-            }
+            let item_height = grown_item_height(
+                ui,
+                item,
+                base_height,
+                density_adjustment,
+                available_text_width,
+            );
 
             total_height += item_height;
 
@@ -379,24 +430,13 @@ impl<'a> Widget for MaterialList<'a> {
                 - trailing_text_width
                 - 16.0;
 
-            let mut item_height = item
-                .min_tile_height
-                .unwrap_or(base_height + density_adjustment);
-
-            // Add extra height for multi-line secondary text with wrapping
-            if let Some(ref secondary) = item.secondary_text {
-                // Measure actual wrapped text height
-                let font_id = egui::FontId::proportional(if is_dense { 11.0 } else { 12.0 });
-                let wrapped_height =
-                    measure_wrapped_text_height(ui, secondary, available_text_width, font_id);
-
-                // Secondary text starts at +20px from center for 3-line, +10px for 2-line
-                // Add the difference between wrapped height and base allocation
-                let base_secondary_height = 20.0;
-                if wrapped_height > base_secondary_height {
-                    item_height += wrapped_height - base_secondary_height;
-                }
-            }
+            let item_height = grown_item_height(
+                ui,
+                &item,
+                base_height,
+                density_adjustment,
+                available_text_width,
+            );
 
             let item_rect = Rect::from_min_size(
                 Pos2::new(rect.min.x, current_y),

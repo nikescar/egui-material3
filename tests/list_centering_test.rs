@@ -72,13 +72,13 @@ fn test_2line_with_multiline_secondary() {
 
             let response = ui.add(list);
 
-            // 2-line base (72px) + adjusted for centered padding
-            // Note: Height is now 80px with balanced padding (10px less than before)
-            let expected_height = 80.0;
+            // Headline + two lines of supporting text is an M3 three-line
+            // item: 88dp (Compose ListTokens.ListItemThreeLineContainerHeight)
+            let expected_height = 88.0;
             let diff = (response.rect.height() - expected_height).abs();
             assert!(
                 diff < 5.0,
-                "2-line item with multi-line secondary should be ~80px with balanced padding, got {}",
+                "headline + two supporting lines should be ~88px (M3 three-line), got {}",
                 response.rect.height()
             );
         });
@@ -104,13 +104,13 @@ fn test_dense_multiline_centering() {
 
             let response = ui.add(list);
 
-            // Dense 3-line base (76px) + adjusted for centered padding
-            // Note: Height is now 82px with balanced padding
-            let expected_height = 82.0;
+            // Four lines of text: dense three-line base (76px) plus one 20px
+            // supporting line (Compose TypeScaleTokens.BodyMediumLineHeight)
+            let expected_height = 96.0;
             let diff = (response.rect.height() - expected_height).abs();
             assert!(
                 diff < 5.0,
-                "Dense multi-line item should be ~82px with balanced padding, got {}",
+                "Dense four-line item should be ~96px, got {}",
                 response.rect.height()
             );
         });
