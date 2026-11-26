@@ -7,12 +7,22 @@
 //! as egui points.
 //!
 //! Weights are separate font families named by [`weight_family_name`]
-//! (`"plain-400"`, `"plain-500"`, `"plain-700"`), registered by
-//! [`load_fonts`](crate::theme::load_fonts). [`font_family`] falls back to
+//! (`"plain-400"`, `"plain-500"`, `"plain-700"`), registered with the
+//! bundled Roboto faces by [`crate::fonts`] (and by
+//! [`load_fonts`](crate::theme::load_fonts)). [`font_family`] falls back to
 //! `Proportional` when a weight is not registered, so a missing font never
 //! panics.
+//!
+//! [`text_styles`] maps the scale into egui's [`TextStyle`]s: the five
+//! built-in ones (`Small`, `Body`, `Button`, `Heading`, `Monospace`) and one
+//! `TextStyle::Name` per role ([`TypeRole::text_style`]).
+//! [`apply_theme`](crate::theme::apply_theme) installs them. A `TextStyle`
+//! carries only a font, so line height and tracking need
+//! [`TypeStyle::layout_job`].
 
-use egui::{text::LayoutJob, Color32, FontFamily, FontId, TextFormat};
+use std::collections::BTreeMap;
+
+use egui::{text::LayoutJob, Color32, FontDefinitions, FontFamily, FontId, TextFormat, TextStyle};
 
 /// A role in the Material 3 type scale.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -122,6 +132,33 @@ impl TypeRole {
         }
     }
 
+    /// The role's name: `"DisplayLarge"`, `"LabelLarge"`, ...
+    pub const fn name(self) -> &'static str {
+        match self {
+            TypeRole::DisplayLarge => "DisplayLarge",
+            TypeRole::DisplayMedium => "DisplayMedium",
+            TypeRole::DisplaySmall => "DisplaySmall",
+            TypeRole::HeadlineLarge => "HeadlineLarge",
+            TypeRole::HeadlineMedium => "HeadlineMedium",
+            TypeRole::HeadlineSmall => "HeadlineSmall",
+            TypeRole::TitleLarge => "TitleLarge",
+            TypeRole::TitleMedium => "TitleMedium",
+            TypeRole::TitleSmall => "TitleSmall",
+            TypeRole::BodyLarge => "BodyLarge",
+            TypeRole::BodyMedium => "BodyMedium",
+            TypeRole::BodySmall => "BodySmall",
+            TypeRole::LabelLarge => "LabelLarge",
+            TypeRole::LabelMedium => "LabelMedium",
+            TypeRole::LabelSmall => "LabelSmall",
+        }
+    }
+
+    /// The egui text style for this role, `TextStyle::Name(self.name())`,
+    /// which [`text_styles`] defines.
+    pub fn text_style(self) -> TextStyle {
+        TextStyle::Name(self.name().into())
+    }
+
     /// The emphasized style (`TypeScaleTokens.<Role>Emphasized*`): same
     /// metrics, heavier weight (Medium for display, headline, title large
     /// and body; Bold for title medium/small and labels).
@@ -163,6 +200,83 @@ pub fn font_family(ctx: &egui::Context, weight: u16) -> FontFamily {
     } else {
         FontFamily::Proportional
     }
+}
+
+/// The role behind each of egui's built-in text styles: `Small` is Body
+/// Small, `Body` is Body Medium, `Button` is Label Large, `Heading` is
+/// Title Large and `Monospace` uses Body Medium's size.
+pub const BUILTIN_TEXT_STYLES: [(TextStyle, TypeRole); 5] = [
+    (TextStyle::Small, TypeRole::BodySmall),
+    (TextStyle::Body, TypeRole::BodyMedium),
+    (TextStyle::Button, TypeRole::LabelLarge),
+    (TextStyle::Heading, TypeRole::TitleLarge),
+    (TextStyle::Monospace, TypeRole::BodyMedium),
+];
+
+/// The type scale as egui text styles, using the weight families that
+/// `has_family` reports registered (and `Proportional` for the rest).
+pub fn text_styles_with(has_family: impl Fn(&FontFamily) -> bool) -> BTreeMap<TextStyle, FontId> {
+    let family = |weight: u16| {
+        let named = FontFamily::Name(weight_family_name(weight).into());
+        if has_family(&named) {
+            named
+        } else {
+            FontFamily::Proportional
+        }
+    };
+    let mut styles = BTreeMap::new();
+    for (text_style, role) in BUILTIN_TEXT_STYLES {
+        let style = role.style();
+        let font_family = if text_style == TextStyle::Monospace {
+            FontFamily::Monospace
+        } else {
+            family(style.weight)
+        };
+        styles.insert(text_style, FontId::new(style.size, font_family));
+    }
+    for role in TypeRole::ALL {
+        let style = role.style();
+        styles.insert(
+            role.text_style(),
+            FontId::new(style.size, family(style.weight)),
+        );
+    }
+    styles
+}
+
+fn families_id() -> egui::Id {
+    egui::Id::unique("egui_material3::typography::registered_families")
+}
+
+/// Records the font families `defs` defines, for [`text_styles`]. Called
+/// by [`crate::fonts::install`] and [`load_fonts`](crate::theme::load_fonts)
+/// with the definitions they hand to [`egui::Context::set_fonts`], which
+/// only takes effect later (and before the first frame `ctx.fonts` cannot
+/// be read at all).
+pub fn record_font_families(ctx: &egui::Context, defs: &FontDefinitions) {
+    let families: Vec<FontFamily> = defs.families.keys().cloned().collect();
+    ctx.data_mut(|d| d.insert_temp(families_id(), std::sync::Arc::new(families)));
+}
+
+/// The type scale as egui text styles, for the families last recorded
+/// with [`record_font_families`]. Without a record every weight uses
+/// `Proportional`.
+pub fn text_styles(ctx: &egui::Context) -> BTreeMap<TextStyle, FontId> {
+    let families = ctx
+        .data(|d| d.get_temp::<std::sync::Arc<Vec<FontFamily>>>(families_id()))
+        .unwrap_or_default();
+    text_styles_with(|family| families.contains(family))
+}
+
+/// Replaces the text styles of every style in `ctx` (light and dark) with
+/// [`text_styles`].
+pub fn apply_text_styles(ctx: &egui::Context) {
+    let styles = text_styles(ctx);
+    ctx.all_styles_mut(|style| {
+        if style.text_styles != styles {
+            style.text_styles = styles.clone();
+        }
+    });
 }
 
 impl TypeStyle {

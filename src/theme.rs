@@ -96,6 +96,31 @@ pub struct PreparedFont {
 
 static PREPARED_FONTS: Mutex<Vec<PreparedFont>> = Mutex::new(Vec::new());
 
+/// The default text font: Roboto, bundled with the crate.
+pub const DEFAULT_FONT: &str = "Roboto";
+
+/// Contexts [`load_fonts`] was called with, reloaded when a background
+/// font download finishes.
+#[cfg(feature = "ondemand")]
+static FONT_CONTEXTS: Mutex<Vec<egui::Context>> = Mutex::new(Vec::new());
+
+/// Font downloads started by [`setup_google_fonts`] and not yet finished.
+#[cfg(feature = "ondemand")]
+static PENDING_DOWNLOADS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// Whether a font download started by [`setup_google_fonts`] is still
+/// running. Always `false` without the `ondemand` feature.
+pub fn fonts_downloading() -> bool {
+    #[cfg(feature = "ondemand")]
+    {
+        PENDING_DOWNLOADS.load(std::sync::atomic::Ordering::SeqCst) > 0
+    }
+    #[cfg(not(feature = "ondemand"))]
+    {
+        false
+    }
+}
+
 /// A prepared Material Design theme ready for loading
 ///
 /// This struct represents a Material Design theme that has been loaded and parsed
@@ -713,15 +738,29 @@ impl MaterialThemeContext {
     /// Prepares `font_name` at weights 400, 500 and 700, so the Medium and
     /// Bold type styles render in a real Medium and Bold face.
     ///
-    /// Each weight is read from `resources/<font-name>.ttf` (400) or
-    /// `resources/<font-name>-<weight>.ttf`, and with the `ondemand`
-    /// feature missing weights are downloaded from Google Fonts. Weight 400
-    /// becomes the default proportional font; each weight is also
-    /// registered as the family `plain-<weight>` that the type scale uses.
+    /// `None` and `"Roboto"` (the Material 3 typeface) use the Roboto faces
+    /// bundled with the crate (see [`crate::fonts`]). Any other font is read
+    /// from `resources/<font-name>.ttf` (400) and
+    /// `resources/<font-name>-<weight>.ttf`. With the `ondemand` feature,
+    /// weights missing locally are downloaded from Google Fonts on a
+    /// background thread; this call does not wait for them. When they
+    /// arrive they are saved under `resources/`, prepared, and every context
+    /// [`load_fonts`] was called with gets them and a repaint
+    /// ([`fonts_downloading`] reports whether any are still on the way).
+    ///
+    /// Weight 400 becomes the default proportional font; each weight is
+    /// also registered as the family `plain-<weight>` that the type scale
+    /// uses.
     pub fn setup_fonts(font_name: Option<&str>) {
-        let font_name = font_name.unwrap_or("Google Sans Code");
+        let font_name = font_name.unwrap_or(DEFAULT_FONT);
+        if font_name == DEFAULT_FONT {
+            for (weight, _, bytes) in crate::fonts::ROBOTO {
+                Self::prepare_weight(DEFAULT_FONT, weight, bytes.to_vec());
+            }
+            return;
+        }
         let slug = font_name.replace(" ", "-").to_lowercase();
-        let path_for = |weight: u16| {
+        let path_for = move |weight: u16| {
             if weight == crate::tokens::typography::WEIGHT_REGULAR {
                 format!("resources/{slug}.ttf")
             } else {
@@ -734,36 +773,65 @@ impl MaterialThemeContext {
             .filter_map(|&w| Self::load_local_font(&path_for(w)).map(|d| (w, d)))
             .collect();
 
+        let family_name = font_name.replace(" ", "");
+        let have: Vec<u16> = local.iter().map(|(w, _)| *w).collect();
+        for (weight, data) in local {
+            Self::prepare_weight(&family_name, weight, data);
+        }
+        if have.len() == crate::tokens::typography::WEIGHTS.len() {
+            return;
+        }
+
         #[cfg(feature = "ondemand")]
-        let faces = {
-            let mut faces = local;
-            if faces.len() < crate::tokens::typography::WEIGHTS.len() {
-                for (weight, data) in Self::download_google_font(font_name) {
-                    if faces.iter().all(|(w, _)| *w != weight) {
-                        let target = path_for(weight);
-                        if std::fs::write(&target, &data).is_ok() {
-                            eprintln!("Font '{font_name}' {weight} saved to {target}");
-                        }
-                        faces.push((weight, data));
+        Self::download_in_background(font_name.to_owned(), family_name, have, path_for);
+        #[cfg(not(feature = "ondemand"))]
+        if have.is_empty() {
+            eprintln!(
+                "Font '{}' not found locally and ondemand feature is not enabled",
+                font_name
+            );
+        }
+    }
+
+    /// Downloads the weights of `font_name` not in `have` on a new thread,
+    /// then prepares them and reloads the fonts of every context
+    /// [`load_fonts`] has seen.
+    #[cfg(feature = "ondemand")]
+    fn download_in_background(
+        font_name: String,
+        family_name: String,
+        have: Vec<u16>,
+        path_for: impl Fn(u16) -> String + Send + 'static,
+    ) {
+        use std::sync::atomic::Ordering;
+        PENDING_DOWNLOADS.fetch_add(1, Ordering::SeqCst);
+        let spawned = std::thread::Builder::new()
+            .name(format!("egui-material3 font {font_name}"))
+            .spawn(move || {
+                let mut got_any = false;
+                for (weight, data) in Self::download_google_font(&font_name) {
+                    if have.contains(&weight) {
+                        continue;
+                    }
+                    let target = path_for(weight);
+                    if std::fs::write(&target, &data).is_ok() {
+                        eprintln!("Font '{font_name}' {weight} saved to {target}");
+                    }
+                    Self::prepare_weight(&family_name, weight, data);
+                    got_any = true;
+                }
+                PENDING_DOWNLOADS.fetch_sub(1, Ordering::SeqCst);
+                if got_any {
+                    let contexts = FONT_CONTEXTS.lock().map(|c| c.clone()).unwrap_or_default();
+                    for ctx in contexts {
+                        Self::load_fonts(&ctx);
+                        ctx.request_repaint();
                     }
                 }
-            }
-            faces
-        };
-        #[cfg(not(feature = "ondemand"))]
-        let faces = {
-            if local.is_empty() {
-                eprintln!(
-                    "Font '{}' not found locally and ondemand feature is not enabled",
-                    font_name
-                );
-            }
-            local
-        };
-
-        let family_name = font_name.replace(" ", "");
-        for (weight, data) in faces {
-            Self::prepare_weight(&family_name, weight, data);
+            });
+        if let Err(e) = spawned {
+            PENDING_DOWNLOADS.fetch_sub(1, Ordering::SeqCst);
+            eprintln!("Could not start the font download: {e}");
         }
     }
 
@@ -1039,50 +1107,41 @@ impl MaterialThemeContext {
         }
     }
 
-    /// Load all prepared fonts to the egui context
+    /// Load all prepared fonts to the egui context.
+    ///
+    /// The bundled Material Symbols are always loaded (see
+    /// [`crate::fonts`]), and so is the bundled Roboto unless a text font
+    /// was prepared, in which case that font is the default instead.
     pub fn load_fonts(ctx: &egui::Context) {
         let mut fonts = FontDefinitions::default();
 
         if let Ok(prepared_fonts) = PREPARED_FONTS.lock() {
+            let has_text_font = prepared_fonts.iter().any(|f| {
+                !f.name.contains("MaterialSymbols")
+                    && f.families.contains(&FontFamily::Proportional)
+            });
+            if !has_text_font {
+                crate::fonts::add_roboto(&mut fonts);
+            }
+            crate::fonts::add_symbols(&mut fonts);
+
             for prepared_font in prepared_fonts.iter() {
                 // Add font data
                 fonts
                     .font_data
                     .insert(prepared_font.name.clone(), prepared_font.data.clone());
 
-                // Add to font families
+                // Text fonts go to the front of their families, icon fonts
+                // and monospace fallbacks to the back.
+                let is_icon_font = prepared_font.name.contains("MaterialSymbols");
                 for family in &prepared_font.families {
-                    match family {
-                        FontFamily::Proportional => {
-                            // Google fonts go to the front, icon fonts go to the back
-                            if prepared_font.name.contains("MaterialSymbols") {
-                                fonts
-                                    .families
-                                    .entry(FontFamily::Proportional)
-                                    .or_default()
-                                    .push(prepared_font.name.clone());
-                            } else {
-                                fonts
-                                    .families
-                                    .entry(FontFamily::Proportional)
-                                    .or_default()
-                                    .insert(0, prepared_font.name.clone());
-                            }
-                        }
-                        FontFamily::Monospace => {
-                            fonts
-                                .families
-                                .entry(FontFamily::Monospace)
-                                .or_default()
-                                .push(prepared_font.name.clone());
-                        }
-                        FontFamily::Name(name) => {
-                            fonts
-                                .families
-                                .entry(FontFamily::Name(name.clone()))
-                                .or_default()
-                                .push(prepared_font.name.clone());
-                        }
+                    let to_front = !is_icon_font && *family != FontFamily::Monospace;
+                    let list = fonts.families.entry(family.clone()).or_default();
+                    list.retain(|name| name != &prepared_font.name);
+                    if to_front {
+                        list.insert(0, prepared_font.name.clone());
+                    } else {
+                        list.push(prepared_font.name.clone());
                     }
                 }
             }
@@ -1090,22 +1149,15 @@ impl MaterialThemeContext {
 
         // Every weight family exists, falling back to the proportional fonts
         // (and so to egui's defaults) for glyphs or weights not loaded.
-        let proportional = fonts
-            .families
-            .get(&FontFamily::Proportional)
-            .cloned()
-            .unwrap_or_default();
-        for weight in crate::tokens::typography::WEIGHTS {
-            let family =
-                FontFamily::Name(crate::tokens::typography::weight_family_name(weight).into());
-            let list = fonts.families.entry(family).or_default();
-            for name in &proportional {
-                if !list.contains(name) {
-                    list.push(name.clone());
-                }
+        crate::fonts::complete_weight_families(&mut fonts);
+
+        crate::tokens::typography::record_font_families(ctx, &fonts);
+        #[cfg(feature = "ondemand")]
+        if let Ok(mut contexts) = FONT_CONTEXTS.lock() {
+            if !contexts.iter().any(|c| c == ctx) {
+                contexts.push(ctx.clone());
             }
         }
-
         ctx.set_fonts(fonts);
     }
 
@@ -1276,8 +1328,10 @@ pub fn update_global_theme(theme: MaterialThemeContext) {
     }
 }
 
-/// Helper function to prepare Material Design fonts for the application
-/// Default font is "Google Sans Code" if not specified
+/// Helper function to prepare Material Design fonts for the application.
+/// The default, and `"Roboto"`, is the bundled Roboto; other fonts are read
+/// from `resources/` or, with the `ondemand` feature, downloaded in the
+/// background (see [`MaterialThemeContext::setup_fonts`]).
 /// Note: Fonts are only prepared, call load_fonts() to actually load them
 pub fn setup_google_fonts(font_name: Option<&str>) {
     MaterialThemeContext::setup_fonts(font_name);
@@ -1758,6 +1812,7 @@ where
     visuals.popup_shadow.color = shadow;
 
     ctx.set_visuals(visuals);
+    crate::tokens::typography::apply_text_styles(ctx);
 }
 
 // ============================================================================

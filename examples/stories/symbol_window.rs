@@ -14,11 +14,24 @@ use egui_material3::noto_emoji;
 use egui_material3::{ListItem, MaterialList};
 
 #[doc(hidden)]
-#[derive(Default)]
 pub struct SymbolWindow {
     pub open: bool,
     filter_selected_1: bool,
     filter_selected_3: bool,
+    icon_filled: bool,
+    icon_weight: u16,
+}
+
+impl Default for SymbolWindow {
+    fn default() -> Self {
+        Self {
+            open: false,
+            filter_selected_1: false,
+            filter_selected_3: false,
+            icon_filled: false,
+            icon_weight: 400,
+        }
+    }
 }
 
 impl SymbolWindow {
@@ -31,6 +44,10 @@ impl SymbolWindow {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     Self::render_loaded_fonts(ui);
                     ui.add_space(20.0);
+                    Self::render_type_scale(ui);
+                    ui.add_space(20.0);
+                    self.render_icon_axes(ui);
+                    ui.add_space(20.0);
                     self.render_material_symbol_basic(ui);
                     ui.add_space(20.0);
                     self.render_material_symbol_with_components(ui);
@@ -41,6 +58,54 @@ impl SymbolWindow {
                 });
             });
         self.open = open;
+    }
+
+    fn render_type_scale(ui: &mut egui::Ui) {
+        use egui_material3::tokens::{ColorRole, TypeRole};
+        ui.heading("Type Scale (Roboto)");
+        let color = egui_material3::MaterialTheme::of(ui.ctx()).color(ColorRole::OnSurface);
+        for role in TypeRole::ALL {
+            let style = role.style();
+            let text = format!(
+                "{} {}/{} w{}",
+                role.name(),
+                style.size,
+                style.line_height,
+                style.weight
+            );
+            ui.label(style.layout_job(ui.ctx(), text, color));
+        }
+    }
+
+    fn render_icon_axes(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Icon Axes");
+        ui.label("Filled swaps in the FILL 1 face; weight is exact when the variable font is registered (fonts::add_variable_symbols), otherwise the nearest bundled face.");
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.icon_filled, "Filled");
+            ui.add(
+                egui::Slider::new(&mut self.icon_weight, 100..=700)
+                    .step_by(100.0)
+                    .text("Weight"),
+            );
+        });
+        ui.horizontal_wrapped(|ui| {
+            for name in [
+                "home",
+                "favorite",
+                "settings",
+                "star",
+                "delete",
+                "arrow_back",
+                "drive_file_move_rtl",
+            ] {
+                ui.add(
+                    icon(name)
+                        .size(32.0)
+                        .filled(self.icon_filled)
+                        .weight(self.icon_weight),
+                );
+            }
+        });
     }
 
     fn render_loaded_fonts(ui: &mut egui::Ui) {
