@@ -7,37 +7,43 @@ fn test_tooltip_disabled_by_default() {
     let theme = DataTableTheme::default();
 
     // Tooltips should be disabled by default
-    assert_eq!(theme.enable_cell_tooltips, false);
-    assert_eq!(theme.smart_cell_tooltips, false);
+    assert!(!theme.enable_cell_tooltips);
+    assert!(!theme.smart_cell_tooltips);
 }
 
 #[test]
 fn test_tooltip_always_enabled() {
-    let mut theme = DataTableTheme::default();
-    theme.enable_cell_tooltips = true;
+    let theme = DataTableTheme {
+        enable_cell_tooltips: true,
+        ..Default::default()
+    };
 
-    assert_eq!(theme.enable_cell_tooltips, true);
-    assert_eq!(theme.smart_cell_tooltips, false);
+    assert!(theme.enable_cell_tooltips);
+    assert!(!theme.smart_cell_tooltips);
 }
 
 #[test]
 fn test_smart_tooltips() {
-    let mut theme = DataTableTheme::default();
-    theme.smart_cell_tooltips = true;
+    let theme = DataTableTheme {
+        smart_cell_tooltips: true,
+        ..Default::default()
+    };
 
-    assert_eq!(theme.enable_cell_tooltips, false);
-    assert_eq!(theme.smart_cell_tooltips, true);
+    assert!(!theme.enable_cell_tooltips);
+    assert!(theme.smart_cell_tooltips);
 }
 
 #[test]
 fn test_both_tooltip_modes_can_coexist() {
     // If both are enabled, enable_cell_tooltips takes precedence (always show)
-    let mut theme = DataTableTheme::default();
-    theme.enable_cell_tooltips = true;
-    theme.smart_cell_tooltips = true;
+    let theme = DataTableTheme {
+        enable_cell_tooltips: true,
+        smart_cell_tooltips: true,
+        ..Default::default()
+    };
 
-    assert_eq!(theme.enable_cell_tooltips, true);
-    assert_eq!(theme.smart_cell_tooltips, true);
+    assert!(theme.enable_cell_tooltips);
+    assert!(theme.smart_cell_tooltips);
 }
 
 #[test]
@@ -49,6 +55,4 @@ fn test_tooltip_imports_available() {
     let _pos = TooltipPosition::Top;
     let _pos = TooltipPosition::Bottom;
     let _pos = TooltipPosition::Auto;
-
-    assert!(true, "Tooltip imports available");
 }

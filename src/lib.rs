@@ -63,8 +63,8 @@
 //! }
 //!
 //! impl eframe::App for MyApp {
-//!     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-//!         egui::CentralPanel::default().show(ctx, |ui| {
+//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+//!         egui::CentralPanel::default().show(ui, |ui| {
 //!             ui.heading("Material Design Components");
 //!             
 //!             // Use Material Design components
@@ -312,8 +312,8 @@ pub use {
     input::{InputVariant, MaterialInput},
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{
-        ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, MaterialListState,
-        VisualDensity,
+        list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList,
+        MaterialListState, VisualDensity,
     },
     menu::{
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
