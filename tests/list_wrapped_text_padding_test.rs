@@ -60,7 +60,10 @@ fn test_wrapped_text_with_overline_works() {
                         .leading_icon("folder".to_string())
                 );
 
-            let response = ui.add(list);
+            // A narrow container, so the long text really wraps.
+            let response = ui
+                .allocate_ui(egui::vec2(360.0, 1000.0), |ui| ui.add(list))
+                .inner;
 
             // Verify item height increased
             let base_three_line_height = 88.0;
@@ -94,7 +97,10 @@ fn test_wrapped_text_with_trailing_widget() {
                         })
                 );
 
-            let response = ui.add(list);
+            // A narrow container, so the long text really wraps.
+            let response = ui
+                .allocate_ui(egui::vec2(360.0, 1000.0), |ui| ui.add(list))
+                .inner;
 
             // Should render without panic and height should increase
             assert!(response.rect.height() > 72.0);
