@@ -57,7 +57,6 @@ struct MyApp {
 
 impl eframe::App for MyApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        let ctx = &ui.ctx().clone();
         egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("SVG Icon Usage Examples");
             ui.add_space(16.0);

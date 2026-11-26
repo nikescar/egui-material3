@@ -372,8 +372,10 @@ impl ChipsWindow {
     fn render_small_assist_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Small Assist Chips");
 
+        #[cfg(feature = "svg_emoji")]
         let label = self.label.clone();
-        let _l = |default: &str| -> String {
+        #[cfg(feature = "svg_emoji")]
+        let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {
@@ -473,8 +475,10 @@ impl ChipsWindow {
     fn render_small_filter_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Small Filter Chips");
 
+        #[cfg(feature = "svg_emoji")]
         let label = self.label.clone();
-        let _l = |default: &str| -> String {
+        #[cfg(feature = "svg_emoji")]
+        let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {
