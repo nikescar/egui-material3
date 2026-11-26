@@ -1,394 +1,459 @@
-//! Material Design 3 Checkbox Components
+//! Material Design 3 checkbox.
 //!
-//! This module implements checkbox controls following Material Design 3 color system.
+//! Geometry, colours and opacities follow Compose's `CheckboxTokens`:
 //!
-//! # M3 Color Role Usage
+//! - an 18 dp container with 2 dp corners and a 2 dp outline drawn *inside*
+//!   it when unselected, centred in a 48 dp touch target;
+//! - a 40 dp circular state layer in `primary` (selected), `onSurface`
+//!   (unselected) or `error`;
+//! - selected: `primary` container, `onPrimary` mark; error: `error` /
+//!   `onError`;
+//! - unselected: `onSurfaceVariant` outline, `onSurface` when hovered,
+//!   focused or pressed; `error` in the error state;
+//! - disabled: `onSurface` at 38 % for the outline or the container, and the
+//!   mark in `surface` (`SelectedDisabledIconColor`) so a disabled checked
+//!   box still shows its mark.
 //!
-//! ## Checked/Indeterminate State
-//! - **primary**: Checkbox container background when checked
-//! - **onPrimary**: Check mark color on primary background
-//! - **State layers**: primary @ 8% (hover), 10% (press/focus)
-//!
-//! ## Unchecked State
-//! - **Transparent background**: Shows parent surface
-//! - **onSurfaceVariant**: Border color (2dp stroke, lower emphasis)
-//! - **onSurface**: Border color on hover (2dp stroke)
-//! - **State layers**: onSurface @ 8% (hover), 10% (press/focus)
-//!
-//! ## Error State
-//! - **error**: Checkbox container background when checked in error state
-//! - **onError**: Check mark color on error background
-//! - **error**: Border color when unchecked in error state
-//! - **State layers**: error @ 8% (hover), 10% (press/focus)
-//!
-//! ## Disabled State
-//! - **onSurface @ 38%**: All elements (border, check mark, background) use this opacity (M3 spec)
-//!
-//! ## Touch Target
-//! - **40x40dp**: Minimum touch target size (state layer overlay area)
-//! - **18x18dp**: Visible checkbox size
+//! The mark draws itself in over 100 ms when checked and morphs between the
+//! check and the indeterminate dash, as Compose's `TriStateCheckbox` does.
+//! A three-state box is a [`ToggleableState`] (see
+//! [`MaterialCheckbox::tri_state`]); AccessKit reports it as `CheckBox` with
+//! `Toggled::True`, `False` or `Mixed`.
 
-use crate::get_global_color;
-use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
+use crate::tokens::state::DISABLED_CONTENT_OPACITY;
+use crate::tokens::{ColorRole, InteractionState, TypeRole};
+use crate::MaterialTheme;
+use egui::{
+    self, Color32, CornerRadius, Galley, Pos2, Rect, Response, Sense, Shape, Stroke, StrokeKind,
+    Ui, Vec2, Widget,
+};
+use std::sync::Arc;
 
-/// Material Design checkbox component following Material Design 3 specifications
+/// `CheckboxTokens.ContainerSize`: the visible box.
+pub const CONTAINER_SIZE: f32 = 18.0;
+/// `CheckboxTokens.ContainerShape`: 2 dp corners.
+pub const CONTAINER_CORNER: u8 = 2;
+/// `CheckboxTokens.UnselectedOutlineWidth`: drawn inside the container.
+pub const OUTLINE_WIDTH: f32 = 2.0;
+/// Width of the check mark and the indeterminate dash.
+pub const MARK_STROKE_WIDTH: f32 = 2.0;
+/// `CheckboxTokens.StateLayerSize`: the circular hover/focus/press layer.
+pub const STATE_LAYER_SIZE: f32 = 40.0;
+/// Minimum touch target of every selection control (48 dp).
+pub const TOUCH_TARGET: f32 = 48.0;
+/// Duration of the check draw-in and the box colour change (Compose's
+/// `CheckAnimationDuration`, `MotionTokens.DurationShort2`).
+const CHECK_ANIMATION_SECONDS: f32 = 0.1;
+
+/// The state of a three-state checkbox (Compose's `ToggleableState`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum ToggleableState {
+    /// Checked.
+    On,
+    /// Unchecked.
+    #[default]
+    Off,
+    /// Partly checked: some, not all, of the items it stands for.
+    Indeterminate,
+}
+
+impl From<bool> for ToggleableState {
+    fn from(on: bool) -> Self {
+        if on {
+            Self::On
+        } else {
+            Self::Off
+        }
+    }
+}
+
+impl ToggleableState {
+    /// The state after a click: `Off` becomes `On`, `On` becomes `Off`, and
+    /// `Indeterminate` becomes `On`.
+    pub fn toggled(self) -> Self {
+        match self {
+            Self::On => Self::Off,
+            Self::Off | Self::Indeterminate => Self::On,
+        }
+    }
+}
+
+enum Value<'a> {
+    Bool(&'a mut bool),
+    Tri(&'a mut ToggleableState),
+}
+
+/// Material Design 3 checkbox.
 ///
-/// Provides a checkbox with three states: checked, unchecked, and indeterminate.
-/// Follows Material Design guidelines for colors, sizing, and interaction states.
-///
-/// ## Usage Examples
 /// ```rust
+/// # use egui_material3::MaterialCheckbox;
+/// # use egui_material3::checkbox::ToggleableState;
 /// # egui::__run_test_ui(|ui| {
 /// let mut checked = false;
-///
-/// // Basic checkbox
 /// ui.add(MaterialCheckbox::new(&mut checked, "Accept terms"));
 ///
-/// // Checkbox with indeterminate state
-/// let mut partial_checked = false;
-/// ui.add(MaterialCheckbox::new(&mut partial_checked, "Select all")
-///     .indeterminate(true));
+/// // Shown as indeterminate; a click checks it.
+/// let mut partial = false;
+/// ui.add(MaterialCheckbox::new(&mut partial, "Select all").indeterminate(true));
 ///
-/// // Disabled checkbox
-/// let mut disabled_checked = false;  
-/// ui.add(MaterialCheckbox::new(&mut disabled_checked, "Disabled option")
-///     .enabled(false));
+/// // Three states held in the value itself.
+/// let mut all = ToggleableState::Indeterminate;
+/// ui.add(MaterialCheckbox::tri_state(&mut all, "All files"));
+///
+/// // Disabled and error states.
+/// let mut locked = true;
+/// ui.add(MaterialCheckbox::new(&mut locked, "Locked").enabled(false));
+/// ui.add(MaterialCheckbox::new(&mut checked, "Required").is_error(true));
 /// # });
 /// ```
-///
-/// ## Material Design Spec
-/// - Size: 18x18dp checkbox with 40x40dp touch target
-/// - Colors: Primary color when checked, outline when unchecked
-/// - Animation: 150ms cubic-bezier transition
-/// - States: Normal, hover, focus, pressed, disabled, error
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialCheckbox<'a> {
-    /// Mutable reference to the checked state
-    checked: &'a mut bool,
-    /// Text label displayed next to the checkbox
+    value: Value<'a>,
     text: String,
-    /// Whether the checkbox is in indeterminate state (partially checked)
     indeterminate: bool,
-    /// Whether the checkbox is interactive (enabled/disabled)
     enabled: bool,
-    /// Whether to show error state styling
     is_error: bool,
-    /// Custom check mark color (overrides theme)
     check_color: Option<Color32>,
-    /// Custom fill color when checked (overrides theme)
     fill_color: Option<Color32>,
-    /// Custom border width (default: 2.0)
     border_width: f32,
 }
 
 impl<'a> MaterialCheckbox<'a> {
-    /// Create a new Material Design checkbox
-    ///
-    /// ## Parameters
-    /// - `checked`: Mutable reference to boolean state
-    /// - `text`: Label text displayed next to checkbox
-    ///
-    /// ## Returns
-    /// A new MaterialCheckbox instance with default settings
+    /// A two-state checkbox bound to `checked`, labelled `text`.
     pub fn new(checked: &'a mut bool, text: impl Into<String>) -> Self {
+        Self::with_value(Value::Bool(checked), text.into())
+    }
+
+    /// A three-state checkbox bound to `state`, labelled `text`. A click
+    /// moves it as [`ToggleableState::toggled`] does.
+    pub fn tri_state(state: &'a mut ToggleableState, text: impl Into<String>) -> Self {
+        Self::with_value(Value::Tri(state), text.into())
+    }
+
+    fn with_value(value: Value<'a>, text: String) -> Self {
         Self {
-            checked,
-            text: text.into(),
+            value,
+            text,
             indeterminate: false,
             enabled: true,
             is_error: false,
             check_color: None,
             fill_color: None,
-            border_width: 2.0,
+            border_width: OUTLINE_WIDTH,
         }
     }
 
-    /// Set the indeterminate state of the checkbox
-    ///
-    /// Indeterminate checkboxes are used when the checkbox represents
-    /// a collection of items where some, but not all, are selected.
-    ///
-    /// ## Parameters  
-    /// - `indeterminate`: True for indeterminate state, false for normal
+    /// Shows a two-state checkbox as indeterminate (a dash). A click checks
+    /// it. Has no effect on a [`MaterialCheckbox::tri_state`] box, whose
+    /// state carries this itself.
     pub fn indeterminate(mut self, indeterminate: bool) -> Self {
         self.indeterminate = indeterminate;
         self
     }
 
-    /// Set whether the checkbox is enabled or disabled
-    ///
-    /// Disabled checkboxes cannot be interacted with and are visually dimmed.
-    ///
-    /// ## Parameters
-    /// - `enabled`: True for interactive, false for disabled
+    /// Enables or disables the checkbox. A disabled checkbox is dimmed, is
+    /// not focusable and ignores clicks.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
-    /// Set whether the checkbox should display in error state
-    ///
-    /// Error state checkboxes use error color from the theme to indicate
-    /// validation failure or invalid selection.
-    ///
-    /// ## Parameters
-    /// - `is_error`: True for error state styling
+    /// Draws the checkbox in the error colours (`error` / `onError`).
     pub fn is_error(mut self, is_error: bool) -> Self {
         self.is_error = is_error;
         self
     }
 
-    /// Set custom check mark color
-    ///
-    /// Overrides the default M3 **onPrimary** color role (or **onError** in error state).
-    /// The check mark appears on the filled checkbox background.
-    ///
-    /// ## Parameters
-    /// - `color`: Custom color for the check mark
+    /// Overrides the mark colour (default `onPrimary`, or `onError`).
     pub fn check_color(mut self, color: Color32) -> Self {
         self.check_color = Some(color);
         self
     }
 
-    /// Set custom fill color when checked
-    ///
-    /// Overrides the default M3 **primary** color role (or **error** in error state).
-    /// This is the background color of the checkbox when checked or indeterminate.
-    ///
-    /// ## Parameters
-    /// - `color`: Custom fill color when checkbox is checked
+    /// Overrides the selected container colour (default `primary`, or
+    /// `error`).
     pub fn fill_color(mut self, color: Color32) -> Self {
         self.fill_color = Some(color);
         self
     }
 
-    /// Set custom border width
-    ///
-    /// ## Parameters
-    /// - `width`: Border width in pixels (default: 2.0)
+    /// Overrides the unselected outline width (default 2 dp, drawn inside
+    /// the container).
     pub fn border_width(mut self, width: f32) -> Self {
         self.border_width = width;
         self
     }
+
+    fn state(&self) -> ToggleableState {
+        match &self.value {
+            Value::Tri(state) => **state,
+            Value::Bool(_) if self.indeterminate => ToggleableState::Indeterminate,
+            Value::Bool(checked) => ToggleableState::from(**checked),
+        }
+    }
 }
 
-impl<'a> Widget for MaterialCheckbox<'a> {
-    fn ui(self, ui: &mut Ui) -> Response {
-        let checkbox_size = 18.0;
-        let spacing = 4.0;
+/// The label of a selection control, laid out in `BodyLarge`.
+pub(crate) fn label_galley(ui: &Ui, text: &str, color: Color32) -> Option<Arc<Galley>> {
+    if text.is_empty() {
+        return None;
+    }
+    let job = TypeRole::BodyLarge
+        .style()
+        .layout_job(ui.ctx(), text, color);
+    Some(ui.painter().layout_job(job))
+}
 
-        // Calculate actual width needed: checkbox + spacing + text width
-        let text_width = if !self.text.is_empty() {
-            let font_id = ui
-                .style()
-                .text_styles
-                .get(&egui::TextStyle::Body)
-                .cloned()
-                .unwrap_or_else(egui::FontId::default);
-            let galley =
-                ui.painter()
-                    .layout_no_wrap(self.text.clone(), font_id, egui::Color32::WHITE);
-            galley.size().x
+/// Label colour of a selection control: `onSurface`, at 38 % when disabled.
+pub(crate) fn label_color(theme: &MaterialTheme, enabled: bool) -> Color32 {
+    let on_surface = theme.color(ColorRole::OnSurface);
+    if enabled {
+        on_surface
+    } else {
+        on_surface.gamma_multiply(DISABLED_CONTENT_OPACITY)
+    }
+}
+
+/// Paints the focus ring (`FocusIndicatorColor` = `secondary`) around
+/// `rect`, a shape with full corners of height `height`, when `response`
+/// has keyboard focus.
+pub(crate) fn focus_ring(
+    painter: &egui::Painter,
+    theme: &MaterialTheme,
+    response: &Response,
+    rect: Rect,
+    height: f32,
+) {
+    if response.has_focus() {
+        crate::paint::paint_focus_ring(
+            painter,
+            rect,
+            full_corner(height),
+            theme.color(ColorRole::Secondary),
+        );
+    }
+}
+
+/// A full (circular) corner radius for a square of `size`.
+pub(crate) fn full_corner(size: f32) -> CornerRadius {
+    CornerRadius::same((size / 2.0).round().clamp(0.0, 255.0) as u8)
+}
+
+/// The three points of the check mark in a box of `size` at `min`, pulled
+/// towards a centred dash by `gravitation` (0 = check, 1 = dash), from
+/// Compose's `CheckDrawingCache`.
+fn mark_points(min: Pos2, size: f32, gravitation: f32) -> [Pos2; 3] {
+    let lerp = |a: f32, b: f32| a + (b - a) * gravitation;
+    let at = |x: f32, y: f32| Pos2::new(min.x + size * x, min.y + size * y);
+    [
+        at(0.2, lerp(0.5, 0.5)),
+        at(lerp(0.4, 0.5), lerp(0.7, 0.5)),
+        at(0.8, lerp(0.3, 0.5)),
+    ]
+}
+
+/// The first `fraction` of the polyline `points`, by length.
+fn partial_polyline(points: [Pos2; 3], fraction: f32) -> Vec<Pos2> {
+    let first = points[0].distance(points[1]);
+    let second = points[1].distance(points[2]);
+    let length = (first + second) * fraction.clamp(0.0, 1.0);
+    if length <= first {
+        let t = if first > 0.0 { length / first } else { 0.0 };
+        vec![points[0], points[0].lerp(points[1], t)]
+    } else {
+        let t = if second > 0.0 {
+            (length - first) / second
         } else {
             0.0
         };
+        vec![points[0], points[1], points[1].lerp(points[2], t)]
+    }
+}
 
-        let desired_width = checkbox_size + spacing + text_width;
-        let desired_size = Vec2::new(desired_width, 24.0);
+impl Widget for MaterialCheckbox<'_> {
+    fn ui(mut self, ui: &mut Ui) -> Response {
+        let theme = MaterialTheme::of(ui.ctx());
+        let state = self.state();
+        let text_color = label_color(&theme, self.enabled);
+        let galley = label_galley(ui, &self.text, text_color);
+        let label_width = galley.as_ref().map_or(0.0, |g| g.size().x);
+        let desired_size = Vec2::new(TOUCH_TARGET + label_width, TOUCH_TARGET);
 
         let (rect, mut response) = ui.allocate_exact_size(
             desired_size,
             crate::a11y::sense(self.enabled, Sense::click()),
         );
+
+        if response.clicked() && self.enabled {
+            match &mut self.value {
+                Value::Tri(value) => **value = state.toggled(),
+                Value::Bool(checked) => **checked = state.toggled() == ToggleableState::On,
+            }
+            response.mark_changed();
+        }
+        let state = self.state();
         crate::a11y::describe(
             &response,
             egui::Role::CheckBox,
             self.enabled,
             &self.text,
-            (!self.indeterminate).then_some(*self.checked),
+            match state {
+                ToggleableState::On => Some(true),
+                ToggleableState::Off => Some(false),
+                ToggleableState::Indeterminate => None,
+            },
         );
 
-        if response.clicked() && self.enabled {
-            if self.indeterminate {
-                *self.checked = true;
-            } else {
-                *self.checked = !*self.checked;
-            }
-            response.mark_changed();
-        }
-
-        let _visuals = ui.style().interact(&response);
-        let checkbox_rect = Rect::from_min_size(
-            Pos2::new(rect.min.x, rect.center().y - checkbox_size / 2.0),
-            Vec2::splat(checkbox_size),
+        let selected = state != ToggleableState::Off;
+        let ctx = ui.ctx().clone();
+        let t = ctx.animate_bool_with_time(
+            response.id.with("selected"),
+            selected,
+            CHECK_ANIMATION_SECONDS,
+        );
+        let gravitation = ctx.animate_bool_with_time(
+            response.id.with("indeterminate"),
+            state == ToggleableState::Indeterminate,
+            CHECK_ANIMATION_SECONDS,
         );
 
-        // M3 Color Roles - Checkbox States
-        let primary = self
-            .fill_color
-            .unwrap_or_else(|| get_global_color("primary")); // Checked container background
-        let on_primary = self
-            .check_color
-            .unwrap_or_else(|| get_global_color("onPrimary")); // Check mark on primary
-        let error = get_global_color("error"); // Error state container/border
-        let on_error = get_global_color("onError"); // Check mark on error background
-        let on_surface = get_global_color("onSurface"); // Hover border, text label, disabled @ 38%
-        let on_surface_variant = get_global_color("onSurfaceVariant"); // Default unchecked border (lower emphasis)
+        let interaction = InteractionState::from_response(&response);
+        let active = interaction.hovered || interaction.focused || interaction.pressed;
+        let c = |role| theme.color(role);
+        let disabled = |color: Color32| color.gamma_multiply(DISABLED_CONTENT_OPACITY);
 
-        // Determine colors based on state
-        let (bg_color, border_color, check_color, border_width) = if !self.enabled {
-            // Disabled state: onSurface @ 38% opacity for all elements (M3 spec)
-            let disabled_color = on_surface.linear_multiply(0.38);
-            if *self.checked || self.indeterminate {
-                (disabled_color, Color32::TRANSPARENT, disabled_color, 0.0)
-            } else {
-                (
-                    Color32::TRANSPARENT,
-                    disabled_color,
-                    disabled_color,
-                    self.border_width,
-                )
-            }
-        } else if self.is_error {
-            // Error state: use error color for container/border
-            if *self.checked || self.indeterminate {
-                // Checked error state: error background with onError check mark
-                (error, Color32::TRANSPARENT, on_error, 0.0)
-            } else {
-                // Unchecked error state: error border
-                (Color32::TRANSPARENT, error, on_surface, self.border_width)
-            }
-        } else if *self.checked || self.indeterminate {
-            // Checked/indeterminate state: primary background with onPrimary check mark
-            (primary, Color32::TRANSPARENT, on_primary, 0.0)
-        } else if response.hovered() {
-            // Hover state unchecked: onSurface border (higher emphasis than default)
+        let (container, mark, unselected_outline, layer_color) = if !self.enabled {
             (
-                Color32::TRANSPARENT,
-                on_surface,
-                on_surface,
-                self.border_width,
+                disabled(c(ColorRole::OnSurface)),
+                c(ColorRole::Surface),
+                disabled(c(ColorRole::OnSurface)),
+                c(ColorRole::OnSurface),
+            )
+        } else if self.is_error {
+            (
+                self.fill_color.unwrap_or(c(ColorRole::Error)),
+                self.check_color.unwrap_or(c(ColorRole::OnError)),
+                c(ColorRole::Error),
+                c(ColorRole::Error),
             )
         } else {
-            // Default unchecked state: onSurfaceVariant border (lower emphasis)
+            let outline = if active {
+                c(ColorRole::OnSurface)
+            } else {
+                c(ColorRole::OnSurfaceVariant)
+            };
+            let layer = if selected {
+                c(ColorRole::Primary)
+            } else {
+                c(ColorRole::OnSurface)
+            };
             (
-                Color32::TRANSPARENT,
-                on_surface_variant,
-                on_surface,
-                self.border_width,
+                self.fill_color.unwrap_or(c(ColorRole::Primary)),
+                self.check_color.unwrap_or(c(ColorRole::OnPrimary)),
+                outline,
+                layer,
             )
         };
 
-        // Draw checkbox background
-        ui.painter().rect_filled(checkbox_rect, 2.0, bg_color);
+        let target = Rect::from_min_size(rect.min, Vec2::splat(TOUCH_TARGET));
+        let center = target.center();
+        let layer_rect = Rect::from_center_size(center, Vec2::splat(STATE_LAYER_SIZE));
+        let box_rect = Rect::from_center_size(center, Vec2::splat(CONTAINER_SIZE));
+        let painter = ui.painter();
 
-        // Draw checkbox border (only for unchecked or when needed)
-        if border_width > 0.0 {
-            ui.painter().rect_stroke(
-                checkbox_rect,
-                2.0,
-                Stroke::new(border_width, border_color),
-                egui::epaint::StrokeKind::Outside,
+        crate::paint::paint_state_layer(
+            painter,
+            layer_rect,
+            full_corner(STATE_LAYER_SIZE),
+            layer_color,
+            interaction,
+        );
+
+        // The container fades in over the outline; the outline takes the
+        // container colour as it does, so the two meet without a seam.
+        if t > 0.0 {
+            painter.rect_filled(box_rect, CONTAINER_CORNER, container.gamma_multiply(t));
+        }
+        if t < 1.0 && self.border_width > 0.0 {
+            let outline = unselected_outline.lerp_to_gamma(container, t);
+            painter.rect_stroke(
+                box_rect,
+                CONTAINER_CORNER,
+                Stroke::new(self.border_width, outline),
+                StrokeKind::Inside,
             );
         }
 
-        // Draw checkmark or indeterminate mark
-        if *self.checked && !self.indeterminate {
-            // Draw checkmark
-            let center = checkbox_rect.center();
-            let checkmark_size = checkbox_size * 0.6;
-
-            let start = Pos2::new(center.x - checkmark_size * 0.3, center.y);
-            let middle = Pos2::new(
-                center.x - checkmark_size * 0.1,
-                center.y + checkmark_size * 0.2,
-            );
-            let end = Pos2::new(
-                center.x + checkmark_size * 0.3,
-                center.y - checkmark_size * 0.2,
-            );
-
-            ui.painter()
-                .line_segment([start, middle], Stroke::new(2.0, check_color));
-            ui.painter()
-                .line_segment([middle, end], Stroke::new(2.0, check_color));
-        } else if self.indeterminate {
-            // Draw indeterminate mark (horizontal line)
-            let center = checkbox_rect.center();
-            let line_width = checkbox_size * 0.5;
-            let start = Pos2::new(center.x - line_width / 2.0, center.y);
-            let end = Pos2::new(center.x + line_width / 2.0, center.y);
-
-            ui.painter()
-                .line_segment([start, end], Stroke::new(2.0, check_color));
+        // Checking draws the mark in; unchecking fades it with the box.
+        let (draw_fraction, mark_alpha) = if selected { (t, 1.0) } else { (1.0, t) };
+        if t > 0.0 {
+            let points = mark_points(box_rect.min, CONTAINER_SIZE, gravitation);
+            let line = partial_polyline(points, draw_fraction);
+            painter.add(Shape::line(
+                line,
+                Stroke::new(MARK_STROKE_WIDTH, mark.gamma_multiply(mark_alpha)),
+            ));
         }
 
-        // Draw label text
-        if !self.text.is_empty() {
-            let text_pos = Pos2::new(checkbox_rect.max.x + 4.0, rect.center().y);
+        focus_ring(painter, &theme, &response, layer_rect, STATE_LAYER_SIZE);
 
-            // Label text: onSurface for enabled, onSurface @ 38% for disabled (M3 spec)
-            let text_color = if self.enabled {
-                on_surface
-            } else {
-                on_surface.linear_multiply(0.38)
-            };
-
-            ui.painter().text(
-                text_pos,
-                egui::Align2::LEFT_CENTER,
-                &self.text,
-                egui::FontId::default(),
-                text_color,
-            );
-        }
-
-        // M3 state layer overlay (40x40dp touch target, hover/focus/press states)
-        if self.enabled {
-            let overlay_rect = Rect::from_center_size(checkbox_rect.center(), Vec2::splat(40.0));
-            let overlay_color = if response.is_pointer_button_down_on() {
-                // Pressed state: 10% opacity (M3 interaction state)
-                if self.is_error {
-                    error.linear_multiply(0.10)
-                } else if *self.checked || self.indeterminate {
-                    primary.linear_multiply(0.10)
-                } else {
-                    on_surface.linear_multiply(0.10)
-                }
-            } else if response.hovered() {
-                // Hover state: 8% opacity (M3 interaction state)
-                if self.is_error {
-                    error.linear_multiply(0.08)
-                } else if *self.checked || self.indeterminate {
-                    primary.linear_multiply(0.08)
-                } else {
-                    on_surface.linear_multiply(0.08)
-                }
-            } else if response.has_focus() {
-                // Focus state: 10% opacity (M3 interaction state)
-                if self.is_error {
-                    error.linear_multiply(0.10)
-                } else if *self.checked || self.indeterminate {
-                    primary.linear_multiply(0.10)
-                } else {
-                    on_surface.linear_multiply(0.10)
-                }
-            } else {
-                Color32::TRANSPARENT
-            };
-
-            if overlay_color != Color32::TRANSPARENT {
-                ui.painter().circle_filled(
-                    overlay_rect.center(),
-                    overlay_rect.width() / 2.0,
-                    overlay_color,
-                );
-            }
+        if let Some(galley) = galley {
+            let pos = Pos2::new(target.max.x, rect.center().y - galley.size().y / 2.0);
+            painter.galley(pos, galley, text_color);
         }
 
         response
     }
 }
 
+/// Shorthand for [`MaterialCheckbox::new`].
 pub fn checkbox(checked: &mut bool, text: impl Into<String>) -> MaterialCheckbox<'_> {
     MaterialCheckbox::new(checked, text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn toggled_cycles_like_compose() {
+        assert_eq!(ToggleableState::Off.toggled(), ToggleableState::On);
+        assert_eq!(ToggleableState::On.toggled(), ToggleableState::Off);
+        assert_eq!(
+            ToggleableState::Indeterminate.toggled(),
+            ToggleableState::On
+        );
+    }
+
+    #[test]
+    fn mark_morphs_into_a_centred_dash() {
+        let dash = mark_points(Pos2::ZERO, 10.0, 1.0);
+        assert!(
+            dash.iter().all(|p| (p.y - 5.0).abs() < 1e-4),
+            "indeterminate mark is a horizontal dash at mid-height: {dash:?}"
+        );
+        let check = mark_points(Pos2::ZERO, 10.0, 0.0);
+        assert!(
+            (check[1].y - 7.0).abs() < 1e-4,
+            "check mark vertex at 0.7 of the box: {check:?}"
+        );
+    }
+
+    #[test]
+    fn partial_polyline_draws_by_length() {
+        let points = [
+            Pos2::new(0.0, 0.0),
+            Pos2::new(1.0, 0.0),
+            Pos2::new(1.0, 1.0),
+        ];
+        let half = partial_polyline(points, 0.5);
+        assert_eq!(half, vec![points[0], points[1]], "half of two equal legs");
+        let quarter = partial_polyline(points, 0.25);
+        assert_eq!(quarter.len(), 2, "a quarter stays on the first leg");
+        assert!(
+            (quarter[1].x - 0.5).abs() < 1e-5,
+            "quarter ends mid first leg"
+        );
+        assert_eq!(partial_polyline(points, 1.0)[2], points[2], "full mark");
+    }
 }
