@@ -333,7 +333,8 @@ impl<'a> MaterialSnackbar<'a> {
 
     /// The memory key holding when this snackbar was first shown.
     fn state_id(&self, ui: &Ui) -> egui::Id {
-        ui.scope_id().with(("material_snackbar", self.message.as_str()))
+        ui.scope_id()
+            .with(("material_snackbar", self.message.as_str()))
     }
 
     /// Tracks when the snackbar was first shown in egui memory (the widget
