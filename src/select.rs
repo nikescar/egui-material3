@@ -451,7 +451,7 @@ impl<'a> Widget for MaterialSelect<'a> {
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
         // Use persistent state for dropdown open/close with global coordination
-        let select_id = egui::Id::new((
+        let select_id = egui::Id::unique((
             "select_widget",
             rect.min.x as i32,
             rect.min.y as i32,
@@ -467,7 +467,7 @@ impl<'a> Widget for MaterialSelect<'a> {
         }
 
         // Global state to close other select menus
-        let global_open_select_id = egui::Id::new("global_open_select");
+        let global_open_select_id = egui::Id::unique("global_open_select");
         let current_open_select =
             ui.memory(|mem| mem.data.get_temp::<egui::Id>(global_open_select_id));
 
@@ -910,7 +910,11 @@ impl<'a> Widget for MaterialSelect<'a> {
 
                             let option_response = ui.interact(
                                 option_rect,
-                                egui::Id::new(("select_option", option.value, option.text.clone())),
+                                egui::Id::unique((
+                                    "select_option",
+                                    option.value,
+                                    option.text.clone(),
+                                )),
                                 Sense::click(),
                             );
 
