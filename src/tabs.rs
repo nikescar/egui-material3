@@ -36,6 +36,7 @@ use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Ui, Vec2, Widget}
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected_tab = 0;
 ///
@@ -89,6 +90,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// let tabs = MaterialTabs::new(&mut tab_index, TabVariant::Primary);
@@ -114,6 +116,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// let tabs = MaterialTabs::primary(&mut tab_index);
@@ -132,6 +135,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// let tabs = MaterialTabs::secondary(&mut tab_index);
@@ -148,6 +152,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// ui.add(MaterialTabs::primary(&mut tab_index)
@@ -172,6 +177,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// ui.add(MaterialTabs::primary(&mut tab_index)
@@ -197,6 +203,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// ui.add(MaterialTabs::primary(&mut tab_index)
@@ -225,6 +232,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// ui.add(MaterialTabs::primary(&mut tab_index)
@@ -248,6 +256,7 @@ impl<'a> MaterialTabs<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut tab_index = 0;
     /// ui.add(MaterialTabs::primary(&mut tab_index)
@@ -483,6 +492,7 @@ impl<'a> Widget for MaterialTabs<'a> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut tab_index = 0;
 /// ui.add(tabs_primary(&mut tab_index)
@@ -503,6 +513,7 @@ pub fn tabs_primary<'a>(selected: &'a mut usize) -> MaterialTabs<'a> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut tab_index = 0;
 /// ui.add(tabs_secondary(&mut tab_index)

@@ -111,6 +111,7 @@
 //! ```rust,no_run
 //! use egui_material3::theme::{get_global_theme, update_window_background, ThemeMode, ContrastLevel};
 //!
+//! # egui::__run_test_ctx(|ctx| {
 //! // Change theme mode at runtime
 //! if let Ok(mut theme) = get_global_theme().lock() {
 //!     theme.theme_mode = ThemeMode::Dark;
@@ -118,6 +119,7 @@
 //! }
 //! // Apply changes
 //! update_window_background(ctx);
+//! # });
 //! ```
 //!
 //! ## Available Components
@@ -156,11 +158,12 @@
 //! ```rust,no_run
 //! use egui_material3::image_list;
 //!
+//! # fn demo(ui: &mut egui::Ui) -> Result<(), Box<dyn std::error::Error>> {
 //! // Local image files
 //! ui.add(image_list()
 //!     .columns(3)
 //!     .item_spacing(8.0)
-//!     .items_from_paths(glob::glob("resources/*.png")?));
+//!     .items_from_paths(glob::glob("resources/*.png")?.flatten()));
 //!
 //! // Online images (requires 'ondemand' feature)
 //! ui.add(image_list()
@@ -176,9 +179,11 @@
 //!     .columns(2)
 //!     .item_spacing(8.0)
 //!     .items_from_bytes(vec![
-//!         include_bytes!("image1.png").to_vec(),
-//!         include_bytes!("image2.png").to_vec(),
+//!         include_bytes!("../resources/320x240.png").to_vec(),
+//!         include_bytes!("../resources/imgur_image.png").to_vec(),
 //!     ]));
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ### OnDemand Feature

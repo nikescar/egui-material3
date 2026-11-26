@@ -4490,6 +4490,7 @@ lazy_static::lazy_static! {
 ///
 /// # Examples
 /// ```
+/// # use egui_material3::material_symbol::*;
 /// let upload_icon = get_material_symbol("upload"); // Returns '\u{f09b}'
 /// let open_icon = get_material_symbol("open_in_new"); // Returns '\u{e89e}'
 /// ```
@@ -4501,6 +4502,7 @@ pub fn get_material_symbol(name: &str) -> Option<char> {
 ///
 /// # Examples
 /// ```
+/// # use egui_material3::material_symbol::*;
 /// let icon = get_material_symbol_or_default("upload", '?'); // Returns upload icon or '?' if not found
 /// ```
 pub fn get_material_symbol_or_default(name: &str, default: char) -> char {
@@ -4511,6 +4513,7 @@ pub fn get_material_symbol_or_default(name: &str, default: char) -> char {
 ///
 /// # Examples
 /// ```
+/// # use egui_material3::material_symbol::*;
 /// let upload_text = material_symbol_text("upload"); // Returns string containing upload icon
 /// ```
 pub fn material_symbol_text(name: &str) -> String {
@@ -4523,6 +4526,7 @@ pub fn material_symbol_text(name: &str) -> String {
 ///
 /// # Examples
 /// ```
+/// # use egui_material3::material_symbol::*;
 /// let icon_str = material_symbol_text_or_default("upload", "↑"); // Returns upload icon or "↑" if not found
 /// ```
 pub fn material_symbol_text_or_default(name: &str, default: &str) -> String {

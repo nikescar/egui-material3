@@ -43,18 +43,19 @@ pub enum DialogType {
 ///
 /// ## Usage Examples
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut dialog_open = false;
 ///
 /// // Basic dialog
-/// let dialog = MaterialDialog::new("my_dialog", "Confirm Action", &mut dialog_open)
-///     .content(|ui| {
+/// let dialog = MaterialDialog::new(egui::Id::unique("my_dialog"), "Confirm Action", &mut dialog_open)
+///     .content(|ui, _open| {
 ///         ui.label("Are you sure you want to proceed?");
 ///     })
-///     .action("Cancel", ActionType::Text, || {
+///     .text_action("Cancel", || {
 ///         // Cancel action
 ///     })
-///     .action("Confirm", ActionType::Filled, || {
+///     .filled_action("Confirm", || {
 ///         // Confirm action  
 ///     });
 ///

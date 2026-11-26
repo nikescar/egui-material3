@@ -27,6 +27,7 @@ use egui::{
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(1);
 ///
@@ -120,6 +121,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// let select = MaterialSelect::new(&mut selection);
@@ -158,6 +160,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -180,6 +183,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -198,6 +202,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -216,6 +221,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -234,6 +240,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -252,6 +259,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -270,6 +278,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -288,6 +297,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -306,6 +316,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -324,6 +335,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -343,6 +355,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -428,6 +441,7 @@ impl<'a> MaterialSelect<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialSelect::new(&mut selection)
@@ -1010,6 +1024,7 @@ impl<'a> Widget for MaterialSelect<'a> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selection = Some(1);
 /// ui.add(select(&mut selection)

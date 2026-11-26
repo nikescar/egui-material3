@@ -76,16 +76,16 @@ pub enum IconButtonVariant {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// // Standard icon button
 /// if ui.add(MaterialIconButton::standard("favorite")).clicked() {
 ///     println!("Favorite clicked!");
 /// }
 ///
-/// // Filled icon button with toggle state
+/// // Icon button with toggle state
 /// let mut liked = false;
-/// ui.add(MaterialIconButton::filled("favorite")
-///     .toggle(&mut liked)
+/// ui.add(MaterialIconButton::toggle("favorite", &mut liked)
 ///     .size(48.0));
 /// # });
 /// ```
@@ -122,6 +122,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let button = MaterialIconButton::new("settings", IconButtonVariant::Outlined);
     /// # });
@@ -148,6 +149,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::standard("menu"));
     /// # });
@@ -163,6 +165,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::filled("add"));
     /// # });
@@ -178,6 +181,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::filled_tonal("edit"));
     /// # });
@@ -193,6 +197,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::outlined("delete"));
     /// # });
@@ -211,6 +216,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut is_favorite = false;
     /// ui.add(MaterialIconButton::toggle("favorite", &mut is_favorite));
@@ -229,6 +235,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::standard("settings").size(48.0));
     /// # });
@@ -245,6 +252,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::standard("download").enabled(false));
     /// # });
@@ -261,6 +269,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::standard("share").container(true));
     /// # });
@@ -301,6 +310,7 @@ impl<'a> MaterialIconButton<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// ui.add(MaterialIconButton::standard("info").on_click(|| {
     ///     println!("Info button clicked!");
@@ -605,6 +615,7 @@ fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// ui.add(icon_button_standard("menu"));
 /// # });
@@ -620,6 +631,7 @@ pub fn icon_button_standard(icon: impl Into<String>) -> MaterialIconButton<'stat
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// ui.add(icon_button_filled("add"));
 /// # });
@@ -635,6 +647,7 @@ pub fn icon_button_filled(icon: impl Into<String>) -> MaterialIconButton<'static
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// ui.add(icon_button_filled_tonal("edit"));
 /// # });
@@ -650,6 +663,7 @@ pub fn icon_button_filled_tonal(icon: impl Into<String>) -> MaterialIconButton<'
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// ui.add(icon_button_outlined("delete"));
 /// # });
@@ -666,6 +680,7 @@ pub fn icon_button_outlined(icon: impl Into<String>) -> MaterialIconButton<'stat
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut is_liked = false;
 /// ui.add(icon_button_toggle("favorite", &mut is_liked));

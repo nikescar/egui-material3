@@ -43,6 +43,7 @@ use egui::{
 ///
 /// ## Usage Examples
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut text = String::new();
 ///
@@ -56,10 +57,11 @@ use egui::{
 ///
 /// // Input with error state
 /// let mut email = String::new();
+/// let email_invalid = !email.contains('@');
 /// ui.add(MaterialInput::filled(&mut email)
 ///     .label("Email")
 ///     .error_text("Invalid email format")
-///     .is_error(!email.contains('@')));
+///     .is_error(email_invalid));
 /// # });
 /// ```
 ///

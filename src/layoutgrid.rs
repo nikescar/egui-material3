@@ -15,6 +15,7 @@ use egui::{epaint::CornerRadius, Color32, Rect, Response, Sense, Ui, Vec2, Widge
 /// They help create consistent layouts following Material Design principles.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let grid = MaterialLayoutGrid::new()
 ///     .columns(12)
@@ -279,6 +280,7 @@ pub fn debug_layout_grid() -> MaterialLayoutGrid<'static> {
 /// Contains optional leading/trailing icons and title/subtitle text.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let tile_bar = GridTileBar::new()
 ///     .title("Image Title")
@@ -433,6 +435,7 @@ impl Widget for GridTileBar<'_> {
 /// Based on Flutter's GridTile component.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let tile = GridTile::new(|ui| {
 ///     ui.label("Tile content");

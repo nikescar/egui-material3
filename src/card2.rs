@@ -45,6 +45,7 @@ pub enum Card2Variant {
 /// like media support, action areas, and improved layout options.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// // Enhanced card with media and actions
 /// ui.add(MaterialCard2::elevated()

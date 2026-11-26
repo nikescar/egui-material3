@@ -17,10 +17,13 @@
 //! ```rust,no_run
 //! use egui_material3::image_list;
 //!
+//! # fn demo(ui: &mut egui::Ui) -> Result<(), Box<dyn std::error::Error>> {
 //! ui.add(image_list()
 //!     .columns(3)
 //!     .item_spacing(8.0)
-//!     .items_from_paths(glob::glob("resources/*.png")?));
+//!     .items_from_paths(glob::glob("resources/*.png")?.flatten()));
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ### Online Images (OnDemand Feature)
@@ -34,6 +37,7 @@
 //! ```rust,no_run
 //! use egui_material3::image_list;
 //!
+//! # egui::__run_test_ui(|ui| {
 //! ui.add(image_list()
 //!     .columns(4)
 //!     .item_spacing(8.0)
@@ -41,19 +45,22 @@
 //!         "https://example.com/image1.jpg".to_string(),
 //!         "https://example.com/image2.png".to_string(),
 //!     ]));
+//! # });
 //! ```
 //!
 //! ### Embedded Images
-//! ```rust,no_run
+//! ```rust
 //! use egui_material3::image_list;
 //!
+//! # egui::__run_test_ui(|ui| {
 //! ui.add(image_list()
 //!     .columns(2)
 //!     .item_spacing(8.0)
 //!     .items_from_bytes(vec![
-//!         include_bytes!("image1.png").to_vec(),
-//!         include_bytes!("image2.png").to_vec(),
+//!         include_bytes!("../resources/320x240.png").to_vec(),
+//!         include_bytes!("../resources/imgur_image.png").to_vec(),
 //!     ]));
+//! # });
 //! ```
 //!
 //! ## OnDemand Feature Details
@@ -97,6 +104,7 @@ pub enum ImageListVariant {
 /// They're commonly used to display a collection of photos or other images.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let image_list = MaterialImageList::standard()
 ///     .columns(3)

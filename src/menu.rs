@@ -231,6 +231,7 @@ struct ResolvedMenuButtonTheme {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut menu_open = false;
 ///
@@ -238,14 +239,13 @@ struct ResolvedMenuButtonTheme {
 ///     menu_open = true;
 /// }
 ///
-/// let mut menu = MaterialMenu::new(&mut menu_open)
-///     .item("Cut", Some(|| println!("Cut")))
-///     .item("Copy", Some(|| println!("Copy")))
-///     .item("Paste", Some(|| println!("Paste")));
+/// let menu = MaterialMenu::new(egui::Id::unique("edit_menu"), &mut menu_open)
+///     .item(MenuItem::new("Cut").on_click(|| println!("Cut")))
+///     .item(MenuItem::new("Copy").on_click(|| println!("Copy")))
+///     .item(MenuItem::new("Paste").on_click(|| println!("Paste")));
 ///
-/// if menu_open {
-///     ui.add(menu);
-/// }
+/// // Draws nothing while `menu_open` is false
+/// menu.show(ui.ctx());
 /// # });
 /// ```
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
@@ -319,9 +319,10 @@ impl<'a> MaterialMenu<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut menu_open = false;
-    /// let menu = MaterialMenu::new("main_menu", &mut menu_open);
+    /// let menu = MaterialMenu::new(egui::Id::unique("main_menu"), &mut menu_open);
     /// # });
     /// ```
     pub fn new(id: impl Into<Id>, open: &'a mut bool) -> Self {
@@ -360,10 +361,11 @@ impl<'a> MaterialMenu<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut menu_open = false;
     /// let button_rect = ui.available_rect_before_wrap();
-    /// let menu = MaterialMenu::new("menu", &mut menu_open)
+    /// let menu = MaterialMenu::new(egui::Id::unique("menu"), &mut menu_open)
     ///     .anchor_rect(button_rect);
     /// # });
     /// ```
@@ -379,10 +381,11 @@ impl<'a> MaterialMenu<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut menu_open = false;
-    /// let item = MenuItem::new("Cut").action(|| println!("Cut"));
-    /// let menu = MaterialMenu::new("menu", &mut menu_open).item(item);
+    /// let item = MenuItem::new("Cut").on_click(|| println!("Cut"));
+    /// let menu = MaterialMenu::new(egui::Id::unique("menu"), &mut menu_open).item(item);
     /// # });
     /// ```
     pub fn item(mut self, item: MenuItem<'a>) -> Self {
@@ -823,6 +826,7 @@ impl<'a> MenuItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = MenuItem::new("Copy");
     /// ```
     pub fn new(text: impl Into<String>) -> Self {
@@ -843,6 +847,7 @@ impl<'a> MenuItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = MenuItem::new("Copy").leading_icon("content_copy");
     /// ```
     pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
@@ -857,6 +862,7 @@ impl<'a> MenuItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = MenuItem::new("Save").trailing_icon("keyboard_arrow_right");
     /// ```
     pub fn trailing_icon(mut self, icon: impl Into<String>) -> Self {
@@ -871,6 +877,7 @@ impl<'a> MenuItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = MenuItem::new("Paste").enabled(false); // Disabled item
     /// ```
     pub fn enabled(mut self, enabled: bool) -> Self {
@@ -885,6 +892,7 @@ impl<'a> MenuItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = MenuItem::new("Copy").divider_after(true); // Show divider after this item
     /// ```
     pub fn divider_after(mut self, divider: bool) -> Self {
@@ -899,6 +907,7 @@ impl<'a> MenuItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = MenuItem::new("Delete")
     ///     .on_click(|| println!("Item deleted"));
     /// ```
@@ -921,9 +930,10 @@ impl<'a> MenuItem<'a> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut menu_open = false;
-/// let menu = menu("context_menu", &mut menu_open);
+/// let menu = menu(egui::Id::unique("context_menu"), &mut menu_open);
 /// # });
 /// ```
 pub fn menu(id: impl Into<egui::Id>, open: &mut bool) -> MaterialMenu<'_> {
@@ -939,6 +949,7 @@ pub fn menu(id: impl Into<egui::Id>, open: &mut bool) -> MaterialMenu<'_> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// let item = menu_item("Copy")
 ///     .leading_icon("content_copy")
 ///     .on_click(|| println!("Copy action"));

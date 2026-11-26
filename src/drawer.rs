@@ -207,6 +207,7 @@ impl DrawerHeader {
 /// They can be permanently on-screen or controlled by navigation triggers.
 ///
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut drawer_open = true;
 ///
@@ -216,7 +217,7 @@ impl DrawerHeader {
 ///     .item("Sent", Some("send"), false)
 ///     .item("Drafts", Some("drafts"), false);
 ///
-/// drawer.show(ui.ctx());
+/// drawer.show(ui);
 /// # });
 /// ```
 pub struct MaterialDrawer<'a> {

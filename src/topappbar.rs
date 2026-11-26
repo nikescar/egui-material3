@@ -53,6 +53,7 @@ pub enum TopAppBarVariant {
 ///
 /// Using icon names:
 /// ```
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let top_bar = MaterialTopAppBar::regular("My App")
 ///     .navigation_icon("menu", || println!("Menu clicked!"))
@@ -66,6 +67,7 @@ pub enum TopAppBarVariant {
 /// Using material symbol constants:
 /// ```
 /// # egui::__run_test_ui(|ui| {
+/// use egui_material3::MaterialTopAppBar;
 /// use egui_material3::material_symbol::{ICON_MENU, ICON_SEARCH, ICON_MORE_VERT};
 ///
 /// let top_bar = MaterialTopAppBar::regular("My App")

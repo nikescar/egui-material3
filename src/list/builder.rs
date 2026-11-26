@@ -14,6 +14,7 @@ impl<'a> MaterialList<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let list = MaterialList::new();
     /// ```
     pub fn new() -> Self {
@@ -33,6 +34,7 @@ impl<'a> MaterialList<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let item = ListItem::new("Sample Item");
     /// let list = MaterialList::new().item(item);
@@ -50,6 +52,7 @@ impl<'a> MaterialList<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let list = MaterialList::new().dividers(false); // No dividers
     /// ```
     pub fn dividers(mut self, dividers: bool) -> Self {
@@ -66,6 +69,7 @@ impl<'a> MaterialList<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let list = MaterialList::new()
     ///     .id(egui::Id::unique("my_list"))
     ///     .dividers(false);
@@ -88,6 +92,7 @@ impl<'a> MaterialList<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let list = MaterialList::new()
     ///     .allow_drawer(true)
     ///     .item(ListItem::new("Item").drawer(|ui| {
@@ -109,6 +114,7 @@ impl<'a> MaterialList<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let list = MaterialList::new()
     ///     .fill_width(true)
     ///     .item(ListItem::new("Item"));
@@ -127,6 +133,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("My List Item");
     /// ```
     pub fn new(primary_text: impl Into<String>) -> Self {
@@ -169,6 +176,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .secondary_text("This is some secondary text");
     /// ```
@@ -186,6 +194,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .overline("Important")
     ///     .secondary_text("This is some secondary text");
@@ -204,6 +213,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .leading_icon("check");
     /// ```
@@ -222,6 +232,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .leading_icon("folder")
     ///     .leading_icon_label("Department");
@@ -240,6 +251,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .trailing_icon("more_vert");
     /// ```
@@ -257,6 +269,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .trailing_text("99+");
     /// ```
@@ -275,6 +288,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .trailing_widget(|ui| {
     ///         if ui.button("Edit").clicked() {
@@ -300,6 +314,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .enabled(false); // This item is disabled
     /// ```
@@ -318,6 +333,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .selected(true); // This item appears selected
     /// ```
@@ -335,6 +351,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .dense(true); // Compact layout
     /// ```
@@ -350,6 +367,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .is_three_line(true);
     /// ```
@@ -365,6 +383,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .visual_density(VisualDensity::COMPACT);
     /// ```
@@ -380,6 +399,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .style(ListTileStyle::Drawer);
     /// ```
@@ -395,6 +415,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .title_alignment(ListTileTitleAlignment::Center);
     /// ```
@@ -410,6 +431,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .horizontal_title_gap(20.0);
     /// ```
@@ -425,6 +447,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .min_vertical_padding(8.0);
     /// ```
@@ -440,6 +463,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .min_leading_width(48.0);
     /// ```
@@ -455,6 +479,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .min_tile_height(64.0);
     /// ```
@@ -473,6 +498,8 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui::Color32;
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .tile_color(Color32::from_rgb(240, 240, 240));
     /// ```
@@ -491,6 +518,8 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui::Color32;
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .selected_tile_color(Color32::from_rgb(200, 230, 255));
     /// ```
@@ -509,6 +538,8 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui::Color32;
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .selected_color(Color32::from_rgb(0, 100, 200));
     /// ```
@@ -527,6 +558,8 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui::Color32;
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .icon_color(Color32::from_rgb(100, 100, 100));
     /// ```
@@ -546,6 +579,8 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui::Color32;
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .text_color(Color32::from_rgb(0, 0, 0));
     /// ```
@@ -561,6 +596,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item")
     ///     .on_click(|| {
     ///         println!("Item was clicked!");
@@ -587,6 +623,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let item = ListItem::new("Item with drawer")
     ///     .drawer(|ui| {
     ///         ui.label("Additional details");
@@ -612,6 +649,7 @@ impl<'a> ListItem<'a> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// let has_details = true;
     /// let item = ListItem::new("Item")
     ///     .drawer_if(has_details, |ui| {

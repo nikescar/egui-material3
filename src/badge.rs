@@ -67,6 +67,7 @@ pub enum BadgePosition {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// // Simple numeric badge
 /// ui.add(MaterialBadge::new("5")
@@ -334,6 +335,7 @@ impl Widget for MaterialBadge {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// ui.add(badge("5").color(BadgeColor::Error));
 /// # });
@@ -346,6 +348,7 @@ pub fn badge(content: impl Into<String>) -> MaterialBadge {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// ui.add(badge_dot().color(BadgeColor::Success));
 /// # });

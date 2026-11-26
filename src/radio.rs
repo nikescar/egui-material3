@@ -37,6 +37,7 @@ use egui::{self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2,
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(0);
 ///
@@ -76,6 +77,7 @@ pub struct MaterialRadio<'a, T: PartialEq + Clone> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(0);
 /// let mut group = MaterialRadioGroup::new(&mut selected)
@@ -116,6 +118,7 @@ impl<'a, T: PartialEq + Clone> MaterialRadio<'a, T> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = Some(1);
     /// ui.add(MaterialRadio::new(&mut selection, 1, "My Option"));
@@ -143,6 +146,7 @@ impl<'a, T: PartialEq + Clone> MaterialRadio<'a, T> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// ui.add(MaterialRadio::new(&mut selection, 0, "Disabled Option")
@@ -335,6 +339,7 @@ impl<'a, T: PartialEq + Clone> MaterialRadioGroup<'a, T> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = Some(1);
     /// let group = MaterialRadioGroup::new(&mut selection);
@@ -357,6 +362,7 @@ impl<'a, T: PartialEq + Clone> MaterialRadioGroup<'a, T> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// let group = MaterialRadioGroup::new(&mut selection)
@@ -379,6 +385,7 @@ impl<'a, T: PartialEq + Clone> MaterialRadioGroup<'a, T> {
     ///
     /// # Example
     /// ```rust
+    /// # use egui_material3::*;
     /// # egui::__run_test_ui(|ui| {
     /// let mut selection = None;
     /// let group = MaterialRadioGroup::new(&mut selection)
@@ -441,6 +448,7 @@ pub enum ListTileControlAffinity {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selected = Some(0);
 ///
@@ -727,6 +735,7 @@ impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selection = Some(0);
 /// ui.add(radio(&mut selection, 0, "First Option"));
@@ -750,6 +759,7 @@ pub fn radio<'a, T: PartialEq + Clone>(
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selection = None;
 /// ui.add(radio_group(&mut selection)
@@ -773,6 +783,7 @@ pub fn radio_group<'a, T: PartialEq + Clone>(
 ///
 /// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
 /// let mut selection = Some(0);
 /// ui.add(radio_list_tile(&mut selection, 0)
