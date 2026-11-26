@@ -557,8 +557,11 @@ impl<'a> MaterialDrawer<'a> {
                 .scrim_color
                 .unwrap_or(Color32::from_rgba_unmultiplied(0, 0, 0, 138));
 
+            // The scrim covers the whole page, above panels and windows, so
+            // it dims the page and blocks interaction with it.
             Area::new(self.id.with("modal_scrim"))
-                .order(Order::Background)
+                .order(Order::Foreground)
+                .fixed_pos(screen_rect.min)
                 .show(ctx, |ui| {
                     let scrim_response = ui.allocate_response(screen_rect.size(), Sense::click());
                     ui.painter()
@@ -570,8 +573,10 @@ impl<'a> MaterialDrawer<'a> {
                     }
                 });
 
-            // Draw the actual modal drawer
-            Area::new(self.id.with("modal_drawer"))
+            // Draw the actual modal drawer, kept above its scrim
+            let drawer_id = self.id.with("modal_drawer");
+            ctx.move_to_top(egui::LayerId::new(Order::Foreground, drawer_id));
+            Area::new(drawer_id)
                 .order(Order::Foreground)
                 .fixed_pos(pos2(0.0, 0.0))
                 .show(ctx, |ui| {
@@ -867,4 +872,72 @@ pub fn modal_drawer(open: &mut bool) -> MaterialDrawer<'_> {
 // Legacy support - these will be deprecated
 pub fn standard_drawer(open: &mut bool) -> MaterialDrawer<'_> {
     permanent_drawer(open)
+}
+
+#[cfg(test)]
+mod modal_tests {
+    use super::*;
+
+    /// Regression test for nikescar/egui-material3#14: the modal drawer's
+    /// scrim sits above the page, so a click outside the drawer dismisses
+    /// it and does not reach the page underneath.
+    #[test]
+    fn test_modal_scrim_blocks_page_and_dismisses() {
+        let ctx = egui::Context::default();
+        let mut open = true;
+        let mut page_clicked = false;
+        let frame = |events: Vec<egui::Event>, open: &mut bool, page_clicked: &mut bool| {
+            let input = egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    Vec2::new(800.0, 600.0),
+                )),
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                egui::CentralPanel::default().show(ui, |ui| {
+                    let size = ui.available_size();
+                    if ui.add_sized(size, egui::Button::new("page")).clicked() {
+                        *page_clicked = true;
+                    }
+                });
+                egui::Window::new("window")
+                    .fixed_pos(pos2(400.0, 200.0))
+                    .show(ui.ctx(), |ui| {
+                        let button = egui::Button::new("window button");
+                        if ui.add_sized(Vec2::new(200.0, 200.0), button).clicked() {
+                            *page_clicked = true;
+                        }
+                    });
+                MaterialDrawer::new(DrawerVariant::Modal, open)
+                    .width(200.0)
+                    .show(ui);
+            })
+            .textures_delta
+            .clear();
+        };
+        let pos = pos2(500.0, 300.0);
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        // Two frames: a new area is invisible on its first frame.
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            &mut open,
+            &mut page_clicked,
+        );
+        frame(vec![button(false)], &mut open, &mut page_clicked);
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        assert!(
+            !page_clicked,
+            "the page and windows under a modal drawer must not get the click"
+        );
+        assert!(!open, "clicking the scrim should dismiss the drawer");
+    }
 }
