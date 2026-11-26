@@ -529,7 +529,7 @@ impl<'a> MaterialMenu<'a> {
             .resolve();
 
         // Use a stable ID for the menu
-        let stable_id = egui::Id::new(format!("menu_{}", self.id.value()));
+        let stable_id = egui::Id::unique(format!("menu_{}", self.id.value()));
 
         // Track how many frames the menu has been open. A mouse click can span
         // two frames (press on frame N, release on frame N+1), so we need to
@@ -692,7 +692,7 @@ fn render_menu_content<'a>(
 
         let item_response = ui.interact(
             item_rect,
-            egui::Id::new(format!("menu_item_{}_{}", rect.min.x as i32, index)),
+            egui::Id::unique(format!("menu_item_{}_{}", rect.min.x as i32, index)),
             Sense::click(),
         );
 

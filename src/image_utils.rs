@@ -51,7 +51,9 @@ pub fn create_texture_from_svg(
 ) -> Result<TextureHandle, String> {
     // Check if texture is already cached
     {
-        let cache = TEXTURE_CACHE.lock().unwrap();
+        let cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(texture) = cache.get(name) {
             return Ok(texture.clone());
         }
@@ -73,7 +75,9 @@ pub fn create_texture_from_svg(
 
     // Cache the texture
     {
-        let mut cache = TEXTURE_CACHE.lock().unwrap();
+        let mut cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.insert(name.to_string(), texture.clone());
     }
 
@@ -87,7 +91,9 @@ pub fn create_texture_from_png_bytes(
 ) -> Result<TextureHandle, String> {
     // Check if texture is already cached
     {
-        let cache = TEXTURE_CACHE.lock().unwrap();
+        let cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(texture) = cache.get(name) {
             return Ok(texture.clone());
         }
@@ -106,7 +112,9 @@ pub fn create_texture_from_png_bytes(
 
     // Cache the texture
     {
-        let mut cache = TEXTURE_CACHE.lock().unwrap();
+        let mut cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.insert(name.to_string(), texture.clone());
     }
 

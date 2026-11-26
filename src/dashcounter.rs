@@ -12,6 +12,9 @@ use crate::get_global_color;
 use egui::epaint::CornerRadius;
 use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
 
+/// Callback that adds controls to the title area of a dashboard counter.
+type TitleUiFn<'a> = Box<dyn FnMut(&mut Ui) + 'a>;
+
 /// A Material Design 3 Dashboard Counter component.
 ///
 /// Displays a title and horizontally scrollable counter cards.
@@ -54,7 +57,7 @@ pub struct MaterialDashCounter<'a> {
     /// Optional color for description text (defaults to onSurfaceVariant)
     description_color: Option<egui::Color32>,
     /// Optional callback to add UI controls in the title area
-    title_ui: Option<Box<dyn FnMut(&mut Ui) + 'a>>,
+    title_ui: Option<TitleUiFn<'a>>,
 }
 
 /// A single counter card with category and counter display.
@@ -197,6 +200,7 @@ impl<'a> MaterialDashCounter<'a> {
     /// * `category_color` - Color for category text
     /// * `counter_color` - Color for counter numbers
     /// * `description_color` - Color for description text
+    #[allow(clippy::too_many_arguments)]
     pub fn card_with_description_colored(
         mut self,
         category: impl Into<String>,
@@ -392,8 +396,13 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             (((scroll + available_width) / card_step).ceil() as usize).min(card_count);
 
         // Draw cards
-        for i in first_visible..last_visible {
-            let card = &self.cards[i];
+        for (i, card) in self
+            .cards
+            .iter()
+            .enumerate()
+            .take(last_visible)
+            .skip(first_visible)
+        {
             let card_left = i as f32 * card_step + self.padding - scroll;
             let screen_x = outer_rect.left() + card_left;
 
@@ -507,10 +516,10 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                 let desc_padding = 4.0; // Small padding between the two descriptions
 
                 // If both descriptions exist, center them as a pair
-                if card.sub_description.is_some() && card.total_description.is_some() {
-                    let sub_desc = card.sub_description.as_ref().unwrap();
-                    let total_desc = card.total_description.as_ref().unwrap();
-
+                if let (Some(sub_desc), Some(total_desc)) = (
+                    card.sub_description.as_ref(),
+                    card.total_description.as_ref(),
+                ) {
                     // Measure description text widths
                     let sub_desc_galley = painter.layout_no_wrap(
                         sub_desc.clone(),

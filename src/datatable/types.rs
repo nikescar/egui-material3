@@ -266,7 +266,7 @@ impl<'a> DataTableRow<'a> {
     }
 
     /// Alias for cell_custom (backwards compatibility)
-    pub fn custom_cell(mut self, cell: DataTableCell) -> Self {
+    pub fn custom_cell(self, cell: DataTableCell) -> Self {
         self.cell_custom(cell)
     }
 

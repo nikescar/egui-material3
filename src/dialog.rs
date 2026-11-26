@@ -36,6 +36,9 @@ pub enum DialogType {
     Form,
 }
 
+/// Renders the dialog body; receives the UI and the dialog's open flag.
+type DialogContentFn<'a> = Box<dyn FnOnce(&mut Ui, &mut bool) + 'a>;
+
 /// Material Design dialog component following Material Design 3 specifications
 ///
 /// Dialogs interrupt users with overlaid content that requires a response.
@@ -80,7 +83,7 @@ pub struct MaterialDialog<'a> {
     /// Optional icon to display in dialog header
     icon: Option<String>,
     /// Content rendering function called once with UI and open state
-    content: Box<dyn FnOnce(&mut Ui, &mut bool) + 'a>,
+    content: DialogContentFn<'a>,
     /// List of action buttons at the bottom of the dialog
     actions: Vec<DialogAction<'a>>,
     /// Whether this is a quick/temporary dialog
