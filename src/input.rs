@@ -32,9 +32,7 @@
 //! - **Label font**: 16sp (placeholder), 12sp (floating)
 
 use crate::get_global_color;
-use egui::{
-    self, Color32, FontId, Pos2, Rect, Response, Sense, Stroke, TextStyle, Ui, Vec2, Widget,
-};
+use egui::{self, FontId, Pos2, Rect, Response, Sense, Stroke, TextStyle, Ui, Vec2, Widget};
 
 /// Material Design text input field following Material Design 3 specifications
 ///

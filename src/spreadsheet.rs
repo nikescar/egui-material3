@@ -591,13 +591,6 @@ impl SpreadsheetDataModel {
         }
 
         let delimiter = best_delimiter;
-        let delimiter_name = match delimiter {
-            ',' => "comma",
-            ';' => "semicolon",
-            '\t' => "tab",
-            _ => "unknown",
-        };
-
         let first_values: Vec<&str> = first_line.split(delimiter).collect();
         let second_values: Vec<&str> = second_line.split(delimiter).collect();
 
@@ -633,8 +626,7 @@ impl SpreadsheetDataModel {
         let new_columns: Vec<ColumnDef> = if first_line_is_header {
             first_values
                 .iter()
-                .enumerate()
-                .map(|(_i, name)| ColumnDef {
+                .map(|name| ColumnDef {
                     name: name.trim().to_string(),
                     col_type: ColumnType::Text,
                     width: 100.0,

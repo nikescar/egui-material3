@@ -100,10 +100,10 @@ impl ToolbarWindow {
 
         ui.add(
             toolbar()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("home"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("search"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("favorite"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("settings"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("search"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("favorite"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("settings"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -129,11 +129,11 @@ impl ToolbarWindow {
         ui.label("Multiple spacers:");
         ui.add(
             toolbar()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("menu"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("menu"))))
                 .spacer()
                 .item(MaterialButton::text("Center"))
                 .spacer()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("more_vert"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("more_vert"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -146,15 +146,11 @@ impl ToolbarWindow {
 
         ui.add(
             toolbar()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("home"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("explore"))))
-                .item_fn(|ui| ui.add(icon_button_filled(&material_symbol_text("add"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("notifications"))))
-                .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text(
-                        "account_circle",
-                    )))
-                })
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("explore"))))
+                .item_fn(|ui| ui.add(icon_button_filled(material_symbol_text("add"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("notifications"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("account_circle"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -182,17 +178,15 @@ impl ToolbarWindow {
         ui.add(
             toolbar()
                 .tabbar(true)
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home")).size(32.0)))
                 .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("home")).size(32.0))
+                    ui.add(icon_button_standard(material_symbol_text("search")).size(32.0))
                 })
                 .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("search")).size(32.0))
+                    ui.add(icon_button_standard(material_symbol_text("favorite")).size(32.0))
                 })
                 .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("favorite")).size(32.0))
-                })
-                .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("person")).size(32.0))
+                    ui.add(icon_button_standard(material_symbol_text("person")).size(32.0))
                 })
                 .min_height(self.min_height)
                 .outline(self.show_outline),
@@ -206,11 +200,11 @@ impl ToolbarWindow {
         ui.add(
             toolbar()
                 .top(true)
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("menu"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("menu"))))
                 .item(MaterialButton::text("My App").small())
                 .spacer()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("search"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("more_vert"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("search"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("more_vert"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -227,7 +221,7 @@ impl ToolbarWindow {
                 .item(MaterialButton::filled_tonal("Action 2").small())
                 .item(MaterialButton::filled_tonal("Action 3").small())
                 .spacer()
-                .item_fn(|ui| ui.add(icon_button_filled(&material_symbol_text("settings"))))
+                .item_fn(|ui| ui.add(icon_button_filled(material_symbol_text("settings"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline)
@@ -240,10 +234,10 @@ impl ToolbarWindow {
         ui.add(
             toolbar()
                 .outline(false)
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("home"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("explore"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("library_books"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("person"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("explore"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("library_books"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("person"))))
                 .min_height(64.0)
                 .item_spacing(16.0),
         );

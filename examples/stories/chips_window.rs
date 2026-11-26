@@ -123,7 +123,7 @@ impl ChipsWindow {
             }
         }
 
-        fonts.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+        fonts.sort_by_key(|a| a.0.to_lowercase());
         println!("Total fonts found: {}", fonts.len());
         fonts
     }
@@ -373,7 +373,7 @@ impl ChipsWindow {
         ui.heading("Small Assist Chips");
 
         let label = self.label.clone();
-        let l = |default: &str| -> String {
+        let _l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {
@@ -474,7 +474,7 @@ impl ChipsWindow {
         ui.heading("Small Filter Chips");
 
         let label = self.label.clone();
-        let l = |default: &str| -> String {
+        let _l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {

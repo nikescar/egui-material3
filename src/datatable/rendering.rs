@@ -5,7 +5,7 @@ use crate::{button::MaterialButton, theme::get_global_color};
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Stroke},
-    FontFamily, FontId, Id, Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
+    FontFamily, FontId, Id, Rect, Response, Sense, Ui, Vec2, Widget,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -109,7 +109,7 @@ impl<'a> MaterialDataTable<'a> {
             default_row_height,
             theme,
             auto_height,
-            refresh_interval,
+            refresh_interval: _,
             compact_mode,
             ..
         } = self;
@@ -1333,7 +1333,6 @@ impl<'a> MaterialDataTable<'a> {
                             child_ui.set_clip_rect(clipped_rect);
 
                             // Remove default top spacing for visual consistency
-                            let original_spacing = child_ui.spacing().clone();
                             child_ui.style_mut().spacing.item_spacing.y = 0.0;
 
                             drawer_fn(&mut child_ui);

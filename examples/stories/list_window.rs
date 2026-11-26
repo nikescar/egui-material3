@@ -341,7 +341,7 @@ impl ListWindow {
             interactive_list.item(button_item.on_click(|| println!("Button item clicked!")));
 
         // Non-interactive item
-        let mut non_interactive_item = ListItem::new(&format!(
+        let mut non_interactive_item = ListItem::new(format!(
             "Non-interactive item{}",
             if self.disabled { " (disabled)" } else { "" }
         ))
@@ -856,7 +856,7 @@ impl ListWindow {
             .unwrap_or_default();
 
         // Department data: (department, role, description)
-        let departments = vec![
+        let departments = [
             (
                 "Engineering",
                 "Backend Development",

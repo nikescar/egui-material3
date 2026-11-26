@@ -95,27 +95,6 @@ fn render_wrapped_text(
     ui.painter().galley(start_pos, galley, color);
 }
 
-/// Helper function to render multi-line text (manual \n breaks only)
-fn render_multiline_text(
-    painter: &egui::Painter,
-    text: &str,
-    start_pos: Pos2,
-    line_spacing: f32,
-    font_id: egui::FontId,
-    color: Color32,
-) {
-    for (i, line) in text.split('\n').enumerate() {
-        let line_pos = Pos2::new(start_pos.x, start_pos.y + (i as f32 * line_spacing));
-        painter.text(
-            line_pos,
-            egui::Align2::LEFT_CENTER,
-            line,
-            font_id.clone(),
-            color,
-        );
-    }
-}
-
 /// Count lines in text (1 for no \n, 2 for one \n, etc.)
 fn count_lines(text: &str) -> usize {
     text.split('\n').count()
@@ -262,11 +241,11 @@ impl<'a> Widget for MaterialList<'a> {
             total_height += item_height;
 
             // Add drawer height if drawer is open
-            if self.allow_drawer
-                && item.drawer.is_some()
-                && state.drawer_open_items.contains(&index)
+            if let Some(drawer_fn) = item
+                .drawer
+                .as_ref()
+                .filter(|_| self.allow_drawer && state.drawer_open_items.contains(&index))
             {
-                let drawer_fn = item.drawer.as_ref().unwrap();
                 let drawer_width = max_content_width.min(ui.available_width());
                 let drawer_height = measure_drawer_height(&**drawer_fn, ui, drawer_width);
                 total_height += drawer_height;
@@ -703,7 +682,7 @@ impl<'a> Widget for MaterialList<'a> {
 
             // Draw drawer chevron if drawer is enabled and item has drawer
             // Skip automatic chevron if item has custom trailing content (text, icon, or widget)
-            let drawer_chevron_width = if self.allow_drawer
+            if self.allow_drawer
                 && item.drawer.is_some()
                 && item.trailing_text.is_none()
                 && item.trailing_icon.is_none()
@@ -740,10 +719,7 @@ impl<'a> Widget for MaterialList<'a> {
                     egui::FontId::proportional(20.0),
                     icon_color,
                 );
-                32.0
-            } else {
-                0.0
-            };
+            }
 
             // Render custom trailing widget
             if let Some(widget_fn) = &item.trailing_widget {
@@ -781,20 +757,14 @@ impl<'a> Widget for MaterialList<'a> {
             current_y += item_height;
 
             // Render expanded drawer content if open
-            if self.allow_drawer
-                && item.drawer.is_some()
-                && state.drawer_open_items.contains(&index)
+            if let Some(drawer_fn) = item
+                .drawer
+                .as_ref()
+                .filter(|_| self.allow_drawer && state.drawer_open_items.contains(&index))
             {
-                let drawer_fn = item.drawer.as_ref().unwrap();
                 let drawer_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, current_y),
                     Vec2::new(rect.width(), 0.0), // Height will be determined by content
-                );
-
-                // Accent stripe on the left
-                let stripe_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, current_y),
-                    Vec2::new(4.0, 0.0), // Height updated after content
                 );
 
                 // Background for drawer
@@ -867,10 +837,12 @@ impl<'a> Widget for MaterialList<'a> {
     }
 }
 
+/// Create a new list item with the given primary text.
 pub fn list_item(primary_text: impl Into<String>) -> ListItem<'static> {
     ListItem::new(primary_text)
 }
 
+/// Create a new, empty Material Design list.
 pub fn list() -> MaterialList<'static> {
     MaterialList::new()
 }

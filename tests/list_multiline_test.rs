@@ -14,8 +14,6 @@ fn test_multiline_secondary_text_renders() {
                 .item(ListItem::new("Primary Text").secondary_text("Line 1\nLine 2"));
 
             ui.add(list);
-            // If it compiles and renders without panic, test passes
-            assert!(true);
         });
     })
     .textures_delta
@@ -34,7 +32,6 @@ fn test_single_line_secondary_text_unchanged() {
                 .item(ListItem::new("Primary Text").secondary_text("Single line only"));
 
             ui.add(list);
-            assert!(true);
         });
     })
     .textures_delta
@@ -77,7 +74,6 @@ fn test_no_secondary_text() {
             let list = MaterialList::new().item(ListItem::new("Primary only"));
 
             ui.add(list);
-            assert!(true);
         });
     })
     .textures_delta
@@ -100,7 +96,6 @@ fn test_five_line_item_with_all_fields() {
             );
 
             ui.add(list);
-            assert!(true);
         });
     })
     .textures_delta

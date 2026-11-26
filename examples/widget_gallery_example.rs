@@ -1,15 +1,13 @@
 use eframe::egui;
 use egui_material3::{
     theme::{
-        load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme,
-        update_global_theme, update_window_background, ContrastLevel, MaterialThemeContext,
-        MaterialThemeFile, ThemeMode,
+        load_fonts, load_themes, setup_local_theme, update_window_background, ContrastLevel,
+        ThemeMode,
     },
-    MaterialButton, MaterialCard2, MaterialCheckbox, MaterialChip, MaterialDialog, MaterialDrawer,
-    MaterialFab, MaterialIcon, MaterialIconButton, MaterialList, MaterialProgress, MaterialRadio,
-    MaterialSelect, MaterialSlider, MaterialSwitch, MaterialTabs, MaterialTopAppBar,
+    MaterialButton, MaterialCard2, MaterialCheckbox, MaterialChip, MaterialFab, MaterialIcon,
+    MaterialIconButton, MaterialProgress, MaterialRadio, MaterialSelect, MaterialSlider,
+    MaterialSwitch,
 };
-use std::collections::HashMap;
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
@@ -38,13 +36,6 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 #[derive(Debug, PartialEq)]
-enum Animal {
-    Ferris,
-    Dolphin,
-    Horse,
-}
-
-#[derive(Debug, PartialEq)]
 enum Enum {
     First,
     Second,
@@ -54,7 +45,6 @@ enum Enum {
 struct WidgetGalleryApp {
     // Widget state
     text: String,
-    multiline_text: String,
     number: f32,
     slider_value: f32,
     checkbox: bool,
@@ -78,7 +68,6 @@ impl Default for WidgetGalleryApp {
     fn default() -> Self {
         Self {
             text: "Edit me!".to_owned(),
-            multiline_text: "This is a\nmultiline text\neditor.".to_owned(),
             number: 42.0,
             slider_value: 0.5,
             checkbox: true,
@@ -97,15 +86,6 @@ impl Default for WidgetGalleryApp {
 }
 
 impl WidgetGalleryApp {
-    fn load_theme_from_file(
-        &self,
-        file_path: &str,
-    ) -> Result<MaterialThemeFile, Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(file_path)?;
-        let theme: MaterialThemeFile = serde_json::from_str(&content)?;
-        Ok(theme)
-    }
-
     fn update_theme_mode(&mut self, ctx: &egui::Context) {
         // Update the global theme context with new theme mode and contrast level
         if let Ok(mut global_theme) = egui_material3::theme::get_global_theme().lock() {
@@ -393,19 +373,6 @@ impl eframe::App for WidgetGalleryApp {
                                 self.checkbox = !self.checkbox;
                             }
                             ui.end_row();
-
-                            #[cfg(feature = "chrono")]
-                            if *with_date_button {
-                                let date = date
-                                    .get_or_insert_with(|| chrono::offset::Utc::now().date_naive());
-                                ui.add(doc_link_label_with_crate(
-                                    "egui_extras",
-                                    "DatePickerButton",
-                                    "DatePickerButton",
-                                ));
-                                ui.add(egui_extras::DatePickerButton::new(date));
-                                ui.end_row();
-                            }
 
                             ui.label("Separator");
                             ui.separator();

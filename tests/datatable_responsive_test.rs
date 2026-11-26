@@ -4,7 +4,7 @@
 /// - Width < 400px: 12px fonts, 12px padding, 40px header height
 /// - Width < 500px: 14px fonts, 18px padding, 48px header height
 /// - Width ≥ 500px: 16px fonts, 24px padding, 56px header height
-use egui::{Context, Id, Vec2};
+use egui::{Context, Id};
 use egui_material3::datatable::data_table;
 
 #[test]

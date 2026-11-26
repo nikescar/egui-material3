@@ -14,20 +14,11 @@ use egui_material3::noto_emoji;
 use egui_material3::{ListItem, MaterialList};
 
 #[doc(hidden)]
+#[derive(Default)]
 pub struct SymbolWindow {
     pub open: bool,
     filter_selected_1: bool,
     filter_selected_3: bool,
-}
-
-impl Default for SymbolWindow {
-    fn default() -> Self {
-        Self {
-            open: false,
-            filter_selected_1: false,
-            filter_selected_3: false,
-        }
-    }
 }
 
 impl SymbolWindow {

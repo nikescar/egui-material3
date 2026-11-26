@@ -179,7 +179,7 @@ fn test_all_compact_modes_render_without_panic() {
     ctx.run_ui(Default::default(), |ui| {
         egui::CentralPanel::default().show(ui, |ui| {
             // Test all 4 modes on the same table structure
-            let modes = vec![
+            let modes = [
                 CompactMode::Auto,
                 CompactMode::ForceNarrow,
                 CompactMode::ForceCompact,

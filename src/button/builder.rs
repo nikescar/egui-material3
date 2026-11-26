@@ -1,7 +1,6 @@
 //! Builder methods for MaterialButton
 
 use super::{types::*, MaterialButton};
-use crate::{get_global_color, material_symbol::material_symbol_text};
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Shadow, Stroke},

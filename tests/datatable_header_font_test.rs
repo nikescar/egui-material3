@@ -9,8 +9,10 @@ fn test_header_font_size_default() {
 
 #[test]
 fn test_header_font_size_custom() {
-    let mut theme = DataTableTheme::default();
-    theme.header_font_size = Some(20.0);
+    let theme = DataTableTheme {
+        header_font_size: Some(20.0),
+        ..Default::default()
+    };
 
     // Test ensures the API exists and compiles
     assert_eq!(theme.header_font_size, Some(20.0));
@@ -18,9 +20,11 @@ fn test_header_font_size_custom() {
 
 #[test]
 fn test_header_font_size_builder_chain() {
-    let mut theme = DataTableTheme::default();
-    theme.header_font_size = Some(18.0);
-    theme.heading_row_height = Some(64.0);
+    let theme = DataTableTheme {
+        header_font_size: Some(18.0),
+        heading_row_height: Some(64.0),
+        ..Default::default()
+    };
 
     assert_eq!(theme.header_font_size, Some(18.0));
     assert_eq!(theme.heading_row_height, Some(64.0));

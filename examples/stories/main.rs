@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Color32};
+use eframe::egui::{self};
 use egui_file_dialog::FileDialog;
 use egui_material3::theme::{
     load_fonts, load_themes, setup_google_fonts, setup_local_fonts_from_bytes, setup_local_theme,
@@ -224,7 +224,7 @@ impl MaterialApp {
         F: FnOnce(&mut MaterialThemeContext),
     {
         if let Ok(mut theme) = get_global_theme().lock() {
-            update_fn(&mut *theme);
+            update_fn(&mut theme);
         }
     }
 

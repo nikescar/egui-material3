@@ -145,18 +145,13 @@ impl Widget for MaterialButton<'_> {
         let padding_multiplier = if small { 0.25 } else { 1.0 };
         let padding_left = if has_leading { 16.0 } else { 24.0 } * padding_multiplier;
         let padding_right = if has_trailing { 16.0 } else { 24.0 } * padding_multiplier;
-        let button_padding_left;
-        let button_padding_right;
-        let button_padding_y;
-        if frame || variant == MaterialButtonVariant::Text {
-            button_padding_left = padding_left;
-            button_padding_right = padding_right;
-            button_padding_y = if small { 4.0 } else { 10.0 };
-        } else {
-            button_padding_left = 0.0;
-            button_padding_right = 0.0;
-            button_padding_y = 0.0;
-        }
+
+        let (button_padding_left, button_padding_right, button_padding_y) =
+            if frame || variant == MaterialButtonVariant::Text {
+                (padding_left, padding_right, if small { 4.0 } else { 10.0 })
+            } else {
+                (0.0, 0.0, 0.0)
+            };
 
         // Material Design minimum button height
         let min_button_height = if small { 32.0 } else { 40.0 };

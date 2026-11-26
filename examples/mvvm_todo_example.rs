@@ -295,11 +295,9 @@ impl eframe::App for MyApp {
                 ));
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if completed > 0 {
-                        if ui.add(MaterialButton::text("Clear Completed")).clicked() {
-                            self.view_model.clear_completed();
-                            ctx.request_repaint();
-                        }
+                    if completed > 0 && ui.add(MaterialButton::text("Clear Completed")).clicked() {
+                        self.view_model.clear_completed();
+                        ctx.request_repaint();
                     }
                 });
             });

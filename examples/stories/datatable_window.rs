@@ -2,11 +2,10 @@
 
 use crate::datatable::{CompactMode, RowAction, SortDirection as DataTableSortDirection};
 use crate::{
-    data_table, dialog, tabs_secondary, DataTableCell, DataTableTheme, MaterialButton,
-    MaterialCheckbox, MaterialInput,
+    data_table, dialog, DataTableCell, DataTableTheme, MaterialButton, MaterialCheckbox,
+    MaterialInput,
 };
 use eframe::egui::{self, Color32, Id, Ui, Window};
-use egui_material3::{ListItem, MaterialList};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
@@ -464,7 +463,7 @@ impl DataTableWindow {
                     let mut new_rows = Vec::new();
                     let mut new_selection = Vec::new();
 
-                    for (_idx, (row, &selected)) in self.interactive_rows.iter().zip(self.interactive_selection.iter()).enumerate() {
+                    for (row, &selected) in self.interactive_rows.iter().zip(self.interactive_selection.iter()) {
                         if !selected {
                             new_rows.push(row.clone());
                             new_selection.push(false);
@@ -758,10 +757,6 @@ impl DataTableWindow {
 
         // Create a custom table with tooltip columns by manually building the table
         // Since we can't access private fields, we'll use a workaround with helper function
-        let mut tooltip_rows = Vec::new();
-        tooltip_rows.push(vec!["001", "Laptop Pro", "$1299", "15"]);
-        tooltip_rows.push(vec!["002", "Mouse Wireless", "$29", "150"]);
-        tooltip_rows.push(vec!["003", "Keyboard Mechanical", "$89", "45"]);
 
         // For now, create a basic table (full tooltip support requires API enhancement)
         let tooltip_table = data_table()
@@ -950,8 +945,10 @@ impl DataTableWindow {
         ui.heading("Show/Hide Checkbox Column");
         ui.label("Selection enabled but checkbox column hidden");
 
-        let mut no_checkbox_theme = DataTableTheme::default();
-        no_checkbox_theme.show_checkbox_column = false;
+        let no_checkbox_theme = DataTableTheme {
+            show_checkbox_column: false,
+            ..Default::default()
+        };
 
         let no_checkbox_table = data_table()
             .id(Id::unique("no_checkbox_table"))
@@ -1409,8 +1406,10 @@ impl DataTableWindow {
 
         ui.add_space(10.0);
         ui.label("2. Tooltips ALWAYS ENABLED:");
-        let mut always_tooltip_theme = DataTableTheme::default();
-        always_tooltip_theme.enable_cell_tooltips = true;
+        let always_tooltip_theme = DataTableTheme {
+            enable_cell_tooltips: true,
+            ..Default::default()
+        };
 
         let always_tooltip_table = data_table()
             .id(Id::unique("always_tooltip_table"))
@@ -1432,8 +1431,10 @@ impl DataTableWindow {
 
         ui.add_space(10.0);
         ui.label("3. SMART TOOLTIPS (only truncated text):");
-        let mut smart_tooltip_theme = DataTableTheme::default();
-        smart_tooltip_theme.smart_cell_tooltips = true;
+        let smart_tooltip_theme = DataTableTheme {
+            smart_cell_tooltips: true,
+            ..Default::default()
+        };
 
         let smart_tooltip_table = data_table()
             .id(Id::unique("smart_tooltip_table"))
@@ -1471,8 +1472,10 @@ impl DataTableWindow {
         ui.heading("Custom Header Font Size");
         ui.label("Headers with larger font size for better visibility");
 
-        let mut large_header_theme = DataTableTheme::default();
-        large_header_theme.header_font_size = Some(20.0);
+        let mut large_header_theme = DataTableTheme {
+            header_font_size: Some(20.0),
+            ..Default::default()
+        };
         large_header_theme.heading_row_height = Some(68.0);  // Taller to accommodate larger font
 
         let large_header_table = data_table()
@@ -1496,8 +1499,10 @@ impl DataTableWindow {
 
         ui.add_space(10.0);
 
-        let mut small_header_theme = DataTableTheme::default();
-        small_header_theme.header_font_size = Some(12.0);
+        let mut small_header_theme = DataTableTheme {
+            header_font_size: Some(12.0),
+            ..Default::default()
+        };
         small_header_theme.heading_row_height = Some(40.0);  // Shorter for compact look
 
         ui.label("Compact header with smaller font (12px):");

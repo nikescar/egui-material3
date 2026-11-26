@@ -1,9 +1,6 @@
 use eframe::egui;
 use egui_material3::{
-    theme::{
-        load_fonts, load_themes, setup_google_fonts, setup_local_fonts, setup_local_theme,
-        update_global_theme, ContrastLevel, MaterialThemeContext, MaterialThemeFile, ThemeMode,
-    },
+    theme::{load_fonts, load_themes, setup_google_fonts, setup_local_theme},
     MaterialButton, MaterialDataTable,
 };
 use serde::Deserialize;
@@ -33,9 +30,6 @@ fn main() -> Result<(), eframe::Error> {
 
 #[derive(Debug, Clone, Deserialize)]
 struct NobelPrizeData {
-    title: String,
-    subtitle: String,
-    updated_at: String,
     data: Vec<YearlyPrizes>,
 }
 
@@ -48,7 +42,6 @@ struct YearlyPrizes {
 #[derive(Debug, Clone, Deserialize)]
 struct Category {
     name: String,
-    full_title: String,
     awards: Vec<Award>,
 }
 
@@ -61,7 +54,6 @@ struct Award {
 #[derive(Debug, Clone, Deserialize)]
 struct Laureate {
     name: String,
-    profile_url: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -123,36 +115,6 @@ impl Default for NobelPrizesApp {
 }
 
 impl NobelPrizesApp {
-    fn load_custom_theme(&mut self, file_path: &str) {
-        match self.load_theme_from_file(file_path) {
-            Ok(theme_file) => {
-                let theme_context = MaterialThemeContext {
-                    theme_mode: ThemeMode::Light,
-                    contrast_level: ContrastLevel::Normal,
-                    material_theme: Some(theme_file),
-                    selected_colors: std::collections::HashMap::new(),
-                    dark_mode: false,
-                };
-                update_global_theme(theme_context);
-                self.theme_loaded = true;
-                println!("Custom theme loaded successfully!");
-            }
-            Err(e) => {
-                eprintln!("Failed to load custom theme: {}", e);
-                self.theme_loaded = false;
-            }
-        }
-    }
-
-    fn load_theme_from_file(
-        &self,
-        file_path: &str,
-    ) -> Result<MaterialThemeFile, Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(file_path)?;
-        let theme: MaterialThemeFile = serde_json::from_str(&content)?;
-        Ok(theme)
-    }
-
     fn fetch_nobel_data(&mut self) {
         // Spawn async task to fetch Nobel Prize data
         let (tx, rx) = std::sync::mpsc::channel();

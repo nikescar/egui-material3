@@ -1,7 +1,6 @@
 //! Integration tests for full-item drawer toggle behavior
 
 use egui_material3::{ListItem, MaterialList, MaterialListState};
-use std::sync::{Arc, Mutex};
 
 /// Test that clicking anywhere on an item with drawer toggles the drawer
 #[test]
@@ -20,7 +19,7 @@ fn test_item_click_toggles_drawer_when_drawer_present() {
                 }),
             );
 
-            let response = ui.add(list);
+            ui.add(list);
 
             // Get drawer state - should be closed initially
             let state = ui
@@ -63,7 +62,7 @@ fn test_item_click_closes_open_drawer() {
                 }),
             );
 
-            let response = ui.add(list);
+            ui.add(list);
 
             // Verify drawer is open
             let state = ui
@@ -99,10 +98,6 @@ fn test_chevron_still_works() {
             );
 
             ui.add(list);
-
-            // Chevron click behavior is tested separately
-            // This test ensures chevron rendering doesn't break
-            assert!(true, "Chevron should still be rendered and functional");
         });
     })
     .textures_delta
@@ -122,10 +117,6 @@ fn test_item_without_drawer_uses_action_callback() {
                 .item(ListItem::new("Test Item"));
 
             ui.add(list);
-
-            // Item without drawer should not respond to drawer toggle
-            // This test just verifies structure compiles
-            assert!(true);
         });
     })
     .textures_delta
@@ -156,10 +147,6 @@ fn test_action_callback_ignored_when_drawer_present() {
             let _state = ui
                 .data_mut(|d| d.get_persisted::<MaterialListState>(list_id))
                 .unwrap_or_default();
-
-            // This test will fully work after implementation
-            // For now, it just verifies the structure compiles
-            assert!(true);
         });
     })
     .textures_delta

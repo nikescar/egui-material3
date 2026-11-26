@@ -38,7 +38,7 @@ fn test_sort_state_persists_across_redraws() {
             // Simulate header click by directly modifying state
             let table_id = Id::unique("persist_test_table");
             ui.data_mut(|d| {
-                let mut state = d
+                let state = d
                     .get_persisted_mut_or_default::<egui_material3::datatable::DataTableState>(
                         table_id,
                     );
@@ -108,7 +108,7 @@ fn test_sort_direction_toggles_correctly() {
 
             // Set initial sort: column 0, ascending
             ui.data_mut(|d| {
-                let mut state = d
+                let state = d
                     .get_persisted_mut_or_default::<egui_material3::datatable::DataTableState>(
                         table_id,
                     );
@@ -128,7 +128,7 @@ fn test_sort_direction_toggles_correctly() {
 
             // Simulate clicking the same column again (toggle direction)
             ui.data_mut(|d| {
-                let mut state = d
+                let state = d
                     .get_persisted_mut_or_default::<egui_material3::datatable::DataTableState>(
                         table_id,
                     );
@@ -171,7 +171,7 @@ fn test_different_columns_have_independent_sort_state() {
 
             // Sort by column 0
             ui.data_mut(|d| {
-                let mut state = d
+                let state = d
                     .get_persisted_mut_or_default::<egui_material3::datatable::DataTableState>(
                         table_id,
                     );
@@ -191,7 +191,7 @@ fn test_different_columns_have_independent_sort_state() {
 
             // Switch to column 1
             ui.data_mut(|d| {
-                let mut state = d
+                let state = d
                     .get_persisted_mut_or_default::<egui_material3::datatable::DataTableState>(
                         table_id,
                     );

@@ -667,10 +667,9 @@ impl DialogWindow {
                         if ui
                             .add(MaterialButton::outlined("Previous").enabled(can_go_back))
                             .clicked()
+                            && self.wizard_current_step > 0
                         {
-                            if self.wizard_current_step > 0 {
-                                self.wizard_current_step -= 1;
-                            }
+                            self.wizard_current_step -= 1;
                         }
 
                         ui.add_space(10.0);

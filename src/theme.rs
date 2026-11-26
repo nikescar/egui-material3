@@ -1693,22 +1693,15 @@ where
     let primary_container = theme.get_color_by_name("primaryContainer");
     let on_primary_container = theme.get_color_by_name("onPrimaryContainer");
 
-    let secondary = theme.get_color_by_name("secondary");
-    let on_secondary = theme.get_color_by_name("onSecondary");
-    let secondary_container = theme.get_color_by_name("secondaryContainer");
-
     let tertiary = theme.get_color_by_name("tertiary");
 
     let error = theme.get_color_by_name("error");
-    let on_error = theme.get_color_by_name("onError");
-    let error_container = theme.get_color_by_name("errorContainer");
 
     let surface = theme.get_surface_color(visuals.dark_mode);
     let on_surface = theme.get_color_by_name("onSurface");
     let surface_variant = theme.get_color_by_name("surfaceVariant");
     let on_surface_variant = theme.get_color_by_name("onSurfaceVariant");
 
-    let surface_container = theme.get_color_by_name("surfaceContainer");
     let surface_container_high = theme.get_color_by_name("surfaceContainerHigh");
     let surface_container_highest = theme.get_color_by_name("surfaceContainerHighest");
     let surface_container_low = theme.get_color_by_name("surfaceContainerLow");
@@ -1718,7 +1711,6 @@ where
     let outline_variant = theme.get_color_by_name("outlineVariant");
 
     let inverse_surface = theme.get_color_by_name("inverseSurface");
-    let inverse_on_surface = theme.get_color_by_name("inverseOnSurface");
     let inverse_primary = theme.get_color_by_name("inversePrimary");
 
     let shadow = theme.get_color_by_name("shadow");

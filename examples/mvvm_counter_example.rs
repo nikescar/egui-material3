@@ -145,7 +145,7 @@ impl eframe::App for MyApp {
                 );
 
                 ui.add_space(10.0);
-                ui.label(egui::RichText::new(&self.view_model.message.get()).size(20.0));
+                ui.label(egui::RichText::new(self.view_model.message.get()).size(20.0));
             });
 
             ui.add_space(30.0);
