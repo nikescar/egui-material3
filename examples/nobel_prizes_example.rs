@@ -187,7 +187,7 @@ impl NobelPrizesApp {
 
     fn create_nobel_datatable(&self, prizes: &[NobelPrizeEntry]) -> MaterialDataTable<'_> {
         let mut datatable = MaterialDataTable::new()
-            .id("nobel_prizes_table")
+            .id(egui::Id::unique("nobel_prizes_table"))
             .column("Year", 80.0, false)
             .column("Category", 120.0, false)
             .column("Laureate", 200.0, false)
@@ -210,7 +210,8 @@ impl NobelPrizesApp {
 }
 
 impl eframe::App for NobelPrizesApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // Check for HTTP response
         if let Some(receiver) = &self.receiver {
             if let Ok(result) = receiver.try_recv() {
@@ -222,7 +223,7 @@ impl eframe::App for NobelPrizesApp {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Nobel Prizes Database (1901-2024) 테스트");
 
             ui.add_space(10.0);

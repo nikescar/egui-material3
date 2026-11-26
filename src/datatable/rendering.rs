@@ -54,7 +54,7 @@ impl<'a> MaterialDataTable<'a> {
                 }
             }
             self.rows.len().hash(&mut hasher);
-            Id::new(format!("datatable_{}", hasher.finish()))
+            Id::unique(format!("datatable_{}", hasher.finish()))
         });
 
         // Get or create persistent state
@@ -271,7 +271,8 @@ impl<'a> MaterialDataTable<'a> {
                     text: column.title.clone(),
                     sections: vec![egui::text::LayoutSection {
                         leading_space: 0.0,
-                        byte_range: 0..column.title.len(),
+                        byte_range: egui::text::ByteIndex(0)
+                            ..egui::text::ByteIndex(column.title.len()),
                         format: egui::TextFormat {
                             font_id: header_font,
                             color: get_global_color("onSurface"),
@@ -287,6 +288,7 @@ impl<'a> MaterialDataTable<'a> {
                     justify: false,
                     first_row_min_height: 0.0,
                     round_output_to_gui: true,
+                    keep_trailing_whitespace: false,
                 });
 
                 let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -339,7 +341,8 @@ impl<'a> MaterialDataTable<'a> {
                                         text: cell_text.text().to_string(),
                                         sections: vec![egui::text::LayoutSection {
                                             leading_space: 0.0,
-                                            byte_range: 0..cell_text.text().len(),
+                                            byte_range: egui::text::ByteIndex(0)
+                                                ..egui::text::ByteIndex(cell_text.text().len()),
                                             format: egui::TextFormat {
                                                 font_id: cell_font,
                                                 color: get_global_color("onSurface"),
@@ -355,6 +358,7 @@ impl<'a> MaterialDataTable<'a> {
                                         justify: false,
                                         first_row_min_height: 0.0,
                                         round_output_to_gui: true,
+                                        keep_trailing_whitespace: false,
                                     });
 
                                     let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -414,7 +418,7 @@ impl<'a> MaterialDataTable<'a> {
         let on_surface = get_global_color("onSurface");
         let primary = get_global_color("primary");
 
-        let mut style = (*ui.ctx().style()).clone();
+        let mut style = (*ui.ctx().global_style()).clone();
         style.visuals.widgets.noninteractive.bg_fill = surface;
         style.visuals.widgets.inactive.bg_fill = surface;
         style.visuals.widgets.hovered.bg_fill =
@@ -433,7 +437,7 @@ impl<'a> MaterialDataTable<'a> {
             on_surface.b(),
             10,
         );
-        ui.ctx().set_style(style);
+        ui.ctx().set_global_style(style);
 
         let desired_size = Vec2::new(total_width, total_height);
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
@@ -559,7 +563,8 @@ impl<'a> MaterialDataTable<'a> {
                     text: column.title.clone(),
                     sections: vec![egui::text::LayoutSection {
                         leading_space: 0.0,
-                        byte_range: 0..column.title.len(),
+                        byte_range: egui::text::ByteIndex(0)
+                            ..egui::text::ByteIndex(column.title.len()),
                         format: egui::TextFormat {
                             font_id: header_font,
                             color: get_global_color("onSurface"),
@@ -575,6 +580,7 @@ impl<'a> MaterialDataTable<'a> {
                     justify: false,
                     first_row_min_height: 0.0,
                     round_output_to_gui: true,
+                    keep_trailing_whitespace: false,
                 });
 
                 let text_pos = egui::pos2(
@@ -1069,7 +1075,8 @@ impl<'a> MaterialDataTable<'a> {
                                         text: cell_text.text().to_string(),
                                         sections: vec![egui::text::LayoutSection {
                                             leading_space: 0.0,
-                                            byte_range: 0..cell_text.text().len(),
+                                            byte_range: egui::text::ByteIndex(0)
+                                                ..egui::text::ByteIndex(cell_text.text().len()),
                                             format: egui::TextFormat {
                                                 font_id: cell_font,
                                                 color: text_color,
@@ -1085,6 +1092,7 @@ impl<'a> MaterialDataTable<'a> {
                                         justify: false,
                                         first_row_min_height: 0.0,
                                         round_output_to_gui: true,
+                                        keep_trailing_whitespace: false,
                                     });
 
                                     // Calculate horizontal position based on alignment

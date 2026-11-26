@@ -281,7 +281,7 @@ impl MaterialApp {
             ThemeMode::Dark => egui::Visuals::dark(),
             ThemeMode::Auto => {
                 // Use system preference or default to light
-                if ctx.style().visuals.dark_mode {
+                if ctx.global_style().visuals.dark_mode {
                     egui::Visuals::dark()
                 } else {
                     egui::Visuals::light()
@@ -410,7 +410,8 @@ impl MaterialApp {
 }
 
 impl eframe::App for MaterialApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // Apply theme based on settings
         self.apply_theme(ctx);
 
@@ -438,7 +439,7 @@ impl eframe::App for MaterialApp {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let theme = self.get_theme();
 

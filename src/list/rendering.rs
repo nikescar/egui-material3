@@ -10,7 +10,7 @@ fn measure_drawer_height(drawer_fn: &dyn Fn(&mut Ui), ui: &mut Ui, width: f32) -
     let temp_rect =
         egui::Rect::from_min_size(egui::pos2(-10000.0, -10000.0), egui::Vec2::new(width, 0.0));
 
-    let mut child_ui = ui.child_ui(temp_rect, egui::Layout::top_down(egui::Align::LEFT), None);
+    let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(temp_rect).layout(egui::Layout::top_down(egui::Align::LEFT)));
 
     // Add the same padding as in actual rendering
     child_ui.add_space(8.0);
@@ -38,7 +38,7 @@ fn measure_wrapped_text_height(
         text: text.to_string(),
         sections: vec![LayoutSection {
             leading_space: 0.0,
-            byte_range: 0..text.len(),
+            byte_range: egui::text::ByteIndex(0)..egui::text::ByteIndex(text.len()),
             format: egui::TextFormat {
                 font_id,
                 color: egui::Color32::WHITE, // Color doesn't matter for measurement
@@ -71,7 +71,7 @@ fn render_wrapped_text(
         text: text.to_string(),
         sections: vec![LayoutSection {
             leading_space: 0.0,
-            byte_range: 0..text.len(),
+            byte_range: egui::text::ByteIndex(0)..egui::text::ByteIndex(text.len()),
             format: egui::TextFormat {
                 font_id,
                 color,
@@ -170,7 +170,7 @@ impl<'a> Widget for MaterialList<'a> {
         let on_primary_container = get_global_color("onPrimaryContainer"); // Content on selected
 
         // Load persistent drawer state BEFORE calculating total height
-        let state_id = self.id.unwrap_or_else(|| ui.id().with("material_list"));
+        let state_id = self.id.unwrap_or_else(|| ui.scope_id().with("material_list"));
         let state = ui
             .data_mut(|d| d.get_persisted::<MaterialListState>(state_id))
             .unwrap_or_default();
@@ -386,7 +386,7 @@ impl<'a> Widget for MaterialList<'a> {
             );
 
             // Use list's ID (or auto-generate one) to scope item IDs and avoid collisions
-            let list_id = self.id.unwrap_or_else(|| ui.id().with("material_list"));
+            let list_id = self.id.unwrap_or_else(|| ui.scope_id().with("material_list"));
             let unique_id = list_id.with(("item", index));
             let item_response = ui.interact(item_rect, unique_id, Sense::click());
 
@@ -698,7 +698,7 @@ impl<'a> Widget for MaterialList<'a> {
                     ),
                     Vec2::new(trailing_widget_width, widget_height),
                 );
-                ui.allocate_ui_at_rect(widget_rect, |ui| {
+                ui.scope_builder(egui::UiBuilder::new().max_rect(widget_rect), |ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         widget_fn(ui);
                     });
@@ -742,7 +742,7 @@ impl<'a> Widget for MaterialList<'a> {
                 let drawer_bg = primary_container.gamma_multiply(0.3);
 
                 let mut child_ui =
-                    ui.child_ui(drawer_rect, egui::Layout::top_down(egui::Align::LEFT), None);
+                    ui.new_child(egui::UiBuilder::new().max_rect(drawer_rect).layout(egui::Layout::top_down(egui::Align::LEFT)));
                 // Clip drawer to both list bounds and parent's clip rect
                 let parent_clip = ui.clip_rect();
                 let drawer_clip = rect.intersect(parent_clip);
