@@ -256,9 +256,17 @@ const HORIZONTAL_PADDING: f32 = 16.0;
 const ICON_SIZE: f32 = 24.0;
 const ICON_PADDING: f32 = 12.0;
 
+/// The id of the `TextEdit` inside a `MaterialInput` about to be added to `ui`.
+fn text_edit_id(ui: &Ui) -> egui::Id {
+    ui.next_auto_id().with("material_input_text_edit")
+}
+
 impl<'a> Widget for MaterialInput<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let is_focused = ui.memory(|mem| mem.has_focus(ui.next_auto_id()));
+        // The `TextEdit` is added later inside a child scope, so give it an
+        // explicit id derived from this widget and check focus on that.
+        let edit_id = text_edit_id(ui);
+        let is_focused = ui.memory(|mem| mem.has_focus(edit_id));
         let has_content = !self.text.is_empty();
         let should_float_label = is_focused || has_content;
 
@@ -434,6 +442,7 @@ impl<'a> Widget for MaterialInput<'a> {
                 ui.style_mut().spacing.interact_size.y = 0.0;
 
                 let mut text_edit = egui::TextEdit::singleline(self.text)
+                    .id(edit_id)
                     .font(TextStyle::Body)
                     .desired_width(text_rect.width())
                     .frame(egui::Frame::NONE.inner_margin(egui::Margin::symmetric(4, 2)));
@@ -543,6 +552,47 @@ impl<'a> Widget for MaterialInput<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Regression test for nikescar/egui-material3#9: clicking the field
+    /// focuses the id the widget checks for focus.
+    #[test]
+    fn test_click_focuses_the_checked_id() {
+        let ctx = egui::Context::default();
+        let mut text = String::new();
+        let mut field_rect = Rect::NOTHING;
+        let mut focus_id = egui::Id::NULL;
+        let mut frame = |events: Vec<egui::Event>, focus_id: &mut egui::Id, rect: &mut Rect| {
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                *focus_id = text_edit_id(ui);
+                *rect = ui.add(MaterialInput::filled(&mut text).label("Name")).rect;
+            })
+            .textures_delta
+            .clear();
+        };
+        frame(Vec::new(), &mut focus_id, &mut field_rect);
+        let pos = field_rect.center();
+        let click = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(
+            vec![egui::Event::PointerMoved(pos), click(true)],
+            &mut focus_id,
+            &mut field_rect,
+        );
+        frame(vec![click(false)], &mut focus_id, &mut field_rect);
+        frame(Vec::new(), &mut focus_id, &mut field_rect);
+        assert!(
+            ctx.memory(|m| m.has_focus(focus_id)),
+            "clicking the field should focus the TextEdit the widget checks"
+        );
+    }
 
     #[test]
     fn test_input_height_constant() {
