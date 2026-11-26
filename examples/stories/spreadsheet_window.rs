@@ -1,15 +1,18 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Ui, Window};
+use eframe::egui::{self, Window};
 
 #[cfg(feature = "spreadsheet")]
 use crate::{MaterialButton, MaterialCheckbox};
+#[cfg(feature = "spreadsheet")]
+use eframe::egui::Ui;
 #[cfg(feature = "spreadsheet")]
 use egui_material3::spreadsheet::{
     integer_column, number_column, text_column, MaterialSpreadsheet,
 };
 
 #[doc(hidden)]
+#[cfg_attr(not(feature = "spreadsheet"), derive(Default))]
 pub struct SpreadsheetWindow {
     pub open: bool,
     #[cfg(feature = "spreadsheet")]
@@ -22,8 +25,6 @@ pub struct SpreadsheetWindow {
     striped: bool,
     #[cfg(feature = "spreadsheet")]
     row_selection_enabled: bool,
-    #[cfg(feature = "spreadsheet")]
-    show_file_dialog: bool,
     #[cfg(feature = "spreadsheet")]
     file_dialog: egui_file_dialog::FileDialog,
     #[cfg(feature = "spreadsheet")]
@@ -39,9 +40,9 @@ enum PendingAction {
     SaveCsv,
 }
 
+#[cfg(feature = "spreadsheet")]
 impl Default for SpreadsheetWindow {
     fn default() -> Self {
-        #[cfg(feature = "spreadsheet")]
         {
             // Create sample spreadsheet with demo data
             let columns = vec![
@@ -122,15 +123,10 @@ impl Default for SpreadsheetWindow {
                 allow_selection: true,
                 striped: true,
                 row_selection_enabled: false,
-                show_file_dialog: false,
                 file_dialog: egui_file_dialog::FileDialog::new(),
                 pending_action: None,
                 last_operation: String::new(),
             }
-        }
-        #[cfg(not(feature = "spreadsheet"))]
-        {
-            Self { open: false }
         }
     }
 }

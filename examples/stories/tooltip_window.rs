@@ -7,14 +7,9 @@ use crate::{
 use eframe::egui::{self, Ui, Window};
 
 #[doc(hidden)]
+#[derive(Default)]
 pub struct TooltipWindow {
     pub open: bool,
-}
-
-impl Default for TooltipWindow {
-    fn default() -> Self {
-        Self { open: false }
-    }
 }
 
 impl TooltipWindow {

@@ -176,8 +176,9 @@ impl Default for MyApp {
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add_space(20.0);
                 ui.heading("MVVM Todo List Example");
@@ -294,11 +295,9 @@ impl eframe::App for MyApp {
                 ));
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if completed > 0 {
-                        if ui.add(MaterialButton::text("Clear Completed")).clicked() {
-                            self.view_model.clear_completed();
-                            ctx.request_repaint();
-                        }
+                    if completed > 0 && ui.add(MaterialButton::text("Clear Completed")).clicked() {
+                        self.view_model.clear_completed();
+                        ctx.request_repaint();
                     }
                 });
             });

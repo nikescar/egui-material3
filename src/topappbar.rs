@@ -336,11 +336,12 @@ impl Widget for MaterialTopAppBar<'_> {
                     Rect::from_min_size(egui::pos2(left_x, icon_y), Vec2::splat(icon_total_size));
 
                 let nav_id = if let Some(ref salt) = id_salt {
-                    egui::Id::new((salt, "nav_icon"))
+                    egui::Id::unique((salt, "nav_icon"))
                 } else {
-                    egui::Id::new(("top_app_bar_nav", &title))
+                    egui::Id::unique(("top_app_bar_nav", &title))
                 };
                 let nav_response = ui.interact(nav_rect, nav_id, Sense::click());
+                crate::a11y::button(&nav_response, true, &nav_icon);
 
                 // Icon background on hover
                 if nav_response.hovered() {
@@ -356,9 +357,9 @@ impl Widget for MaterialTopAppBar<'_> {
 
                 // Render navigation icon using material symbol font
                 // Support both icon names (like "menu") and direct character constants
-                let nav_icon_text = if nav_icon.chars().count() == 1 {
+                let mut nav_chars = nav_icon.chars();
+                let nav_icon_text = if let (Some(ch), None) = (nav_chars.next(), nav_chars.next()) {
                     // If it's a single character, check if it's in Material Symbols range
-                    let ch = nav_icon.chars().next().unwrap();
                     if ('\u{e000}'..='\u{f8ff}').contains(&ch)
                         || ('\u{ea00}'..='\u{eb8d}').contains(&ch)
                     {
@@ -444,11 +445,12 @@ impl Widget for MaterialTopAppBar<'_> {
                     Rect::from_min_size(egui::pos2(right_x, icon_y), Vec2::splat(icon_total_size));
 
                 let action_id = if let Some(ref salt) = id_salt {
-                    egui::Id::new((salt, "action_icon", action_index))
+                    egui::Id::unique((salt, "action_icon", action_index))
                 } else {
-                    egui::Id::new(("top_app_bar_action", &title, action_index))
+                    egui::Id::unique(("top_app_bar_action", &title, action_index))
                 };
                 let action_response = ui.interact(action_rect, action_id, Sense::click());
+                crate::a11y::button(&action_response, true, action_icon);
 
                 // Icon background on hover
                 if action_response.hovered() {
@@ -464,22 +466,23 @@ impl Widget for MaterialTopAppBar<'_> {
 
                 // Render action icon using material symbol font
                 // Support both icon names (like "search") and direct character constants
-                let action_icon_text = if action_icon.chars().count() == 1 {
-                    // If it's a single character, check if it's in Material Symbols range
-                    let ch = action_icon.chars().next().unwrap();
-                    if ('\u{e000}'..='\u{f8ff}').contains(&ch)
-                        || ('\u{ea00}'..='\u{eb8d}').contains(&ch)
-                    {
-                        // It's already a Material Symbol character, use it directly
-                        action_icon.clone()
+                let mut action_chars = action_icon.chars();
+                let action_icon_text =
+                    if let (Some(ch), None) = (action_chars.next(), action_chars.next()) {
+                        // If it's a single character, check if it's in Material Symbols range
+                        if ('\u{e000}'..='\u{f8ff}').contains(&ch)
+                            || ('\u{ea00}'..='\u{eb8d}').contains(&ch)
+                        {
+                            // It's already a Material Symbol character, use it directly
+                            action_icon.clone()
+                        } else {
+                            // Try to look it up as a name
+                            material_symbol_text(action_icon.as_str())
+                        }
                     } else {
-                        // Try to look it up as a name
+                        // Multiple characters, treat as icon name
                         material_symbol_text(action_icon.as_str())
-                    }
-                } else {
-                    // Multiple characters, treat as icon name
-                    material_symbol_text(action_icon.as_str())
-                };
+                    };
                 ui.painter().text(
                     action_rect.center(),
                     egui::Align2::CENTER_CENTER,

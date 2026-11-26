@@ -6,8 +6,7 @@ use egui::{
     ecolor::Color32,
     emath::NumExt,
     epaint::{CornerRadius, Shadow, Stroke},
-    Align, Rect, Response, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetText,
-    WidgetType,
+    Align, Rect, Response, Role, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetText,
 };
 
 impl Widget for MaterialButton<'_> {
@@ -146,18 +145,13 @@ impl Widget for MaterialButton<'_> {
         let padding_multiplier = if small { 0.25 } else { 1.0 };
         let padding_left = if has_leading { 16.0 } else { 24.0 } * padding_multiplier;
         let padding_right = if has_trailing { 16.0 } else { 24.0 } * padding_multiplier;
-        let button_padding_left;
-        let button_padding_right;
-        let button_padding_y;
-        if frame || variant == MaterialButtonVariant::Text {
-            button_padding_left = padding_left;
-            button_padding_right = padding_right;
-            button_padding_y = if small { 4.0 } else { 10.0 };
-        } else {
-            button_padding_left = 0.0;
-            button_padding_right = 0.0;
-            button_padding_y = 0.0;
-        }
+
+        let (button_padding_left, button_padding_right, button_padding_y) =
+            if frame || variant == MaterialButtonVariant::Text {
+                (padding_left, padding_right, if small { 4.0 } else { 10.0 })
+            } else {
+                (0.0, 0.0, 0.0)
+            };
 
         // Material Design minimum button height
         let min_button_height = if small { 32.0 } else { 40.0 };
@@ -236,8 +230,13 @@ impl Widget for MaterialButton<'_> {
             text_wrap_width -= gap_before_shortcut_text + shortcut_galley.size().x;
         }
 
-        let galley =
-            text.map(|text| text.into_galley(ui, wrap_mode, text_wrap_width, TextStyle::Body));
+        let galley = text.map(|text| {
+            // M3 buttons use Label Large (14/20, Medium).
+            let font = crate::tokens::TypeRole::LabelLarge
+                .style()
+                .font_id(ui.ctx());
+            text.into_galley(ui, wrap_mode, text_wrap_width, font)
+        });
 
         let mut desired_size = Vec2::ZERO;
 
@@ -308,12 +307,16 @@ impl Widget for MaterialButton<'_> {
         }
         desired_size = desired_size.at_least(min_size);
 
-        let (rect, response) = ui.allocate_at_least(desired_size, sense);
+        let enabled = ui.is_enabled() && !disabled;
+        let (rect, response) =
+            ui.allocate_at_least(desired_size, crate::a11y::sense(enabled, sense));
         response.widget_info(|| {
             if let Some(galley) = &galley {
-                WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), galley.text())
+                WidgetInfo::labeled(Role::Button, enabled, galley.text())
             } else {
-                WidgetInfo::new(WidgetType::Button)
+                let mut info = WidgetInfo::new(Role::Button);
+                info.enabled = enabled;
+                info
             }
         });
 
@@ -354,16 +357,13 @@ impl Widget for MaterialButton<'_> {
                 };
             }
 
-            // M3 state layers: interactive overlay on hover/press
+            // M3 state layer (hover 0.08, focus 0.10, pressed 0.10) in the
+            // content colour, composited over the container. Transparent
+            // containers (text and outlined buttons) get a translucent layer.
             if !disabled {
-                let state_layer_color = resolved_text_color;
-                if response.is_pointer_button_down_on() {
-                    // Pressed state: 12% opacity overlay (M3 interaction state)
-                    frame_fill = blend_overlay(frame_fill, state_layer_color, 0.12);
-                } else if response.hovered() {
-                    // Hover state: 8% opacity overlay (M3 interaction state)
-                    frame_fill = blend_overlay(frame_fill, state_layer_color, 0.08);
-                }
+                let opacity = crate::tokens::InteractionState::from_response(&response).opacity();
+                frame_fill =
+                    crate::paint::state_layer_over(frame_fill, resolved_text_color, opacity);
             }
 
             // Draw elevation shadow if present
@@ -379,10 +379,8 @@ impl Widget for MaterialButton<'_> {
                 } else {
                     *shadow
                 };
-                let shadow_offset = Vec2::new(shadow.offset[0] as f32, shadow.offset[1] as f32);
-                let shadow_rect = rect.expand2(frame_expansion).translate(shadow_offset);
                 ui.painter()
-                    .rect_filled(shadow_rect, frame_cr, shadow.color);
+                    .add(shadow.as_shape(rect.expand2(frame_expansion), frame_cr));
             }
 
             ui.painter().rect(
@@ -392,6 +390,7 @@ impl Widget for MaterialButton<'_> {
                 frame_stroke,
                 egui::epaint::StrokeKind::Outside,
             );
+            crate::paint::paint_focus_ring_if_focused(ui.painter(), &response, frame_cr);
 
             let mut cursor_x = rect.min.x + button_padding_left;
             let content_rect_y_min = rect.min.y + button_padding_y;
@@ -547,22 +546,4 @@ impl Widget for MaterialButton<'_> {
 
         response
     }
-}
-
-/// Blend an overlay color on top of a base color with given opacity.
-fn blend_overlay(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
-    let alpha = (opacity * 255.0) as u8;
-    let overlay_with_alpha =
-        Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
-    // Simple alpha blending
-    let inv_alpha = 255 - alpha;
-    Color32::from_rgba_unmultiplied(
-        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255)
-            as u8,
-        base.a(),
-    )
 }

@@ -73,6 +73,7 @@
 //! }
 //! ```
 
+use crate::tokens::{ColorRole, ColorScheme};
 use egui::{Color32, FontData, FontDefinitions, FontFamily};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -94,6 +95,31 @@ pub struct PreparedFont {
 }
 
 static PREPARED_FONTS: Mutex<Vec<PreparedFont>> = Mutex::new(Vec::new());
+
+/// The default text font: Roboto, bundled with the crate.
+pub const DEFAULT_FONT: &str = "Roboto";
+
+/// Contexts [`load_fonts`] was called with, reloaded when a background
+/// font download finishes.
+#[cfg(feature = "ondemand")]
+static FONT_CONTEXTS: Mutex<Vec<egui::Context>> = Mutex::new(Vec::new());
+
+/// Font downloads started by [`setup_google_fonts`] and not yet finished.
+#[cfg(feature = "ondemand")]
+static PENDING_DOWNLOADS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// Whether a font download started by [`setup_google_fonts`] is still
+/// running. Always `false` without the `ondemand` feature.
+pub fn fonts_downloading() -> bool {
+    #[cfg(feature = "ondemand")]
+    {
+        PENDING_DOWNLOADS.load(std::sync::atomic::Ordering::SeqCst) > 0
+    }
+    #[cfg(not(feature = "ondemand"))]
+    {
+        false
+    }
+}
 
 /// A prepared Material Design theme ready for loading
 ///
@@ -210,6 +236,63 @@ pub struct MaterialScheme {
     pub surface_container_high: String,
     #[serde(rename = "surfaceContainerHighest")]
     pub surface_container_highest: String,
+}
+
+impl MaterialScheme {
+    /// The hex string this scheme holds for `role`.
+    pub fn hex(&self, role: ColorRole) -> &str {
+        match role {
+            ColorRole::Primary => &self.primary,
+            ColorRole::SurfaceTint => &self.surface_tint,
+            ColorRole::OnPrimary => &self.on_primary,
+            ColorRole::PrimaryContainer => &self.primary_container,
+            ColorRole::OnPrimaryContainer => &self.on_primary_container,
+            ColorRole::Secondary => &self.secondary,
+            ColorRole::OnSecondary => &self.on_secondary,
+            ColorRole::SecondaryContainer => &self.secondary_container,
+            ColorRole::OnSecondaryContainer => &self.on_secondary_container,
+            ColorRole::Tertiary => &self.tertiary,
+            ColorRole::OnTertiary => &self.on_tertiary,
+            ColorRole::TertiaryContainer => &self.tertiary_container,
+            ColorRole::OnTertiaryContainer => &self.on_tertiary_container,
+            ColorRole::Error => &self.error,
+            ColorRole::OnError => &self.on_error,
+            ColorRole::ErrorContainer => &self.error_container,
+            ColorRole::OnErrorContainer => &self.on_error_container,
+            ColorRole::Background => &self.background,
+            ColorRole::OnBackground => &self.on_background,
+            ColorRole::Surface => &self.surface,
+            ColorRole::OnSurface => &self.on_surface,
+            ColorRole::SurfaceVariant => &self.surface_variant,
+            ColorRole::OnSurfaceVariant => &self.on_surface_variant,
+            ColorRole::Outline => &self.outline,
+            ColorRole::OutlineVariant => &self.outline_variant,
+            ColorRole::Shadow => &self.shadow,
+            ColorRole::Scrim => &self.scrim,
+            ColorRole::InverseSurface => &self.inverse_surface,
+            ColorRole::InverseOnSurface => &self.inverse_on_surface,
+            ColorRole::InversePrimary => &self.inverse_primary,
+            ColorRole::PrimaryFixed => &self.primary_fixed,
+            ColorRole::OnPrimaryFixed => &self.on_primary_fixed,
+            ColorRole::PrimaryFixedDim => &self.primary_fixed_dim,
+            ColorRole::OnPrimaryFixedVariant => &self.on_primary_fixed_variant,
+            ColorRole::SecondaryFixed => &self.secondary_fixed,
+            ColorRole::OnSecondaryFixed => &self.on_secondary_fixed,
+            ColorRole::SecondaryFixedDim => &self.secondary_fixed_dim,
+            ColorRole::OnSecondaryFixedVariant => &self.on_secondary_fixed_variant,
+            ColorRole::TertiaryFixed => &self.tertiary_fixed,
+            ColorRole::OnTertiaryFixed => &self.on_tertiary_fixed,
+            ColorRole::TertiaryFixedDim => &self.tertiary_fixed_dim,
+            ColorRole::OnTertiaryFixedVariant => &self.on_tertiary_fixed_variant,
+            ColorRole::SurfaceDim => &self.surface_dim,
+            ColorRole::SurfaceBright => &self.surface_bright,
+            ColorRole::SurfaceContainerLowest => &self.surface_container_lowest,
+            ColorRole::SurfaceContainerLow => &self.surface_container_low,
+            ColorRole::SurfaceContainer => &self.surface_container,
+            ColorRole::SurfaceContainerHigh => &self.surface_container_high,
+            ColorRole::SurfaceContainerHighest => &self.surface_container_highest,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -652,49 +735,140 @@ fn get_default_material_theme() -> MaterialThemeFile {
 }
 
 impl MaterialThemeContext {
+    /// Prepares `font_name` at weights 400, 500 and 700, so the Medium and
+    /// Bold type styles render in a real Medium and Bold face.
+    ///
+    /// `None` and `"Roboto"` (the Material 3 typeface) use the Roboto faces
+    /// bundled with the crate (see [`crate::fonts`]). Any other font is read
+    /// from `resources/<font-name>.ttf` (400) and
+    /// `resources/<font-name>-<weight>.ttf`. With the `ondemand` feature,
+    /// weights missing locally are downloaded from Google Fonts on a
+    /// background thread; this call does not wait for them. When they
+    /// arrive they are saved under `resources/`, prepared, and every context
+    /// [`load_fonts`] was called with gets them and a repaint
+    /// ([`fonts_downloading`] reports whether any are still on the way).
+    ///
+    /// Weight 400 becomes the default proportional font; each weight is
+    /// also registered as the family `plain-<weight>` that the type scale
+    /// uses.
     pub fn setup_fonts(font_name: Option<&str>) {
-        let font_name = font_name.unwrap_or("Google Sans Code");
-
-        // Check if font exists in resources directory first
-        let font_file_path = format!(
-            "resources/{}.ttf",
-            font_name.replace(" ", "-").to_lowercase()
-        );
-
-        let font_data = if std::path::Path::new(&font_file_path).exists() {
-            // Use local font file with include_bytes!
-            Self::load_local_font(&font_file_path)
-        } else {
-            // Download font from Google Fonts at runtime (only if ondemand feature is enabled)
-            #[cfg(feature = "ondemand")]
-            {
-                Self::download_google_font(font_name)
+        let font_name = font_name.unwrap_or(DEFAULT_FONT);
+        if font_name == DEFAULT_FONT {
+            for (weight, _, bytes) in crate::fonts::ROBOTO {
+                Self::prepare_weight(DEFAULT_FONT, weight, bytes.to_vec());
             }
-            #[cfg(not(feature = "ondemand"))]
-            {
-                eprintln!(
-                    "Font '{}' not found locally and ondemand feature is not enabled",
-                    font_name
-                );
-                None
+            return;
+        }
+        let slug = font_name.replace(" ", "-").to_lowercase();
+        let path_for = move |weight: u16| {
+            if weight == crate::tokens::typography::WEIGHT_REGULAR {
+                format!("resources/{slug}.ttf")
+            } else {
+                format!("resources/{slug}-{weight}.ttf")
             }
         };
 
-        if let Some(data) = font_data {
-            let font_family_name = font_name.replace(" ", "");
+        let local: Vec<(u16, Vec<u8>)> = crate::tokens::typography::WEIGHTS
+            .iter()
+            .filter_map(|&w| Self::load_local_font(&path_for(w)).map(|d| (w, d)))
+            .collect();
 
-            let prepared_font = PreparedFont {
-                name: font_family_name.clone(),
-                data: Arc::new(FontData::from_owned(data)),
-                families: vec![FontFamily::Proportional, FontFamily::Monospace],
-            };
-
-            if let Ok(mut fonts) = PREPARED_FONTS.lock() {
-                // Remove any existing font with the same name
-                fonts.retain(|f| f.name != font_family_name);
-                fonts.push(prepared_font);
-            }
+        let family_name = font_name.replace(" ", "");
+        let have: Vec<u16> = local.iter().map(|(w, _)| *w).collect();
+        for (weight, data) in local {
+            Self::prepare_weight(&family_name, weight, data);
         }
+        if have.len() == crate::tokens::typography::WEIGHTS.len() {
+            return;
+        }
+
+        #[cfg(feature = "ondemand")]
+        Self::download_in_background(font_name.to_owned(), family_name, have, path_for);
+        #[cfg(not(feature = "ondemand"))]
+        if have.is_empty() {
+            eprintln!(
+                "Font '{}' not found locally and ondemand feature is not enabled",
+                font_name
+            );
+        }
+    }
+
+    /// Downloads the weights of `font_name` not in `have` on a new thread,
+    /// then prepares them and reloads the fonts of every context
+    /// [`load_fonts`] has seen.
+    #[cfg(feature = "ondemand")]
+    fn download_in_background(
+        font_name: String,
+        family_name: String,
+        have: Vec<u16>,
+        path_for: impl Fn(u16) -> String + Send + 'static,
+    ) {
+        use std::sync::atomic::Ordering;
+        PENDING_DOWNLOADS.fetch_add(1, Ordering::SeqCst);
+        let spawned = std::thread::Builder::new()
+            .name(format!("egui-material3 font {font_name}"))
+            .spawn(move || {
+                let mut got_any = false;
+                for (weight, data) in Self::download_google_font(&font_name) {
+                    if have.contains(&weight) {
+                        continue;
+                    }
+                    let target = path_for(weight);
+                    if std::fs::write(&target, &data).is_ok() {
+                        eprintln!("Font '{font_name}' {weight} saved to {target}");
+                    }
+                    Self::prepare_weight(&family_name, weight, data);
+                    got_any = true;
+                }
+                PENDING_DOWNLOADS.fetch_sub(1, Ordering::SeqCst);
+                if got_any {
+                    let contexts = FONT_CONTEXTS.lock().map(|c| c.clone()).unwrap_or_default();
+                    for ctx in contexts {
+                        Self::load_fonts(&ctx);
+                        ctx.request_repaint();
+                    }
+                }
+            });
+        if let Err(e) = spawned {
+            PENDING_DOWNLOADS.fetch_sub(1, Ordering::SeqCst);
+            eprintln!("Could not start the font download: {e}");
+        }
+    }
+
+    /// Registers one weight of a font family; see [`Self::setup_fonts`].
+    fn prepare_weight(family_name: &str, weight: u16, data: Vec<u8>) {
+        let regular = weight == crate::tokens::typography::WEIGHT_REGULAR;
+        let name = if regular {
+            family_name.to_owned()
+        } else {
+            format!("{family_name}-{weight}")
+        };
+        let weight_family =
+            FontFamily::Name(crate::tokens::typography::weight_family_name(weight).into());
+        let families = if regular {
+            vec![
+                FontFamily::Proportional,
+                FontFamily::Monospace,
+                weight_family,
+            ]
+        } else {
+            vec![weight_family]
+        };
+        let prepared_font = PreparedFont {
+            name: name.clone(),
+            data: Arc::new(FontData::from_owned(data)),
+            families,
+        };
+        if let Ok(mut fonts) = PREPARED_FONTS.lock() {
+            fonts.retain(|f| f.name != name);
+            fonts.push(prepared_font);
+        }
+    }
+
+    /// Prepares one weight (400, 500 or 700) of a font from bytes. Weight 400
+    /// also becomes the default proportional font.
+    pub fn setup_font_weight_from_bytes(font_name: &str, weight: u16, font_data: &[u8]) {
+        Self::prepare_weight(font_name, weight, font_data.to_vec());
     }
 
     fn load_local_font(font_path: &str) -> Option<Vec<u8>> {
@@ -703,85 +877,54 @@ impl MaterialThemeContext {
 
     // On-demand font downloading feature - downloads Google Fonts at runtime when ondemand feature is enabled
     #[cfg(feature = "ondemand")]
-    fn download_google_font(font_name: &str) -> Option<Vec<u8>> {
-        // Convert font name to Google Fonts URL format
-        let font_url_name = font_name.replace(" ", "+");
-
-        // First, get the CSS file to find the actual font URL
+    fn download_google_font(font_name: &str) -> Vec<(u16, Vec<u8>)> {
         let css_url = format!(
-            "https://fonts.googleapis.com/css2?family={}:wght@400&display=swap",
-            font_url_name
+            "https://fonts.googleapis.com/css2?family={}:wght@400;500;700&display=swap",
+            font_name.replace(" ", "+")
         );
-
-        match ureq::get(&css_url)
+        let css = match ureq::get(&css_url)
             .set(
                 "User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             )
             .call()
         {
-            Ok(response) => {
-                let css_content = response.into_string().ok()?;
-
-                // Parse CSS to find TTF URL
-                let font_url = Self::extract_font_url_from_css(&css_content)?;
-
-                // Download the actual font file
-                match ureq::get(&font_url).call() {
-                    Ok(font_response) => {
-                        let mut font_data = Vec::new();
-                        if font_response
-                            .into_reader()
-                            .read_to_end(&mut font_data)
-                            .is_ok()
-                        {
-                            // Save font to resources directory for future use
-                            let target_path = format!(
-                                "resources/{}.ttf",
-                                font_name.replace(" ", "-").to_lowercase()
-                            );
-                            if let Ok(()) = std::fs::write(&target_path, &font_data) {
-                                eprintln!(
-                                    "Font '{}' downloaded and saved to {}",
-                                    font_name, target_path
-                                );
-                            }
-                            Some(font_data)
-                        } else {
-                            eprintln!("Failed to read font data for '{}'", font_name);
-                            None
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to download font '{}': {}", font_name, e);
-                        None
-                    }
-                }
-            }
+            Ok(response) => response.into_string().unwrap_or_default(),
             Err(e) => {
                 eprintln!("Failed to fetch CSS for font '{}': {}", font_name, e);
-                None
+                return Vec::new();
             }
-        }
-    }
-
-    #[cfg(feature = "ondemand")]
-    fn extract_font_url_from_css(css_content: &str) -> Option<String> {
-        // Look for TTF URLs in the CSS content
-        // Google Fonts CSS contains lines like: src: url(https://fonts.gstatic.com/...) format('truetype');
-        for line in css_content.lines() {
-            if line.contains("src:") && line.contains("url(") && line.contains("format('truetype')")
-            {
-                if let Some(start) = line.find("url(") {
-                    let start = start + 4; // Skip "url("
-                    if let Some(end) = line[start..].find(")") {
-                        let url = &line[start..start + end];
-                        return Some(url.to_string());
+        };
+        let mut faces = Vec::new();
+        for (weight, url) in Self::extract_font_urls_from_css(&css) {
+            match ureq::get(&url).call() {
+                Ok(font_response) => {
+                    let mut data = Vec::new();
+                    if font_response.into_reader().read_to_end(&mut data).is_ok() {
+                        faces.push((weight, data));
                     }
                 }
+                Err(e) => eprintln!("Failed to download font '{}' {}: {}", font_name, weight, e),
             }
         }
-        None
+        faces
+    }
+
+    /// The (weight, TTF URL) of each `@font-face` block in Google Fonts CSS.
+    #[cfg(feature = "ondemand")]
+    fn extract_font_urls_from_css(css_content: &str) -> Vec<(u16, String)> {
+        css_content
+            .split("@font-face")
+            .filter_map(|block| {
+                let weight = block
+                    .split_once("font-weight:")
+                    .and_then(|(_, rest)| rest.split(';').next())
+                    .and_then(|w| w.trim().parse::<u16>().ok())?;
+                let (_, rest) = block.split_once("url(")?;
+                let (url, _) = rest.split_once(')')?;
+                Some((weight, url.to_string()))
+            })
+            .collect()
     }
 
     pub fn setup_local_fonts(font_path: Option<&str>) {
@@ -813,7 +956,16 @@ impl MaterialThemeContext {
                     let prepared_font = PreparedFont {
                         name: font_name.clone(),
                         data: Arc::new(FontData::from_owned(data)),
-                        families: vec![FontFamily::Proportional, FontFamily::Monospace],
+                        families: vec![
+                            FontFamily::Proportional,
+                            FontFamily::Monospace,
+                            FontFamily::Name(
+                                crate::tokens::typography::weight_family_name(
+                                    crate::tokens::typography::WEIGHT_REGULAR,
+                                )
+                                .into(),
+                            ),
+                        ],
                     };
 
                     if let Ok(mut fonts) = PREPARED_FONTS.lock() {
@@ -849,7 +1001,16 @@ impl MaterialThemeContext {
         let prepared_font = PreparedFont {
             name: font_name.to_owned(),
             data: Arc::new(FontData::from_owned(font_data.to_vec())),
-            families: vec![FontFamily::Proportional, FontFamily::Monospace],
+            families: vec![
+                FontFamily::Proportional,
+                FontFamily::Monospace,
+                FontFamily::Name(
+                    crate::tokens::typography::weight_family_name(
+                        crate::tokens::typography::WEIGHT_REGULAR,
+                    )
+                    .into(),
+                ),
+            ],
         };
 
         if let Ok(mut fonts) = PREPARED_FONTS.lock() {
@@ -946,49 +1107,57 @@ impl MaterialThemeContext {
         }
     }
 
-    /// Load all prepared fonts to the egui context
+    /// Load all prepared fonts to the egui context.
+    ///
+    /// The bundled Material Symbols are always loaded (see
+    /// [`crate::fonts`]), and so is the bundled Roboto unless a text font
+    /// was prepared, in which case that font is the default instead.
     pub fn load_fonts(ctx: &egui::Context) {
         let mut fonts = FontDefinitions::default();
 
         if let Ok(prepared_fonts) = PREPARED_FONTS.lock() {
+            let has_text_font = prepared_fonts.iter().any(|f| {
+                !f.name.contains("MaterialSymbols")
+                    && f.families.contains(&FontFamily::Proportional)
+            });
+            if !has_text_font {
+                crate::fonts::add_roboto(&mut fonts);
+            }
+            crate::fonts::add_symbols(&mut fonts);
+
             for prepared_font in prepared_fonts.iter() {
                 // Add font data
                 fonts
                     .font_data
                     .insert(prepared_font.name.clone(), prepared_font.data.clone());
 
-                // Add to font families
+                // Text fonts go to the front of their families, icon fonts
+                // and monospace fallbacks to the back.
+                let is_icon_font = prepared_font.name.contains("MaterialSymbols");
                 for family in &prepared_font.families {
-                    match family {
-                        FontFamily::Proportional => {
-                            // Google fonts go to the front, icon fonts go to the back
-                            if prepared_font.name.contains("MaterialSymbols") {
-                                fonts
-                                    .families
-                                    .entry(FontFamily::Proportional)
-                                    .or_default()
-                                    .push(prepared_font.name.clone());
-                            } else {
-                                fonts
-                                    .families
-                                    .entry(FontFamily::Proportional)
-                                    .or_default()
-                                    .insert(0, prepared_font.name.clone());
-                            }
-                        }
-                        FontFamily::Monospace => {
-                            fonts
-                                .families
-                                .entry(FontFamily::Monospace)
-                                .or_default()
-                                .push(prepared_font.name.clone());
-                        }
-                        _ => {}
+                    let to_front = !is_icon_font && *family != FontFamily::Monospace;
+                    let list = fonts.families.entry(family.clone()).or_default();
+                    list.retain(|name| name != &prepared_font.name);
+                    if to_front {
+                        list.insert(0, prepared_font.name.clone());
+                    } else {
+                        list.push(prepared_font.name.clone());
                     }
                 }
             }
         }
 
+        // Every weight family exists, falling back to the proportional fonts
+        // (and so to egui's defaults) for glyphs or weights not loaded.
+        crate::fonts::complete_weight_families(&mut fonts);
+
+        crate::tokens::typography::record_font_families(ctx, &fonts);
+        #[cfg(feature = "ondemand")]
+        if let Ok(mut contexts) = FONT_CONTEXTS.lock() {
+            if !contexts.iter().any(|c| c == ctx) {
+                contexts.push(ctx.clone());
+            }
+        }
         ctx.set_fonts(fonts);
     }
 
@@ -1031,137 +1200,26 @@ impl MaterialThemeContext {
     }
 
     pub fn hex_to_color32(hex: &str) -> Option<Color32> {
-        if hex.starts_with('#') && hex.len() == 7 {
-            if let Ok(r) = u8::from_str_radix(&hex[1..3], 16) {
-                if let Ok(g) = u8::from_str_radix(&hex[3..5], 16) {
-                    if let Ok(b) = u8::from_str_radix(&hex[5..7], 16) {
-                        return Some(Color32::from_rgb(r, g, b));
-                    }
-                }
-            }
-        }
-        None
+        let digits = hex.strip_prefix('#').filter(|d| d.len() == 6)?;
+        let channel =
+            |range: std::ops::Range<usize>| u8::from_str_radix(digits.get(range)?, 16).ok();
+        Some(Color32::from_rgb(
+            channel(0..2)?,
+            channel(2..4)?,
+            channel(4..6)?,
+        ))
     }
 
     pub fn color32_to_hex(color: Color32) -> String {
         format!("#{:02X}{:02X}{:02X}", color.r(), color.g(), color.b())
     }
 
+    /// Color of a role by its camelCase name, for the current light/dark state.
+    ///
+    /// Unknown names return `Color32::GRAY` (and log in debug builds);
+    /// prefer the typed [`MaterialThemeContext::color`].
     pub fn get_color_by_name(&self, name: &str) -> Color32 {
-        if let Some(color) = self.selected_colors.get(name) {
-            return *color;
-        }
-
-        if let Some(scheme) = self.get_current_scheme() {
-            let hex = match name {
-                "primary" => &scheme.primary,
-                "surfaceTint" => &scheme.surface_tint,
-                "onPrimary" => &scheme.on_primary,
-                "primaryContainer" => &scheme.primary_container,
-                "onPrimaryContainer" => &scheme.on_primary_container,
-                "secondary" => &scheme.secondary,
-                "onSecondary" => &scheme.on_secondary,
-                "secondaryContainer" => &scheme.secondary_container,
-                "onSecondaryContainer" => &scheme.on_secondary_container,
-                "tertiary" => &scheme.tertiary,
-                "onTertiary" => &scheme.on_tertiary,
-                "tertiaryContainer" => &scheme.tertiary_container,
-                "onTertiaryContainer" => &scheme.on_tertiary_container,
-                "error" => &scheme.error,
-                "onError" => &scheme.on_error,
-                "errorContainer" => &scheme.error_container,
-                "onErrorContainer" => &scheme.on_error_container,
-                "background" => &scheme.background,
-                "onBackground" => &scheme.on_background,
-                "surface" => &scheme.surface,
-                "onSurface" => &scheme.on_surface,
-                "surfaceVariant" => &scheme.surface_variant,
-                "onSurfaceVariant" => &scheme.on_surface_variant,
-                "outline" => &scheme.outline,
-                "outlineVariant" => &scheme.outline_variant,
-                "shadow" => &scheme.shadow,
-                "scrim" => &scheme.scrim,
-                "inverseSurface" => &scheme.inverse_surface,
-                "inverseOnSurface" => &scheme.inverse_on_surface,
-                "inversePrimary" => &scheme.inverse_primary,
-                "primaryFixed" => &scheme.primary_fixed,
-                "onPrimaryFixed" => &scheme.on_primary_fixed,
-                "primaryFixedDim" => &scheme.primary_fixed_dim,
-                "onPrimaryFixedVariant" => &scheme.on_primary_fixed_variant,
-                "secondaryFixed" => &scheme.secondary_fixed,
-                "onSecondaryFixed" => &scheme.on_secondary_fixed,
-                "secondaryFixedDim" => &scheme.secondary_fixed_dim,
-                "onSecondaryFixedVariant" => &scheme.on_secondary_fixed_variant,
-                "tertiaryFixed" => &scheme.tertiary_fixed,
-                "onTertiaryFixed" => &scheme.on_tertiary_fixed,
-                "tertiaryFixedDim" => &scheme.tertiary_fixed_dim,
-                "onTertiaryFixedVariant" => &scheme.on_tertiary_fixed_variant,
-                "surfaceDim" => &scheme.surface_dim,
-                "surfaceBright" => &scheme.surface_bright,
-                "surfaceContainerLowest" => &scheme.surface_container_lowest,
-                "surfaceContainerLow" => &scheme.surface_container_low,
-                "surfaceContainer" => &scheme.surface_container,
-                "surfaceContainerHigh" => &scheme.surface_container_high,
-                "surfaceContainerHighest" => &scheme.surface_container_highest,
-                _ => return Color32::GRAY, // fallback
-            };
-
-            Self::hex_to_color32(hex).unwrap_or(Color32::GRAY)
-        } else {
-            // Fallback colors when no theme is loaded (using material-theme4.json light values)
-            match name {
-                "primary" => Color32::from_rgb(72, 103, 47), // #48672F
-                "surfaceTint" => Color32::from_rgb(72, 103, 47), // #48672F
-                "onPrimary" => Color32::WHITE,               // #FFFFFF
-                "primaryContainer" => Color32::from_rgb(200, 238, 168), // #C8EEA8
-                "onPrimaryContainer" => Color32::from_rgb(49, 79, 25), // #314F19
-                "secondary" => Color32::from_rgb(86, 98, 75), // #56624B
-                "onSecondary" => Color32::WHITE,             // #FFFFFF
-                "secondaryContainer" => Color32::from_rgb(218, 231, 201), // #DAE7C9
-                "onSecondaryContainer" => Color32::from_rgb(63, 74, 52), // #3F4A34
-                "tertiary" => Color32::from_rgb(56, 102, 101), // #386665
-                "onTertiary" => Color32::WHITE,              // #FFFFFF
-                "tertiaryContainer" => Color32::from_rgb(187, 236, 234), // #BBECEA
-                "onTertiaryContainer" => Color32::from_rgb(30, 78, 77), // #1E4E4D
-                "error" => Color32::from_rgb(186, 26, 26),   // #BA1A1A
-                "onError" => Color32::WHITE,                 // #FFFFFF
-                "errorContainer" => Color32::from_rgb(255, 218, 214), // #FFDAD6
-                "onErrorContainer" => Color32::from_rgb(147, 0, 10), // #93000A
-                "background" => Color32::from_rgb(249, 250, 239), // #F9FAEF
-                "onBackground" => Color32::from_rgb(25, 29, 22), // #191D16
-                "surface" => Color32::from_rgb(249, 250, 239), // #F9FAEF
-                "onSurface" => Color32::from_rgb(25, 29, 22), // #191D16
-                "surfaceVariant" => Color32::from_rgb(224, 228, 214), // #E0E4D6
-                "onSurfaceVariant" => Color32::from_rgb(68, 72, 62), // #44483E
-                "outline" => Color32::from_rgb(116, 121, 109), // #74796D
-                "outlineVariant" => Color32::from_rgb(196, 200, 186), // #C4C8BA
-                "shadow" => Color32::BLACK,                  // #000000
-                "scrim" => Color32::BLACK,                   // #000000
-                "inverseSurface" => Color32::from_rgb(46, 49, 42), // #2E312A
-                "inverseOnSurface" => Color32::from_rgb(240, 242, 231), // #F0F2E7
-                "inversePrimary" => Color32::from_rgb(173, 210, 142), // #ADD28E
-                "primaryFixed" => Color32::from_rgb(200, 238, 168), // #C8EEA8
-                "onPrimaryFixed" => Color32::from_rgb(11, 32, 0), // #0B2000
-                "primaryFixedDim" => Color32::from_rgb(173, 210, 142), // #ADD28E
-                "onPrimaryFixedVariant" => Color32::from_rgb(49, 79, 25), // #314F19
-                "secondaryFixed" => Color32::from_rgb(218, 231, 201), // #DAE7C9
-                "onSecondaryFixed" => Color32::from_rgb(20, 30, 12), // #141E0C
-                "secondaryFixedDim" => Color32::from_rgb(190, 203, 174), // #BECBAE
-                "onSecondaryFixedVariant" => Color32::from_rgb(63, 74, 52), // #3F4A34
-                "tertiaryFixed" => Color32::from_rgb(187, 236, 234), // #BBECEA
-                "onTertiaryFixed" => Color32::from_rgb(0, 32, 31), // #00201F
-                "tertiaryFixedDim" => Color32::from_rgb(160, 207, 206), // #A0CFCE
-                "onTertiaryFixedVariant" => Color32::from_rgb(30, 78, 77), // #1E4E4D
-                "surfaceDim" => Color32::from_rgb(217, 219, 209), // #D9DBD1
-                "surfaceBright" => Color32::from_rgb(249, 250, 239), // #F9FAEF
-                "surfaceContainerLowest" => Color32::WHITE,  // #FFFFFF
-                "surfaceContainerLow" => Color32::from_rgb(243, 245, 234), // #F3F5EA
-                "surfaceContainer" => Color32::from_rgb(237, 239, 228), // #EDEFE4
-                "surfaceContainerHigh" => Color32::from_rgb(231, 233, 222), // #E7E9DE
-                "surfaceContainerHighest" => Color32::from_rgb(226, 227, 217), // #E2E3D9
-                _ => Color32::GRAY,
-            }
-        }
+        self.get_color_by_name_for_mode(name, self.dark_mode)
     }
 
     /// Set dark mode state for token swapping
@@ -1174,66 +1232,40 @@ impl MaterialThemeContext {
         if let Some(color) = self.selected_colors.get(name) {
             return *color;
         }
-
-        if let Some(scheme) = self.get_scheme_for_mode(dark_mode) {
-            let hex = match name {
-                "primary" => &scheme.primary,
-                "surfaceTint" => &scheme.surface_tint,
-                "onPrimary" => &scheme.on_primary,
-                "primaryContainer" => &scheme.primary_container,
-                "onPrimaryContainer" => &scheme.on_primary_container,
-                "secondary" => &scheme.secondary,
-                "onSecondary" => &scheme.on_secondary,
-                "secondaryContainer" => &scheme.secondary_container,
-                "onSecondaryContainer" => &scheme.on_secondary_container,
-                "tertiary" => &scheme.tertiary,
-                "onTertiary" => &scheme.on_tertiary,
-                "tertiaryContainer" => &scheme.tertiary_container,
-                "onTertiaryContainer" => &scheme.on_tertiary_container,
-                "error" => &scheme.error,
-                "onError" => &scheme.on_error,
-                "errorContainer" => &scheme.error_container,
-                "onErrorContainer" => &scheme.on_error_container,
-                "background" => &scheme.background,
-                "onBackground" => &scheme.on_background,
-                "surface" => &scheme.surface,
-                "onSurface" => &scheme.on_surface,
-                "surfaceVariant" => &scheme.surface_variant,
-                "onSurfaceVariant" => &scheme.on_surface_variant,
-                "outline" => &scheme.outline,
-                "outlineVariant" => &scheme.outline_variant,
-                "shadow" => &scheme.shadow,
-                "scrim" => &scheme.scrim,
-                "inverseSurface" => &scheme.inverse_surface,
-                "inverseOnSurface" => &scheme.inverse_on_surface,
-                "inversePrimary" => &scheme.inverse_primary,
-                "primaryFixed" => &scheme.primary_fixed,
-                "onPrimaryFixed" => &scheme.on_primary_fixed,
-                "primaryFixedDim" => &scheme.primary_fixed_dim,
-                "onPrimaryFixedVariant" => &scheme.on_primary_fixed_variant,
-                "secondaryFixed" => &scheme.secondary_fixed,
-                "onSecondaryFixed" => &scheme.on_secondary_fixed,
-                "secondaryFixedDim" => &scheme.secondary_fixed_dim,
-                "onSecondaryFixedVariant" => &scheme.on_secondary_fixed_variant,
-                "tertiaryFixed" => &scheme.tertiary_fixed,
-                "onTertiaryFixed" => &scheme.on_tertiary_fixed,
-                "tertiaryFixedDim" => &scheme.tertiary_fixed_dim,
-                "onTertiaryFixedVariant" => &scheme.on_tertiary_fixed_variant,
-                "surfaceDim" => &scheme.surface_dim,
-                "surfaceBright" => &scheme.surface_bright,
-                "surfaceContainerLowest" => &scheme.surface_container_lowest,
-                "surfaceContainerLow" => &scheme.surface_container_low,
-                "surfaceContainer" => &scheme.surface_container,
-                "surfaceContainerHigh" => &scheme.surface_container_high,
-                "surfaceContainerHighest" => &scheme.surface_container_highest,
-                _ => return Color32::GRAY, // fallback
-            };
-
-            Self::hex_to_color32(hex).unwrap_or(Color32::GRAY)
-        } else {
-            // Use same fallback as get_color_by_name
-            self.get_color_by_name(name)
+        match ColorRole::from_name(name) {
+            Some(role) => self.color_for_mode(role, dark_mode),
+            None => {
+                #[cfg(debug_assertions)]
+                eprintln!("egui-material3: unknown colour role {name:?}");
+                Color32::GRAY
+            }
         }
+    }
+
+    /// The colour of `role` for the current light/dark state.
+    pub fn color(&self, role: ColorRole) -> Color32 {
+        self.color_for_mode(role, self.dark_mode)
+    }
+
+    /// The colour of `role` for a light/dark state (respects Auto mode).
+    /// Overrides in `selected_colors` win; roles the theme file does not
+    /// define fall back to Compose's baseline scheme.
+    pub fn color_for_mode(&self, role: ColorRole, dark_mode: bool) -> Color32 {
+        if let Some(color) = self.selected_colors.get(role.name()) {
+            return *color;
+        }
+        self.get_scheme_for_mode(dark_mode)
+            .and_then(|scheme| Self::hex_to_color32(scheme.hex(role)))
+            .unwrap_or_else(|| ColorScheme::baseline(dark_mode).get(role))
+    }
+
+    /// Every role resolved for a light/dark state.
+    pub fn color_scheme_for_mode(&self, dark_mode: bool) -> ColorScheme {
+        let mut scheme = ColorScheme::baseline(dark_mode);
+        for role in ColorRole::ALL {
+            scheme.set(role, self.color_for_mode(role, dark_mode));
+        }
+        scheme
     }
 
     pub fn get_primary_color(&self) -> Color32 {
@@ -1296,8 +1328,10 @@ pub fn update_global_theme(theme: MaterialThemeContext) {
     }
 }
 
-/// Helper function to prepare Material Design fonts for the application
-/// Default font is "Google Sans Code" if not specified
+/// Helper function to prepare Material Design fonts for the application.
+/// The default, and `"Roboto"`, is the bundled Roboto; other fonts are read
+/// from `resources/` or, with the `ondemand` feature, downloaded in the
+/// background (see [`MaterialThemeContext::setup_fonts`]).
 /// Note: Fonts are only prepared, call load_fonts() to actually load them
 pub fn setup_google_fonts(font_name: Option<&str>) {
     MaterialThemeContext::setup_fonts(font_name);
@@ -1497,7 +1531,7 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         // Resolve Auto mode to actual mode based on context
         let mut resolved_theme = theme.clone();
         if resolved_theme.theme_mode == ThemeMode::Auto {
-            if ctx.style().visuals.dark_mode {
+            if ctx.global_style().visuals.dark_mode {
                 resolved_theme.theme_mode = ThemeMode::Dark;
             } else {
                 resolved_theme.theme_mode = ThemeMode::Light;
@@ -1525,14 +1559,14 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         };
 
         // Apply the background color to the context
-        let mut visuals = ctx.style().visuals.clone();
+        let mut visuals = ctx.global_style().visuals.clone();
         visuals.window_fill = background_color;
         visuals.panel_fill = background_color;
         visuals.extreme_bg_color = background_color;
 
-        let mut style = (*ctx.style()).clone();
+        let mut style = (*ctx.global_style()).clone();
         style.visuals = visuals;
-        ctx.set_style(style);
+        ctx.set_global_style(style);
     }
 }
 
@@ -1542,30 +1576,24 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
 /// Uses MaterialThemeContext.get_color_by_name_for_mode() to load the appropriate
 /// scheme colors directly, following Material Design 3 spec without token swapping.
 pub fn get_global_color(name: &str) -> Color32 {
-    if let Ok(theme) = GLOBAL_THEME.lock() {
-        theme.get_color_by_name_for_mode(name, theme.dark_mode)
-    } else {
-        // Fallback colors when theme is not accessible
-        match name {
-            "primary" => Color32::from_rgb(103, 80, 164),
-            "onPrimary" => Color32::WHITE,
-            "surface" => Color32::from_rgb(254, 247, 255),
-            "onSurface" => Color32::from_rgb(28, 27, 31),
-            "surfaceContainer" => Color32::from_rgb(247, 243, 249),
-            "surfaceContainerHigh" => Color32::from_rgb(237, 231, 246),
-            "surfaceContainerHighest" => Color32::from_rgb(230, 224, 233),
-            "surfaceContainerLow" => Color32::from_rgb(247, 243, 249),
-            "surfaceContainerLowest" => Color32::from_rgb(255, 255, 255),
-            "outline" => Color32::from_rgb(121, 116, 126),
-            "outlineVariant" => Color32::from_rgb(196, 199, 197),
-            "surfaceVariant" => Color32::from_rgb(232, 222, 248),
-            "secondary" => Color32::from_rgb(125, 82, 96),
-            "tertiary" => Color32::from_rgb(125, 82, 96),
-            "error" => Color32::from_rgb(186, 26, 26),
-            "background" => Color32::from_rgb(255, 251, 254),
-            "onBackground" => Color32::from_rgb(28, 27, 31),
-            _ => Color32::GRAY,
+    match GLOBAL_THEME.lock() {
+        Ok(theme) => theme.get_color_by_name_for_mode(name, theme.dark_mode),
+        Err(poisoned) => {
+            let theme = poisoned.into_inner();
+            theme.get_color_by_name_for_mode(name, theme.dark_mode)
         }
+    }
+}
+
+/// The colour of a typed role from the global theme, for its current
+/// light/dark state. The typed counterpart of [`get_global_color`]: a
+/// misspelt role does not compile. Inside a widget prefer
+/// [`MaterialTheme::of`](crate::MaterialTheme::of), which honours a theme
+/// set on the context.
+pub fn get_global_color_role(role: ColorRole) -> Color32 {
+    match GLOBAL_THEME.lock() {
+        Ok(theme) => theme.color(role),
+        Err(poisoned) => poisoned.into_inner().color(role),
     }
 }
 
@@ -1693,22 +1721,15 @@ where
     let primary_container = theme.get_color_by_name("primaryContainer");
     let on_primary_container = theme.get_color_by_name("onPrimaryContainer");
 
-    let secondary = theme.get_color_by_name("secondary");
-    let on_secondary = theme.get_color_by_name("onSecondary");
-    let secondary_container = theme.get_color_by_name("secondaryContainer");
-
     let tertiary = theme.get_color_by_name("tertiary");
 
     let error = theme.get_color_by_name("error");
-    let on_error = theme.get_color_by_name("onError");
-    let error_container = theme.get_color_by_name("errorContainer");
 
     let surface = theme.get_surface_color(visuals.dark_mode);
     let on_surface = theme.get_color_by_name("onSurface");
     let surface_variant = theme.get_color_by_name("surfaceVariant");
     let on_surface_variant = theme.get_color_by_name("onSurfaceVariant");
 
-    let surface_container = theme.get_color_by_name("surfaceContainer");
     let surface_container_high = theme.get_color_by_name("surfaceContainerHigh");
     let surface_container_highest = theme.get_color_by_name("surfaceContainerHighest");
     let surface_container_low = theme.get_color_by_name("surfaceContainerLow");
@@ -1718,7 +1739,6 @@ where
     let outline_variant = theme.get_color_by_name("outlineVariant");
 
     let inverse_surface = theme.get_color_by_name("inverseSurface");
-    let inverse_on_surface = theme.get_color_by_name("inverseOnSurface");
     let inverse_primary = theme.get_color_by_name("inversePrimary");
 
     let shadow = theme.get_color_by_name("shadow");
@@ -1792,6 +1812,7 @@ where
     visuals.popup_shadow.color = shadow;
 
     ctx.set_visuals(visuals);
+    crate::tokens::typography::apply_text_styles(ctx);
 }
 
 // ============================================================================
