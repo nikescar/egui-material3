@@ -20,7 +20,7 @@ use egui::{
     epaint::{CornerRadius, Shadow, Stroke},
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Defines where a SnackBar should appear and how its location should be adjusted.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -55,7 +55,6 @@ pub struct MaterialSnackbar<'a> {
     action_callback: Option<Box<dyn Fn() + Send + Sync + 'a>>,
     visible: bool,
     auto_dismiss: Option<Duration>,
-    show_time: Option<Instant>,
     position: SnackbarPosition,
     corner_radius: CornerRadius,
     elevation: Option<Shadow>,
@@ -94,7 +93,6 @@ impl<'a> MaterialSnackbar<'a> {
             action_callback: None,
             visible: true,
             auto_dismiss: Some(Duration::from_secs(4)),
-            show_time: None,
             position: SnackbarPosition::Bottom,
             corner_radius: CornerRadius::from(4.0), // Material Design small shape radius
             elevation: None,
@@ -324,9 +322,6 @@ impl<'a> MaterialSnackbar<'a> {
     /// Show the snackbar and set up auto-dismiss.
     pub fn show(mut self) -> Self {
         self.visible = true;
-        if self.show_time.is_none() {
-            self.show_time = Some(Instant::now());
-        }
         self
     }
 
@@ -334,6 +329,46 @@ impl<'a> MaterialSnackbar<'a> {
     pub fn hide(mut self) -> Self {
         self.visible = false;
         self
+    }
+
+    /// The memory key holding when this snackbar was first shown.
+    fn state_id(&self, ui: &Ui) -> egui::Id {
+        ui.scope_id()
+            .with(("material_snackbar", self.message.as_str()))
+    }
+
+    /// Tracks when the snackbar was first shown in egui memory (the widget
+    /// itself is rebuilt every frame) and returns whether it has timed out.
+    /// Fires `on_visible` once, on the first visible frame.
+    fn auto_dismissed(&self, ui: &Ui) -> bool {
+        let id = self.state_id(ui);
+        if !self.visible {
+            ui.data_mut(|d| d.remove::<f64>(id));
+            return false;
+        }
+        let now = ui.input(|i| i.time);
+        let (shown_at, first) = ui.data_mut(|d| match d.get_temp::<f64>(id) {
+            Some(t) => (t, false),
+            None => {
+                d.insert_temp(id, now);
+                (now, true)
+            }
+        });
+        if first {
+            if let Some(on_visible) = &self.on_visible {
+                on_visible();
+            }
+        }
+        let Some(auto_dismiss) = self.auto_dismiss else {
+            return false;
+        };
+        let remaining = auto_dismiss.as_secs_f64() - (now - shown_at);
+        if remaining <= 0.0 {
+            return true;
+        }
+        ui.ctx()
+            .request_repaint_after(Duration::from_secs_f64(remaining));
+        false
     }
 
     fn get_snackbar_style(&self) -> (Color32, Option<Stroke>) {
@@ -344,30 +379,8 @@ impl<'a> MaterialSnackbar<'a> {
 }
 
 impl Widget for MaterialSnackbar<'_> {
-    fn ui(mut self, ui: &mut Ui) -> Response {
-        if !self.visible {
-            return ui.allocate_response(Vec2::ZERO, Sense::hover());
-        }
-
-        // Initialize show time when first rendered
-        if self.show_time.is_none() {
-            self.show_time = Some(Instant::now());
-            // Call onVisible callback
-            if let Some(on_visible) = &self.on_visible {
-                on_visible();
-            }
-        }
-
-        // Check auto-dismiss
-        let should_auto_dismiss =
-            if let (Some(auto_dismiss), Some(show_time)) = (self.auto_dismiss, self.show_time) {
-                show_time.elapsed() >= auto_dismiss
-            } else {
-                false
-            };
-
-        if should_auto_dismiss {
-            // Return empty response if auto-dismissed
+    fn ui(self, ui: &mut Ui) -> Response {
+        if self.auto_dismissed(ui) || !self.visible {
             return ui.allocate_response(Vec2::ZERO, Sense::hover());
         }
 
@@ -379,7 +392,6 @@ impl Widget for MaterialSnackbar<'_> {
             action_callback,
             visible: _,
             auto_dismiss: _,
-            show_time: _,
             position,
             corner_radius,
             elevation: _,
@@ -637,27 +649,8 @@ pub struct MaterialSnackbarWithOffset<'a> {
 }
 
 impl Widget for MaterialSnackbarWithOffset<'_> {
-    fn ui(mut self, ui: &mut Ui) -> Response {
-        if !self.snackbar.visible {
-            return ui.allocate_response(Vec2::ZERO, Sense::hover());
-        }
-
-        // Initialize show time when first rendered
-        if self.snackbar.show_time.is_none() {
-            self.snackbar.show_time = Some(Instant::now());
-        }
-
-        // Check auto-dismiss
-        let should_auto_dismiss = if let (Some(auto_dismiss), Some(show_time)) =
-            (self.snackbar.auto_dismiss, self.snackbar.show_time)
-        {
-            show_time.elapsed() >= auto_dismiss
-        } else {
-            false
-        };
-
-        if should_auto_dismiss {
-            // Return empty response if auto-dismissed
+    fn ui(self, ui: &mut Ui) -> Response {
+        if self.snackbar.auto_dismissed(ui) || !self.snackbar.visible {
             return ui.allocate_response(Vec2::ZERO, Sense::hover());
         }
 
@@ -669,7 +662,6 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             action_callback,
             visible: _,
             auto_dismiss: _,
-            show_time: _,
             position,
             corner_radius,
             elevation: _,
@@ -1009,4 +1001,56 @@ where
     F: Fn() + Send + Sync + 'static,
 {
     MaterialSnackbar::new(message).action(action_text, callback)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    /// Regression test for nikescar/egui-material3#12: the auto-dismiss timer
+    /// survives the widget being rebuilt every frame, and `on_visible` fires once.
+    #[test]
+    fn test_auto_dismiss_fires_and_on_visible_once() {
+        let ctx = egui::Context::default();
+        let shown = Arc::new(AtomicUsize::new(0));
+        let frame = |time: f64| {
+            let mut size = Vec2::ZERO;
+            let input = egui::RawInput {
+                time: Some(time),
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                let shown = Arc::clone(&shown);
+                let snackbar = MaterialSnackbar::new("Saved")
+                    .auto_dismiss(Some(Duration::from_secs(4)))
+                    .on_visible(move || {
+                        shown.fetch_add(1, Ordering::Relaxed);
+                    })
+                    .show();
+                size = ui.add(snackbar).rect.size();
+            })
+            .textures_delta
+            .clear();
+            size
+        };
+        assert!(
+            frame(0.0) != Vec2::ZERO,
+            "the snackbar should show at first"
+        );
+        assert!(
+            frame(1.0) != Vec2::ZERO,
+            "the snackbar should still show at 1 s"
+        );
+        assert!(
+            frame(5.0) == Vec2::ZERO,
+            "the snackbar should be dismissed after 4 s"
+        );
+        assert_eq!(
+            shown.load(Ordering::Relaxed),
+            1,
+            "on_visible should fire once"
+        );
+    }
 }

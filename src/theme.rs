@@ -1497,7 +1497,7 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         // Resolve Auto mode to actual mode based on context
         let mut resolved_theme = theme.clone();
         if resolved_theme.theme_mode == ThemeMode::Auto {
-            if ctx.style().visuals.dark_mode {
+            if ctx.global_style().visuals.dark_mode {
                 resolved_theme.theme_mode = ThemeMode::Dark;
             } else {
                 resolved_theme.theme_mode = ThemeMode::Light;
@@ -1525,14 +1525,14 @@ pub fn update_window_background<C: ContextRef>(ctx: C) {
         };
 
         // Apply the background color to the context
-        let mut visuals = ctx.style().visuals.clone();
+        let mut visuals = ctx.global_style().visuals.clone();
         visuals.window_fill = background_color;
         visuals.panel_fill = background_color;
         visuals.extreme_bg_color = background_color;
 
-        let mut style = (*ctx.style()).clone();
+        let mut style = (*ctx.global_style()).clone();
         style.visuals = visuals;
-        ctx.set_style(style);
+        ctx.set_global_style(style);
     }
 }
 

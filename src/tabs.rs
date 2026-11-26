@@ -325,9 +325,9 @@ impl<'a> Widget for MaterialTabs<'a> {
 
             // Create unique ID for each tab using optional salt
             let tab_id = if let Some(ref salt) = self.id_salt {
-                egui::Id::new((salt, "tab", index))
+                egui::Id::unique((salt, "tab", index))
             } else {
-                egui::Id::new(("tab", index))
+                egui::Id::unique(("tab", index))
             };
 
             let tab_response = ui.interact(tab_rect, tab_id, Sense::click());
