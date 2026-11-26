@@ -118,11 +118,12 @@ impl WidgetGalleryApp {
 }
 
 impl eframe::App for WidgetGalleryApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // Update window background based on theme
         update_window_background(ctx);
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Material Design Widget Gallery 테스트");
             ui.add_space(10.0);
 

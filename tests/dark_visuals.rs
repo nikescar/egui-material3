@@ -12,10 +12,10 @@ fn explicit_modes() {
     let ctx = egui::Context::default();
     set_theme_mode(ThemeMode::Light);
     apply_theme(&ctx, None::<fn() -> ThemeMode>);
-    let light = ctx.style().visuals.panel_fill;
+    let light = ctx.global_style().visuals.panel_fill;
     set_theme_mode(ThemeMode::Dark);
     apply_theme(&ctx, None::<fn() -> ThemeMode>);
-    let dark = ctx.style().visuals.panel_fill;
+    let dark = ctx.global_style().visuals.panel_fill;
     println!("light={light:?} dark={dark:?}");
     assert!(lum(dark) < lum(light), "panel_fill not darker in Dark mode");
 }
@@ -25,8 +25,8 @@ fn auto_mode_follows_detector() {
     let ctx = egui::Context::default();
     set_theme_mode(ThemeMode::Auto);
     apply_theme(&ctx, Some(|| ThemeMode::Dark));
-    let dark = ctx.style().visuals.panel_fill;
+    let dark = ctx.global_style().visuals.panel_fill;
     apply_theme(&ctx, Some(|| ThemeMode::Light));
-    let light = ctx.style().visuals.panel_fill;
+    let light = ctx.global_style().visuals.panel_fill;
     assert!(lum(dark) < lum(light), "Auto+Dark detector not dark: {dark:?} vs {light:?}");
 }

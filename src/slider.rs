@@ -538,7 +538,7 @@ impl<'a> Widget for MaterialRangeSlider<'a> {
             Vec2::new(slider_width, height)
         };
 
-        let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click_and_drag());
+        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click_and_drag());
 
         // Material Design colors
         let primary_color = get_global_color("primary");
@@ -553,36 +553,59 @@ impl<'a> Widget for MaterialRangeSlider<'a> {
         );
 
         // Handle interaction
+        let to_value = |x: f32| {
+            let normalized = ((x - track_rect.min.x) / track_rect.width()).clamp(0.0, 1.0);
+            let mut value =
+                *self.range.start() + normalized * (self.range.end() - self.range.start());
+            // Apply step if specified
+            if let Some(step) = self.step {
+                value = (value / step).round() * step;
+            }
+            value
+        };
+
+        // The thumb being dragged is chosen once, at the start of the drag,
+        // by which thumb is closer to where the press began, so the thumbs
+        // cannot swap mid-drag.
+        let thumb_id = response.id.with("active_thumb");
+        if response.drag_started() && self.enabled {
+            let origin = ui
+                .input(|i| i.pointer.press_origin())
+                .or_else(|| response.interact_pointer_pos());
+            if let Some(origin) = origin {
+                let value = to_value(origin.x);
+                let moves_start =
+                    (value - self.values.start).abs() < (value - self.values.end).abs();
+                ui.data_mut(|d| d.insert_temp(thumb_id, moves_start));
+            }
+        }
+
         if response.dragged() && self.enabled {
-            if let Some(mouse_pos) = response.interact_pointer_pos() {
-                let normalized =
-                    ((mouse_pos.x - track_rect.min.x) / track_rect.width()).clamp(0.0, 1.0);
-                let mut new_value =
-                    *self.range.start() + normalized * (self.range.end() - self.range.start());
-
-                // Apply step if specified
-                if let Some(step) = self.step {
-                    new_value = (new_value / step).round() * step;
-                }
-
-                // Determine which thumb is closer
-                let dist_to_start = (new_value - self.values.start).abs();
-                let dist_to_end = (new_value - self.values.end).abs();
-
-                if dist_to_start < dist_to_end {
-                    // Move start thumb
+            let moves_start = ui.data(|d| d.get_temp::<bool>(thumb_id));
+            if let (Some(mouse_pos), Some(moves_start)) =
+                (response.interact_pointer_pos(), moves_start)
+            {
+                let new_value = to_value(mouse_pos.x);
+                let before = *self.values;
+                if moves_start {
                     self.values.start = new_value.clamp(
                         *self.range.start(),
                         (self.values.end - self.min_separation).min(*self.range.end()),
                     );
                 } else {
-                    // Move end thumb
                     self.values.end = new_value.clamp(
                         (self.values.start + self.min_separation).max(*self.range.start()),
                         *self.range.end(),
                     );
                 }
+                if *self.values != before {
+                    response.mark_changed();
+                }
             }
+        }
+
+        if response.drag_stopped() {
+            ui.data_mut(|d| d.remove::<bool>(thumb_id));
         }
 
         // Calculate thumb positions
@@ -748,4 +771,56 @@ pub fn range_slider<'a>(
     range: RangeInclusive<f32>,
 ) -> MaterialRangeSlider<'a> {
     MaterialRangeSlider::new(values, range)
+}
+
+#[cfg(test)]
+mod range_slider_tests {
+    use super::*;
+
+    /// Regression test for nikescar/egui-material3#13: dragging a range
+    /// slider thumb sets `changed()`, and the thumb picked when the drag
+    /// started keeps moving even when dragged past the other one.
+    #[test]
+    fn test_range_drag_marks_changed_and_keeps_thumb() {
+        let ctx = egui::Context::default();
+        let mut values = RangeValues::new(40.0, 60.0);
+        let frame = |events: Vec<egui::Event>, values: &mut RangeValues| {
+            let mut out = (Rect::NOTHING, false);
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                let response = ui.add(MaterialRangeSlider::new(values, 0.0..=100.0));
+                out = (response.rect, response.changed());
+            })
+            .textures_delta
+            .clear();
+            out
+        };
+        let (rect, _) = frame(Vec::new(), &mut values);
+        let at = |value: f32| Pos2::new(rect.min.x + value * 2.0, rect.center().y);
+        let button = |pos, pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        // Press on the start thumb, then drag it past the end thumb.
+        frame(
+            vec![egui::Event::PointerMoved(at(40.0)), button(at(40.0), true)],
+            &mut values,
+        );
+        let (_, changed) = frame(vec![egui::Event::PointerMoved(at(70.0))], &mut values);
+        assert!(changed, "dragging a thumb should mark the response changed");
+        assert!(
+            values.start > 40.0,
+            "the start thumb should move, got {values:?}"
+        );
+        assert!(
+            (values.end - 60.0).abs() < f32::EPSILON,
+            "the end thumb should stay put, got {values:?}"
+        );
+        frame(vec![button(at(70.0), false)], &mut values);
+    }
 }
