@@ -52,7 +52,7 @@ mod tests {
     fn test_multiline_with_trailing_widgets() {
         // Arrange: Create list with multiline item + trailing widget
         let list = MaterialList::new()
-            .id("test_multiline_trailing")
+            .id(egui::Id::unique("test_multiline_trailing"))
             .item(
                 ListItem::new("Design mockups")
                     .secondary_text("Create wireframes\nDesign high-fidelity mockups\nGet stakeholder approval")
@@ -80,7 +80,7 @@ mod tests {
     fn test_drawer_with_trailing_widgets() {
         // Arrange: Create list with drawer + trailing widgets
         let list = MaterialList::new()
-            .id("test_drawer_trailing")
+            .id(egui::Id::unique("test_drawer_trailing"))
             .allow_drawer(true)
             .item(
                 ListItem::new("Engineering")

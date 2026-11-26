@@ -9,11 +9,11 @@ use egui_material3::datatable::{data_table, CompactMode};
 fn test_auto_mode_uses_automatic_detection() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Wide table with Auto mode should use wide styling (default behavior)
             let table = data_table()
-                .id(Id::new("auto_wide_test"))
+                .id(Id::unique("auto_wide_test"))
                 .compact_mode(CompactMode::Auto)
                 .column("Col1", 180.0, false)
                 .column("Col2", 150.0, false)
@@ -29,18 +29,20 @@ fn test_auto_mode_uses_automatic_detection() {
                 "Wide table with Auto should stay wide"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_force_narrow_on_wide_table() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Wide table forced to use narrow styling
             let table = data_table()
-                .id(Id::new("force_narrow_test"))
+                .id(Id::unique("force_narrow_test"))
                 .compact_mode(CompactMode::ForceNarrow)
                 .column("Product", 180.0, false)
                 .column("Category", 150.0, false)
@@ -64,17 +66,19 @@ fn test_force_narrow_on_wide_table() {
             );
             // Note: Visual verification needed for font/padding - tests verify no crashes
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_force_compact_on_wide_table() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let table = data_table()
-                .id(Id::new("force_compact_test"))
+                .id(Id::unique("force_compact_test"))
                 .compact_mode(CompactMode::ForceCompact)
                 .column("Item", 150.0, false)
                 .column("Description", 200.0, false)
@@ -94,18 +98,20 @@ fn test_force_compact_on_wide_table() {
                 "ForceCompact table should render"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_force_wide_on_narrow_table() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Narrow table forced to use wide styling
             let table = data_table()
-                .id(Id::new("force_wide_test"))
+                .id(Id::unique("force_wide_test"))
                 .compact_mode(CompactMode::ForceWide)
                 .column("ID", 50.0, true)
                 .column("Name", 80.0, false)
@@ -119,7 +125,9 @@ fn test_force_wide_on_narrow_table() {
                 "ForceWide table should render"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
@@ -127,10 +135,10 @@ fn test_compact_mode_persists_across_redraws() {
     let ctx = Context::default();
 
     // First frame: set ForceNarrow
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let table = data_table()
-                .id(Id::new("persist_compact_mode"))
+                .id(Id::unique("persist_compact_mode"))
                 .compact_mode(CompactMode::ForceNarrow)
                 .column("A", 100.0, false)
                 .column("B", 100.0, false)
@@ -139,15 +147,17 @@ fn test_compact_mode_persists_across_redraws() {
 
             let _response = table.show(ui);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 
     // Second frame: redraw same table
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Even without specifying compact_mode again, table should render
             // (compact_mode is not persisted in state, it's part of widget definition)
             let table = data_table()
-                .id(Id::new("persist_compact_mode"))
+                .id(Id::unique("persist_compact_mode"))
                 .compact_mode(CompactMode::ForceNarrow)
                 .column("A", 100.0, false)
                 .column("B", 100.0, false)
@@ -157,15 +167,17 @@ fn test_compact_mode_persists_across_redraws() {
             let response = table.show(ui);
             assert!(response.response.rect.width() > 0.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 #[test]
 fn test_all_compact_modes_render_without_panic() {
     let ctx = Context::default();
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Test all 4 modes on the same table structure
             let modes = vec![
                 CompactMode::Auto,
@@ -176,7 +188,7 @@ fn test_all_compact_modes_render_without_panic() {
 
             for (i, mode) in modes.iter().enumerate() {
                 let table = data_table()
-                    .id(Id::new(format!("mode_test_{}", i)))
+                    .id(Id::unique(format!("mode_test_{}", i)))
                     .compact_mode(mode.clone())
                     .column("Col1", 100.0, false)
                     .column("Col2", 100.0, false)
@@ -190,5 +202,7 @@ fn test_all_compact_modes_render_without_panic() {
                 );
             }
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }

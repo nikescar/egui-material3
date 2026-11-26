@@ -178,7 +178,7 @@ impl DataTableWindow {
     fn render_add_row_dialog(&mut self, ctx: &egui::Context) {
         if self.add_row_dialog_open {
             dialog(
-                "add_row_dialog",
+                egui::Id::unique("add_row_dialog"),
                 "Add New Row",
                 &mut self.add_row_dialog_open,
             )
@@ -302,7 +302,7 @@ impl DataTableWindow {
             ui.add_space(5.0);
 
             let mut basic_table = data_table()
-                .id(Id::new("basic_data_table"))
+                .id(Id::unique("basic_data_table"))
                 .refresh_interval(0.05) // Optional: 50ms throttle (default). Set to 0.0 to disable.
                 .column("Dessert", 180.0, false)
                 .column("Carbs (g)", 100.0, true)
@@ -361,7 +361,7 @@ impl DataTableWindow {
             ui.heading("Data Table with Sortable Columns");
 
             let sortable_table = data_table()
-                .id(Id::new("sortable_data_table"))
+                .id(Id::unique("sortable_data_table"))
                 .sortable_column("Signal name", 200.0, false)
                 .sortable_column("Status", 100.0, false)
                 .sortable_column("Severity", 100.0, false)
@@ -417,7 +417,7 @@ impl DataTableWindow {
             ui.heading("Compact Data Table");
 
             let compact_table = data_table()
-                .id(Id::new("compact_data_table"))
+                .id(Id::unique("compact_data_table"))
                 .column("ID", 60.0, true)
                 .column("Name", 120.0, false)
                 .column("Status", 80.0, false)
@@ -499,7 +499,7 @@ impl DataTableWindow {
 
         // Use the proper data table widget for Interactive Data Table Demo
         let mut interactive_table = data_table()
-            .id(Id::new("interactive_data_table"))
+            .id(Id::unique("interactive_data_table"))
             .column("Product", 180.0, false)  // All columns are sortable by default now
             .column("Category", 120.0, false)
             .column("Price", 100.0, true)
@@ -544,7 +544,7 @@ impl DataTableWindow {
 
         // Set external editing state for the data table to use
         ui.memory_mut(|mem| {
-            mem.data.insert_temp(Id::new("interactive_data_table").with("external_edit_state"),
+            mem.data.insert_temp(Id::unique("interactive_data_table").with("external_edit_state"),
                 (self.editing_rows.clone(), self.edit_data.clone()));
         });
 
@@ -553,7 +553,7 @@ impl DataTableWindow {
 
         // Retrieve updated editing state from the data table
         if let Some((updated_editing_rows, updated_edit_data)) = ui.memory(|mem| {
-            mem.data.get_temp::<(HashSet<usize>, HashMap<usize, Vec<String>>)>(Id::new("interactive_data_table").with("external_edit_state"))
+            mem.data.get_temp::<(HashSet<usize>, HashMap<usize, Vec<String>>)>(Id::unique("interactive_data_table").with("external_edit_state"))
         }) {
             self.editing_rows = updated_editing_rows;
             self.edit_data = updated_edit_data;
@@ -672,7 +672,7 @@ impl DataTableWindow {
         ui.heading("Text Wrapping Example");
 
         let long_text_table = data_table()
-            .id(Id::new("long_text_table"))
+            .id(Id::unique("long_text_table"))
             .column("Short", 80.0, false)
             .column("Very Long Text Content That Should Wrap", 150.0, false)
             .column("Number", 80.0, true)
@@ -733,7 +733,7 @@ impl DataTableWindow {
         };
 
         let themed_table = data_table()
-            .id(Id::new("themed_table"))
+            .id(Id::unique("themed_table"))
             .column("Name", 150.0, false)
             .column("Value", 100.0, true)
             .column("Status", 120.0, false)
@@ -765,7 +765,7 @@ impl DataTableWindow {
 
         // For now, create a basic table (full tooltip support requires API enhancement)
         let tooltip_table = data_table()
-            .id(Id::new("tooltip_table"))
+            .id(Id::unique("tooltip_table"))
             .column("ID", 80.0, true) // Would have tooltip: "Unique identifier for each item"
             .column("Product Name", 150.0, false) // Would have tooltip: "The name of the product"
             .column("Price", 100.0, true) // Would have tooltip: "Current market price in USD"
@@ -783,7 +783,7 @@ impl DataTableWindow {
         ui.label("Dimmed placeholder text and edit indicators");
 
         let placeholder_table = data_table()
-            .id(Id::new("placeholder_table"))
+            .id(Id::unique("placeholder_table"))
             .column("Field", 120.0, false)
             .column("Value", 180.0, false)
             .column("Notes", 200.0, false)
@@ -811,7 +811,7 @@ impl DataTableWindow {
         ui.label("Per-row color overrides for status highlighting");
 
         let color_table = data_table()
-            .id(Id::new("color_table"))
+            .id(Id::unique("color_table"))
             .column("Task", 180.0, false)
             .column("Status", 100.0, false)
             .column("Priority", 100.0, false)
@@ -849,7 +849,7 @@ impl DataTableWindow {
 
         ui.label("Compact (30px rows):");
         let compact_height_table = data_table()
-            .id(Id::new("compact_height_table"))
+            .id(Id::unique("compact_height_table"))
             .column("Item", 120.0, false)
             .column("Value", 80.0, true)
             .default_row_height(30.0)
@@ -868,7 +868,7 @@ impl DataTableWindow {
         ui.add_space(10.0);
         ui.label("Standard (52px rows - default):");
         let standard_height_table = data_table()
-            .id(Id::new("standard_height_table"))
+            .id(Id::unique("standard_height_table"))
             .column("Item", 120.0, false)
             .column("Value", 80.0, true)
             .row(|row| {
@@ -886,7 +886,7 @@ impl DataTableWindow {
         ui.add_space(10.0);
         ui.label("Spacious (80px rows):");
         let spacious_height_table = data_table()
-            .id(Id::new("spacious_height_table"))
+            .id(Id::unique("spacious_height_table"))
             .column("Item", 120.0, false)
             .column("Value", 80.0, true)
             .default_row_height(80.0)
@@ -908,7 +908,7 @@ impl DataTableWindow {
         ui.label("Rows automatically adjust height based on their content length");
 
         let auto_height_table = data_table()
-            .id(Id::new("auto_height_table"))
+            .id(Id::unique("auto_height_table"))
             .column("Category", 100.0, false)
             .column("Description", 250.0, false)
             .column("Status", 80.0, false)
@@ -954,7 +954,7 @@ impl DataTableWindow {
         no_checkbox_theme.show_checkbox_column = false;
 
         let no_checkbox_table = data_table()
-            .id(Id::new("no_checkbox_table"))
+            .id(Id::unique("no_checkbox_table"))
             .column("Item", 150.0, false)
             .column("Value", 100.0, true)
             .theme(no_checkbox_theme)
@@ -982,7 +982,7 @@ impl DataTableWindow {
 
         ui.label("Very Narrow Table (< 400px): 12px fonts, 32px padding, 40px header");
         let very_narrow_table = data_table()
-            .id(Id::new("very_narrow_responsive"))
+            .id(Id::unique("very_narrow_responsive"))
             .column("ID", 50.0, true)
             .column("Name", 90.0, false)
             .column("Val", 60.0, true)
@@ -996,7 +996,7 @@ impl DataTableWindow {
         ui.add_space(15.0);
         ui.label("Compact Table (400-500px): 14px fonts, 40px padding, 48px header");
         let compact_table = data_table()
-            .id(Id::new("compact_responsive"))
+            .id(Id::unique("compact_responsive"))
             .column("Product", 110.0, false)
             .column("Category", 100.0, false)
             .column("Price", 80.0, true)
@@ -1018,7 +1018,7 @@ impl DataTableWindow {
 
         ui.label("Wide table (610px+) with ForceNarrow mode:");
         let wide_forced_narrow = data_table()
-            .id(Id::new("wide_forced_narrow"))
+            .id(Id::unique("wide_forced_narrow"))
             .compact_mode(CompactMode::ForceNarrow) // Force narrow despite wide width
             .column("Product Name", 180.0, false)
             .column("Category", 150.0, false)
@@ -1055,7 +1055,7 @@ impl DataTableWindow {
         ui.add_space(15.0);
         ui.label("Wide table (550px+) with ForceCompact mode:");
         let wide_forced_compact = data_table()
-            .id(Id::new("wide_forced_compact"))
+            .id(Id::unique("wide_forced_compact"))
             .compact_mode(CompactMode::ForceCompact)
             .column("Item", 150.0, false)
             .column("Description", 200.0, false)
@@ -1072,7 +1072,7 @@ impl DataTableWindow {
         ui.add_space(15.0);
         ui.label("Comparison: Same wide table with Auto mode (default):");
         let wide_auto = data_table()
-            .id(Id::new("wide_auto"))
+            .id(Id::unique("wide_auto"))
             .compact_mode(CompactMode::Auto) // Explicit Auto (same as default)
             .column("Item", 150.0, false)
             .column("Description", 200.0, false)
@@ -1095,7 +1095,7 @@ impl DataTableWindow {
         self.drawer_selection.resize(4, false);
 
         let drawer_table = data_table()
-            .id(Id::new("drawer_table"))
+            .id(Id::unique("drawer_table"))
             .allow_selection(self.allow_selection)
             .allow_drawer(true)
             .column("Product", 180.0, false)
@@ -1166,7 +1166,7 @@ impl DataTableWindow {
         ui.add_space(5.0);
 
         let mixed_drawer_table = data_table()
-            .id(Id::new("mixed_drawer_table"))
+            .id(Id::unique("mixed_drawer_table"))
             .allow_drawer(true)
             .column("Item", 150.0, false)
             .column("Type", 120.0, false)
@@ -1176,7 +1176,7 @@ impl DataTableWindow {
                    .drawer(|ui| {
                        ui.add_space(4.0);
                        let compact_table = data_table()
-                           .id(Id::new("drawer_compact_table"))
+                           .id(Id::unique("drawer_compact_table"))
                            .column("Item", 100.0, false)
                            .column("Val", 60.0, true)
                            .default_row_height(30.0)
@@ -1207,7 +1207,7 @@ impl DataTableWindow {
                        ui.add_space(4.0);
                        use egui_material3::{MaterialList, ListItem};
                        let ultra_list = MaterialList::new()
-                           .id("drawer_ultra_list")
+                           .id(egui::Id::unique("drawer_ultra_list"))
                            .item(ListItem::new("Home").leading_icon("home".to_string())
                                .min_leading_width(28.0).horizontal_title_gap(4.0)
                                .min_vertical_padding(4.0).min_tile_height(36.0))
@@ -1227,14 +1227,14 @@ impl DataTableWindow {
                        ui.add_space(4.0);
                        use crate::tabs_secondary;
                        ui.memory_mut(|mem| {
-                           if !mem.data.get_temp::<usize>(Id::new("drawer_tabs_sel")).is_some() {
-                               mem.data.insert_temp(Id::new("drawer_tabs_sel"), 0usize);
+                           if !mem.data.get_temp::<usize>(Id::unique("drawer_tabs_sel")).is_some() {
+                               mem.data.insert_temp(Id::unique("drawer_tabs_sel"), 0usize);
                            }
                        });
-                       let mut sel = ui.memory(|mem| mem.data.get_temp::<usize>(Id::new("drawer_tabs_sel")).unwrap_or(0));
+                       let mut sel = ui.memory(|mem| mem.data.get_temp::<usize>(Id::unique("drawer_tabs_sel")).unwrap_or(0));
                        ui.add(tabs_secondary(&mut sel).id_salt("drawer_tabs")
                            .tab("✈️ Travel").tab("🏨 Hotel").tab("🥾 Activities").tab("🍽️ Food"));
-                       ui.memory_mut(|mem| mem.data.insert_temp(Id::new("drawer_tabs_sel"), sel));
+                       ui.memory_mut(|mem| mem.data.insert_temp(Id::unique("drawer_tabs_sel"), sel));
                        ui.label(match sel {
                            0 => "Travel: Flights & destinations",
                            1 => "Hotel: Accommodation options",
@@ -1253,7 +1253,7 @@ impl DataTableWindow {
         ui.label("Drawer panels with fixed height constraint (120px). Long content will clip or scroll.");
 
         let static_drawer_table = data_table()
-            .id(Id::new("static_drawer_table"))
+            .id(Id::unique("static_drawer_table"))
             .allow_drawer(true)
             .drawer_row_height(120.0)  // Fixed height for all drawers
             .column("Product", 180.0, false)
@@ -1318,7 +1318,7 @@ impl DataTableWindow {
         ui.label("Notice: only high-stock items show the drawer arrow (>)");
 
         let compact_selective_table = data_table()
-            .id(Id::new("compact_selective_drawer"))
+            .id(Id::unique("compact_selective_drawer"))
             .allow_drawer(true)
             .default_row_height(40.0)
             .column("Product", 150.0, false)
@@ -1391,7 +1391,7 @@ impl DataTableWindow {
         ui.add_space(10.0);
         ui.label("1. Tooltips DISABLED (default):");
         let no_tooltip_table = data_table()
-            .id(Id::new("no_tooltip_table"))
+            .id(Id::unique("no_tooltip_table"))
             .column("ID", 60.0, true)
             .column("Name", 100.0, false)
             .column("Description", 120.0, false)
@@ -1413,7 +1413,7 @@ impl DataTableWindow {
         always_tooltip_theme.enable_cell_tooltips = true;
 
         let always_tooltip_table = data_table()
-            .id(Id::new("always_tooltip_table"))
+            .id(Id::unique("always_tooltip_table"))
             .column("ID", 60.0, true)
             .column("Name", 100.0, false)
             .column("Description", 120.0, false)
@@ -1436,7 +1436,7 @@ impl DataTableWindow {
         smart_tooltip_theme.smart_cell_tooltips = true;
 
         let smart_tooltip_table = data_table()
-            .id(Id::new("smart_tooltip_table"))
+            .id(Id::unique("smart_tooltip_table"))
             .column("ID", 60.0, true)
             .column("Name", 100.0, false)
             .column("Description", 120.0, false)
@@ -1476,7 +1476,7 @@ impl DataTableWindow {
         large_header_theme.heading_row_height = Some(68.0);  // Taller to accommodate larger font
 
         let large_header_table = data_table()
-            .id(Id::new("large_header_table"))
+            .id(Id::unique("large_header_table"))
             .column("Product Name", 180.0, false)
             .column("Category", 120.0, false)
             .column("Price", 100.0, true)
@@ -1502,7 +1502,7 @@ impl DataTableWindow {
 
         ui.label("Compact header with smaller font (12px):");
         let small_header_table = data_table()
-            .id(Id::new("small_header_table"))
+            .id(Id::unique("small_header_table"))
             .column("Item", 120.0, false)
             .column("Value", 80.0, true)
             .theme(small_header_theme)

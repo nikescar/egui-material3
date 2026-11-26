@@ -509,9 +509,9 @@ impl Widget for MaterialImageList<'_> {
 
                 // Handle item interaction with unique ID
                 let item_id = if let Some(ref salt) = id_salt {
-                    egui::Id::new((salt, "image_item", index))
+                    egui::Id::unique((salt, "image_item", index))
                 } else {
-                    egui::Id::new(("image_item", index, &item.label))
+                    egui::Id::unique(("image_item", index, &item.label))
                 };
 
                 let item_response = ui.interact(item_rect, item_id, Sense::click());
