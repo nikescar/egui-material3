@@ -6,8 +6,7 @@ use egui::{
     ecolor::Color32,
     emath::NumExt,
     epaint::{CornerRadius, Shadow, Stroke},
-    Align, Rect, Response, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetText,
-    WidgetType,
+    Align, Rect, Response, Role, TextStyle, TextWrapMode, Ui, Vec2, Widget, WidgetInfo, WidgetText,
 };
 
 impl Widget for MaterialButton<'_> {
@@ -311,9 +310,9 @@ impl Widget for MaterialButton<'_> {
         let (rect, response) = ui.allocate_at_least(desired_size, sense);
         response.widget_info(|| {
             if let Some(galley) = &galley {
-                WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), galley.text())
+                WidgetInfo::labeled(Role::Button, ui.is_enabled(), galley.text())
             } else {
-                WidgetInfo::new(WidgetType::Button)
+                WidgetInfo::new(Role::Button)
             }
         });
 

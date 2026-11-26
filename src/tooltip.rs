@@ -110,7 +110,7 @@ impl MaterialTooltip {
         let tooltip_pos = self.calculate_position(target_rect, tooltip_size, screen_rect);
 
         // Create unique ID for this tooltip
-        let tooltip_id = Id::new("tooltip").with(&self.text);
+        let tooltip_id = Id::unique("tooltip").with(&self.text);
 
         // Show tooltip as an overlay
         Area::new(tooltip_id)
