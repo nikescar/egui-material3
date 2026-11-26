@@ -1,44 +1,33 @@
-//! Material Design 3 Button Components
+//! Material Design 3 common buttons and toggle buttons.
 //!
-//! This module implements button controls following Material Design 3 color system.
+//! [`MaterialButton`] draws the five M3 button styles (elevated, filled,
+//! tonal, outlined, text) from the Compose tokens, in the five M3
+//! Expressive sizes ([`ButtonSize`]) or the baseline 40 dp size, round or
+//! square ([`ButtonShape`]).
 //!
-//! # M3 Color Role Usage
+//! - **Colours** come from the active [`MaterialTheme`](crate::MaterialTheme):
+//!   see [`MaterialButtonVariant::colors`] for the role each style uses,
+//!   including the selected/unselected sets of toggle buttons and the
+//!   disabled colours (`onSurface` at 10% for the container, 38% for the
+//!   content).
+//! - **States**: hover, focus and press draw the M3 state layer in the
+//!   content colour; keyboard focus draws the focus ring; elevation follows
+//!   the per-state tokens ([`MaterialButtonVariant::elevation`]).
+//! - **Shape morph**: a pressed button springs to the size's pressed
+//!   corner radius, and a selected toggle button to its selected shape,
+//!   using the theme's fast spatial spring.
+//! - **Toggle buttons**: [`MaterialButton::toggle`] binds a `&mut bool`; the
+//!   button reports its toggled state to AccessKit.
+//! - A disabled button cannot be clicked or focused.
 //!
-//! ## Filled Button (High Emphasis)
-//! - **primary**: Button background
-//! - **onPrimary** (light mode): Text and icon color on primary background
-//! - **onPrimaryFixed** (dark mode): Text and icon color on primary background
-//! - **State layers**: onPrimary/onPrimaryFixed @ 8% (hover), 12% (press)
-//! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
-//!
-//! ## Outlined Button (Medium Emphasis)
-//! - **Transparent background**: Shows parent surface
-//! - **outline**: Border stroke color
-//! - **onSurface**: Text and icon color
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
-//! - **Disabled**: onSurface @ 12% outline, onSurface @ 38% content
-//!
-//! ## Text Button (Low Emphasis)
-//! - **Transparent background**: No border, shows parent surface
-//! - **onSurface**: Text and icon color
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
-//! - **Disabled**: onSurface @ 38% content
-//!
-//! ## Elevated Button (Medium Emphasis with Shadow)
-//! - **surface**: Button background (elevated surface)
-//! - **onSurface**: Text and icon color
-//! - **Shadow**: 1dp elevation, increases to 3dp on hover
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
-//! - **Disabled**: surface background, onSurface @ 38% content
-//!
-//! ## Filled Tonal Button (Medium Emphasis, Toned Down)
-//! - **secondaryContainer**: Tinted container background
-//! - **onSecondaryContainer**: Text and icon color on tinted background
-//! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
-//! - **Disabled**: surface background, onSurface @ 12% outline, onSurface @ 38% content
+//! See also [`ButtonGroup`](crate::ButtonGroup) and
+//! [`SplitButton`](crate::SplitButton).
 
 mod builder;
 mod rendering;
+mod tokens;
 mod types;
 
-pub use types::*;
+pub use tokens::{ButtonColors, ButtonMetrics};
+pub use types::{ButtonShape, ButtonSize, MaterialButton, MaterialButtonVariant};
+pub(crate) use types::{SegmentCorners, SideCorners};
