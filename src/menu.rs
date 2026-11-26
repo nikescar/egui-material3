@@ -692,7 +692,7 @@ fn render_menu_content<'a>(
 
         let item_response = ui.interact(
             item_rect,
-            egui::Id::unique(format!("menu_item_{}_{}", rect.min.x as i32, index)),
+            response.id.with(("menu_item", index)),
             Sense::click(),
         );
 
@@ -945,4 +945,58 @@ pub fn menu(id: impl Into<egui::Id>, open: &mut bool) -> MaterialMenu<'_> {
 /// ```
 pub fn menu_item(text: impl Into<String>) -> MenuItem<'static> {
     MenuItem::new(text)
+}
+
+#[cfg(test)]
+mod id_tests {
+    use super::*;
+    use std::cell::Cell;
+
+    /// Regression test for nikescar/egui-material3#16: two menus at the same
+    /// x do not share item ids, so clicking an item of one does not click
+    /// the other's.
+    #[test]
+    fn test_menus_at_same_x_have_distinct_item_ids() {
+        let ctx = egui::Context::default();
+        let a_clicks = Cell::new(0);
+        let b_clicks = Cell::new(0);
+        let anchor_a = Rect::from_min_size(Pos2::new(100.0, 50.0), Vec2::new(10.0, 10.0));
+        let anchor_b = Rect::from_min_size(Pos2::new(100.0, 400.0), Vec2::new(10.0, 10.0));
+        let frame = |events: Vec<egui::Event>| {
+            let mut open_a = true;
+            let mut open_b = true;
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                menu(egui::Id::unique("menu_a"), &mut open_a)
+                    .anchor_rect(anchor_a)
+                    .stay_open_on_outside_click(true)
+                    .item(menu_item("A").on_click(|| a_clicks.set(a_clicks.get() + 1)))
+                    .show(ui.ctx());
+                menu(egui::Id::unique("menu_b"), &mut open_b)
+                    .anchor_rect(anchor_b)
+                    .stay_open_on_outside_click(true)
+                    .item(menu_item("B").on_click(|| b_clicks.set(b_clicks.get() + 1)))
+                    .show(ui.ctx());
+            })
+            .textures_delta
+            .clear();
+        };
+        // Inside menu A's first item: 4 px below the anchor, then padding.
+        let pos = Pos2::new(anchor_a.min.x + 40.0, anchor_a.max.y + 4.0 + 24.0);
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(Vec::new());
+        frame(Vec::new());
+        frame(vec![egui::Event::PointerMoved(pos), button(true)]);
+        frame(vec![button(false)]);
+        assert_eq!(a_clicks.get(), 1, "clicking menu A's item should click it");
+        assert_eq!(b_clicks.get(), 0, "menu B's item must not be clicked too");
+    }
 }

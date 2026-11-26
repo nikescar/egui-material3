@@ -451,13 +451,9 @@ impl<'a> Widget for MaterialSelect<'a> {
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
 
         // Use persistent state for dropdown open/close with global coordination
-        let select_id = egui::Id::unique((
-            "select_widget",
-            rect.min.x as i32,
-            rect.min.y as i32,
-            self.placeholder.clone(),
-            self.label.clone(),
-        ));
+        // Derived from the widget's own id, not its screen position, so the
+        // state survives the select moving (scrolling, resizing).
+        let select_id = response.id.with("select_widget");
         let mut open = ui.memory(|mem| mem.data.get_temp::<bool>(select_id).unwrap_or(false));
 
         // Handle Escape key to close dropdown
@@ -1018,4 +1014,66 @@ impl<'a> Widget for MaterialSelect<'a> {
 /// ```
 pub fn select<'a>(selected: &'a mut Option<usize>) -> MaterialSelect<'a> {
     MaterialSelect::new(selected)
+}
+
+#[cfg(test)]
+mod id_tests {
+    use super::*;
+
+    /// Regression test for nikescar/egui-material3#16: an open dropdown stays
+    /// open when the select moves on screen.
+    #[test]
+    fn test_dropdown_stays_open_when_select_moves() {
+        let ctx = egui::Context::default();
+        let mut selected = None;
+        let frame = |events: Vec<egui::Event>, offset: f32, selected: &mut Option<usize>| {
+            let mut rect = Rect::NOTHING;
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            let mut output = ctx.run_ui(input, |ui| {
+                ui.add_space(offset);
+                let select = MaterialSelect::new(selected)
+                    .placeholder("Pick")
+                    .option(0, "Alpha")
+                    .option(1, "Beta");
+                rect = ui.add(select).rect;
+            });
+            output.textures_delta.clear();
+            let shows_options = output.shapes.iter().any(|clipped| {
+                if let egui::Shape::Text(text) = &clipped.shape {
+                    text.galley.text() == "Beta"
+                } else {
+                    false
+                }
+            });
+            (rect, shows_options)
+        };
+        let (rect, _) = frame(Vec::new(), 0.0, &mut selected);
+        let pos = rect.center();
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            0.0,
+            &mut selected,
+        );
+        let (_, open) = frame(vec![button(false)], 0.0, &mut selected);
+        let (_, open_after) = frame(Vec::new(), 0.0, &mut selected);
+        assert!(
+            open || open_after,
+            "clicking the select should open its dropdown"
+        );
+        frame(Vec::new(), 30.0, &mut selected);
+        let (_, still_open) = frame(Vec::new(), 30.0, &mut selected);
+        assert!(
+            still_open,
+            "the dropdown should stay open after the select moves"
+        );
+    }
 }

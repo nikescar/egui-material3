@@ -327,7 +327,7 @@ impl<'a> Widget for MaterialTabs<'a> {
             let tab_id = if let Some(ref salt) = self.id_salt {
                 egui::Id::unique((salt, "tab", index))
             } else {
-                egui::Id::unique(("tab", index))
+                response.id.with(("tab", index))
             };
 
             let tab_response = ui.interact(tab_rect, tab_id, Sense::click());
@@ -512,4 +512,54 @@ pub fn tabs_primary<'a>(selected: &'a mut usize) -> MaterialTabs<'a> {
 /// ```
 pub fn tabs_secondary<'a>(selected: &'a mut usize) -> MaterialTabs<'a> {
     MaterialTabs::secondary(selected)
+}
+
+#[cfg(test)]
+mod id_tests {
+    use super::*;
+
+    /// Regression test for nikescar/egui-material3#16: two unsalted tab bars
+    /// do not share tab ids, so clicking a tab in one leaves the other alone.
+    #[test]
+    fn test_unsalted_tab_bars_are_independent() {
+        let ctx = egui::Context::default();
+        let mut first = 0;
+        let mut second = 0;
+        let frame = |events: Vec<egui::Event>, first: &mut usize, second: &mut usize| {
+            let mut rect = Rect::NOTHING;
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                rect = ui
+                    .add(MaterialTabs::primary(first).tab("One").tab("Two"))
+                    .rect;
+                ui.add(MaterialTabs::primary(second).tab("One").tab("Two"));
+            })
+            .textures_delta
+            .clear();
+            rect
+        };
+        let rect = frame(Vec::new(), &mut first, &mut second);
+        // The second tab of the first bar.
+        let pos = Pos2::new(rect.min.x + rect.width() * 0.75, rect.center().y);
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            &mut first,
+            &mut second,
+        );
+        frame(vec![button(false)], &mut first, &mut second);
+        assert_eq!(
+            first, 1,
+            "clicking the first bar's second tab should select it"
+        );
+        assert_eq!(second, 0, "the second tab bar must not change");
+    }
 }
