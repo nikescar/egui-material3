@@ -356,7 +356,7 @@ pub use {
     toolbar::{toolbar, MaterialToolbar, ToolbarElevation},
     tooltip::{
         show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip,
-        MaterialTooltip, TooltipPosition,
+        MaterialTooltip, RichTooltip, RichTooltipResponse, TooltipPosition,
     },
     topappbar::{
         center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar,

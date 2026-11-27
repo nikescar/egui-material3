@@ -1,19 +1,20 @@
 #![doc(hidden)]
 
 use crate::{
-    noto_emoji, show_tooltip_on_hover, tooltip, MaterialButton, MaterialCard2, MaterialIconButton,
-    TooltipPosition,
+    noto_emoji, show_tooltip_on_hover, tooltip, with_tooltip, MaterialButton, MaterialCard2,
+    MaterialIconButton, RichTooltip, TooltipPosition,
 };
 use eframe::egui::{self, Ui, Window};
 
 #[doc(hidden)]
 #[derive(Default)]
-pub struct TooltipWindow {
+pub(crate) struct TooltipWindow {
     pub open: bool,
+    rich_action_clicks: usize,
 }
 
 impl TooltipWindow {
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub(crate) fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         Window::new("Tooltip Stories")
             .open(&mut open)
@@ -210,10 +211,10 @@ impl TooltipWindow {
                     .show(ui, btn1.rect);
             }
 
-            let btn2 = ui.add(MaterialButton::filled("Wide Tooltip"));
+            let btn2 = ui.add(MaterialButton::filled("Narrow Tooltip"));
             if btn2.hovered() {
-                tooltip("This tooltip has a wider maximum width to accommodate longer text without wrapping")
-                    .max_width(300.0)
+                tooltip("This tooltip has a narrower maximum width, so its text wraps sooner")
+                    .max_width(160.0)
                     .position(TooltipPosition::Top)
                     .show(ui, btn2.rect);
             }
@@ -347,6 +348,59 @@ impl TooltipWindow {
                 TooltipPosition::Top,
             );
         });
+
+        ui.add_space(20.0);
+
+        // Rich tooltips
+        ui.heading("Rich Tooltips");
+        ui.label(
+            "Subhead, supporting text and actions on a raised surface. They stay open              while the pointer is on them, so the action can be clicked:",
+        );
+
+        ui.horizontal_wrapped(|ui| {
+            let storage = ui.add(MaterialButton::outlined("Storage"));
+            let tip = RichTooltip::new(
+                "Free up space by deleting old backups, or move them to another drive.",
+            )
+            .subhead("Storage almost full")
+            .action("Manage")
+            .action("Later")
+            .show_for(&storage);
+            if tip.action_clicked == Some(0) {
+                self.rich_action_clicks += 1;
+            }
+
+            let info = ui.add(MaterialButton::outlined("Text only"));
+            RichTooltip::new("A rich tooltip with no subhead and no actions.")
+                .position(TooltipPosition::Bottom)
+                .show_for(&info);
+
+            let subhead = ui.add(MaterialButton::outlined("Subhead"));
+            RichTooltip::new("Rich tooltips can carry a title above the text.")
+                .subhead("Title")
+                .show_for(&subhead);
+        });
+        ui.label(format!(
+            "\"Manage\" clicked {} times",
+            self.rich_action_clicks
+        ));
+
+        ui.add_space(20.0);
+
+        // with_tooltip
+        ui.heading("with_tooltip");
+        ui.label("Wrap any widgets; the tooltip shows when the pointer is over them:");
+        with_tooltip(
+            ui,
+            "These two buttons share one tooltip",
+            TooltipPosition::Top,
+            |ui| {
+                ui.horizontal(|ui| {
+                    ui.add(MaterialButton::text("One"));
+                    ui.add(MaterialButton::text("Two"));
+                });
+            },
+        );
 
         ui.add_space(20.0);
 
