@@ -822,8 +822,8 @@ mod tests {
 
     #[test]
     fn long_uptimes_keep_precision() {
-        // Twelve days of uptime: f32 seconds would only resolve 0.125 s.
-        let base = 1_036_800.0;
+        // About twelve days of uptime: f32 seconds would only resolve 0.125 s.
+        let base = 1_050_000.0; // 600 000 linear cycles of 1.75 s
         assert_eq!(
             linear_indeterminate(base + 0.5),
             linear_indeterminate(0.5),
