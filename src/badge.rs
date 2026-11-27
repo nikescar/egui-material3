@@ -1,353 +1,371 @@
-//! Material Design 3 Badge Components
-//!
-//! # M3 Color Role Usage
-//!
-//! - **error**: Error badge background
-//! - **onError**: Error badge text
-//! - **primary**: Primary badge background (for counts/notifications)
-//! - **onPrimary**: Primary badge text
-//! - **Custom colors**: For success, warning, neutral variants
-//!
-//! ## Dimensions
-//! - **Small badge**: 6x6dp (no label)
-//! - **Large badge**: 16dp height (with label/count)
-//! - **Corner radius**: Fully rounded (50%)
+// ============================================================================
+// Module:       badge
+// Description:  Material 3 small (dot) and large (labelled) badges.
+//
+// Dependencies: egui; crate::{tokens, MaterialTheme}
+// ============================================================================
 
-use crate::theme::get_global_color;
-use egui::{ecolor::Color32, pos2, FontId, Rect, Response, Sense, Ui, Vec2, Widget};
+//! Material Design 3 badges.
+//!
+//! Values from Compose's `BadgeTokens.kt` and `Badge.kt`:
+//!
+//! - Small badge (a dot): 6 across (`BadgeTokens.Size`), fully round
+//!   (`Shape` = `CornerFull`).
+//! - Large badge: 16 high and at least 16 wide (`LargeSize`), fully round
+//!   (`LargeShape`), 4 of horizontal padding
+//!   (`BadgeWithContentHorizontalPadding`), LabelSmall text
+//!   (`LargeLabelTextFont`). [`MaterialBadge::count`] caps at "999+", the
+//!   four characters M3 allows.
+//! - Colours: `error` container, `onError` text (`Color`, `LargeColor`,
+//!   `LargeLabelTextColor`).
+//! - Placement on an anchor (`BadgedBox`): a dot's start edge sits 6 in from
+//!   the anchor's end edge and its top on the anchor's top
+//!   (`BadgeOffset`); a large badge's start edge sits 12 in from the end
+//!   (`BadgeWithContentHorizontalOffset`) and it overlaps the anchor by 14
+//!   vertically (`BadgeWithContentVerticalOffset`), so it rises 2 above it.
+//!
+//! [`MaterialBadge::show_on`] also appends the badge's text (or its
+//! [`description`](MaterialBadge::description)) to the anchor's
+//! accessibility label, so a screen reader reads "Inbox, 3 new messages".
 
-/// Badge color variants following Material Design 3 specifications
+use std::sync::Arc;
+
+use egui::{
+    Color32, Galley, IdSalt, Pos2, Rect, Response, Role, Sense, Ui, Vec2, Widget, WidgetInfo,
+};
+
+use crate::tokens::{ColorRole, TypeRole};
+use crate::MaterialTheme;
+
+/// `BadgeTokens.Size`: the small badge (dot), 6.
+const DOT_SIZE: f32 = 6.0;
+/// `BadgeTokens.LargeSize`: the large badge's height and minimum width, 16.
+const LARGE_SIZE: f32 = 16.0;
+/// `BadgeWithContentHorizontalPadding`: 4 either side of the text.
+const HORIZONTAL_PADDING: f32 = 4.0;
+/// `BadgeWithContentHorizontalOffset`: a large badge starts 12 in from
+/// the anchor's end edge.
+const WITH_CONTENT_HORIZONTAL_OFFSET: f32 = 12.0;
+/// `BadgeWithContentVerticalOffset`: a large badge overlaps the anchor's
+/// top by 14.
+const WITH_CONTENT_VERTICAL_OFFSET: f32 = 14.0;
+/// `BadgeOffset`: a dot starts 6 in from the anchor's end edge and
+/// overlaps its top by 6.
+const DOT_OFFSET: f32 = 6.0;
+/// The largest number [`MaterialBadge::count`] shows; above it the badge
+/// reads "999+".
+pub const MAX_COUNT: u32 = 999;
+/// What a dot adds to its anchor's accessibility label when it has no
+/// [`description`](MaterialBadge::description).
+const DOT_DESCRIPTION: &str = "New";
+
+/// Badge colours.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum BadgeColor {
-    /// Primary color badge (uses primary theme color)
+    /// `primary` container, `onPrimary` text.
     Primary,
-    /// Error/danger color badge (red, for alerts and errors)
+    /// `error` container, `onError` text: the Material 3 badge, and the
+    /// default.
     Error,
-    /// Success color badge (green, for positive states)
+    /// A fixed green. Not a Material 3 colour role.
     Success,
-    /// Warning color badge (yellow/orange, for caution)
+    /// A fixed amber. Not a Material 3 colour role.
     Warning,
-    /// Neutral/gray color badge (for general information)
+    /// A fixed grey. Not a Material 3 colour role.
     Neutral,
-    /// Custom color badge
-    Custom(Color32, Color32), // (background, text)
+    /// A custom container and text colour.
+    Custom(Color32, Color32),
 }
 
-/// Badge size variants
+impl BadgeColor {
+    /// The container and text colours in `theme`.
+    fn colors(self, theme: &MaterialTheme) -> (Color32, Color32) {
+        match self {
+            BadgeColor::Primary => (
+                theme.color(ColorRole::Primary),
+                theme.color(ColorRole::OnPrimary),
+            ),
+            BadgeColor::Error => (
+                theme.color(ColorRole::Error),
+                theme.color(ColorRole::OnError),
+            ),
+            BadgeColor::Success => (Color32::from_rgb(34, 197, 94), Color32::WHITE),
+            BadgeColor::Warning => (Color32::from_rgb(234, 179, 8), Color32::BLACK),
+            BadgeColor::Neutral => (Color32::from_rgb(107, 114, 128), Color32::WHITE),
+            BadgeColor::Custom(container, text) => (container, text),
+        }
+    }
+}
+
+/// Badge size variants.
+#[deprecated(
+    note = "Material 3 has two badge sizes: `MaterialBadge::dot()` (6) and a labelled badge \
+            (16 high); `MaterialBadge::size` no longer changes anything"
+)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum BadgeSize {
-    /// Small badge - 16px height, suitable for compact layouts
+    /// Formerly 16 high.
     Small,
-    /// Regular badge - 20px height, standard size
+    /// Formerly 20 high.
     Regular,
-    /// Large badge - 24px height, for more prominent display
+    /// Formerly 24 high.
     Large,
 }
 
-/// Badge positioning relative to parent element
-#[derive(Clone, Copy, PartialEq, Debug)]
+/// Where a badge sits on its anchor. The corners use Compose's offsets,
+/// mirrored for the left and bottom edges.
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum BadgePosition {
-    /// Top-right corner
+    /// Top-right corner: where Compose's `BadgedBox` puts it.
+    #[default]
     TopRight,
-    /// Top-left corner
+    /// Top-left corner.
     TopLeft,
-    /// Bottom-right corner
+    /// Bottom-right corner.
     BottomRight,
-    /// Bottom-left corner
+    /// Bottom-left corner.
     BottomLeft,
-    /// Custom position with offset
+    /// Centred at this offset from the anchor's centre.
     Custom(Vec2),
 }
 
-/// Material Design badge component.
+/// Material Design 3 badge.
 ///
-/// Badges are small status descriptors for UI elements. They typically appear
-/// as small circles or rounded rectangles with text or numbers, positioned
-/// on or near other elements to provide context or notifications.
-///
-/// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
-/// // Simple numeric badge
-/// ui.add(MaterialBadge::new("5")
-///     .color(BadgeColor::Error));
+/// // On an anchor: placed at its top-right corner, and read as part of
+/// // its label ("Inbox, 3 new messages").
+/// let inbox = ui.button("Inbox");
+/// MaterialBadge::count(3)
+///     .description("3 new messages")
+///     .show_on(ui, &inbox, BadgePosition::TopRight);
 ///
-/// // Text badge
-/// ui.add(MaterialBadge::new("NEW")
-///     .color(BadgeColor::Success)
-///     .size(BadgeSize::Regular));
+/// // A dot.
+/// let updates = ui.button("Updates");
+/// MaterialBadge::dot().show_on(ui, &updates, BadgePosition::TopRight);
 ///
-/// // Badge on an icon (standalone positioning)
-/// ui.add(MaterialBadge::new("3")
-///     .color(BadgeColor::Primary)
-///     .size(BadgeSize::Small));
+/// // Standalone.
+/// ui.add(badge("NEW"));
 /// # });
 /// ```
-#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
+#[must_use = "add it with `ui.add(...)` or `.show_on(ui, &anchor, position)`"]
+#[derive(Clone, Debug)]
 pub struct MaterialBadge {
-    /// Text content of the badge
     content: String,
-    /// Color variant
     color: BadgeColor,
-    /// Size variant
-    size: BadgeSize,
-    /// Whether to show as a dot (no text, just indicator)
     dot: bool,
-    /// Custom position offset when used as overlay
     position_offset: Vec2,
+    id_salt: Option<IdSalt>,
+    description: Option<String>,
 }
 
 impl MaterialBadge {
-    /// Create a new badge with the specified content
-    ///
-    /// # Arguments
-    /// * `content` - Text or number to display in the badge
+    /// A large badge showing `content`. Empty content gives a dot.
     pub fn new(content: impl Into<String>) -> Self {
+        let content = content.into();
         Self {
-            content: content.into(),
+            dot: content.is_empty(),
+            content,
             color: BadgeColor::Error,
-            size: BadgeSize::Regular,
-            dot: false,
-            position_offset: Vec2::new(0.0, 0.0),
+            position_offset: Vec2::ZERO,
+            id_salt: None,
+            description: None,
         }
     }
 
-    /// Create a badge showing just a dot (no text)
+    /// A small badge: a 6 dot with no text.
     pub fn dot() -> Self {
-        Self {
-            content: String::new(),
-            color: BadgeColor::Error,
-            size: BadgeSize::Small,
-            dot: true,
-            position_offset: Vec2::new(0.0, 0.0),
+        Self::new("")
+    }
+
+    /// A large badge showing `count`, or "999+" above [`MAX_COUNT`].
+    pub fn count(count: u32) -> Self {
+        if count > MAX_COUNT {
+            Self::new(format!("{MAX_COUNT}+"))
+        } else {
+            Self::new(count.to_string())
         }
     }
 
-    /// Set the color variant of the badge
+    /// The colour. The default, [`BadgeColor::Error`], is the Material 3
+    /// badge.
     pub fn color(mut self, color: BadgeColor) -> Self {
         self.color = color;
         self
     }
 
-    /// Set the size of the badge
-    pub fn size(mut self, size: BadgeSize) -> Self {
-        self.size = size;
+    /// Formerly picked one of three non-Material sizes; does nothing now.
+    #[deprecated(
+        note = "Material 3 badges have fixed sizes: use `MaterialBadge::dot()` for the 6 dot \
+                and `MaterialBadge::new` / `count` for the 16-high labelled badge"
+    )]
+    #[expect(
+        deprecated,
+        reason = "the deprecated builder names the deprecated size type"
+    )]
+    pub fn size(self, _size: BadgeSize) -> Self {
         self
     }
 
-    /// Set whether to show as a dot indicator
+    /// Show as a dot, hiding the text.
     pub fn as_dot(mut self, dot: bool) -> Self {
         self.dot = dot;
         self
     }
 
-    /// Set a custom position offset for overlay positioning
+    /// Moves the badge by `offset` from where its position puts it.
     pub fn position_offset(mut self, offset: Vec2) -> Self {
         self.position_offset = offset;
         self
     }
 
-    /// Draw the badge as an overlay on a specific rectangle
-    ///
-    /// This is useful for adding badges to other UI elements like buttons or icons.
-    ///
-    /// # Arguments
-    /// * `ui` - The UI context
-    /// * `target_rect` - The rectangle of the element to badge
-    /// * `position` - Where to position the badge relative to the target
+    /// Distinguishes badges whose id would otherwise collide. By default a
+    /// badge on an anchor takes its id from the anchor's rectangle.
+    pub fn id_salt(mut self, salt: impl egui::AsIdSalt) -> Self {
+        self.id_salt = Some(IdSalt::new(&salt));
+        self
+    }
+
+    /// What the badge adds to its anchor's accessibility label, such as
+    /// "3 new messages". Defaults to the badge's text, or "New" for a dot.
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+
+    /// The text a screen reader hears for this badge.
+    fn spoken(&self) -> String {
+        match &self.description {
+            Some(description) => description.clone(),
+            None if self.dot => DOT_DESCRIPTION.to_owned(),
+            None => self.content.clone(),
+        }
+    }
+
+    /// The laid-out label, for a large badge.
+    fn galley(&self, ui: &Ui) -> Option<Arc<Galley>> {
+        (!self.dot).then(|| {
+            let job = TypeRole::LabelSmall.style().layout_job(
+                ui.ctx(),
+                self.content.clone(),
+                Color32::PLACEHOLDER,
+            );
+            ui.painter().layout_job(job)
+        })
+    }
+
+    /// The badge's size for `galley`.
+    fn badge_size(galley: Option<&Arc<Galley>>) -> Vec2 {
+        match galley {
+            Some(galley) => Vec2::new(
+                (galley.size().x + 2.0 * HORIZONTAL_PADDING).max(LARGE_SIZE),
+                LARGE_SIZE,
+            ),
+            None => Vec2::splat(DOT_SIZE),
+        }
+    }
+
+    /// Where a badge of `size` goes on `anchor`.
+    fn placement(&self, anchor: Rect, size: Vec2, position: BadgePosition) -> Rect {
+        let (h, v) = if self.dot {
+            (DOT_OFFSET, DOT_OFFSET)
+        } else {
+            (WITH_CONTENT_HORIZONTAL_OFFSET, WITH_CONTENT_VERTICAL_OFFSET)
+        };
+        let right = anchor.max.x - h;
+        let left = anchor.min.x + h - size.x;
+        let top = anchor.min.y - size.y + v;
+        let bottom = anchor.max.y - v;
+        let min = match position {
+            BadgePosition::TopRight => Pos2::new(right, top),
+            BadgePosition::TopLeft => Pos2::new(left, top),
+            BadgePosition::BottomRight => Pos2::new(right, bottom),
+            BadgePosition::BottomLeft => Pos2::new(left, bottom),
+            BadgePosition::Custom(offset) => anchor.center() + offset - size / 2.0,
+        };
+        Rect::from_min_size(min + self.position_offset, size)
+    }
+
+    fn paint(&self, ui: &Ui, rect: Rect, galley: Option<Arc<Galley>>) {
+        let theme = MaterialTheme::of(ui.ctx());
+        let (container, text) = self.color.colors(&theme);
+        let radius = (rect.height() / 2.0).round().clamp(0.0, 255.0) as u8;
+        ui.painter().rect_filled(rect, radius, container);
+        if let Some(galley) = galley {
+            let pos = rect.center() - galley.size() / 2.0;
+            ui.painter().galley(pos, galley, text);
+        }
+    }
+
+    /// Paints the badge on `target_rect` at `position` and returns its
+    /// (hover-only) response. Prefer [`show_on`](Self::show_on), which
+    /// also makes the badge part of the anchor's accessibility label.
     pub fn draw_on(&self, ui: &mut Ui, target_rect: Rect, position: BadgePosition) -> Response {
-        let (bg_color, text_color) = self.get_colors();
-        let (min_width, min_height, font_size) = self.get_dimensions();
-
-        let painter = ui.painter();
-
-        // Calculate badge size
-        let text_galley = if !self.dot && !self.content.is_empty() {
-            Some(painter.layout_no_wrap(
-                self.content.clone(),
-                FontId::proportional(font_size),
-                text_color,
-            ))
-        } else {
-            None
+        let galley = self.galley(ui);
+        let rect = self.placement(target_rect, Self::badge_size(galley.as_ref()), position);
+        let id = match self.id_salt {
+            Some(salt) => ui.scope_id().with_salt(salt),
+            None => ui.scope_id().with((
+                "egui_material3::badge",
+                target_rect.min.x.to_bits(),
+                target_rect.min.y.to_bits(),
+                target_rect.max.x.to_bits(),
+                target_rect.max.y.to_bits(),
+            )),
         };
-
-        let badge_width = if let Some(ref galley) = text_galley {
-            (galley.size().x + min_width).max(min_height)
-        } else {
-            min_height
-        };
-        let badge_height = min_height;
-
-        // Calculate badge position - positioned to overlap the icon edges
-        // Using 95% overlap to make badges appear extremely close and tightly over the icon
-        let overlap_factor = 0.95;
-        let badge_pos = match position {
-            BadgePosition::TopRight => pos2(
-                target_rect.max.x - badge_width * (1.0 - overlap_factor),
-                target_rect.min.y - badge_height * (1.0 - overlap_factor),
-            ),
-            BadgePosition::TopLeft => pos2(
-                target_rect.min.x - badge_width * overlap_factor,
-                target_rect.min.y - badge_height * (1.0 - overlap_factor),
-            ),
-            BadgePosition::BottomRight => pos2(
-                target_rect.max.x - badge_width * (1.0 - overlap_factor),
-                target_rect.max.y - badge_height * (1.0 - overlap_factor),
-            ),
-            BadgePosition::BottomLeft => pos2(
-                target_rect.min.x - badge_width * overlap_factor,
-                target_rect.max.y - badge_height * (1.0 - overlap_factor),
-            ),
-            BadgePosition::Custom(offset) => pos2(
-                target_rect.center().x + offset.x,
-                target_rect.center().y + offset.y,
-            ),
-        };
-
-        let badge_pos = pos2(
-            badge_pos.x + self.position_offset.x,
-            badge_pos.y + self.position_offset.y,
-        );
-
-        let badge_rect = Rect::from_center_size(badge_pos, Vec2::new(badge_width, badge_height));
-
-        // Draw badge background
-        painter.rect_filled(badge_rect, badge_height / 2.0, bg_color);
-
-        // Draw text if not a dot
-        if let Some(galley) = text_galley {
-            painter.galley(
-                pos2(
-                    badge_rect.center().x - galley.size().x / 2.0,
-                    badge_rect.center().y - galley.size().y / 2.0,
-                ),
-                galley,
-                text_color,
-            );
-        }
-
-        ui.interact(badge_rect, ui.id().with("badge"), Sense::hover())
+        self.paint(ui, rect, galley);
+        ui.interact(rect, id, Sense::hover())
     }
 
-    fn get_colors(&self) -> (Color32, Color32) {
-        match self.color {
-            BadgeColor::Primary => {
-                let bg = get_global_color("primary");
-                let text = get_global_color("onPrimary");
-                (bg, text)
-            }
-            BadgeColor::Error => (
-                Color32::from_rgb(239, 68, 68), // red-500
-                Color32::WHITE,
-            ),
-            BadgeColor::Success => (
-                Color32::from_rgb(34, 197, 94), // green-500
-                Color32::WHITE,
-            ),
-            BadgeColor::Warning => (
-                Color32::from_rgb(234, 179, 8), // yellow-500
-                Color32::WHITE,
-            ),
-            BadgeColor::Neutral => (
-                Color32::from_rgb(107, 114, 128), // gray-500
-                Color32::WHITE,
-            ),
-            BadgeColor::Custom(bg, text) => (bg, text),
-        }
-    }
-
-    fn get_dimensions(&self) -> (f32, f32, f32) {
-        // Returns (padding_width, min_height, font_size)
-        match self.size {
-            BadgeSize::Small => {
-                if self.dot {
-                    (0.0, 8.0, 0.0) // 8px dot
-                } else {
-                    (4.0, 16.0, 10.0) // text-2xs equivalent
-                }
-            }
-            BadgeSize::Regular => {
-                if self.dot {
-                    (0.0, 10.0, 0.0) // 10px dot
-                } else {
-                    (6.0, 20.0, 12.0) // text-xs equivalent
-                }
-            }
-            BadgeSize::Large => {
-                if self.dot {
-                    (0.0, 12.0, 0.0) // 12px dot
-                } else {
-                    (8.0, 24.0, 14.0) // text-sm equivalent
-                }
-            }
-        }
-    }
-}
-
-impl Widget for MaterialBadge {
-    fn ui(self, ui: &mut Ui) -> Response {
-        let (bg_color, text_color) = self.get_colors();
-        let (min_width, min_height, font_size) = self.get_dimensions();
-
-        // Calculate badge size
-        let text_galley = if !self.dot && !self.content.is_empty() {
-            Some(ui.painter().layout_no_wrap(
-                self.content.clone(),
-                FontId::proportional(font_size),
-                text_color,
-            ))
-        } else {
-            None
-        };
-
-        let badge_width = if let Some(ref galley) = text_galley {
-            (galley.size().x + min_width).max(min_height)
-        } else {
-            min_height
-        };
-        let badge_height = min_height;
-
-        let desired_size = Vec2::new(badge_width, badge_height);
-        let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
-
-        // Draw badge background
-        ui.painter().rect_filled(rect, badge_height / 2.0, bg_color);
-
-        // Draw text if not a dot
-        if let Some(galley) = text_galley {
-            ui.painter().galley(
-                pos2(
-                    rect.center().x - galley.size().x / 2.0,
-                    rect.center().y - galley.size().y / 2.0,
-                ),
-                galley,
-                text_color,
-            );
-        }
-
+    /// Paints the badge on `anchor` at `position` and appends its text
+    /// (or [`description`](Self::description)) to the anchor's
+    /// accessibility label. Call it right after adding the anchor.
+    pub fn show_on(self, ui: &mut Ui, anchor: &Response, position: BadgePosition) -> Response {
+        let response = self.draw_on(ui, anchor.rect, position);
+        let spoken = self.spoken();
+        ui.ctx().accesskit_node_builder(anchor.id, |node| {
+            let label = match node.label() {
+                Some(label) if !label.is_empty() => format!("{label}, {spoken}"),
+                Some(_) | None => spoken,
+            };
+            node.set_label(label);
+        });
         response
     }
 }
 
-/// Convenience function to create a badge
+impl Widget for MaterialBadge {
+    /// A standalone badge, reported to accessibility as a label.
+    fn ui(self, ui: &mut Ui) -> Response {
+        let galley = self.galley(ui);
+        let (rect, response) =
+            ui.allocate_exact_size(Self::badge_size(galley.as_ref()), Sense::hover());
+        self.paint(ui, rect, galley);
+        let spoken = self.spoken();
+        response.widget_info(|| WidgetInfo::labeled(Role::Label, true, spoken.clone()));
+        response
+    }
+}
+
+/// Creates a large badge showing `content`.
 ///
-/// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
-/// ui.add(badge("5").color(BadgeColor::Error));
+/// ui.add(badge("5"));
 /// # });
 /// ```
 pub fn badge(content: impl Into<String>) -> MaterialBadge {
     MaterialBadge::new(content)
 }
 
-/// Convenience function to create a dot badge
+/// Creates a small (dot) badge.
 ///
-/// # Example
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
-/// ui.add(badge_dot().color(BadgeColor::Success));
+/// ui.add(badge_dot());
 /// # });
 /// ```
 pub fn badge_dot() -> MaterialBadge {

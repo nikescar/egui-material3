@@ -116,7 +116,7 @@ impl DashCounterWindow {
                     .card("Updates", 5, 15)
                     .card_with_description("Disabled", 8, 20, "disabled", "installed")
                     .on_click({
-                        let categories = vec!["Installed", "System", "Bloat", "Updates", "Disabled"];
+                        let categories = ["Installed", "System", "Bloat", "Updates", "Disabled"];
                         move |index| {
                             if index < categories.len() {
                                 println!("Clicked on card: {}", categories[index]);

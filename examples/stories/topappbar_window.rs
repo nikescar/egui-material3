@@ -481,7 +481,7 @@ impl TopAppBarWindow {
             .leading_icon("help")
             .on_click(|| println!("Help & Feedback clicked!"));
 
-        let mut menu_builder = menu("topappbar_nav_menu", &mut self.menu_open)
+        let mut menu_builder = menu(egui::Id::unique("topappbar_nav_menu"), &mut self.menu_open)
             .item(home_item)
             .item(profile_item)
             .item(menu_item("").divider_after(true))

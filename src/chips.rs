@@ -1,52 +1,112 @@
-//! Material Design 3 Chip Components
-//!
-//! This module implements chip controls following Material Design 3 color system.
-//!
-//! # M3 Color Role Usage
-//!
-//! ## Filter Chip - Unselected (Default)
-//! - **Transparent background**: Shows parent surface
-//! - **outlineVariant**: Border stroke (1dp)
-//! - **onSurfaceVariant**: Text and remove icon
-//! - **primary**: Leading icon
-//! - **State layers**: onSurfaceVariant @ 8% (hover), 12% (press)
-//!
-//! ## Filter Chip - Selected
-//! - **secondaryContainer**: Chip background (selected state)
-//! - **onSecondaryContainer**: Text and remove icon on selected background
-//! - **primary**: Checkmark icon
-//! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
-//!
-//! ## Elevated Chip (Assist/Suggestion)
-//! - **surfaceContainerLow**: Chip background with elevation
-//! - **onSurfaceVariant**: Text and remove icon
-//! - **primary**: Leading icon
-//! - **State layers**: onSurfaceVariant @ 8% (hover), 12% (press)
-//! - **Shadow**: 1dp elevation shadow
-//!
-//! ## Input Chip (Default/Flat)
-//! - **Transparent background**: Shows parent surface
-//! - **outlineVariant**: Border stroke (1dp)
-//! - **onSurfaceVariant**: Text, remove icon
-//! - **primary**: Leading icon
-//! - **State layers**: onSurfaceVariant @ 8% (hover), 12% (press)
-//!
-//! ## Disabled State
-//! - **onSurface @ 12%**: Background and border
-//! - **onSurface @ 38%**: Text and icons (hard disabled)
-//! - **onSurface @ 60%**: Text (soft disabled)
-//!
-//! ## Dimensions
-//! - **Height**: 32dp (standard), 24dp (small)
-//! - **Corner radius**: 8dp
-//! - **Icon size**: 18dp (in 24dp chip), 24dp (in 32dp chip, displayed at 20dp for balance)
-//! - **Touch target**: 48x48dp minimum
+// ============================================================================
+// Module:       chips
+// Description:  Material 3 assist, filter, input and suggestion chips, and chip sets.
+//
+// Dependencies: egui; crate::{a11y, icon, image_utils, paint, tokens, MaterialTheme}
+// ============================================================================
 
-use crate::{get_global_color, image_utils};
-use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2, Widget};
+//! Material Design 3 chips: assist, filter, input and suggestion.
+//!
+//! Every value comes from the Jetpack Compose material3 token files
+//! (`AssistChipTokens.kt`, `FilterChipTokens.kt`, `InputChipTokens.kt`,
+//! `SuggestionChipTokens.kt`) and from `Chip.kt` for the layout values
+//! Compose does not tokenise (content padding, spacing). The baseline
+//! token set is implemented; [`MaterialChip::expressive`] switches to the
+//! M3 Expressive shapes from `ChipsTokens.kt`.
+//!
+//! # Geometry
+//!
+//! - Height 32 (`ContainerHeight`), corner 8 (`ContainerShape` =
+//!   `CornerSmall`).
+//! - Leading and trailing icons 18 (`IconSize`, `LeadingIconSize`,
+//!   `TrailingIconSize`); input-chip avatar 24, fully round (`AvatarSize`,
+//!   `AvatarShape` = `CornerFull`).
+//! - 8 between the icon and the label (`HorizontalSpacing`). The label sits
+//!   16 from an edge with no icon (12 on input chips) and the icon 8 from
+//!   the edge (4 for an input-chip avatar).
+//!
+//! # Colours
+//!
+//! | Chip | Container | Label | Leading icon |
+//! |---|---|---|---|
+//! | Assist | transparent, `outlineVariant` outline | `onSurface` | `primary` |
+//! | Suggestion | transparent, `outlineVariant` outline | `onSurfaceVariant` | `primary` |
+//! | Filter | transparent, `outlineVariant` outline | `onSurfaceVariant` | `primary` |
+//! | Filter, selected | `secondaryContainer` | `onSecondaryContainer` | `onSecondaryContainer` |
+//! | Input | transparent, `outlineVariant` outline | `onSurfaceVariant` | `onSurfaceVariant` |
+//! | Input, selected | `secondaryContainer` | `onSecondaryContainer` | `primary` |
+//!
+//! Elevated chips fill with `surfaceContainerLow` and sit at Level 1,
+//! rising to Level 2 on hover. Disabled chips keep a transparent container
+//! with an `onSurface` outline at 12 % (elevated and selected ones fill
+//! with `onSurface` at 12 %), and draw their content in `onSurface` at 38 %.
+//!
+//! # Accessibility
+//!
+//! Filter chips, and input chips bound with [`MaterialChip::selected`], are
+//! checkboxes with a toggled state (Compose's `Role.Checkbox`); the others
+//! are buttons. A removable chip's trailing icon is a separate button
+//! labelled "Remove …", and Delete or Backspace on the focused chip removes
+//! it too.
+
+use std::hash::{Hash, Hasher};
+use std::sync::Arc;
+
+use egui::epaint::RectShape;
+use egui::load::SizedTexture;
+use egui::text::LayoutJob;
+use egui::{
+    Color32, CornerRadius, InnerResponse, Key, Pos2, Rect, Response, Role, Sense, Shape, Stroke,
+    StrokeKind, TextureHandle, Ui, Vec2, Widget,
+};
+
+use crate::icon::{paint_icon, Icon, SymbolOptions};
+use crate::image_utils;
+use crate::paint::{paint_elevation, paint_focus_ring_if_focused, paint_state_layer};
+use crate::tokens::{
+    animate_value_with_spring, ColorRole, CornerSize, Elevation, InteractionState, SpringSpeed,
+    TypeRole,
+};
+use crate::MaterialTheme;
+
+/// `ContainerHeight` in every chip token file: 32.
+const CONTAINER_HEIGHT: f32 = 32.0;
+/// The height of [`MaterialChip::small`] chips. Not a Material 3 size: a
+/// compact variant kept for dense layouts.
+const SMALL_HEIGHT: f32 = 24.0;
+/// `AssistChipTokens.IconSize`, `FilterChipTokens.IconSize`,
+/// `InputChipTokens.LeadingIconSize` / `TrailingIconSize`,
+/// `SuggestionChipTokens.LeadingIconSize`: 18.
+const ICON_SIZE: f32 = 18.0;
+/// `InputChipTokens.AvatarSize`: 24.
+const AVATAR_SIZE: f32 = 24.0;
+/// `AssistChipDefaults.ContentPadding` (and the filter and suggestion
+/// ones): horizontal 8.
+const CONTENT_PADDING: f32 = 8.0;
+/// `inputChipPadding` in `Chip.kt`: 4 at the start next to an avatar or
+/// with no leading icon, and at the end with no trailing icon.
+const INPUT_COMPACT_PADDING: f32 = 4.0;
+/// `*ChipDefaults.HorizontalSpacing`: 8 between icon and label.
+const HORIZONTAL_SPACING: f32 = 8.0;
+/// `FlatOutlineWidth` / `FlatUnselectedOutlineWidth` /
+/// `UnselectedOutlineWidth`: 1. Selected chips have none
+/// (`FlatSelectedOutlineWidth` 0).
+const OUTLINE_WIDTH: f32 = 1.0;
+/// `ElevatedDisabledContainerOpacity`, `FlatDisabledSelectedContainerOpacity`,
+/// `InputChipTokens.DisabledSelectedContainerOpacity`: 0.12.
+const DISABLED_CONTAINER_OPACITY: f32 = 0.12;
+/// `FlatDisabledOutlineOpacity`, `FlatDisabledUnselectedOutlineOpacity`,
+/// `DisabledUnselectedOutlineOpacity`: 0.12.
+const DISABLED_OUTLINE_OPACITY: f32 = 0.12;
+/// `DisabledLabelTextOpacity`, `DisabledIconOpacity`,
+/// `DisabledAvatarOpacity`: 0.38.
+const DISABLED_CONTENT_OPACITY: f32 = 0.38;
+/// Space between chips in a [`chip_set`]. Compose leaves the `FlowRow`
+/// spacing to the app; the M3 chip guidelines use 8.
+pub const CHIP_SET_SPACING: f32 = 8.0;
 
 /// Material Design chip variants following Material Design 3 specifications
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ChipVariant {
     /// Assist chips help users take actions or get information about their current context
     Assist,
@@ -58,7 +118,29 @@ pub enum ChipVariant {
     Suggestion,
 }
 
-/// Types of icons that can be displayed in chips
+impl ChipVariant {
+    /// Every variant.
+    pub const ALL: [ChipVariant; 4] = [
+        ChipVariant::Assist,
+        ChipVariant::Filter,
+        ChipVariant::Input,
+        ChipVariant::Suggestion,
+    ];
+
+    /// Whether the variant has a selected state (filter and input chips).
+    pub const fn is_selectable(self) -> bool {
+        match self {
+            ChipVariant::Filter | ChipVariant::Input => true,
+            ChipVariant::Assist | ChipVariant::Suggestion => false,
+        }
+    }
+}
+
+/// Types of icons that can be displayed in chips.
+#[deprecated(
+    note = "chips take any `egui_material3::icon::Icon` through `MaterialChip::leading_icon`, \
+            or PNG bytes through `leading_icon_png`"
+)]
 #[derive(Clone)]
 pub enum IconType {
     /// Material Design icon using icon name or unicode
@@ -71,69 +153,58 @@ pub enum IconType {
     Texture(TextureHandle),
 }
 
-/// Material Design chip component following Material Design 3 specifications
+/// The leading image of a chip.
+enum ChipImage {
+    /// A symbol, SVG or texture, drawn by [`paint_icon`].
+    Icon(Icon),
+    /// PNG bytes, decoded into a texture on first use.
+    Png(Arc<[u8]>),
+}
+
+/// Material Design 3 chip.
 ///
 /// Chips are compact elements that represent an input, attribute, or action.
-/// They allow users to enter information, make selections, filter content, or trigger actions.
 ///
-/// ## Usage Examples
 /// ```rust
+/// # use egui_material3::*;
 /// # egui::__run_test_ui(|ui| {
-/// // Assist chip - helps users with contextual actions
-/// if ui.add(MaterialChip::assist("Settings")).clicked() {
+/// // Assist chip: a contextual action.
+/// if ui.add(MaterialChip::assist("Settings").leading_icon("settings")).clicked() {
 ///     // Open settings
 /// }
 ///
-/// // Filter chip - for filtering content
-/// let mut filter_active = false;
-/// ui.add(MaterialChip::filter("Photos")
-///     .selected(&mut filter_active));
+/// // Filter chip: toggles `photos` when clicked.
+/// let mut photos = false;
+/// ui.add(MaterialChip::filter("Photos", &mut photos));
 ///
-/// // Input chip - represents entered data
-/// ui.add(MaterialChip::input("john@example.com")
-///     .removable(true));
+/// // Input chip with a separate remove target.
+/// if MaterialChip::input("john@example.com").removable(true).show(ui).removed() {
+///     // Drop the address
+/// }
 ///
-/// // Suggestion chip - suggests actions or content
+/// // Suggestion chip.
 /// ui.add(MaterialChip::suggestion("Try this feature"));
 /// # });
 /// ```
-///
-/// ## Material Design Spec
-/// - Height: 32dp
-/// - Corner radius: 8dp
-/// - Text: Label Large (14sp/500 weight)
-/// - Touch target: Minimum 48x48dp
+#[must_use = "add it with `ui.add(...)` or `.show(ui)`"]
 pub struct MaterialChip<'a> {
-    /// Text content displayed on the chip
     text: String,
-    /// Which type of chip this is (affects styling and behavior)
     variant: ChipVariant,
-    /// Optional mutable reference to selection state (for filter chips)
     selected: Option<&'a mut bool>,
-    /// Whether the chip is interactive
     enabled: bool,
-    /// Whether the chip is soft-disabled (different visual treatment)
     soft_disabled: bool,
-    /// Whether the chip has elevation shadow
     elevated: bool,
-    /// Whether the chip can be removed (shows X icon)
     removable: bool,
-    /// Optional leading icon to display
-    leading_icon: Option<IconType>,
-    /// Whether to use avatar-style rounded appearance
+    leading: Option<ChipImage>,
     avatar: bool,
-    /// Whether to use small size (24dp height instead of 32dp)
     is_small: bool,
-    /// Optional action callback when chip is clicked
+    expressive: bool,
     action: Option<Box<dyn Fn() + 'a>>,
+    on_remove: Option<Box<dyn Fn() + 'a>>,
 }
 
 impl<'a> MaterialChip<'a> {
     /// Create a new chip with specified text and variant
-    ///
-    /// ## Parameters
-    /// - `text`: Text to display on the chip
-    /// - `variant`: Type of chip (Assist, Filter, Input, Suggestion)
     pub fn new(text: impl Into<String>, variant: ChipVariant) -> Self {
         Self {
             text: text.into(),
@@ -143,171 +214,134 @@ impl<'a> MaterialChip<'a> {
             soft_disabled: false,
             elevated: false,
             removable: false,
-            leading_icon: None,
-            avatar: false, // regular chips are more rectangular by default
+            leading: None,
+            avatar: false,
             is_small: false,
+            expressive: false,
             action: None,
+            on_remove: None,
         }
     }
 
-    /// Create an assist chip for contextual actions
-    ///
-    /// Assist chips help users take actions or get information about their current context.
-    /// They should appear dynamically and contextually in the UI.
-    ///
-    /// ## Material Design Usage
-    /// - Display contextually relevant actions
-    /// - Usually triggered by user actions or context changes  
-    /// - Should not be persistent in the interface
+    /// An assist chip: a contextual action or piece of information.
     pub fn assist(text: impl Into<String>) -> Self {
         Self::new(text, ChipVariant::Assist)
     }
 
-    /// Create a filter chip for content filtering
-    ///
-    /// Filter chips are used for filtering content and are typically displayed in a set.
-    /// They can be selected/deselected to refine displayed content.
-    ///
-    /// ## Parameters
-    /// - `text`: Label for the filter option
-    /// - `selected`: Mutable reference to selection state
-    ///
-    /// ## Material Design Usage
-    /// - Group related filter options together
-    /// - Allow multiple selections for broad filtering
-    /// - Provide clear visual feedback for selected state
+    /// A filter chip bound to `selected`: clicking it (or Space / Enter
+    /// while focused) toggles the value. A selected filter chip shows a
+    /// check mark in place of its leading icon.
     pub fn filter(text: impl Into<String>, selected: &'a mut bool) -> Self {
-        let mut chip = Self::new(text, ChipVariant::Filter);
-        chip.selected = Some(selected);
-        chip
+        Self::new(text, ChipVariant::Filter).selected(selected)
     }
 
-    /// Create an input chip representing user-entered data
-    ///
-    /// Input chips represent discrete pieces of information entered by a user,
-    /// such as tags, contacts, or other structured data.
-    ///
-    /// ## Material Design Usage
-    /// - Represent complex entities in a compact form
-    /// - Often removable to allow editing of input data
-    /// - Used in forms and data entry interfaces
+    /// An input chip: a piece of information the user entered (a tag, a
+    /// contact). Often [`removable`](Self::removable) and with an
+    /// [`avatar`](Self::avatar).
     pub fn input(text: impl Into<String>) -> Self {
         Self::new(text, ChipVariant::Input)
     }
 
-    /// Create a suggestion chip that provides actionable content suggestions
-    ///
-    /// Suggestion chips are used to help users discover relevant actions or content.
-    /// They can be used in conjunction with dynamic features like autocomplete or
-    /// content recommendations.
+    /// A suggestion chip: a suggested reply or search.
     pub fn suggestion(text: impl Into<String>) -> Self {
         Self::new(text, ChipVariant::Suggestion)
     }
 
-    /// Set whether the chip should have elevation (shadow) effect
-    ///
-    /// Elevated chips have a surface-container-high background and a shadow
-    /// to indicate elevation. This is typically used for assist and suggestion chips.
+    /// Binds the selected state of a filter or input chip to `selected`;
+    /// a click toggles it. Assist and suggestion chips have no selected
+    /// state in Material 3 and ignore the binding.
+    pub fn selected(mut self, selected: &'a mut bool) -> Self {
+        self.selected = Some(selected);
+        self
+    }
+
+    /// An elevated chip: a `surfaceContainerLow` container at Level 1
+    /// (Level 2 on hover) instead of an outline.
     pub fn elevated(mut self, elevated: bool) -> Self {
         self.elevated = elevated;
         self
     }
 
-    /// Enable or disable the chip
-    ///
-    /// Disabled chips have a different visual treatment and do not respond to
-    /// user interactions. Soft-disabled chips are still visible but appear
-    /// with reduced opacity.
+    /// Enable or disable the chip. A disabled chip takes no clicks and no
+    /// focus, and draws in the disabled colours.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         if enabled {
-            self.soft_disabled = false; // if enabled, can't be soft disabled
+            self.soft_disabled = false;
         }
         self
     }
 
-    /// Set the chip as soft-disabled
-    ///
-    /// Soft-disabled chips have a different visual treatment (e.g., lighter opacity)
-    /// compared to hard-disabled chips. They are still interactive but indicate
-    /// that the action is unavailable.
+    /// Soft-disabled: drawn and reported as disabled and takes no clicks,
+    /// but stays in the keyboard focus order so it can be discovered.
     pub fn soft_disabled(mut self, soft_disabled: bool) -> Self {
         self.soft_disabled = soft_disabled;
         if soft_disabled {
-            self.enabled = false; // soft disabled means not enabled
+            self.enabled = false;
         }
         self
     }
 
-    /// Create a small variant of the chip (24dp height instead of 32dp)
-    ///
-    /// Small chips are more compact and useful when space is limited or when
-    /// displaying many chips in a constrained area.
+    /// A compact 24-high chip. Not a Material 3 size.
     pub fn small(mut self) -> Self {
         self.is_small = true;
         self
     }
 
-    /// Set whether the chip can be removed
-    ///
-    /// Removable chips show an X icon that allows users to remove the chip
-    /// from the UI. This is useful for input and filter chips.
+    /// Shows a trailing remove icon with its own hit target. Clicking it,
+    /// or pressing Delete or Backspace while the chip has focus, reports
+    /// [`ChipResponse::removed`] and calls [`on_remove`](Self::on_remove).
     pub fn removable(mut self, removable: bool) -> Self {
         self.removable = removable;
         self
     }
 
-    /// Set a leading icon for the chip using a Material icon name
-    ///
-    /// The icon will be displayed on the left side of the chip's text.
-    /// This is commonly used for assist and filter chips.
-    pub fn leading_icon(mut self, icon: impl Into<String>) -> Self {
-        self.leading_icon = Some(IconType::MaterialIcon(icon.into()));
+    /// The leading icon: a Material Symbols name (`"event"`), a codepoint,
+    /// or any [`Icon`].
+    pub fn leading_icon(mut self, icon: impl Into<Icon>) -> Self {
+        self.leading = Some(ChipImage::Icon(icon.into()));
         self
     }
 
-    /// Set a leading icon for the chip using SVG data
-    ///
-    /// The SVG data will be converted to a texture and displayed on the left
-    /// side of the chip's text. This allows for custom icons with scalable
-    /// vector graphics.
+    /// The leading icon from an SVG document. A monochrome SVG takes the
+    /// chip's icon colour; a multi-colour one keeps its colours.
     pub fn leading_icon_svg(mut self, svg_data: impl Into<String>) -> Self {
-        self.leading_icon = Some(IconType::SvgData(svg_data.into()));
+        self.leading = Some(ChipImage::Icon(Icon::svg(svg_data.into().into_bytes())));
         self
     }
 
-    /// Set a leading icon for the chip using PNG image data
-    ///
-    /// The PNG image data will be converted to a texture and displayed on the left
-    /// side of the chip's text. This is useful for using raster images as icons.
+    /// The leading icon from PNG bytes, drawn in its own colours.
     pub fn leading_icon_png(mut self, png_bytes: Vec<u8>) -> Self {
-        self.leading_icon = Some(IconType::PngBytes(png_bytes));
+        self.leading = Some(ChipImage::Png(png_bytes.into()));
         self
     }
 
-    /// Set a pre-loaded texture as the leading icon for the chip
-    ///
-    /// This allows using any texture as an icon, without the need to convert
-    /// from image data. The texture should be created and managed externally.
+    /// The leading icon from a loaded texture, drawn in its own colours.
     pub fn leading_icon_texture(mut self, texture: TextureHandle) -> Self {
-        self.leading_icon = Some(IconType::Texture(texture));
+        self.leading = Some(ChipImage::Icon(Icon::Texture(SizedTexture::from_handle(
+            &texture,
+        ))));
         self
     }
 
-    /// Set whether to use avatar-style rounded appearance for the chip
-    ///
-    /// Avatar-style chips have a more pronounced roundness, making them suitable
-    /// for representing users or profile-related content. Regular chips are more
-    /// rectangular.
+    /// Draws the leading image as an avatar: 24, fully round, in its own
+    /// colours (`InputChipTokens.AvatarSize`, `AvatarShape`). Avatars
+    /// belong on input chips, which then start 4 from the edge.
     pub fn avatar(mut self, avatar: bool) -> Self {
         self.avatar = avatar;
         self
     }
 
-    /// Set a callback function to be called when the chip is clicked
-    ///
-    /// This allows defining custom actions for each chip, such as navigating to
-    /// a different view, opening a dialog, or triggering any other behavior.
+    /// M3 Expressive shapes (`ChipsTokens.kt`): corner 12 when unselected,
+    /// fully round when selected, 8 while pressed, morphing with the fast
+    /// spatial spring of the theme's motion scheme.
+    pub fn expressive(mut self, expressive: bool) -> Self {
+        self.expressive = expressive;
+        self
+    }
+
+    /// Called when the chip is clicked (after a filter or input chip has
+    /// toggled its selected state).
     pub fn on_click<F>(mut self, f: F) -> Self
     where
         F: Fn() + 'a,
@@ -315,360 +349,697 @@ impl<'a> MaterialChip<'a> {
         self.action = Some(Box::new(f));
         self
     }
-}
 
-/// Resolved chip colors for rendering
-struct ChipColors {
-    bg: Color32,
-    border: Color32,
-    text: Color32,
-    icon: Color32,
-    delete_icon: Color32,
-    state_layer: Color32,
-}
-
-/// Resolve chip colors per Material Design 3 spec (_ChipDefaultsM3)
-fn resolve_chip_colors(
-    variant: ChipVariant,
-    is_selected: bool,
-    enabled: bool,
-    soft_disabled: bool,
-    elevated: bool,
-    is_hovered: bool,
-    is_pressed: bool,
-) -> ChipColors {
-    // M3 Color Roles - Chip Variants
-    let on_surface = get_global_color("onSurface"); // Disabled background/text
-    let on_surface_variant = get_global_color("onSurfaceVariant"); // Default text, remove icon, state layers
-    let outline_variant = get_global_color("outlineVariant"); // Border for flat chips
-    let surface_container_low = get_global_color("surfaceContainerLow"); // Elevated chip background
-    let secondary_container = get_global_color("secondaryContainer"); // Selected filter chip background
-    let on_secondary_container = get_global_color("onSecondaryContainer"); // Text/icon on selected filter chip
-    let primary = get_global_color("primary"); // Leading icon, selected checkmark
-
-    // Disabled states (M3 spec: consistent across all chip variants)
-    if !enabled {
-        let (bg, border, text) = if soft_disabled {
-            // Soft disabled: onSurface @ 12% background, 60% text
-            (
-                on_surface.linear_multiply(0.12),
-                Color32::TRANSPARENT,
-                on_surface.linear_multiply(0.60),
-            )
-        } else {
-            // Hard disabled: onSurface @ 12% background/border, 38% text (M3 spec)
-            (
-                on_surface.linear_multiply(0.12),
-                on_surface.linear_multiply(0.12),
-                on_surface.linear_multiply(0.38),
-            )
-        };
-        return ChipColors {
-            bg,
-            border,
-            text,
-            icon: text,
-            delete_icon: text,
-            state_layer: Color32::TRANSPARENT,
-        };
+    /// Called when a [`removable`](Self::removable) chip is removed.
+    pub fn on_remove<F>(mut self, f: F) -> Self
+    where
+        F: Fn() + 'a,
+    {
+        self.on_remove = Some(Box::new(f));
+        self
     }
 
-    // M3 state layers: hover @ 8%, press @ 12%
-    let state_layer_base = if is_selected {
-        on_secondary_container // Selected chips use onSecondaryContainer for state layers
-    } else {
-        on_surface_variant // Unselected chips use onSurfaceVariant for state layers
-    };
-    let state_layer = if is_pressed {
-        // Pressed state: 12% opacity (M3 interaction state)
-        state_layer_base.linear_multiply(0.12)
-    } else if is_hovered {
-        // Hover state: 8% opacity (M3 interaction state)
-        state_layer_base.linear_multiply(0.08)
+    /// Adds the chip and returns its response together with the remove
+    /// target's.
+    pub fn show(self, ui: &mut Ui) -> ChipResponse {
+        show_chip(self, ui)
+    }
+}
+
+/// What [`MaterialChip::show`] returns.
+#[derive(Clone, Debug)]
+pub struct ChipResponse {
+    /// The chip body: clicks, hover and focus.
+    pub response: Response,
+    /// The remove target of a removable chip.
+    pub remove: Option<Response>,
+    removed: bool,
+}
+
+impl ChipResponse {
+    /// The chip was removed this frame: its remove icon was clicked, or
+    /// Delete or Backspace was pressed while it had focus.
+    pub fn removed(&self) -> bool {
+        self.removed
+    }
+
+    /// The chip body was clicked.
+    pub fn clicked(&self) -> bool {
+        self.response.clicked()
+    }
+
+    /// A filter or input chip toggled its selected state this frame.
+    pub fn changed(&self) -> bool {
+        self.response.changed()
+    }
+}
+
+/// Where the parts of a chip go, relative to its left edge.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct ChipLayout {
+    /// Total width.
+    width: f32,
+    /// Left edge of the leading icon or avatar.
+    leading_x: f32,
+    /// Left edge of the label.
+    label_x: f32,
+    /// Left edge of the trailing icon, when there is one.
+    trailing_x: Option<f32>,
+}
+
+impl ChipLayout {
+    /// The `Chip.kt` layout: content padding, then the leading slot (empty
+    /// or not, it is followed by the 8 spacing), the label, the 8 spacing,
+    /// the trailing slot, and the end padding.
+    fn new(
+        variant: ChipVariant,
+        leading_size: Option<f32>,
+        avatar: bool,
+        trailing: bool,
+        label_width: f32,
+    ) -> Self {
+        let (start, end) = match variant {
+            ChipVariant::Input => (
+                if avatar || leading_size.is_none() {
+                    INPUT_COMPACT_PADDING
+                } else {
+                    CONTENT_PADDING
+                },
+                if trailing {
+                    CONTENT_PADDING
+                } else {
+                    INPUT_COMPACT_PADDING
+                },
+            ),
+            ChipVariant::Assist | ChipVariant::Filter | ChipVariant::Suggestion => {
+                (CONTENT_PADDING, CONTENT_PADDING)
+            }
+        };
+        let trailing_width = if trailing { ICON_SIZE } else { 0.0 };
+        let label_x = start + leading_size.unwrap_or(0.0) + HORIZONTAL_SPACING;
+        let width = label_x + label_width + HORIZONTAL_SPACING + trailing_width + end;
+        Self {
+            width,
+            leading_x: start,
+            label_x,
+            trailing_x: trailing.then_some(width - end - trailing_width),
+        }
+    }
+}
+
+/// Resolved chip colours.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct ChipColors {
+    container: Color32,
+    outline: Option<Color32>,
+    label: Color32,
+    leading: Color32,
+    trailing: Color32,
+}
+
+/// The colours of a chip, from the `*ChipTokens.kt` files.
+fn chip_colors(
+    theme: &MaterialTheme,
+    variant: ChipVariant,
+    selected: bool,
+    elevated: bool,
+    enabled: bool,
+) -> ChipColors {
+    let c = |role| theme.color(role);
+    let selected = selected && variant.is_selectable();
+    if !enabled {
+        let on_surface = c(ColorRole::OnSurface);
+        let content = on_surface.gamma_multiply(DISABLED_CONTENT_OPACITY);
+        let container = if elevated || selected {
+            on_surface.gamma_multiply(DISABLED_CONTAINER_OPACITY)
+        } else {
+            Color32::TRANSPARENT
+        };
+        let outline =
+            (!elevated && !selected).then(|| on_surface.gamma_multiply(DISABLED_OUTLINE_OPACITY));
+        return ChipColors {
+            container,
+            outline,
+            label: content,
+            leading: content,
+            trailing: content,
+        };
+    }
+    let unselected_container = if elevated {
+        c(ColorRole::SurfaceContainerLow)
     } else {
         Color32::TRANSPARENT
     };
-
-    // Selected filter chip: secondaryContainer background with onSecondaryContainer content
-    if variant == ChipVariant::Filter && is_selected {
-        return ChipColors {
-            bg: secondary_container,      // Selected filter uses secondaryContainer
-            border: Color32::TRANSPARENT, // No border when selected
-            text: on_secondary_container, // Text uses onSecondaryContainer
-            icon: primary,                // Checkmark uses primary for emphasis
-            delete_icon: on_secondary_container, // Remove icon uses onSecondaryContainer
-            state_layer,
-        };
-    }
-
-    // Elevated chip: surfaceContainerLow background with shadow (assist/suggestion chips)
-    if elevated {
-        return ChipColors {
-            bg: surface_container_low,       // Elevated background (lighter surface)
-            border: Color32::TRANSPARENT,    // No border for elevated chips
-            text: on_surface_variant,        // Text uses onSurfaceVariant
-            icon: primary,                   // Leading icon uses primary
-            delete_icon: on_surface_variant, // Remove icon uses onSurfaceVariant
-            state_layer,
-        };
-    }
-
-    // Default flat chip: transparent background with outlineVariant border (input/unselected filter)
-    ChipColors {
-        bg: Color32::TRANSPARENT,        // Transparent to show parent surface
-        border: outline_variant,         // Border uses outlineVariant (1dp stroke)
-        text: on_surface_variant,        // Text uses onSurfaceVariant
-        icon: primary,                   // Leading icon uses primary
-        delete_icon: on_surface_variant, // Remove icon uses onSurfaceVariant
-        state_layer,
+    let outline = (!elevated).then(|| c(ColorRole::OutlineVariant));
+    match (variant, selected) {
+        // AssistChipTokens: LabelTextColor OnSurface, IconColor Primary.
+        (ChipVariant::Assist, _) => ChipColors {
+            container: unselected_container,
+            outline,
+            label: c(ColorRole::OnSurface),
+            leading: c(ColorRole::Primary),
+            trailing: c(ColorRole::Primary),
+        },
+        // SuggestionChipTokens: LabelTextColor OnSurfaceVariant,
+        // LeadingIconColor Primary.
+        (ChipVariant::Suggestion, _) => ChipColors {
+            container: unselected_container,
+            outline,
+            label: c(ColorRole::OnSurfaceVariant),
+            leading: c(ColorRole::Primary),
+            trailing: c(ColorRole::OnSurfaceVariant),
+        },
+        // FilterChipTokens.Unselected*: label and trailing OnSurfaceVariant,
+        // leading Primary.
+        (ChipVariant::Filter, false) => ChipColors {
+            container: unselected_container,
+            outline,
+            label: c(ColorRole::OnSurfaceVariant),
+            leading: c(ColorRole::Primary),
+            trailing: c(ColorRole::OnSurfaceVariant),
+        },
+        // FilterChipTokens.Selected*: SecondaryContainer, everything
+        // OnSecondaryContainer.
+        (ChipVariant::Filter, true) => ChipColors {
+            container: c(ColorRole::SecondaryContainer),
+            outline: None,
+            label: c(ColorRole::OnSecondaryContainer),
+            leading: c(ColorRole::OnSecondaryContainer),
+            trailing: c(ColorRole::OnSecondaryContainer),
+        },
+        // InputChipTokens.Unselected*: everything OnSurfaceVariant.
+        (ChipVariant::Input, false) => ChipColors {
+            container: unselected_container,
+            outline,
+            label: c(ColorRole::OnSurfaceVariant),
+            leading: c(ColorRole::OnSurfaceVariant),
+            trailing: c(ColorRole::OnSurfaceVariant),
+        },
+        // InputChipTokens.Selected*: SecondaryContainer, label and trailing
+        // OnSecondaryContainer, leading Primary.
+        (ChipVariant::Input, true) => ChipColors {
+            container: c(ColorRole::SecondaryContainer),
+            outline: None,
+            label: c(ColorRole::OnSecondaryContainer),
+            leading: c(ColorRole::Primary),
+            trailing: c(ColorRole::OnSecondaryContainer),
+        },
     }
 }
 
-impl<'a> Widget for MaterialChip<'a> {
-    fn ui(self, ui: &mut Ui) -> Response {
-        let is_selected = self.selected.as_ref().is_some_and(|s| **s);
-
-        // Get the actual font ID from UI style (respects override_text_style)
-        let font_id = ui.style().override_text_style
-            .as_ref()
-            .and_then(|style| ui.style().text_styles.get(style))
-            .unwrap_or_else(|| &ui.style().text_styles[&egui::TextStyle::Body])
-            .clone();
-
-        let text_galley = ui
-            .painter()
-            .layout_no_wrap(
-                self.text.clone(),
-                font_id.clone(),
-                egui::Color32::WHITE,
-            );
-        let text_width = text_galley.rect.width();
-
-        let has_leading =
-            self.leading_icon.is_some() || (self.variant == ChipVariant::Filter && is_selected);
-        let height = if self.is_small { 24.0 } else { 32.0 };
-        let icon_size = if self.is_small { 18.0 } else { 24.0 };
-        let icon_width = if has_leading { icon_size } else { 0.0 };
-        let remove_width = if self.removable { icon_size } else { 0.0 };
-        let padding = if self.is_small { 12.0 } else { 16.0 };
-
-        let desired_size = Vec2::new(
-            (text_width + icon_width + remove_width + padding).min(ui.available_width()),
-            height,
-        );
-
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
-
-        let is_pressed = response.is_pointer_button_down_on();
-        let is_hovered = response.hovered();
-
-        let colors = resolve_chip_colors(
-            self.variant,
-            is_selected,
-            self.enabled,
-            self.soft_disabled,
-            self.elevated,
-            is_hovered,
-            is_pressed,
-        );
-
-        let corner_radius = 8.0;
-
-        // Draw elevation shadow (before background)
-        if self.elevated && self.enabled {
-            let shadow_rect = rect.translate(Vec2::new(0.0, 2.0));
-            ui.painter().rect_filled(
-                shadow_rect,
-                corner_radius,
-                Color32::from_rgba_unmultiplied(0, 0, 0, 30),
-            );
+/// The container elevation: `Elevated*ContainerElevation` (Level 1,
+/// Level 2 on hover, Level 0 disabled), and for flat chips
+/// `FlatSelectedHoverContainerElevation` (Level 1) on a hovered selected
+/// filter chip, else `FlatContainerElevation` (Level 0).
+fn chip_elevation(
+    variant: ChipVariant,
+    selected: bool,
+    elevated: bool,
+    enabled: bool,
+    state: InteractionState,
+) -> Elevation {
+    let hovered = state.hovered && !state.pressed;
+    if !enabled {
+        Elevation::Level0
+    } else if elevated {
+        if hovered {
+            Elevation::Level2
+        } else {
+            Elevation::Level1
         }
+    } else if variant == ChipVariant::Filter && selected && hovered {
+        Elevation::Level1
+    } else {
+        Elevation::Level0
+    }
+}
 
-        // Draw chip background
-        ui.painter().rect_filled(rect, corner_radius, colors.bg);
+/// The corner radius to aim for: `ContainerShape` (`CornerSmall`) in the
+/// baseline set; `ChipsTokens.UnselectedShape` (`CornerMedium`),
+/// `SelectedShape` (`CornerFull`) and `PressedShape` (`CornerSmall`) in
+/// the Expressive set.
+fn target_radius(expressive: bool, selected: bool, pressed: bool, height: f32) -> f32 {
+    let size = if !expressive || pressed {
+        CornerSize::Small
+    } else if selected {
+        CornerSize::Full
+    } else {
+        CornerSize::Medium
+    };
+    size.value().unwrap_or(height / 2.0).min(height / 2.0)
+}
 
-        // Draw state layer (hover/pressed overlay)
-        if colors.state_layer != Color32::TRANSPARENT {
-            ui.painter()
-                .rect_filled(rect, corner_radius, colors.state_layer);
+fn hash_bytes(bytes: &[u8]) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    bytes.hash(&mut hasher);
+    hasher.finish()
+}
+
+/// Loads an image into a texture for drawing in its own colours: a PNG, an
+/// SVG (for avatars, which are clipped round), or an existing texture.
+fn image_texture(ctx: &egui::Context, image: &ChipImage) -> Option<SizedTexture> {
+    match image {
+        ChipImage::Png(bytes) => {
+            let name = format!("chip_png_{:016x}", hash_bytes(bytes));
+            image_utils::create_texture_from_png_bytes(ctx, bytes, &name)
+                .ok()
+                .map(|t| SizedTexture::from_handle(&t))
         }
+        ChipImage::Icon(Icon::Svg(bytes)) => {
+            let svg = std::str::from_utf8(bytes).ok()?;
+            let name = format!("chip_svg_{:016x}", hash_bytes(bytes));
+            image_utils::create_texture_from_svg(ctx, svg, &name)
+                .ok()
+                .map(|t| SizedTexture::from_handle(&t))
+        }
+        ChipImage::Icon(Icon::Texture(texture)) => Some(*texture),
+        ChipImage::Icon(Icon::Symbol(_)) => None,
+    }
+}
 
-        // Draw chip border
-        if colors.border != Color32::TRANSPARENT {
-            ui.painter().rect_stroke(
+/// Paints the leading image into `rect`.
+fn paint_leading(
+    ui: &Ui,
+    rect: Rect,
+    image: &ChipImage,
+    avatar: bool,
+    tint: Color32,
+    enabled: bool,
+) {
+    let painter = ui.painter();
+    // Images keep their own colours; disabled ones fade like the content.
+    let image_tint = if enabled {
+        Color32::WHITE
+    } else {
+        Color32::WHITE.gamma_multiply(DISABLED_CONTENT_OPACITY)
+    };
+    let avatar_texture = if avatar {
+        image_texture(ui.ctx(), image)
+    } else {
+        None
+    };
+    if let Some(texture) = avatar_texture {
+        let radius = CornerRadius::same((rect.height() / 2.0).round().clamp(0.0, 255.0) as u8);
+        let uv = Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0));
+        painter.add(RectShape::filled(rect, radius, image_tint).with_texture(texture.id, uv));
+        return;
+    }
+    match image {
+        ChipImage::Icon(icon @ (Icon::Symbol(_) | Icon::Svg(_))) => {
+            paint_icon(painter, rect, icon, &SymbolOptions::default(), tint);
+        }
+        ChipImage::Icon(icon @ Icon::Texture(_)) => {
+            paint_icon(painter, rect, icon, &SymbolOptions::default(), image_tint);
+        }
+        ChipImage::Png(_) => {
+            if let Some(texture) = image_texture(ui.ctx(), image) {
+                let icon = Icon::Texture(texture);
+                paint_icon(painter, rect, &icon, &SymbolOptions::default(), image_tint);
+            }
+        }
+    }
+}
+
+/// Maps a point of a 24×24 icon viewport into `rect`.
+fn icon_point(rect: Rect, x: f32, y: f32) -> Pos2 {
+    let scale = rect.width().min(rect.height()) / 24.0;
+    let origin = rect.center() - Vec2::splat(12.0 * scale);
+    Pos2::new(origin.x + x * scale, origin.y + y * scale)
+}
+
+/// The Material Symbols `check` glyph as a stroked path, so a selected
+/// filter chip shows its check mark whether or not the symbols font is
+/// installed.
+fn paint_check(ui: &Ui, rect: Rect, color: Color32) {
+    let width = 2.0 * rect.width() / 24.0;
+    let points = vec![
+        icon_point(rect, 4.1, 12.7),
+        icon_point(rect, 9.0, 17.6),
+        icon_point(rect, 20.3, 6.3),
+    ];
+    ui.painter()
+        .add(Shape::line(points, Stroke::new(width, color)));
+}
+
+/// The Material Symbols `close` glyph as two strokes.
+fn paint_close(ui: &Ui, rect: Rect, color: Color32) {
+    let stroke = Stroke::new(2.0 * rect.width() / 24.0, color);
+    let painter = ui.painter();
+    painter.line_segment(
+        [icon_point(rect, 5.7, 5.7), icon_point(rect, 18.3, 18.3)],
+        stroke,
+    );
+    painter.line_segment(
+        [icon_point(rect, 18.3, 5.7), icon_point(rect, 5.7, 18.3)],
+        stroke,
+    );
+}
+
+fn show_chip(chip: MaterialChip<'_>, ui: &mut Ui) -> ChipResponse {
+    let MaterialChip {
+        text,
+        variant,
+        mut selected,
+        enabled,
+        soft_disabled,
+        elevated,
+        removable,
+        leading,
+        avatar,
+        is_small,
+        expressive,
+        action,
+        on_remove,
+    } = chip;
+    let theme = MaterialTheme::of(ui.ctx());
+    let selectable = variant.is_selectable() && selected.is_some();
+    let was_selected = selectable && selected.as_deref().is_some_and(|s| *s);
+
+    // The label: LabelLarge (`LabelTextFont`), unless the caller set an
+    // explicit text style for this ui. The colour is filled in at paint
+    // time, once the interaction state is known.
+    let job = match ui.style().override_text_style.clone() {
+        Some(style) => LayoutJob::simple_singleline(
+            text.clone(),
+            style.resolve(ui.style()),
+            Color32::PLACEHOLDER,
+        ),
+        None => {
+            TypeRole::LabelLarge
+                .style()
+                .layout_job(ui.ctx(), text.clone(), Color32::PLACEHOLDER)
+        }
+    };
+    let galley = ui.painter().layout_job(job);
+
+    let height = if is_small {
+        SMALL_HEIGHT
+    } else {
+        CONTAINER_HEIGHT
+    };
+    // A selected filter chip shows a check mark, so its leading slot is
+    // filled; the check mark is an icon, never an avatar.
+    let shows_check = |is_selected: bool| variant == ChipVariant::Filter && is_selected;
+    let leading_size = |is_selected: bool| {
+        if shows_check(is_selected) {
+            Some(ICON_SIZE)
+        } else if leading.is_some() {
+            Some(if avatar { AVATAR_SIZE } else { ICON_SIZE })
+        } else {
+            None
+        }
+    };
+    let layout_for = |is_selected: bool| {
+        ChipLayout::new(
+            variant,
+            leading_size(is_selected),
+            avatar && !shows_check(is_selected),
+            removable,
+            galley.size().x,
+        )
+    };
+
+    let sense = if enabled {
+        Sense::click()
+    } else if soft_disabled {
+        Sense::focusable_noninteractive()
+    } else {
+        Sense::hover()
+    };
+    let initial_layout = layout_for(was_selected);
+    let (rect, mut response) =
+        ui.allocate_exact_size(Vec2::new(initial_layout.width, height), sense);
+
+    // The remove target: the trailing icon and the space around it, full
+    // height, registered after the body so it takes the clicks over it.
+    let remove = initial_layout.trailing_x.map(|x| {
+        let target = Rect::from_min_max(
+            Pos2::new(rect.min.x + x - HORIZONTAL_SPACING / 2.0, rect.min.y),
+            rect.max,
+        );
+        let remove_response = ui.interact(
+            target,
+            response.id.with("remove"),
+            crate::a11y::sense(enabled, Sense::click()),
+        );
+        crate::a11y::button(&remove_response, enabled, &format!("Remove {text}"));
+        remove_response
+    });
+
+    let delete_pressed = response.has_focus()
+        && ui.input(|i| i.key_pressed(Key::Delete) || i.key_pressed(Key::Backspace));
+    let removed =
+        enabled && removable && (remove.as_ref().is_some_and(Response::clicked) || delete_pressed);
+
+    if response.clicked() && enabled {
+        if selectable {
+            if let Some(selected) = selected.as_deref_mut() {
+                *selected = !*selected;
+                response.mark_changed();
+            }
+        }
+        if let Some(action) = &action {
+            action();
+        }
+    }
+    if removed {
+        if let Some(on_remove) = &on_remove {
+            on_remove();
+        }
+    }
+
+    let is_selected = selectable && selected.as_deref().is_some_and(|s| *s);
+    if selectable {
+        crate::a11y::toggle(&response, Role::CheckBox, enabled, &text, is_selected);
+    } else {
+        crate::a11y::button(&response, enabled, &text);
+    }
+
+    // Paint. The size was allocated before a click could toggle the
+    // selection, so a filter chip's check mark appears with the next frame's
+    // layout; paint this frame with the layout it was allocated with.
+    let layout = initial_layout;
+    let painted_selected = if layout_for(is_selected) == initial_layout {
+        is_selected
+    } else {
+        was_selected
+    };
+    let state = InteractionState::from_response(&response);
+    let colors = chip_colors(&theme, variant, is_selected, elevated, enabled);
+    let target = target_radius(expressive, is_selected, state.pressed, height);
+    let radius = if expressive {
+        animate_value_with_spring(
+            ui.ctx(),
+            response.id.with("shape"),
+            target,
+            theme.motion.spatial(SpringSpeed::Fast),
+        )
+    } else {
+        target
+    };
+    let corner_radius = CornerRadius::same(radius.round().clamp(0.0, 255.0) as u8);
+    if layout_for(is_selected) != initial_layout {
+        ui.ctx().request_repaint();
+    }
+
+    if ui.is_rect_visible(rect) {
+        let painter = ui.painter();
+        let elevation = chip_elevation(variant, is_selected, elevated, enabled, state);
+        paint_elevation(
+            painter,
+            rect,
+            corner_radius,
+            elevation,
+            theme.color(ColorRole::Shadow),
+        );
+        painter.rect_filled(rect, corner_radius, colors.container);
+        paint_state_layer(painter, rect, corner_radius, colors.label, state);
+        if let Some(outline) = colors.outline {
+            painter.rect_stroke(
                 rect,
                 corner_radius,
-                Stroke::new(1.0, colors.border),
-                egui::epaint::StrokeKind::Outside,
+                Stroke::new(OUTLINE_WIDTH, outline),
+                StrokeKind::Inside,
             );
         }
 
-        // Layout content
-        let mut content_x = rect.min.x + 8.0;
-
-        // Draw leading icon or checkmark
-        if let Some(icon) = &self.leading_icon {
-            let icon_display_size = icon_size * 0.833; // 20/24 ratio for visual balance
-            let icon_rect = Rect::from_min_size(
-                Pos2::new(content_x, rect.center().y - icon_display_size / 2.0),
-                Vec2::splat(icon_display_size),
+        let slot = |x: f32, size: f32| {
+            Rect::from_min_size(
+                Pos2::new(rect.min.x + x, rect.center().y - size / 2.0),
+                Vec2::splat(size),
+            )
+        };
+        if shows_check(painted_selected) {
+            paint_check(ui, slot(layout.leading_x, ICON_SIZE), colors.leading);
+        } else if let (Some(image), Some(size)) = (&leading, leading_size(painted_selected)) {
+            paint_leading(
+                ui,
+                slot(layout.leading_x, size),
+                image,
+                avatar,
+                colors.leading,
+                enabled,
             );
-
-            match icon {
-                IconType::MaterialIcon(icon_str) => {
-                    let font_size = if self.is_small { 14.0 } else { 16.0 };
-                    ui.painter().text(
-                        icon_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        icon_str,
-                        egui::FontId::proportional(font_size),
-                        colors.icon,
-                    );
-                }
-                IconType::SvgData(svg_data) => {
-                    if let Ok(texture) = image_utils::create_texture_from_svg(
-                        ui.ctx(),
-                        svg_data,
-                        &format!("chip_svg_{}", svg_data.len()),
-                    ) {
-                        ui.painter().image(
-                            texture.id(),
-                            icon_rect,
-                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                            Color32::WHITE,
-                        );
-                    }
-                }
-                IconType::PngBytes(png_bytes) => {
-                    if let Ok(texture) = image_utils::create_texture_from_png_bytes(
-                        ui.ctx(),
-                        png_bytes,
-                        &format!("chip_png_{}", png_bytes.len()),
-                    ) {
-                        ui.painter().image(
-                            texture.id(),
-                            icon_rect,
-                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                            Color32::WHITE,
-                        );
-                    }
-                }
-                IconType::Texture(texture) => {
-                    ui.painter().image(
-                        texture.id(),
-                        icon_rect,
-                        Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                        Color32::WHITE,
-                    );
-                }
-            }
-            content_x += icon_size;
-        } else if self.variant == ChipVariant::Filter && is_selected {
-            // Draw checkmark for selected filter chips
-            let icon_display_size = icon_size * 0.833; // 20/24 ratio for visual balance
-            let icon_rect = Rect::from_min_size(
-                Pos2::new(content_x, rect.center().y - icon_display_size / 2.0),
-                Vec2::splat(icon_display_size),
-            );
-
-            let center = icon_rect.center();
-            let checkmark_size = if self.is_small { 10.0 } else { 12.0 };
-
-            let start = Pos2::new(center.x - checkmark_size * 0.3, center.y);
-            let middle = Pos2::new(
-                center.x - checkmark_size * 0.1,
-                center.y + checkmark_size * 0.2,
-            );
-            let end = Pos2::new(
-                center.x + checkmark_size * 0.3,
-                center.y - checkmark_size * 0.2,
-            );
-
-            let stroke_width = if self.is_small { 1.5 } else { 2.0 };
-            ui.painter()
-                .line_segment([start, middle], Stroke::new(stroke_width, colors.icon));
-            ui.painter()
-                .line_segment([middle, end], Stroke::new(stroke_width, colors.icon));
-            content_x += icon_size;
         }
 
-        // Draw text vertically centered using visual bounds
-        // Position text so visual center (not row center) aligns with chip center
-        // galley.rect gives visual bounds from layout with actual font metrics
-        let text_top_y = rect.center().y - text_galley.rect.center().y;
-
-        let text_pos = Pos2::new(content_x, text_top_y);
-        ui.painter().text(
-            text_pos,
-            egui::Align2::LEFT_TOP,
-            &self.text,
-            font_id,
-            colors.text,
+        let text_pos = Pos2::new(
+            rect.min.x + layout.label_x,
+            rect.center().y - galley.size().y / 2.0,
         );
+        ui.painter().galley(text_pos, galley, colors.label);
 
-        // Draw remove button for removable chips
-        if self.removable {
-            let icon_display_size = icon_size * 0.833; // 20/24 ratio for visual balance
-            let remove_rect = Rect::from_min_size(
-                Pos2::new(
-                    rect.max.x - icon_size,
-                    rect.center().y - icon_display_size / 2.0,
-                ),
-                Vec2::splat(icon_display_size),
-            );
-
-            let center = remove_rect.center();
-            let cross_size = if self.is_small { 6.0 } else { 8.0 };
-            let stroke_width = if self.is_small { 1.2 } else { 1.5 };
-            ui.painter().line_segment(
-                [
-                    Pos2::new(center.x - cross_size / 2.0, center.y - cross_size / 2.0),
-                    Pos2::new(center.x + cross_size / 2.0, center.y + cross_size / 2.0),
-                ],
-                Stroke::new(stroke_width, colors.delete_icon),
-            );
-            ui.painter().line_segment(
-                [
-                    Pos2::new(center.x + cross_size / 2.0, center.y - cross_size / 2.0),
-                    Pos2::new(center.x - cross_size / 2.0, center.y + cross_size / 2.0),
-                ],
-                Stroke::new(stroke_width, colors.delete_icon),
-            );
+        if let Some(x) = layout.trailing_x {
+            paint_close(ui, slot(x, ICON_SIZE), colors.trailing);
         }
+        paint_focus_ring_if_focused(ui.painter(), &response, corner_radius);
+    }
 
-        // Handle interactions
-        if response.clicked() && self.enabled {
-            match self.variant {
-                ChipVariant::Filter => {
-                    if let Some(selected) = self.selected {
-                        *selected = !*selected;
-                        response.mark_changed();
-                    }
-                }
-                _ => {
-                    if let Some(action) = self.action {
-                        action();
-                    }
-                }
-            }
-        }
-
-        response
+    ChipResponse {
+        response,
+        remove,
+        removed,
     }
 }
 
+impl Widget for MaterialChip<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        self.show(ui).response
+    }
+}
+
+/// Lays chips out in a wrapping row with [`CHIP_SET_SPACING`] between
+/// them and between rows.
+///
+/// ```rust
+/// # use egui_material3::*;
+/// # egui::__run_test_ui(|ui| {
+/// let mut tags = [true, false, true];
+/// chip_set(ui, |ui| {
+///     for (tag, on) in ["Rust", "egui", "Material"].into_iter().zip(&mut tags) {
+///         ui.add(filter_chip(tag, on));
+///     }
+/// });
+/// # });
+/// ```
+pub fn chip_set<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> InnerResponse<R> {
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing = Vec2::splat(CHIP_SET_SPACING);
+        add_contents(ui)
+    })
+}
+
+/// Creates an assist chip with the given text.
 pub fn assist_chip(text: impl Into<String>) -> MaterialChip<'static> {
     MaterialChip::assist(text)
 }
 
+/// Creates a filter chip with the given text, bound to `selected`.
 pub fn filter_chip(text: impl Into<String>, selected: &mut bool) -> MaterialChip<'_> {
     MaterialChip::filter(text, selected)
 }
 
+/// Creates an input chip with the given text.
 pub fn input_chip(text: impl Into<String>) -> MaterialChip<'static> {
     MaterialChip::input(text)
 }
 
+/// Creates a suggestion chip with the given text.
 pub fn suggestion_chip(text: impl Into<String>) -> MaterialChip<'static> {
     MaterialChip::suggestion(text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell::Cell;
+
+    /// Regression test for nikescar/egui-material3#15: clicking a filter
+    /// chip toggles it and calls its `on_click` callback.
+    #[test]
+    fn test_filter_chip_calls_on_click() {
+        let ctx = egui::Context::default();
+        let mut selected = false;
+        let clicks = Cell::new(0);
+        let frame = |events: Vec<egui::Event>, selected: &mut bool| {
+            let mut rect = Rect::NOTHING;
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                let chip = MaterialChip::filter("Filter", selected)
+                    .on_click(|| clicks.set(clicks.get() + 1));
+                rect = ui.add(chip).rect;
+            })
+            .textures_delta
+            .clear();
+            rect
+        };
+        let pos = frame(Vec::new(), &mut selected).center();
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            &mut selected,
+        );
+        frame(vec![button(false)], &mut selected);
+        assert!(selected, "clicking a filter chip should select it");
+        assert_eq!(
+            clicks.get(),
+            1,
+            "clicking a filter chip should call on_click"
+        );
+    }
+
+    /// `Chip.kt` paddings: 16 to the label with no icon (12 on input
+    /// chips), icon 8 from the edge and 8 from the label, avatar 4 from
+    /// the edge, trailing icon 8 from the label and 8 from the edge.
+    #[test]
+    fn layout_follows_compose_paddings() {
+        let plain = ChipLayout::new(ChipVariant::Assist, None, false, false, 50.0);
+        assert_eq!(plain.label_x, 16.0, "label 16 from the start");
+        assert_eq!(plain.width, 82.0, "label 16 from both edges");
+
+        let icon = ChipLayout::new(ChipVariant::Filter, Some(18.0), false, false, 50.0);
+        assert_eq!(icon.leading_x, 8.0, "icon 8 from the start");
+        assert_eq!(icon.label_x, 34.0, "label 8 after the icon");
+
+        let input = ChipLayout::new(ChipVariant::Input, None, false, false, 50.0);
+        assert_eq!(input.label_x, 12.0, "input label 12 from the start");
+        assert_eq!(input.width, 74.0, "input label 12 from both edges");
+
+        let avatar = ChipLayout::new(ChipVariant::Input, Some(24.0), true, true, 50.0);
+        assert_eq!(avatar.leading_x, 4.0, "avatar 4 from the start");
+        assert_eq!(avatar.label_x, 36.0, "label 8 after the avatar");
+        assert_eq!(
+            avatar.trailing_x,
+            Some(36.0 + 50.0 + 8.0),
+            "trailing icon 8 after the label"
+        );
+        assert_eq!(
+            avatar.width,
+            36.0 + 50.0 + 8.0 + 18.0 + 8.0,
+            "trailing icon 8 from the end"
+        );
+    }
+
+    #[test]
+    fn expressive_radius() {
+        assert_eq!(target_radius(false, true, false, 32.0), 8.0, "baseline 8");
+        assert_eq!(
+            target_radius(true, false, false, 32.0),
+            12.0,
+            "unselected 12"
+        );
+        assert_eq!(
+            target_radius(true, true, false, 32.0),
+            16.0,
+            "selected full"
+        );
+        assert_eq!(target_radius(true, true, true, 32.0), 8.0, "pressed 8");
+    }
 }
