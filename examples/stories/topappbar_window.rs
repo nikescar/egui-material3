@@ -11,6 +11,7 @@ use egui_material3::material_symbol::{
     ICON_MORE_VERT, ICON_NOTIFICATIONS, ICON_REFRESH, ICON_SEARCH, ICON_SETTINGS, ICON_SHARE,
     ICON_SORT, ICON_UPLOAD,
 };
+use egui_material3::{scroll_area_id, TopAppBarScrollBehavior};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 // Atomic flags for cross-callback state toggling
@@ -34,6 +35,9 @@ pub struct TopAppBarWindow {
     menu_open: bool,
     menu_anchor_rect: Option<Rect>,
     menu_selected: String,
+    // Scroll behaviour demo
+    scroll_behavior: TopAppBarScrollBehavior,
+    scroll_large: bool,
 }
 
 impl Default for TopAppBarWindow {
@@ -52,6 +56,8 @@ impl Default for TopAppBarWindow {
             menu_open: false,
             menu_anchor_rect: None,
             menu_selected: String::new(),
+            scroll_behavior: TopAppBarScrollBehavior::ExitUntilCollapsed,
+            scroll_large: true,
         }
     }
 }
@@ -134,7 +140,102 @@ impl TopAppBarWindow {
         });
     }
 
+    fn render_scroll_and_flexible_examples(&mut self, ui: &mut Ui) {
+        // --- Scroll behaviours ---
+        ui.heading("Scroll Behaviours");
+        ui.label(
+            "The bar follows the scroll area below it. Exit-until-collapsed shrinks a \
+             large bar to 64dp; enter-always hides it and brings it back on scroll up.",
+        );
+        ui.horizontal(|ui| {
+            ui.radio_value(
+                &mut self.scroll_behavior,
+                TopAppBarScrollBehavior::Pinned,
+                "Pinned",
+            );
+            ui.radio_value(
+                &mut self.scroll_behavior,
+                TopAppBarScrollBehavior::EnterAlways,
+                "Enter always",
+            );
+            ui.radio_value(
+                &mut self.scroll_behavior,
+                TopAppBarScrollBehavior::ExitUntilCollapsed,
+                "Exit until collapsed",
+            );
+            ui.add(MaterialCheckbox::new(&mut self.scroll_large, "Large"));
+        });
+        let bar = if self.scroll_large {
+            MaterialTopAppBar::large("Inbox")
+        } else {
+            MaterialTopAppBar::regular("Inbox")
+        };
+        ui.add(
+            bar.id_salt("scroll_demo_bar")
+                .navigation("menu", "Open navigation", || {})
+                .action("search", "Search", || {})
+                .scroll_behavior(self.scroll_behavior)
+                .scroll_area(scroll_area_id(ui, "scroll_demo_content")),
+        );
+        egui::ScrollArea::vertical()
+            .id_salt("scroll_demo_content")
+            .max_height(260.0)
+            .show(ui, |ui| {
+                for i in 0..60 {
+                    ui.label(format!("Message {i}"));
+                }
+            });
+
+        ui.add_space(30.0);
+
+        // --- Flexible (M3 Expressive) ---
+        ui.heading("Flexible App Bars (M3 Expressive)");
+        ui.label("Medium flexible: 112dp, 136dp with a subtitle. Large flexible: 120dp, 152dp.");
+        ui.add(
+            MaterialTopAppBar::regular(&self.title_text)
+                .subtitle("Small with subtitle")
+                .id_salt("small_subtitle")
+                .navigation("arrow_back", "Back", || {}),
+        );
+        ui.add_space(8.0);
+        ui.add(
+            MaterialTopAppBar::medium_flexible(&self.title_text)
+                .subtitle("Medium flexible subtitle")
+                .id_salt("medium_flexible")
+                .navigation("arrow_back", "Back", || {})
+                .action("attach_file", "Attach", || {}),
+        );
+        ui.add_space(8.0);
+        ui.add(
+            MaterialTopAppBar::large_flexible(&self.title_text)
+                .subtitle("Large flexible subtitle")
+                .id_salt("large_flexible")
+                .navigation("arrow_back", "Back", || {})
+                .action("attach_file", "Attach", || {}),
+        );
+
+        ui.add_space(30.0);
+
+        // --- Overflow ---
+        ui.heading("Action Overflow");
+        ui.label("With max_actions(3), the fourth and fifth actions move into a menu.");
+        ui.add(
+            MaterialTopAppBar::regular("Mail")
+                .id_salt("overflow_bar")
+                .max_actions(3)
+                .action("search", "Search", || println!("Search"))
+                .action("share", "Share", || println!("Share"))
+                .action("delete", "Delete", || println!("Delete"))
+                .action("archive", "Archive", || println!("Archive"))
+                .action("settings", "Settings", || println!("Settings")),
+        );
+
+        ui.add_space(30.0);
+    }
+
     fn render_top_app_bar_examples(&mut self, ui: &mut Ui) {
+        self.render_scroll_and_flexible_examples(ui);
+
         // --- Regular ---
         ui.heading("Regular Top App Bar");
         ui.label("Standard app bar with surface color background. 64dp height, titleLarge (22sp).");
@@ -201,7 +302,7 @@ impl TopAppBarWindow {
         // --- Medium ---
         ui.heading("Medium Top App Bar");
         ui.label(
-            "112dp height. Expanded title uses headlineSmall (24sp) with 20dp bottom padding.",
+            "112dp height. Expanded title uses headlineSmall (24sp), baseline 24dp from the bottom.",
         );
 
         let mut medium_bar = medium_top_app_bar(&self.title_text)
@@ -227,7 +328,7 @@ impl TopAppBarWindow {
         // --- Large ---
         ui.heading("Large Top App Bar");
         ui.label(
-            "152dp height. Expanded title uses headlineMedium (28sp) with 28dp bottom padding.",
+            "152dp height. Expanded title uses headlineMedium (28sp), baseline 28dp from the bottom.",
         );
 
         let mut large_bar = large_top_app_bar(&self.title_text)
