@@ -245,6 +245,7 @@ pub mod drawer;
 #[cfg(feature = "spreadsheet")]
 pub mod egui_smol;
 pub mod fab;
+pub mod fab_menu;
 pub mod fonts;
 pub mod icon;
 pub mod iconbutton;
@@ -277,6 +278,13 @@ pub mod tooltip;
 pub mod topappbar;
 pub mod treeview;
 
+// Deprecated FAB items, kept so existing callers compile.
+#[expect(
+    deprecated,
+    reason = "re-exports deprecated items for existing callers"
+)]
+pub use fab::{fab_branded, google_branded_icon, SvgIcon, SvgPath};
+
 // MVVM support module
 pub mod mvvm;
 
@@ -302,13 +310,16 @@ pub use {
     },
     egui::TextEdit, // Re-export egui's TextEdit
     fab::{
-        fab_branded, fab_primary, fab_secondary, fab_surface, fab_tertiary, google_branded_icon,
-        FabSize, FabVariant, MaterialFab, SvgIcon, SvgPath,
+        fab_primary, fab_primary_container, fab_secondary, fab_secondary_container, fab_surface,
+        fab_tertiary, fab_tertiary_container, ExtendedFabMetrics, FabMetrics, FabSize, FabVariant,
+        MaterialFab,
     },
+    fab_menu::{FabMenu, FabMenuColors, FabMenuResponse},
     icon::{icon, paint_icon, Icon, MaterialIcon},
     iconbutton::{
         icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
-        icon_button_toggle, IconButtonVariant, MaterialIconButton,
+        icon_button_toggle, IconButtonColors, IconButtonMetrics, IconButtonShape, IconButtonSize,
+        IconButtonVariant, IconButtonWidth, MaterialIconButton,
     },
     imagelist::{
         image_list, masonry_image_list, woven_image_list, ImageListItem, ImageListVariant,

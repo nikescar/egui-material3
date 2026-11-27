@@ -1,323 +1,575 @@
-//! Material Design 3 Icon Button Components
-//!
-//! This module implements icon button controls following Material Design 3 color system.
-//!
-//! # M3 Color Role Usage
-//!
-//! ## Standard Icon Button (Minimal Emphasis)
-//! - **Transparent background**: Shows parent surface
-//! - **onSurfaceVariant**: Default icon color (lower emphasis)
-//! - **primary**: Icon color when selected
-//! - **State layers**: onSurface @ 8% (hover)
-//! - **Disabled**: surfaceContainer background, outline @ 38% icon
-//!
-//! ## Filled Icon Button (High Emphasis)
-//! - **primary**: Container background
-//! - **onPrimary**: Icon color on primary background
-//! - **State layers**: onPrimary @ 8% (hover), 12% (press)
-//! - **Selected**: Uses same colors as default state
-//! - **Disabled**: surfaceContainer background, outline @ 38% icon
-//!
-//! ## Filled Tonal Icon Button (Medium Emphasis)
-//! - **secondaryContainer**: Tinted container background
-//! - **onSecondaryContainer**: Icon color on tinted background
-//! - **State layers**: onSecondaryContainer @ 8% (hover), 12% (press)
-//! - **Selected**: Uses same colors as default state
-//! - **Disabled**: surfaceContainer background, outline @ 38% icon
-//!
-//! ## Outlined Icon Button (Medium Emphasis)
-//! - **Transparent background**: Shows parent surface
-//! - **onSurfaceVariant**: Icon color
-//! - **outline**: Border stroke color
-//! - **State layers**: onSurface @ 8% (hover)
-//! - **Selected**: primary @ 10% background, primary icon and border
-//! - **Disabled**: surfaceContainer background, outline @ 38% icon
-//!
-//! ## Container Shape
-//! - **Circular (default)**: 50% corner radius (fully rounded)
-//! - **Rectangular**: 20% corner radius (rounded rectangle)
+// ============================================================================
+// Module:       iconbutton
+// Description:  Material 3 icon buttons: four styles, five sizes, three
+//               widths, round and square shapes, and toggle colour sets.
+//
+// Dependencies: egui; crate::{a11y, icon, material_symbol, material_theme,
+//               paint, tokens}
+// ============================================================================
 
-use crate::get_global_color;
+//! Material 3 icon buttons.
+//!
+//! Four styles ([`IconButtonVariant`]: standard, filled, filled tonal,
+//! outlined), five sizes ([`IconButtonSize`]: XS 32, S 40, M 56, L 96,
+//! XL 136), three widths ([`IconButtonWidth`]: narrow, default, wide) and two
+//! shapes ([`IconButtonShape`]: round and square). The corners morph to the
+//! pressed shape while the button is held, and a toggle button morphs to its
+//! selected shape when it is on.
+//!
+//! Every value comes from the Compose material3 token files
+//! (`androidx.compose.material3.tokens`, `androidx-main`):
+//! `IconButtonXSmallTokens` .. `IconButtonXLargeTokens` for geometry and
+//! shapes, `StandardIconButtonTokens`, `FilledIconButtonTokens`,
+//! `FilledTonalIconButtonTokens` and `OutlinedIconButtonTokens` for colours,
+//! and `MeasurementTokens` for the leading and trailing spaces. These are the
+//! M3 Expressive token sets; the baseline 40 dp button is
+//! [`IconButtonSize::Small`] with the default width and round shape.
+//!
+//! Buttons smaller than 48 dp keep a 48 dp touch target (Compose's
+//! `minimumInteractiveComponentSize`): the response, and the space taken in
+//! the layout, is at least 48 x 48 with the container centred in it.
+//!
+//! An icon-only button has nothing for a screen reader to announce but its
+//! label: give every button a [`MaterialIconButton::label`]. When there is
+//! none, a Material Symbol's name (`"delete"`) is used.
+
 use egui::{
-    Align2, Color32, ColorImage, FontId, Rect, Response, Sense, Stroke, TextureHandle,
-    TextureOptions, Ui, Vec2, Widget,
+    Align2, Color32, CornerRadius, FontId, Painter, Rect, Response, Sense, Stroke, StrokeKind, Ui,
+    Vec2, Widget,
 };
-use resvg::render;
-use resvg::tiny_skia::{Pixmap, Transform};
-use resvg::usvg::{Options, Tree};
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-use std::sync::Arc;
-use std::sync::Mutex;
 
-lazy_static::lazy_static! {
-    /// Cache to store pre-rendered SVG textures (ColorImage)
-    static ref SVG_IMAGE_CACHE: Mutex<HashMap<String, Arc<ColorImage>>> = Mutex::new(HashMap::new());
-}
+use crate::icon::{paint_icon, Icon, SymbolOptions, AUTO_MIRRORED};
+use crate::material_symbol::get_material_symbol;
+use crate::tokens::{
+    animate_value_with_spring, state, ColorRole, CornerSize, InteractionState, LayoutDirection,
+    SpringSpeed,
+};
+use crate::MaterialTheme;
 
-/// Visual variants for the icon button component.
-#[derive(Clone, Copy, PartialEq)]
+/// `minimumInteractiveComponentSize`: the smallest touch target, 48 dp.
+pub const MIN_TOUCH_TARGET: f32 = 48.0;
+
+/// The style of an icon button.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum IconButtonVariant {
-    /// Standard icon button (minimal visual emphasis)
+    /// No container; the icon alone (`StandardIconButtonTokens`).
     Standard,
-    /// Filled icon button (high emphasis with filled background)
+    /// A `primary` container, the highest emphasis (`FilledIconButtonTokens`).
     Filled,
-    /// Filled tonal icon button (medium emphasis with tonal background)
+    /// A `secondaryContainer` container (`FilledTonalIconButtonTokens`).
     FilledTonal,
-    /// Outlined icon button (medium emphasis with border)
+    /// No fill, an `outlineVariant` border (`OutlinedIconButtonTokens`).
     Outlined,
 }
 
-/// Material Design icon button component.
+impl IconButtonVariant {
+    /// Every style.
+    pub const ALL: [IconButtonVariant; 4] = [
+        IconButtonVariant::Standard,
+        IconButtonVariant::Filled,
+        IconButtonVariant::FilledTonal,
+        IconButtonVariant::Outlined,
+    ];
+}
+
+/// The size of an icon button.
 ///
-/// Icon buttons help users take supplementary actions with a single tap.
-/// They're used when a compact button is required.
+/// `f32` converts into a size: a token height (32, 40, 56, 96, 136) picks
+/// that size, any other value is a [`IconButtonSize::Custom`] square
+/// button, so `.size(48.0)` keeps working.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum IconButtonSize {
+    /// `IconButtonXSmallTokens`: 32 high, 20 icon.
+    ExtraSmall,
+    /// `IconButtonSmallTokens`: 40 high, 24 icon (the baseline size).
+    #[default]
+    Small,
+    /// `IconButtonMediumTokens`: 56 high, 24 icon.
+    Medium,
+    /// `IconButtonLargeTokens`: 96 high, 32 icon.
+    Large,
+    /// `IconButtonXLargeTokens`: 136 high, 40 icon.
+    ExtraLarge,
+    /// A square button of this side, with the icon size, shapes and outline
+    /// width of the largest token size that fits in it.
+    Custom(f32),
+}
+
+impl From<f32> for IconButtonSize {
+    fn from(side: f32) -> Self {
+        IconButtonSize::TOKEN_SIZES
+            .into_iter()
+            .find(|size| (size.metrics().height - side).abs() < f32::EPSILON)
+            .unwrap_or(IconButtonSize::Custom(side))
+    }
+}
+
+/// The width of an icon button: the icon plus the leading and trailing
+/// spaces of the size's `Narrow*`, `Default*` or `Wide*` tokens.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum IconButtonWidth {
+    /// `NarrowLeadingSpace` / `NarrowTrailingSpace`.
+    Narrow,
+    /// `DefaultLeadingSpace` / `DefaultTrailingSpace`: a square button.
+    #[default]
+    Default,
+    /// `WideLeadingSpace` / `WideTrailingSpace`.
+    Wide,
+}
+
+impl IconButtonWidth {
+    /// Every width.
+    pub const ALL: [IconButtonWidth; 3] = [
+        IconButtonWidth::Narrow,
+        IconButtonWidth::Default,
+        IconButtonWidth::Wide,
+    ];
+}
+
+/// The container shape of an icon button.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum IconButtonShape {
+    /// `ContainerShapeRound`: fully rounded.
+    #[default]
+    Round,
+    /// `ContainerShapeSquare`: the size's square corner.
+    Square,
+}
+
+/// The geometry of one icon button size, from its token file.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct IconButtonMetrics {
+    /// `ContainerHeight`.
+    pub height: f32,
+    /// `IconSize`.
+    pub icon_size: f32,
+    /// `NarrowLeadingSpace` (equal to `NarrowTrailingSpace`).
+    pub narrow_space: f32,
+    /// `DefaultLeadingSpace` (equal to `DefaultTrailingSpace`).
+    pub default_space: f32,
+    /// `WideLeadingSpace` (equal to `WideTrailingSpace`).
+    pub wide_space: f32,
+    /// `OutlinedOutlineWidth`.
+    pub outline_width: f32,
+    /// `ContainerShapeSquare`.
+    pub square_shape: CornerSize,
+    /// `PressedContainerShape`.
+    pub pressed_shape: CornerSize,
+    /// `SelectedContainerShapeRound` (a selected toggle of round shape;
+    /// `SelectedContainerShapeSquare` is always `CornerFull`).
+    pub selected_round_shape: CornerSize,
+}
+
+impl IconButtonMetrics {
+    /// The container width for `width`.
+    pub fn width(&self, width: IconButtonWidth) -> f32 {
+        let space = match width {
+            IconButtonWidth::Narrow => self.narrow_space,
+            IconButtonWidth::Default => self.default_space,
+            IconButtonWidth::Wide => self.wide_space,
+        };
+        self.icon_size + 2.0 * space
+    }
+}
+
+impl IconButtonSize {
+    /// The five token sizes, smallest first.
+    pub const TOKEN_SIZES: [IconButtonSize; 5] = [
+        IconButtonSize::ExtraSmall,
+        IconButtonSize::Small,
+        IconButtonSize::Medium,
+        IconButtonSize::Large,
+        IconButtonSize::ExtraLarge,
+    ];
+
+    /// The geometry of this size.
+    pub fn metrics(self) -> IconButtonMetrics {
+        match self {
+            // IconButtonXSmallTokens. Spaces: Space50 / Space75 / Space125.
+            IconButtonSize::ExtraSmall => IconButtonMetrics {
+                height: 32.0,
+                icon_size: 20.0,
+                narrow_space: 4.0,
+                default_space: 6.0,
+                wide_space: 10.0,
+                outline_width: 1.0,
+                square_shape: CornerSize::Medium,
+                pressed_shape: CornerSize::Small,
+                selected_round_shape: CornerSize::Medium,
+            },
+            // IconButtonSmallTokens. Spaces: Space50 / Space100 / Space175.
+            IconButtonSize::Small => IconButtonMetrics {
+                height: 40.0,
+                icon_size: 24.0,
+                narrow_space: 4.0,
+                default_space: 8.0,
+                wide_space: 14.0,
+                outline_width: 1.0,
+                square_shape: CornerSize::Medium,
+                pressed_shape: CornerSize::Small,
+                selected_round_shape: CornerSize::Medium,
+            },
+            // IconButtonMediumTokens. Spaces: Space150 / Space200 / Space300.
+            IconButtonSize::Medium => IconButtonMetrics {
+                height: 56.0,
+                icon_size: 24.0,
+                narrow_space: 12.0,
+                default_space: 16.0,
+                wide_space: 24.0,
+                outline_width: 1.0,
+                square_shape: CornerSize::Large,
+                pressed_shape: CornerSize::Medium,
+                selected_round_shape: CornerSize::Large,
+            },
+            // IconButtonLargeTokens. Spaces: Space200 / Space400 / Space600.
+            IconButtonSize::Large => IconButtonMetrics {
+                height: 96.0,
+                icon_size: 32.0,
+                narrow_space: 16.0,
+                default_space: 32.0,
+                wide_space: 48.0,
+                outline_width: 2.0,
+                square_shape: CornerSize::ExtraLarge,
+                pressed_shape: CornerSize::Large,
+                selected_round_shape: CornerSize::ExtraLarge,
+            },
+            // IconButtonXLargeTokens. Spaces: Space400 / Space600 / Space900.
+            IconButtonSize::ExtraLarge => IconButtonMetrics {
+                height: 136.0,
+                icon_size: 40.0,
+                narrow_space: 32.0,
+                default_space: 48.0,
+                wide_space: 72.0,
+                outline_width: 3.0,
+                square_shape: CornerSize::ExtraLarge,
+                pressed_shape: CornerSize::Large,
+                selected_round_shape: CornerSize::ExtraLarge,
+            },
+            IconButtonSize::Custom(side) => {
+                let side = if side.is_finite() { side.max(0.0) } else { 0.0 };
+                let base = IconButtonSize::TOKEN_SIZES
+                    .into_iter()
+                    .map(IconButtonSize::metrics)
+                    .take_while(|m| m.height <= side)
+                    .last()
+                    .unwrap_or(IconButtonSize::ExtraSmall.metrics());
+                let icon_size = base.icon_size.min(side);
+                let space = ((side - icon_size) / 2.0).max(0.0);
+                IconButtonMetrics {
+                    height: side,
+                    icon_size,
+                    narrow_space: space.min(base.narrow_space),
+                    default_space: space,
+                    wide_space: space.max(base.wide_space),
+                    ..base
+                }
+            }
+        }
+    }
+}
+
+/// Container, icon and outline colours for one state of an icon button.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct IconButtonColors {
+    /// The container fill (transparent for standard and outlined).
+    pub container: Color32,
+    /// The icon, and the state layer.
+    pub content: Color32,
+    /// The outline (transparent except for outlined).
+    pub outline: Color32,
+}
+
+impl IconButtonColors {
+    /// The colours of `variant` in `theme`. `selected` is `None` for a plain
+    /// button and `Some(on)` for a toggle button.
+    pub fn resolve(
+        theme: &MaterialTheme,
+        variant: IconButtonVariant,
+        selected: Option<bool>,
+        enabled: bool,
+    ) -> Self {
+        let c = |role| theme.color(role);
+        let none = Color32::TRANSPARENT;
+        // `*IconButtonTokens.DisabledColor` (OnSurface) at `DisabledOpacity`
+        // 0.38, and `DisabledContainerColor` (OnSurface) at
+        // `DisabledContainerOpacity` 0.1.
+        let disabled_content =
+            c(ColorRole::OnSurface).gamma_multiply(state::DISABLED_CONTENT_OPACITY);
+        let disabled_container =
+            c(ColorRole::OnSurface).gamma_multiply(state::DISABLED_CONTAINER_OPACITY);
+        let colors = |container, content, outline| IconButtonColors {
+            container,
+            content,
+            outline,
+        };
+        match (variant, selected, enabled) {
+            // StandardIconButtonTokens: Color / UnselectedColor
+            // OnSurfaceVariant, SelectedColor Primary.
+            (IconButtonVariant::Standard, Some(true), true) => {
+                colors(none, c(ColorRole::Primary), none)
+            }
+            (IconButtonVariant::Standard, None | Some(false), true) => {
+                colors(none, c(ColorRole::OnSurfaceVariant), none)
+            }
+            (IconButtonVariant::Standard, _, false) => colors(none, disabled_content, none),
+            // FilledIconButtonTokens: Primary / OnPrimary; unselected toggle
+            // SurfaceContainer / OnSurfaceVariant.
+            (IconButtonVariant::Filled, None | Some(true), true) => {
+                colors(c(ColorRole::Primary), c(ColorRole::OnPrimary), none)
+            }
+            (IconButtonVariant::Filled, Some(false), true) => colors(
+                c(ColorRole::SurfaceContainer),
+                c(ColorRole::OnSurfaceVariant),
+                none,
+            ),
+            // FilledTonalIconButtonTokens: SecondaryContainer /
+            // OnSecondaryContainer; selected toggle Secondary / OnSecondary.
+            (IconButtonVariant::FilledTonal, None | Some(false), true) => colors(
+                c(ColorRole::SecondaryContainer),
+                c(ColorRole::OnSecondaryContainer),
+                none,
+            ),
+            (IconButtonVariant::FilledTonal, Some(true), true) => {
+                colors(c(ColorRole::Secondary), c(ColorRole::OnSecondary), none)
+            }
+            (IconButtonVariant::Filled | IconButtonVariant::FilledTonal, _, false) => {
+                colors(disabled_container, disabled_content, none)
+            }
+            // OutlinedIconButtonTokens: OnSurfaceVariant with an
+            // OutlineVariant border; selected toggle InverseSurface /
+            // InverseOnSurface with no border.
+            (IconButtonVariant::Outlined, None | Some(false), true) => colors(
+                none,
+                c(ColorRole::OnSurfaceVariant),
+                c(ColorRole::OutlineVariant),
+            ),
+            (IconButtonVariant::Outlined, Some(true), true) => colors(
+                c(ColorRole::InverseSurface),
+                c(ColorRole::InverseOnSurface),
+                none,
+            ),
+            // `UnselectedDisabledOutlineColor` OutlineVariant;
+            // `SelectedDisabledContainerColor` OnSurface at 0.1.
+            (IconButtonVariant::Outlined, None | Some(false), false) => {
+                colors(none, disabled_content, c(ColorRole::OutlineVariant))
+            }
+            (IconButtonVariant::Outlined, Some(true), false) => {
+                colors(disabled_container, disabled_content, none)
+            }
+        }
+    }
+}
+
+/// Paints `icon` centred in `rect` for a widget: a Material Symbol by name
+/// or codepoint, an SVG or a texture through [`paint_icon`], filled when
+/// `filled`, mirrored in right-to-left layouts for directional symbols. A
+/// symbol string that is neither a name nor a Material Symbols codepoint
+/// (an emoji, a letter) is drawn as text, so callers that passed emoji
+/// strings keep working.
+pub(crate) fn paint_widget_icon(
+    painter: &Painter,
+    rect: Rect,
+    icon: &Icon,
+    filled: bool,
+    tint: Color32,
+    direction: LayoutDirection,
+) {
+    if let Icon::Symbol(text) = icon {
+        let is_name = get_material_symbol(text).is_some()
+            || text
+                .strip_suffix("_rtl")
+                .is_some_and(|base| get_material_symbol(base).is_some());
+        if !is_name && !is_symbol_codepoint(text) {
+            if !text.is_empty() {
+                let size = rect.width().min(rect.height());
+                painter.text(
+                    rect.center(),
+                    Align2::CENTER_CENTER,
+                    text,
+                    FontId::proportional(size),
+                    tint,
+                );
+            }
+            return;
+        }
+    }
+    let mirrored = direction == LayoutDirection::Rtl
+        && matches!(icon, Icon::Symbol(name) if AUTO_MIRRORED.contains(&name.as_str()));
+    let options = SymbolOptions {
+        filled,
+        mirrored,
+        ..SymbolOptions::default()
+    };
+    paint_icon(painter, rect, icon, &options, tint);
+}
+
+/// One character in a private use area, where Material Symbols puts its
+/// glyphs.
+fn is_symbol_codepoint(text: &str) -> bool {
+    let mut chars = text.chars();
+    match (chars.next(), chars.next()) {
+        (Some(c), None) => {
+            ('\u{E000}'..='\u{F8FF}').contains(&c) || ('\u{F0000}'..='\u{10FFFD}').contains(&c)
+        }
+        (Some(_), Some(_)) | (None, _) => false,
+    }
+}
+
+/// The accessible name for an icon: the symbol's name when it is one.
+pub(crate) fn icon_label(icon: &Icon) -> &str {
+    match icon {
+        Icon::Symbol(name) if get_material_symbol(name).is_some() => name,
+        Icon::Symbol(_) | Icon::Svg(_) | Icon::Texture(_) => "",
+    }
+}
+
+/// A Material 3 icon button.
 ///
-/// # Example
-/// ```rust
+/// ```
 /// # egui::__run_test_ui(|ui| {
-/// // Standard icon button
-/// if ui.add(MaterialIconButton::standard("favorite")).clicked() {
-///     println!("Favorite clicked!");
-/// }
+/// use egui_material3::{IconButtonShape, IconButtonSize, MaterialIconButton};
 ///
-/// // Filled icon button with toggle state
-/// let mut liked = false;
-/// ui.add(MaterialIconButton::filled("favorite")
-///     .toggle(&mut liked)
-///     .size(48.0));
+/// if ui.add(MaterialIconButton::standard("delete").label("Delete")).clicked() {
+///     // delete
+/// }
+/// let mut starred = false;
+/// ui.add(
+///     MaterialIconButton::filled("star")
+///         .toggleable(&mut starred)
+///         .size(IconButtonSize::Medium)
+///         .shape(IconButtonShape::Square)
+///         .label("Star"),
+/// );
 /// # });
 /// ```
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialIconButton<'a> {
-    /// Icon identifier (e.g., "favorite", "settings", "delete")
-    icon: String,
-    /// Visual variant of the button
+    icon: Icon,
     variant: IconButtonVariant,
-    /// Optional toggle state for the button
     selected: Option<&'a mut bool>,
-    /// Accessible name; defaults to the icon name
     label: Option<String>,
-    /// Whether the button is enabled for interaction
     enabled: bool,
-    /// Size of the button (width and height)
-    size: f32,
-    /// Whether to use rectangular container (true) or circular (false)
-    container: bool,
-    /// Optional SVG file path to render as the icon
-    svg_path: Option<String>,
-    /// Optional SVG content string to render as the icon
-    svg_data: Option<String>,
-    /// Optional override for the icon color
+    size: IconButtonSize,
+    width: IconButtonWidth,
+    shape: IconButtonShape,
     icon_color_override: Option<Color32>,
-    /// Optional callback to execute when clicked
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
 impl<'a> MaterialIconButton<'a> {
-    /// Create a new icon button with the specified variant.
-    ///
-    /// # Arguments
-    /// * `icon` - Icon identifier (e.g., "home", "settings", "delete")
-    /// * `variant` - Visual variant of the button
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let button = MaterialIconButton::new("settings", IconButtonVariant::Outlined);
-    /// # });
-    /// ```
-    pub fn new(icon: impl Into<String>, variant: IconButtonVariant) -> Self {
+    /// An icon button of `variant` showing `icon` (a Material Symbol name,
+    /// or any [`Icon`]).
+    pub fn new(icon: impl Into<Icon>, variant: IconButtonVariant) -> Self {
         Self {
             icon: icon.into(),
             variant,
             selected: None,
             label: None,
             enabled: true,
-            size: 40.0,
-            container: false, // circular by default
-            svg_path: None,
-            svg_data: None,
+            size: IconButtonSize::Small,
+            width: IconButtonWidth::Default,
+            shape: IconButtonShape::Round,
             icon_color_override: None,
             action: None,
         }
     }
 
-    /// Create a standard icon button (minimal visual emphasis).
-    ///
-    /// # Arguments
-    /// * `icon` - Icon identifier
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::standard("menu"));
-    /// # });
-    /// ```
-    pub fn standard(icon: impl Into<String>) -> Self {
+    /// A standard icon button: no container.
+    pub fn standard(icon: impl Into<Icon>) -> Self {
         Self::new(icon, IconButtonVariant::Standard)
     }
 
-    /// Create a filled icon button (high emphasis with filled background).
-    ///
-    /// # Arguments
-    /// * `icon` - Icon identifier
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::filled("add"));
-    /// # });
-    /// ```
-    pub fn filled(icon: impl Into<String>) -> Self {
+    /// A filled icon button.
+    pub fn filled(icon: impl Into<Icon>) -> Self {
         Self::new(icon, IconButtonVariant::Filled)
     }
 
-    /// Create a filled tonal icon button (medium emphasis with tonal background).
-    ///
-    /// # Arguments
-    /// * `icon` - Icon identifier
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::filled_tonal("edit"));
-    /// # });
-    /// ```
-    pub fn filled_tonal(icon: impl Into<String>) -> Self {
+    /// A filled tonal icon button.
+    pub fn filled_tonal(icon: impl Into<Icon>) -> Self {
         Self::new(icon, IconButtonVariant::FilledTonal)
     }
 
-    /// Create an outlined icon button (medium emphasis with border).
-    ///
-    /// # Arguments
-    /// * `icon` - Icon identifier
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::outlined("delete"));
-    /// # });
-    /// ```
-    pub fn outlined(icon: impl Into<String>) -> Self {
+    /// An outlined icon button.
+    pub fn outlined(icon: impl Into<Icon>) -> Self {
         Self::new(icon, IconButtonVariant::Outlined)
     }
 
-    /// Create a toggleable icon button.
-    ///
-    /// The button's appearance will change based on the `selected` state.
-    ///
-    /// # Arguments
-    /// * `icon` - Icon identifier
-    /// * `selected` - Mutable reference to the toggle state
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// let mut is_favorite = false;
-    /// ui.add(MaterialIconButton::toggle("favorite", &mut is_favorite));
-    /// # });
-    /// ```
-    pub fn toggle(icon: impl Into<String>, selected: &'a mut bool) -> Self {
-        let mut button = Self::standard(icon);
-        button.selected = Some(selected);
-        button
+    /// A standard toggle icon button bound to `selected`. Any style can
+    /// toggle with [`Self::toggleable`].
+    pub fn toggle(icon: impl Into<Icon>, selected: &'a mut bool) -> Self {
+        Self::standard(icon).toggleable(selected)
     }
 
-    /// Set the size of the icon button.
-    ///
-    /// # Arguments
-    /// * `size` - Desired size (width and height) of the button
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::standard("settings").size(48.0));
-    /// # });
-    /// ```
-    pub fn size(mut self, size: f32) -> Self {
-        self.size = size;
+    /// Makes this a toggle button bound to `selected`: a click flips it, the
+    /// style's selected colours and shape show when it is on, the icon is
+    /// drawn filled, and AccessKit reports the toggled state.
+    pub fn toggleable(mut self, selected: &'a mut bool) -> Self {
+        self.selected = Some(selected);
         self
     }
 
-    /// Accessible name for screen readers and UI tests. The visible content
-    /// is an icon glyph, so set this to say what the button does
-    /// (defaults to the icon name).
+    /// The size: an [`IconButtonSize`], or a side in points.
+    pub fn size(mut self, size: impl Into<IconButtonSize>) -> Self {
+        self.size = size.into();
+        self
+    }
+
+    /// The width variant.
+    pub fn width(mut self, width: IconButtonWidth) -> Self {
+        self.width = width;
+        self
+    }
+
+    /// The container shape.
+    pub fn shape(mut self, shape: IconButtonShape) -> Self {
+        self.shape = shape;
+        self
+    }
+
+    /// `true` for the square shape, `false` for round.
+    pub fn container(self, square: bool) -> Self {
+        self.shape(if square {
+            IconButtonShape::Square
+        } else {
+            IconButtonShape::Round
+        })
+    }
+
+    /// The accessible name. Every icon-only button needs one.
     pub fn label(mut self, label: impl Into<String>) -> Self {
         self.label = Some(label.into());
         self
     }
 
-    /// Enable or disable the icon button.
-    ///
-    /// # Arguments
-    /// * `enabled` - `true` to enable the button, `false` to disable
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::standard("download").enabled(false));
-    /// # });
-    /// ```
+    /// Whether the button reacts. A disabled button takes no focus and
+    /// reports no clicks.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
-    /// Set the container style of the icon button.
-    ///
-    /// # Arguments
-    /// * `container` - `true` for rectangular container, `false` for circular
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::standard("share").container(true));
-    /// # });
-    /// ```
-    pub fn container(mut self, container: bool) -> Self {
-        self.container = container;
-        self
-    }
-
-    /// Use an SVG file as the icon. The path will be loaded and rasterized.
+    /// Shows the SVG file at `path`. The file is read on every call; prefer
+    /// loading it once and passing [`Icon::svg`] to [`Self::new`].
     pub fn svg(mut self, path: impl Into<String>) -> Self {
-        self.svg_path = Some(path.into());
+        if let Ok(bytes) = std::fs::read(path.into()) {
+            self.icon = Icon::svg(bytes);
+        }
         self
     }
 
-    /// Use inline SVG content as the icon. The content will be rasterized directly.
+    /// Shows an SVG document given as text.
     pub fn svg_data(mut self, svg_content: impl Into<String>) -> Self {
-        self.svg_data = Some(svg_content.into());
+        self.icon = Icon::svg(svg_content.into().into_bytes());
         self
     }
 
-    /// Override the icon color.
-    ///
-    /// Overrides variant-based M3 color roles:
-    /// - Standard: onSurfaceVariant (default), primary (selected)
-    /// - Filled: onPrimary
-    /// - FilledTonal: onSecondaryContainer
-    /// - Outlined: onSurfaceVariant (default), primary (selected)
+    /// Overrides the icon colour of the enabled button.
     pub fn icon_color(mut self, color: Color32) -> Self {
         self.icon_color_override = Some(color);
         self
     }
 
-    /// Set the click action for the icon button.
-    ///
-    /// # Arguments
-    /// * `f` - Function to execute when the button is clicked
-    ///
-    /// # Example
-    /// ```rust
-    /// # egui::__run_test_ui(|ui| {
-    /// ui.add(MaterialIconButton::standard("info").on_click(|| {
-    ///     println!("Info button clicked!");
-    /// }));
-    /// # });
-    /// ```
+    /// Runs `f` when the button is clicked.
     pub fn on_click<F>(mut self, f: F) -> Self
     where
         F: Fn() + 'a,
@@ -327,375 +579,134 @@ impl<'a> MaterialIconButton<'a> {
     }
 }
 
-impl<'a> Widget for MaterialIconButton<'a> {
+impl Widget for MaterialIconButton<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let desired_size = Vec2::splat(self.size);
-        let (rect, mut response) = ui.allocate_exact_size(
-            desired_size,
-            crate::a11y::sense(self.enabled, Sense::click()),
-        );
-        let a11y_label = self.label.as_deref().unwrap_or(&self.icon);
-        match self.selected.as_deref() {
-            Some(selected) => crate::a11y::toggle(
-                &response,
-                egui::Role::Button,
-                self.enabled,
-                a11y_label,
-                *selected,
-            ),
-            None => crate::a11y::button(&response, self.enabled, a11y_label),
-        }
+        let metrics = self.size.metrics();
+        let visual = Vec2::new(metrics.width(self.width), metrics.height);
+        let target = visual.max(Vec2::splat(MIN_TOUCH_TARGET));
+        let (outer, mut response) =
+            ui.allocate_exact_size(target, crate::a11y::sense(self.enabled, Sense::click()));
+        let rect = Rect::from_center_size(outer.center(), visual);
 
-        let is_selected = self.selected.as_ref().is_some_and(|s| **s);
+        let label = self
+            .label
+            .clone()
+            .unwrap_or_else(|| icon_label(&self.icon).to_owned());
+        let mut is_selected = self.selected.as_deref().copied();
 
         if response.clicked() && self.enabled {
             if let Some(selected) = self.selected {
                 *selected = !*selected;
+                is_selected = Some(*selected);
                 response.mark_changed();
             }
-            if let Some(action) = self.action {
+            if let Some(action) = &self.action {
                 action();
             }
         }
-
-        // M3 Color Roles - Icon Button Variants
-        let primary = get_global_color("primary"); // Filled button background, selected icon/border
-        let on_primary = get_global_color("onPrimary"); // Icon on primary background
-        let secondary_container = get_global_color("secondaryContainer"); // Tonal button background
-        let on_secondary_container = get_global_color("onSecondaryContainer"); // Icon on tonal background
-        let on_surface = get_global_color("onSurface"); // Hover state layer color
-        let on_surface_variant = get_global_color("onSurfaceVariant"); // Default icon color (lower emphasis)
-        let outline = get_global_color("outline"); // Border color, disabled icon @ 38%
-        let surface_container = get_global_color("surfaceContainer"); // Disabled background
-
-        let (bg_color, icon_color, border_color) = if !self.enabled {
-            // Disabled state: surfaceContainer background, outline @ 38% icon (M3 spec)
-            (
-                surface_container,
-                outline.linear_multiply(0.38),
-                Color32::TRANSPARENT,
-            )
-        } else {
-            match self.variant {
-                IconButtonVariant::Standard => {
-                    if is_selected {
-                        // Selected state: transparent background with primary icon
-                        (Color32::TRANSPARENT, primary, Color32::TRANSPARENT)
-                    } else if response.hovered() {
-                        // Hover state: onSurface @ 8% state layer (M3 interaction state)
-                        (
-                            on_surface.linear_multiply(0.08),
-                            on_surface,
-                            Color32::TRANSPARENT,
-                        )
-                    } else {
-                        // Default state: transparent with onSurfaceVariant icon (lower emphasis)
-                        (
-                            Color32::TRANSPARENT,
-                            on_surface_variant,
-                            Color32::TRANSPARENT,
-                        )
-                    }
-                }
-                IconButtonVariant::Filled => {
-                    // Filled button: primary background with onPrimary icon
-                    let base_color = primary;
-                    let content_color = on_primary;
-                    if is_selected {
-                        // Selected state: same as default for filled variant
-                        (base_color, content_color, Color32::TRANSPARENT)
-                    } else if response.is_pointer_button_down_on() {
-                        // Pressed state: 10% onPrimary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(
-                                base_color,
-                                content_color,
-                                crate::tokens::state::PRESSED_OPACITY,
-                            ),
-                            content_color,
-                            Color32::TRANSPARENT,
-                        )
-                    } else if response.hovered() {
-                        // Hover state: 8% onPrimary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(
-                                base_color,
-                                content_color,
-                                crate::tokens::state::HOVER_OPACITY,
-                            ),
-                            content_color,
-                            Color32::TRANSPARENT,
-                        )
-                    } else {
-                        (base_color, content_color, Color32::TRANSPARENT)
-                    }
-                }
-                IconButtonVariant::FilledTonal => {
-                    // Tonal button: secondaryContainer background with onSecondaryContainer icon
-                    let base_color = secondary_container;
-                    let content_color = on_secondary_container;
-                    if is_selected {
-                        // Selected state: same as default for tonal variant
-                        (base_color, content_color, Color32::TRANSPARENT)
-                    } else if response.is_pointer_button_down_on() {
-                        // Pressed state: 10% onSecondaryContainer overlay (M3 interaction state)
-                        (
-                            blend_state_layer(
-                                base_color,
-                                content_color,
-                                crate::tokens::state::PRESSED_OPACITY,
-                            ),
-                            content_color,
-                            Color32::TRANSPARENT,
-                        )
-                    } else if response.hovered() {
-                        // Hover state: 8% onSecondaryContainer overlay (M3 interaction state)
-                        (
-                            blend_state_layer(
-                                base_color,
-                                content_color,
-                                crate::tokens::state::HOVER_OPACITY,
-                            ),
-                            content_color,
-                            Color32::TRANSPARENT,
-                        )
-                    } else {
-                        (base_color, content_color, Color32::TRANSPARENT)
-                    }
-                }
-                IconButtonVariant::Outlined => {
-                    if is_selected {
-                        // Selected state: primary @ 10% background with primary icon and border
-                        (primary.linear_multiply(0.10), primary, primary)
-                    } else if response.hovered() {
-                        // Hover state: onSurface @ 8% state layer (M3 interaction state)
-                        (
-                            on_surface.linear_multiply(0.08),
-                            on_surface_variant,
-                            outline,
-                        )
-                    } else {
-                        // Default state: transparent with onSurfaceVariant icon and outline border
-                        (Color32::TRANSPARENT, on_surface_variant, outline)
-                    }
-                }
+        match is_selected {
+            Some(on) => {
+                crate::a11y::toggle(&response, egui::Role::Button, self.enabled, &label, on)
             }
-        };
-
-        // Calculate corner radius based on container style
-        let corner_radius = if self.container {
-            // Rectangular container: smaller radius for more rectangular shape
-            rect.height() * 0.2 // About 8px for 40px button
-        } else {
-            // Circular container: full radius
-            rect.height() / 2.0
-        };
-
-        // Draw background
-        if bg_color != Color32::TRANSPARENT {
-            ui.painter().rect_filled(rect, corner_radius, bg_color);
+            None => crate::a11y::button(&response, self.enabled, &label),
         }
 
-        // Draw border for outlined variant
-        if border_color != Color32::TRANSPARENT {
-            ui.painter().rect_stroke(
+        if !ui.is_rect_visible(outer) {
+            return response;
+        }
+
+        let theme = MaterialTheme::of(ui.ctx());
+        let mut colors = IconButtonColors::resolve(&theme, self.variant, is_selected, self.enabled);
+        if let (Some(color), true) = (self.icon_color_override, self.enabled) {
+            colors.content = color;
+        }
+        let interaction = InteractionState::from_response(&response);
+
+        // Shape: rest, selected (toggle on) or pressed, morphing with the
+        // fast spatial spring.
+        let full = rect.width().min(rect.height()) / 2.0;
+        let rest = match self.shape {
+            IconButtonShape::Round => full,
+            IconButtonShape::Square => metrics.square_shape.radius(rect),
+        };
+        let selected_radius = match self.shape {
+            IconButtonShape::Round => metrics.selected_round_shape.radius(rect),
+            IconButtonShape::Square => full,
+        };
+        let target_radius = if interaction.pressed {
+            metrics.pressed_shape.radius(rect)
+        } else if is_selected == Some(true) {
+            selected_radius
+        } else {
+            rest
+        };
+        let radius = animate_value_with_spring(
+            ui.ctx(),
+            response.id.with("icon_button_shape"),
+            target_radius,
+            theme.motion.spatial(SpringSpeed::Fast),
+        )
+        .clamp(0.0, full);
+        let corner_radius = CornerRadius::same(radius.round().clamp(0.0, 255.0) as u8);
+
+        let painter = ui.painter();
+        if colors.container != Color32::TRANSPARENT {
+            painter.rect_filled(rect, corner_radius, colors.container);
+        }
+        if colors.outline != Color32::TRANSPARENT {
+            painter.rect_stroke(
                 rect,
                 corner_radius,
-                Stroke::new(1.0, border_color),
-                egui::epaint::StrokeKind::Outside,
+                Stroke::new(metrics.outline_width, colors.outline),
+                StrokeKind::Inside,
             );
         }
+        crate::paint::paint_state_layer(painter, rect, corner_radius, colors.content, interaction);
 
-        // Draw icon: SVG (if provided) or emoji/text fallback
-        let icon_size = self.size * 0.6;
-        let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
+        let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(metrics.icon_size));
+        paint_widget_icon(
+            painter,
+            icon_rect,
+            &self.icon,
+            is_selected == Some(true),
+            colors.content,
+            theme.layout_direction,
+        );
 
-        // Helper function to render SVG from bytes with caching
-        let render_svg =
-            |ui: &mut Ui, bytes: &[u8], cache_key: &str, icon_rect: Rect, icon_size: f32| {
-                let size_px = (icon_size.max(1.0).ceil() as u32).max(1);
-                let texture_id = format!("svg_icon:{}:{}", cache_key, size_px);
-
-                // Try to get cached ColorImage, or create it if not exists
-                let color_image = {
-                    let mut cache = SVG_IMAGE_CACHE
-                        .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner);
-
-                    if let Some(cached_image) = cache.get(&texture_id) {
-                        // Image already rendered, use cached version
-                        Some(cached_image.clone())
-                    } else {
-                        // Need to parse and render SVG (expensive operation - only happens once!)
-                        let mut opt = Options::default();
-                        opt.fontdb_mut().load_system_fonts();
-
-                        if let Ok(tree) = Tree::from_data(bytes, &opt) {
-                            if let Some(mut pixmap) = Pixmap::new(size_px, size_px) {
-                                let tree_size = tree.size();
-                                let scale_x = size_px as f32 / tree_size.width();
-                                let scale_y = size_px as f32 / tree_size.height();
-                                let scale = scale_x.min(scale_y);
-                                let transform = Transform::from_scale(scale, scale);
-                                render(&tree, transform, &mut pixmap.as_mut());
-                                let data = pixmap.data();
-
-                                // Convert premultiplied bytes to plain RGBA
-                                let mut rgba: Vec<u8> =
-                                    Vec::with_capacity((size_px * size_px * 4) as usize);
-                                rgba.extend_from_slice(data);
-
-                                let img = Arc::new(ColorImage::from_rgba_unmultiplied(
-                                    [size_px as usize, size_px as usize],
-                                    &rgba,
-                                ));
-
-                                // Store in cache for future use
-                                cache.insert(texture_id.clone(), img.clone());
-                                Some(img)
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
-                    }
-                };
-
-                // Display the image if we have it
-                if let Some(img) = color_image {
-                    let tex: TextureHandle =
-                        ui.ctx()
-                            .load_texture(texture_id, (*img).clone(), TextureOptions::LINEAR);
-
-                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-                        ui.image(&tex);
-                    });
-                }
-            };
-
-        if let Some(svg_content) = &self.svg_data {
-            // Render inline SVG content
-            // Create a proper hash of the content for cache key
-            let bytes = svg_content.as_bytes();
-            use std::collections::hash_map::DefaultHasher;
-            use std::hash::{Hash, Hasher};
-            let mut hasher = DefaultHasher::new();
-            bytes.hash(&mut hasher);
-            let hash = hasher.finish();
-            let cache_key = format!("inline_{:x}", hash);
-            render_svg(ui, bytes, &cache_key, icon_rect, icon_size);
-        } else if let Some(path) = &self.svg_path {
-            // Try to load and rasterize SVG from file
-            if Path::new(path).exists() {
-                if let Ok(bytes) = fs::read(path) {
-                    render_svg(ui, &bytes, path, icon_rect, icon_size);
-                }
-            }
-        } else {
-            // Fallback: draw provided icon string (emoji constants from `noto_emoji` or raw text)
-            let text = &self.icon;
-            let font = FontId::proportional(icon_size);
-            let final_icon_color = self.icon_color_override.unwrap_or(icon_color);
-            ui.painter().text(
-                icon_rect.center(),
-                Align2::CENTER_CENTER,
-                text,
-                font,
-                final_icon_color,
+        if response.has_focus() {
+            crate::paint::paint_focus_ring(
+                painter,
+                rect,
+                corner_radius,
+                theme.color(ColorRole::Secondary),
             );
-        }
-
-        // Add ripple effect on hover (skip for Filled variant as it already has state changes)
-        if response.hovered() && self.enabled && self.variant != IconButtonVariant::Filled {
-            let ripple_color = icon_color.gamma_multiply(crate::tokens::state::HOVER_OPACITY);
-            ui.painter().rect_filled(rect, corner_radius, ripple_color);
         }
 
         response
     }
 }
 
-/// Blend a state layer overlay on top of a base color.
-///
-/// Used for M3 interactive states (hover: 8%, press: 12%).
-fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
-    crate::paint::state_layer_over(base, overlay, opacity)
-}
-
-/// Convenience function to create a standard icon button.
-///
-/// # Arguments
-/// * `icon` - Icon identifier
-///
-/// # Example
-/// ```rust
-/// # egui::__run_test_ui(|ui| {
-/// ui.add(icon_button_standard("menu"));
-/// # });
-/// ```
-pub fn icon_button_standard(icon: impl Into<String>) -> MaterialIconButton<'static> {
+/// A standard icon button.
+pub fn icon_button_standard(icon: impl Into<Icon>) -> MaterialIconButton<'static> {
     MaterialIconButton::standard(icon)
 }
 
-/// Convenience function to create a filled icon button.
-///
-/// # Arguments
-/// * `icon` - Icon identifier
-///
-/// # Example
-/// ```rust
-/// # egui::__run_test_ui(|ui| {
-/// ui.add(icon_button_filled("add"));
-/// # });
-/// ```
-pub fn icon_button_filled(icon: impl Into<String>) -> MaterialIconButton<'static> {
+/// A filled icon button.
+pub fn icon_button_filled(icon: impl Into<Icon>) -> MaterialIconButton<'static> {
     MaterialIconButton::filled(icon)
 }
 
-/// Convenience function to create a filled tonal icon button.
-///
-/// # Arguments
-/// * `icon` - Icon identifier
-///
-/// # Example
-/// ```rust
-/// # egui::__run_test_ui(|ui| {
-/// ui.add(icon_button_filled_tonal("edit"));
-/// # });
-/// ```
-pub fn icon_button_filled_tonal(icon: impl Into<String>) -> MaterialIconButton<'static> {
+/// A filled tonal icon button.
+pub fn icon_button_filled_tonal(icon: impl Into<Icon>) -> MaterialIconButton<'static> {
     MaterialIconButton::filled_tonal(icon)
 }
 
-/// Convenience function to create an outlined icon button.
-///
-/// # Arguments
-/// * `icon` - Icon identifier
-///
-/// # Example
-/// ```rust
-/// # egui::__run_test_ui(|ui| {
-/// ui.add(icon_button_outlined("delete"));
-/// # });
-/// ```
-pub fn icon_button_outlined(icon: impl Into<String>) -> MaterialIconButton<'static> {
+/// An outlined icon button.
+pub fn icon_button_outlined(icon: impl Into<Icon>) -> MaterialIconButton<'static> {
     MaterialIconButton::outlined(icon)
 }
 
-/// Convenience function to create a toggleable icon button.
-///
-/// # Arguments
-/// * `icon` - Icon identifier
-/// * `selected` - Mutable reference to the toggle state
-///
-/// # Example
-/// ```rust
-/// # egui::__run_test_ui(|ui| {
-/// let mut is_liked = false;
-/// ui.add(icon_button_toggle("favorite", &mut is_liked));
-/// # });
-/// ```
-pub fn icon_button_toggle(icon: impl Into<String>, selected: &mut bool) -> MaterialIconButton<'_> {
+/// A standard toggle icon button bound to `selected`.
+pub fn icon_button_toggle(icon: impl Into<Icon>, selected: &mut bool) -> MaterialIconButton<'_> {
     MaterialIconButton::toggle(icon, selected)
 }
