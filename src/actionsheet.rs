@@ -27,9 +27,11 @@ use egui::{
 /// # Example
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
+/// use egui_material3::MaterialActionSheet;
+///
 /// let mut sheet_open = false;
 ///
-/// let sheet = MaterialActionSheet::new("my_sheet", &mut sheet_open)
+/// let sheet = MaterialActionSheet::new(egui::Id::unique("my_sheet"), &mut sheet_open)
 ///     .label("Do something")
 ///     .button("Button 1", || {
 ///         println!("Button 1 clicked");
@@ -313,8 +315,10 @@ fn render_groups<'a>(
 /// # Example
 /// ```rust
 /// # egui::__run_test_ui(|ui| {
+/// use egui_material3::action_sheet;
+///
 /// let mut open = false;
-/// action_sheet("my_sheet", &mut open)
+/// action_sheet(egui::Id::unique("my_sheet"), &mut open)
 ///     .button("Action 1", || {})
 ///     .button("Action 2", || {})
 ///     .show(ui.ctx());
