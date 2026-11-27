@@ -324,8 +324,9 @@ pub use {
     },
     material_theme::MaterialTheme,
     menu::{
-        menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
-        MenuItem, MenuStyle, MenuThemeData, Positioning,
+        context_menu, menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData,
+        MenuButtonThemeData, MenuEntry, MenuItem, MenuStyle, MenuThemeData, MenuVariant,
+        Positioning,
     },
     notification::{
         notification, MaterialNotification, MaterialNotificationWithOffset, NotificationAlign,

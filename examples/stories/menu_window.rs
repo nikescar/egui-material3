@@ -54,12 +54,22 @@ pub struct MenuWindow {
     custom_item_height: f32,
     custom_icon_size: f32,
     custom_padding_horizontal: f32,
+    m3_open: bool,
+    m3_variant: crate::MenuVariant,
+    m3_segmented: bool,
+    m3_bold: bool,
+    m3_align: usize,
 }
 
 impl Default for MenuWindow {
     fn default() -> Self {
         Self {
             open: false,
+            m3_open: false,
+            m3_variant: crate::MenuVariant::Baseline,
+            m3_segmented: false,
+            m3_bold: false,
+            m3_align: 0,
             // Default knob values matching TypeScript stories
             anchor_corner: Corner::BottomLeft,
             menu_corner: Corner::TopLeft,
@@ -119,6 +129,8 @@ impl MenuWindow {
             .default_size([700.0, 600.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
+                    self.render_m3_examples(ui);
+                    ui.add_space(20.0);
                     self.render_component_examples(ui);
                     ui.add_space(20.0);
                     ui.separator();
@@ -144,6 +156,84 @@ impl MenuWindow {
         // Show menus
         self.show_menus(ctx);
         self.show_component_menus(ctx);
+    }
+
+    /// M3 menus: variants, segmented groups, check and radio items,
+    /// submenus, supporting and trailing text, and a context menu.
+    fn render_m3_examples(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Material 3 menus");
+        ui.horizontal(|ui| {
+            ui.label("Variant:");
+            ui.radio_value(
+                &mut self.m3_variant,
+                crate::MenuVariant::Baseline,
+                "Baseline",
+            );
+            ui.radio_value(
+                &mut self.m3_variant,
+                crate::MenuVariant::Standard,
+                "Standard",
+            );
+            ui.radio_value(&mut self.m3_variant, crate::MenuVariant::Vibrant, "Vibrant");
+            ui.checkbox(&mut self.m3_segmented, "Segmented");
+        });
+        let button = ui.add(MaterialButton::filled("Format"));
+        if button.clicked() {
+            self.m3_open = !self.m3_open;
+        }
+        let mut bold = self.m3_bold;
+        // Several radio items share one value: a Cell lets each closure set it.
+        let align = std::cell::Cell::new(self.m3_align);
+        menu(egui::Id::unique("m3_format_menu"), &mut self.m3_open)
+            .anchor_rect(button.rect)
+            .variant(self.m3_variant)
+            .segmented(self.m3_segmented)
+            .group("Style")
+            .item(menu_item("Bold").toggles(&mut bold).trailing_text("Ctrl+B"))
+            .item(
+                menu_item("Italic")
+                    .checked(false)
+                    .supporting_text("Slanted letters")
+                    .trailing_text("Ctrl+I"),
+            )
+            .group("Alignment")
+            .item(
+                menu_item("Left")
+                    .radio(align.get() == 0)
+                    .on_click(|| align.set(0)),
+            )
+            .item(
+                menu_item("Center")
+                    .radio(align.get() == 1)
+                    .on_click(|| align.set(1)),
+            )
+            .divider()
+            .item(menu_item("Share").leading_icon("share").submenu([
+                menu_item("Email").leading_icon("mail"),
+                menu_item("Message").leading_icon("chat"),
+                menu_item("More").submenu([menu_item("Copy link"), menu_item("QR code")]),
+            ]))
+            .item(menu_item("Delete").leading_icon("delete").enabled(false))
+            .show(ui.ctx());
+        self.m3_bold = bold;
+        self.m3_align = align.get();
+        ui.label(format!(
+            "Bold: {}, alignment: {}",
+            self.m3_bold, self.m3_align
+        ));
+
+        let target = ui.add(
+            egui::Label::new("Right-click (or Shift+F10) here for a context menu")
+                .sense(egui::Sense::click()),
+        );
+        crate::context_menu(
+            &target,
+            crate::MaterialMenu::context(egui::Id::unique("m3_context_menu"))
+                .variant(self.m3_variant)
+                .item(menu_item("Cut").leading_icon("content_cut"))
+                .item(menu_item("Copy").leading_icon("content_copy"))
+                .item(menu_item("Paste").leading_icon("content_paste")),
+        );
     }
 
     /// Render component_screen.dart style examples: ButtonAnchor and IconButtonAnchor.
