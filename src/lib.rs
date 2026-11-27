@@ -245,6 +245,7 @@ pub mod drawer;
 #[cfg(feature = "spreadsheet")]
 pub mod egui_smol;
 pub mod fab;
+pub mod fonts;
 pub mod icon;
 pub mod iconbutton;
 pub mod image_utils;
@@ -304,7 +305,7 @@ pub use {
         fab_branded, fab_primary, fab_secondary, fab_surface, fab_tertiary, google_branded_icon,
         FabSize, FabVariant, MaterialFab, SvgIcon, SvgPath,
     },
-    icon::{icon, MaterialIcon},
+    icon::{icon, paint_icon, Icon, MaterialIcon},
     iconbutton::{
         icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
         icon_button_toggle, IconButtonVariant, MaterialIconButton,
