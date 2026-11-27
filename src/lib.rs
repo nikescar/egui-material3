@@ -241,6 +241,7 @@ pub mod chips;
 pub mod dashcounter;
 pub mod datatable;
 pub mod dialog;
+pub mod divider;
 pub mod drawer;
 #[cfg(feature = "spreadsheet")]
 pub mod egui_smol;
@@ -260,6 +261,7 @@ pub mod noto_emoji;
 pub mod paint;
 pub mod progress;
 pub mod radio;
+pub mod segmented_button;
 pub mod select;
 pub mod slider;
 pub mod snackbar;
@@ -295,6 +297,7 @@ pub use {
         SortDirection, VAlign,
     },
     dialog::{dialog, MaterialDialog},
+    divider::{divider, vertical_divider, DividerOrientation, MaterialDivider},
     drawer::{
         dismissible_drawer, modal_drawer, permanent_drawer, standard_drawer, DrawerAlignment,
         DrawerHeader, DrawerItem, DrawerSection, DrawerThemeData, DrawerVariant, MaterialDrawer,
@@ -332,6 +335,7 @@ pub use {
         radio, radio_group, radio_list_tile, ListTileControlAffinity, MaterialRadio,
         MaterialRadioGroup, RadioListTile,
     },
+    segmented_button::{Segment, SegmentedButton},
     select::{select, MaterialSelect, MenuAlignment, SelectVariant},
     slider::{
         range_slider, slider, MaterialRangeSlider, MaterialSlider, RangeValues, SliderInteraction,

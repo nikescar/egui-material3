@@ -33,6 +33,7 @@ mod menu_window;
 mod notification_window;
 mod progress_window;
 mod radio_window;
+mod segmented_button_window;
 mod select_window;
 mod slider_window;
 mod snackbar_window;
@@ -70,6 +71,7 @@ use menu_window::MenuWindow;
 use notification_window::NotificationWindow;
 use progress_window::ProgressWindow;
 use radio_window::RadioWindow;
+use segmented_button_window::SegmentedButtonWindow;
 use select_window::SelectWindow;
 use slider_window::SliderWindow;
 use snackbar_window::SnackbarWindow;
@@ -158,6 +160,7 @@ struct MaterialApp {
     toolbar_window: ToolbarWindow,
     tooltip_window: TooltipWindow,
     treeview_window: TreeViewWindow,
+    segmented_button_window: SegmentedButtonWindow,
     svgemoji_window: SvgEmojiWindow,
 }
 
@@ -202,6 +205,7 @@ impl Default for MaterialApp {
             toolbar_window: ToolbarWindow::default(),
             tooltip_window: TooltipWindow::default(),
             treeview_window: TreeViewWindow::default(),
+            segmented_button_window: SegmentedButtonWindow::default(),
             svgemoji_window: SvgEmojiWindow::default(),
         }
     }
@@ -827,6 +831,13 @@ impl eframe::App for MaterialApp {
                     }
 
                     if ui
+                        .add(MaterialButton::filled("Segmented Button & Divider Stories"))
+                        .clicked()
+                    {
+                        self.segmented_button_window.open = true;
+                    }
+
+                    if ui
                         .add(MaterialButton::filled("Top App Bar Stories"))
                         .clicked()
                     {
@@ -873,6 +884,7 @@ impl eframe::App for MaterialApp {
         self.toolbar_window.show(ctx);
         self.tooltip_window.show(ctx);
         self.treeview_window.show(ctx);
+        self.segmented_button_window.show(ctx);
         self.svgemoji_window.show(ctx);
         self.symbol_window.show(ctx);
 
