@@ -316,6 +316,7 @@ impl<'a> MaterialActionSheet<'a> {
                 );
 
                 let button_response = ui.interact(button_rect, button_id, Sense::click());
+                crate::a11y::button(&button_response, button.enabled, &button.text);
 
                 // Hover effect
                 if button_response.hovered() && button.enabled {

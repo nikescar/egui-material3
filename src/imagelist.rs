@@ -1,3 +1,11 @@
+// ============================================================================
+// Module:       imagelist
+// Description:  Material Design image lists, with images loaded off the UI
+//               thread under size and decode limits.
+//
+// Dependencies: egui, image, base64, hex, ureq (ondemand)
+// ============================================================================
+
 //! # Material Design Image Lists
 //!
 //! This module provides Material Design 3 image list components with comprehensive
@@ -6,9 +14,14 @@
 //! ## Features
 //!
 //! - **Multiple image sources**: Local files, online URLs, and embedded byte arrays
-//! - **Smart caching**: Downloaded images are cached with proper file extensions
-//! - **Format detection**: Automatic detection of PNG, JPEG, GIF, and WebP formats
-//! - **Performance optimized**: Efficient loading and UI repainting
+//! - **Never blocks a frame**: every source (file, URL, data URL, embedded
+//!   bytes) is read and decoded on a background worker; the list draws a
+//!   placeholder until the image is ready, then repaints
+//! - **Bounded**: a source larger than 16 MiB, or an image larger than
+//!   8192 x 8192, is rejected rather than read or decoded; decoded images are
+//!   scaled down to at most 512 x 512
+//! - **Caching**: each source is loaded once per [`egui::Context`] and kept in
+//!   memory as a texture; nothing is written to disk
 //! - **Error handling**: Graceful fallback with visual indicators
 //!
 //! ## Usage
@@ -58,36 +71,39 @@
 //!
 //! ## OnDemand Feature Details
 //!
-//! When the `ondemand` feature is enabled, the image list provides:
+//! With the `ondemand` feature, `http://` and `https://` sources are
+//! downloaded on the same background workers, with 10 s connect and read
+//! timeouts. A failed download is not retried. Without the feature, URL
+//! sources show the failed-image mark.
 //!
-//! - **Automatic downloading**: Images are downloaded from URLs on first access
-//! - **Smart caching**: Downloaded images are saved to `/tmp/egui_material3_img/` with proper extensions
-//! - **Format detection**: File extensions are determined from content (PNG, JPEG, GIF, WebP)
-//! - **Efficient reuse**: Cached images are reused without re-downloading
-//! - **Performance optimization**: UI only repaints when new images are available
-//! - **Error handling**: Failed downloads show visual indicators instead of crashing
+//! ## Colours
 //!
-//! ### Cache Management
-//!
-//! - Cache directory: `/tmp/egui_material3_img/`
-//! - File naming: `img_{hash}.{extension}` (e.g., `img_abc123.png`)
-//! - Automatic cleanup: Cache persists between runs for efficiency
-//! - Manual cleanup: Remove `/tmp/egui_material3_img/` to clear cache
+//! Colours come from the context's [`MaterialTheme`]: `surface` behind the
+//! grid, `surfaceContainerHighest` behind each image while it loads,
+//! `outlineVariant` around it, `onSurface` for labels and the state layer,
+//! `onSurfaceVariant` for supporting text, and `error` for the failed mark.
 
-use crate::theme::get_global_color;
+use std::collections::HashMap;
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{Arc, Mutex, OnceLock, PoisonError};
+
+use crate::tokens::{ColorRole, InteractionState, TypeRole};
+use crate::MaterialTheme;
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Stroke},
     Rect, Response, Sense, Ui, Vec2, Widget,
 };
 use image::GenericImageView;
-use std::env;
 
 /// Material Design image list variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ImageListVariant {
+    /// Square tiles.
     Standard,
+    /// Tiles 1.2 times as tall as they are wide.
     Masonry,
+    /// Tiles 0.8 times as tall as they are wide.
     Woven,
 }
 
@@ -116,19 +132,27 @@ pub struct MaterialImageList<'a> {
     text_protected: bool,
     corner_radius: CornerRadius,
     id_salt: Option<String>,
-    tmppath: String,
 }
 
+/// One tile of a [`MaterialImageList`].
 pub struct ImageListItem<'a> {
+    /// The tile's label, also its accessible name.
     pub label: String,
+    /// Where the image comes from: a file path, an `http(s)://` URL (with the
+    /// `ondemand` feature), a `data:` URL, or `bytes:` followed by hex.
     pub image_source: Option<String>,
+    /// A second line under the label.
     pub supporting_text: Option<String>,
+    /// Called when the tile is clicked.
     pub on_click: Option<Box<dyn Fn() + Send + Sync>>,
+    /// An already-decoded image. When set, it is drawn instead of loading
+    /// `image_source`.
     pub loaded_image: Option<egui::ColorImage>,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 
 impl<'a> ImageListItem<'a> {
+    /// A tile labelled `label` showing the image at `image_source`.
     pub fn new(label: impl Into<String>, image_source: impl Into<String>) -> Self {
         Self {
             label: label.into(),
@@ -140,11 +164,13 @@ impl<'a> ImageListItem<'a> {
         }
     }
 
+    /// Sets the supporting text.
     pub fn supporting_text(mut self, text: impl Into<String>) -> Self {
         self.supporting_text = Some(text.into());
         self
     }
 
+    /// Sets the click callback.
     pub fn on_click<F>(mut self, callback: F) -> Self
     where
         F: Fn() + Send + Sync + 'static,
@@ -154,163 +180,267 @@ impl<'a> ImageListItem<'a> {
     }
 }
 
-/// Load image from a local file path
-fn load_image_from_file(file_path: &str) -> Option<egui::ColorImage> {
-    if std::path::Path::new(file_path).exists() {
-        match image::open(file_path) {
-            Ok(image) => {
-                let original_size = image.dimensions();
+// ---------------------------------------------------------------------------
+// Loading: every source is read and decoded on a background worker.
 
-                // Resize large images to max 512x512 to avoid memory issues
-                let resized_image = if original_size.0 > 512 || original_size.1 > 512 {
-                    image.resize(512, 512, image::imageops::FilterType::Lanczos3)
-                } else {
-                    image
-                };
+/// Largest source accepted, in bytes: a file, a response body, or the bytes
+/// a `data:` or `bytes:` source decodes to.
+const MAX_SOURCE_BYTES: u64 = 16 * 1024 * 1024;
 
-                let size = resized_image.dimensions();
-                let image_buffer = resized_image.to_rgba8();
-                let pixels = image_buffer.into_raw();
-                Some(egui::ColorImage::from_rgba_unmultiplied(
-                    [size.0 as usize, size.1 as usize],
-                    &pixels,
-                ))
-            }
-            Err(_) => None,
-        }
-    } else {
-        None
-    }
+/// Largest width or height accepted when decoding.
+const MAX_DECODED_DIMENSION: u32 = 8192;
+
+/// Most memory the decoder may allocate for one image.
+const MAX_DECODE_ALLOC: u64 = 512 * 1024 * 1024;
+
+/// Decoded images are scaled down to fit this square.
+const MAX_DISPLAY_DIMENSION: u32 = 512;
+
+/// Background workers shared by every image list in the process.
+const WORKERS: usize = 4;
+
+/// Load state of one source in one context.
+#[derive(Clone)]
+enum Slot {
+    /// Queued or being read on a worker.
+    Loading,
+    /// Decoded on a worker, waiting to be uploaded as a texture.
+    Decoded(egui::ColorImage),
+    /// Uploaded.
+    Ready(egui::TextureHandle),
+    /// Could not be read or decoded; not retried.
+    Failed,
 }
 
-/// Load image from URL (requires ondemand feature)
-#[cfg(feature = "ondemand")]
-fn load_image_from_url(url: &str, tmppath: &str) -> Option<egui::ColorImage> {
-    use std::hash::{Hash, Hasher};
-    use std::io::Read;
+/// The load states of one context's sources, by source string.
+type Slots = Arc<Mutex<HashMap<String, Slot>>>;
 
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    url.hash(&mut hasher);
-    let url_hash = format!("{:x}", hasher.finish());
-    let filename = format!("img_{}", url_hash);
-    let filepath = std::path::Path::new(tmppath).join(&filename);
+/// One load for a worker.
+struct Job {
+    source: String,
+    slots: Slots,
+    ctx: egui::Context,
+}
 
-    // Check if file already exists with any extension
-    let possible_files = [
-        filepath.with_extension("png"),
-        filepath.with_extension("jpg"),
-        filepath.with_extension("gif"),
-        filepath.with_extension("webp"),
-        filepath.clone(),
-    ];
+/// What a tile can draw this frame.
+enum ImageState {
+    Loading,
+    Ready(egui::TextureId),
+    Failed,
+}
 
-    let existing_file = possible_files.iter().find(|f| f.exists());
+/// The slots of `ctx`, created on first use.
+fn slots(ctx: &egui::Context) -> Slots {
+    let id = egui::Id::unique("egui_material3::imagelist::slots");
+    ctx.data_mut(|d| d.get_temp_mut_or_default::<Slots>(id).clone())
+}
 
-    if existing_file.is_none() {
-        // Try to download the image with timeout and user agent
-        let agent = ureq::AgentBuilder::new()
-            .timeout_read(std::time::Duration::from_secs(10))
-            .timeout_write(std::time::Duration::from_secs(10))
-            .user_agent("egui-material3/1.0")
-            .build();
-
-        match agent.get(url).call() {
-            Ok(response) => {
-                let status = response.status();
-                if status == 200 {
-                    let mut bytes = Vec::new();
-                    if let Ok(_) = response.into_reader().read_to_end(&mut bytes) {
-                        if !bytes.is_empty() {
-                            // Detect image format from content and add appropriate extension
-                            let extension = if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
-                                "png"
-                            } else if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
-                                "jpg"
-                            } else if bytes.starts_with(&[0x47, 0x49, 0x46]) {
-                                "gif"
-                            } else if bytes.starts_with(&[0x52, 0x49, 0x46, 0x46])
-                                && bytes.len() > 12
-                                && &bytes[8..12] == b"WEBP"
-                            {
-                                "webp"
-                            } else {
-                                "png"
-                            };
-
-                            let filepath_with_ext = filepath.with_extension(extension);
-                            let _ = std::fs::write(&filepath_with_ext, &bytes);
-                        }
-                    }
+/// The queue into the worker pool, or `None` where threads cannot be
+/// spawned (for example on the web).
+fn queue() -> Option<&'static Mutex<Sender<Job>>> {
+    static QUEUE: OnceLock<Option<Mutex<Sender<Job>>>> = OnceLock::new();
+    QUEUE
+        .get_or_init(|| {
+            let (sender, receiver) = std::sync::mpsc::channel::<Job>();
+            let receiver = Arc::new(Mutex::new(receiver));
+            let mut spawned = 0;
+            for n in 0..WORKERS {
+                let receiver = Arc::clone(&receiver);
+                let worker = std::thread::Builder::new()
+                    .name(format!("egui-material3-image-{n}"))
+                    .spawn(move || work(&receiver));
+                if worker.is_ok() {
+                    spawned += 1;
                 }
             }
-            Err(_) => {}
+            (spawned > 0).then(|| Mutex::new(sender))
+        })
+        .as_ref()
+}
+
+/// A worker: loads jobs until the queue closes.
+fn work(receiver: &Mutex<Receiver<Job>>) {
+    loop {
+        let next = receiver
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .recv();
+        let Ok(job) = next else {
+            return;
+        };
+        let slot = load_source(&job.source).map_or(Slot::Failed, Slot::Decoded);
+        job.slots
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(job.source, slot);
+        job.ctx.request_repaint();
+    }
+}
+
+/// What to draw for `source` this frame. The first call for a source queues
+/// it on a worker and returns [`ImageState::Loading`]; nothing here reads a
+/// file, the network or decodes an image on the calling thread, except where
+/// no worker can run, and then only for in-memory sources.
+fn image_for(ctx: &egui::Context, source: &str) -> ImageState {
+    let slots = slots(ctx);
+    let mut map = slots.lock().unwrap_or_else(PoisonError::into_inner);
+    match map.get(source).cloned() {
+        Some(Slot::Ready(texture)) => return ImageState::Ready(texture.id()),
+        Some(Slot::Failed) => return ImageState::Failed,
+        Some(Slot::Loading) => return ImageState::Loading,
+        Some(Slot::Decoded(image)) => {
+            let texture = ctx.load_texture(
+                "egui_material3::imagelist",
+                image,
+                egui::TextureOptions::default(),
+            );
+            let id = texture.id();
+            map.insert(source.to_owned(), Slot::Ready(texture));
+            return ImageState::Ready(id);
         }
+        None => {}
     }
 
-    // Try to load the image from cache
-    if let Some(existing_filepath) = possible_files.iter().find(|f| f.exists()) {
-        match image::open(existing_filepath) {
-            Ok(image) => {
-                let original_size = image.dimensions();
+    let job = Job {
+        source: source.to_owned(),
+        slots: Arc::clone(&slots),
+        ctx: ctx.clone(),
+    };
+    let queued = queue().is_some_and(|queue| {
+        queue
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .send(job)
+            .is_ok()
+    });
+    if queued {
+        map.insert(source.to_owned(), Slot::Loading);
+        return ImageState::Loading;
+    }
 
-                // Resize large images to max 512x512 to avoid memory issues
-                let resized_image = if original_size.0 > 512 || original_size.1 > 512 {
-                    image.resize(512, 512, image::imageops::FilterType::Lanczos3)
-                } else {
-                    image
-                };
-
-                let size = resized_image.dimensions();
-                let image_buffer = resized_image.to_rgba8();
-                let pixels = image_buffer.into_raw();
-                Some(egui::ColorImage::from_rgba_unmultiplied(
-                    [size.0 as usize, size.1 as usize],
-                    &pixels,
-                ))
-            }
-            Err(_) => None,
-        }
+    // No workers: decode in-memory sources here (no I/O), fail the rest.
+    let slot = if is_in_memory(source) {
+        load_source(source).map_or(Slot::Failed, Slot::Decoded)
     } else {
-        None
-    }
+        Slot::Failed
+    };
+    map.insert(source.to_owned(), slot);
+    drop(map);
+    ctx.request_repaint();
+    ImageState::Loading
 }
 
-/// Load image from data URL (base64 encoded)
-fn load_image_from_data_url(data_url: &str) -> Option<egui::ColorImage> {
-    if let Some(comma_pos) = data_url.find(',') {
-        let data_part = &data_url[comma_pos + 1..];
-        if let Ok(bytes) =
-            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data_part)
-        {
-            if let Ok(image) = image::load_from_memory(&bytes) {
-                let size = image.dimensions();
-                let image_buffer = image.to_rgba8();
-                let pixels = image_buffer.into_raw();
-                return Some(egui::ColorImage::from_rgba_unmultiplied(
-                    [size.0 as usize, size.1 as usize],
-                    &pixels,
-                ));
-            }
-        }
+fn is_in_memory(source: &str) -> bool {
+    source.starts_with("data:") || source.starts_with("bytes:")
+}
+
+/// Reads and decodes one source. Runs on a worker.
+fn load_source(source: &str) -> Option<egui::ColorImage> {
+    let bytes = if source.starts_with("http://") || source.starts_with("https://") {
+        download(source)?
+    } else if let Some(data_url) = source.strip_prefix("data:") {
+        decode_data_url(data_url)?
+    } else if let Some(hex_bytes) = source.strip_prefix("bytes:") {
+        decode_hex(hex_bytes)?
+    } else {
+        read_file(std::path::Path::new(source))?
+    };
+    decode_limited(&bytes)
+}
+
+/// Reads at most `limit` bytes; a longer or empty input is rejected.
+fn read_capped(reader: impl std::io::Read, limit: u64) -> Option<Vec<u8>> {
+    use std::io::Read;
+    let mut bytes = Vec::new();
+    reader
+        .take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .ok()?;
+    if bytes.is_empty() || bytes.len() as u64 > limit {
+        return None;
     }
+    Some(bytes)
+}
+
+fn read_file(path: &std::path::Path) -> Option<Vec<u8>> {
+    let file = std::fs::File::open(path).ok()?;
+    if file.metadata().ok()?.len() > MAX_SOURCE_BYTES {
+        return None;
+    }
+    read_capped(file, MAX_SOURCE_BYTES)
+}
+
+/// Decodes the part after `data:`: `<mediatype>[;base64],<payload>`. The
+/// payload length is checked before decoding.
+fn decode_data_url(data_url: &str) -> Option<Vec<u8>> {
+    let (_, payload) = data_url.split_once(',')?;
+    // Base64 is 4 characters per 3 bytes.
+    if payload.len() as u64 > MAX_SOURCE_BYTES.saturating_mul(4) / 3 + 4 {
+        return None;
+    }
+    base64::Engine::decode(&base64::engine::general_purpose::STANDARD, payload).ok()
+}
+
+fn decode_hex(hex_bytes: &str) -> Option<Vec<u8>> {
+    if hex_bytes.len() as u64 > MAX_SOURCE_BYTES.saturating_mul(2) {
+        return None;
+    }
+    hex::decode(hex_bytes).ok()
+}
+
+/// Downloads one image body. Runs on a worker.
+#[cfg(feature = "ondemand")]
+fn download(url: &str) -> Option<Vec<u8>> {
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(std::time::Duration::from_secs(10))
+        .timeout_read(std::time::Duration::from_secs(10))
+        .timeout_write(std::time::Duration::from_secs(10))
+        .user_agent("egui-material3/1.0")
+        .build();
+    let response = agent.get(url).call().ok()?;
+    if response.status() != 200 {
+        return None;
+    }
+    read_capped(response.into_reader(), MAX_SOURCE_BYTES)
+}
+
+/// Without the `ondemand` feature there is no HTTP client.
+#[cfg(not(feature = "ondemand"))]
+fn download(_url: &str) -> Option<Vec<u8>> {
     None
 }
 
-/// Load image from bytes (hex encoded)
-fn load_image_from_bytes(bytes_str: &str) -> Option<egui::ColorImage> {
-    if let Ok(bytes) = hex::decode(bytes_str) {
-        if let Ok(image) = image::load_from_memory(&bytes) {
-            let size = image.dimensions();
-            let image_buffer = image.to_rgba8();
-            let pixels = image_buffer.into_raw();
-            return Some(egui::ColorImage::from_rgba_unmultiplied(
-                [size.0 as usize, size.1 as usize],
-                &pixels,
-            ));
-        }
-    }
-    None
+/// Decodes an image under dimension and allocation limits, scaled down to fit
+/// [`MAX_DISPLAY_DIMENSION`].
+fn decode_limited(bytes: &[u8]) -> Option<egui::ColorImage> {
+    let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
+        .with_guessed_format()
+        .ok()?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(MAX_DECODED_DIMENSION);
+    limits.max_image_height = Some(MAX_DECODED_DIMENSION);
+    limits.max_alloc = Some(MAX_DECODE_ALLOC);
+    reader.limits(limits);
+    let image = reader.decode().ok()?;
+    let image = if image.width() > MAX_DISPLAY_DIMENSION || image.height() > MAX_DISPLAY_DIMENSION {
+        image.resize(
+            MAX_DISPLAY_DIMENSION,
+            MAX_DISPLAY_DIMENSION,
+            image::imageops::FilterType::Lanczos3,
+        )
+    } else {
+        image
+    };
+    let size = image.dimensions();
+    let pixels = image.to_rgba8().into_raw();
+    Some(egui::ColorImage::from_rgba_unmultiplied(
+        [size.0 as usize, size.1 as usize],
+        &pixels,
+    ))
 }
+
+// ---------------------------------------------------------------------------
+// The widget.
 
 impl<'a> MaterialImageList<'a> {
     /// Create a new standard image list.
@@ -329,19 +459,15 @@ impl<'a> MaterialImageList<'a> {
     }
 
     fn new(variant: ImageListVariant) -> Self {
-        // create img folder in tmp dir using let dir = env::temp_dir(), save the path to tmppath on MaterialImageList
-        let tmppath = env::temp_dir().join("egui_material3_img");
-        let _ = std::fs::create_dir_all(&tmppath);
-
         Self {
             variant,
             items: Vec::new(),
             columns: 3,
             item_spacing: 8.0,
             text_protected: false,
+            // ShapeKeyTokens.CornerExtraSmall (4 dp).
             corner_radius: CornerRadius::from(4.0),
             id_salt: None,
-            tmppath: tmppath.to_string_lossy().to_string(),
         }
     }
 
@@ -441,10 +567,6 @@ impl<'a> MaterialImageList<'a> {
         }
         self
     }
-
-    fn get_image_list_style(&self) -> Color32 {
-        get_global_color("surface")
-    }
 }
 
 impl<'a> Default for MaterialImageList<'a> {
@@ -455,18 +577,16 @@ impl<'a> Default for MaterialImageList<'a> {
 
 impl Widget for MaterialImageList<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let background_color = self.get_image_list_style();
+        let m3 = MaterialTheme::of(ui.ctx());
 
         let MaterialImageList {
             variant,
-            mut items,
+            items,
             columns,
             item_spacing,
             text_protected,
             corner_radius,
             id_salt,
-            #[cfg_attr(not(feature = "ondemand"), allow(unused_variables))]
-            tmppath,
         } = self;
 
         if items.is_empty() {
@@ -489,195 +609,165 @@ impl Widget for MaterialImageList<'_> {
         let response = ui.allocate_response(Vec2::new(total_width, total_height), Sense::hover());
         let rect = response.rect;
 
-        if ui.is_rect_visible(rect) {
-            // Draw background
-            ui.painter()
-                .rect_filled(rect, corner_radius, background_color);
+        if !ui.is_rect_visible(rect) {
+            return response;
+        }
 
-            // Draw items in grid
-            for (index, item) in items.iter_mut().enumerate() {
-                let row = index / columns;
-                let col = index % columns;
+        let on_surface = m3.color(ColorRole::OnSurface);
+        let on_surface_variant = m3.color(ColorRole::OnSurfaceVariant);
+        let label_font = TypeRole::LabelMedium.style().font_id(ui.ctx());
+        let supporting_font = TypeRole::LabelSmall.style().font_id(ui.ctx());
 
-                let item_x = rect.min.x + col as f32 * (item_width + item_spacing);
-                let item_y = rect.min.y + row as f32 * (item_height + item_spacing);
+        ui.painter()
+            .rect_filled(rect, corner_radius, m3.color(ColorRole::Surface));
 
-                let item_rect = Rect::from_min_size(
-                    egui::pos2(item_x, item_y),
-                    Vec2::new(item_width, item_height),
-                );
+        for (index, item) in items.iter().enumerate() {
+            let row = index / columns;
+            let col = index % columns;
 
-                // Handle item interaction with unique ID
-                let item_id = if let Some(ref salt) = id_salt {
-                    egui::Id::new((salt, "image_item", index))
-                } else {
-                    egui::Id::new(("image_item", index, &item.label))
-                };
+            let item_x = rect.min.x + col as f32 * (item_width + item_spacing);
+            let item_y = rect.min.y + row as f32 * (item_height + item_spacing);
 
-                let item_response = ui.interact(item_rect, item_id, Sense::click());
-                if item_response.hovered() {
-                    let hover_color = get_global_color("primary").linear_multiply(0.08);
-                    ui.painter()
-                        .rect_filled(item_rect, corner_radius, hover_color);
+            let item_rect = Rect::from_min_size(
+                egui::pos2(item_x, item_y),
+                Vec2::new(item_width, item_height),
+            );
+
+            // Handle item interaction with unique ID
+            let item_id = if let Some(ref salt) = id_salt {
+                egui::Id::unique((salt, "image_item", index))
+            } else {
+                egui::Id::unique(("image_item", index, &item.label))
+            };
+
+            let item_response = ui.interact(item_rect, item_id, Sense::click());
+            crate::a11y::button(&item_response, true, &item.label);
+
+            if item_response.clicked() {
+                if let Some(callback) = &item.on_click {
+                    callback();
                 }
+            }
 
-                if item_response.clicked() {
-                    if let Some(callback) = &item.on_click {
-                        callback();
-                    }
-                }
+            // Placeholder behind the image while it loads.
+            let image_rect = item_rect.shrink(2.0);
+            ui.painter().rect_filled(
+                image_rect,
+                corner_radius,
+                m3.color(ColorRole::SurfaceContainerHighest),
+            );
+            ui.painter().rect_stroke(
+                image_rect,
+                corner_radius,
+                Stroke::new(1.0, m3.color(ColorRole::OutlineVariant)),
+                egui::epaint::StrokeKind::Inside,
+            );
 
-                // Draw placeholder image (rectangle with border)
-                let image_rect = item_rect.shrink(2.0);
-                let image_bg = get_global_color("surfaceVariant");
-                let image_border = Stroke::new(1.0, get_global_color("outline"));
-
-                ui.painter()
-                    .rect_filled(image_rect, corner_radius, image_bg);
-                ui.painter().rect_stroke(
-                    image_rect,
-                    corner_radius,
-                    image_border,
-                    egui::epaint::StrokeKind::Outside,
-                );
-
-                // Load and cache image if not already loaded
-                if item.loaded_image.is_none() {
-                    if let Some(ref image_source) = item.image_source {
-                        let loaded_image = if image_source.starts_with("http://")
-                            || image_source.starts_with("https://")
-                        {
-                            #[cfg(feature = "ondemand")]
-                            {
-                                load_image_from_url(image_source, &tmppath)
-                            }
-                            #[cfg(not(feature = "ondemand"))]
-                            {
-                                None
-                            }
-                        } else if image_source.starts_with("data:") {
-                            load_image_from_data_url(image_source)
-                        } else if let Some(bytes_str) = image_source.strip_prefix("bytes:") {
-                            // Remove "bytes:" prefix
-                            load_image_from_bytes(bytes_str)
-                        } else {
-                            load_image_from_file(image_source)
-                        };
-
-                        // Cache the loaded image (even if None for failed loads)
-                        item.loaded_image = loaded_image;
-                    }
-                }
-
-                // Render the image if available
-                let mut failed = false;
-                if let Some(ref color_image) = item.loaded_image {
-                    let texture_name = format!("image_texture_{}_{}", item_id.value(), item.label);
-                    let texture_id = ui.ctx().load_texture(
-                        texture_name,
-                        color_image.clone(),
-                        Default::default(),
+            let state = match (&item.loaded_image, &item.image_source) {
+                (Some(image), _) => {
+                    // A caller-decoded image, uploaded under this tile's id.
+                    let texture = ui.ctx().load_texture(
+                        format!("egui_material3::imagelist::{}", item_id.value()),
+                        image.clone(),
+                        egui::TextureOptions::default(),
                     );
+                    let id = texture.id();
+                    // Keep the handle alive until the frame is painted.
+                    ui.data_mut(|d| d.insert_temp(item_id, texture));
+                    ImageState::Ready(id)
+                }
+                (None, Some(source)) => image_for(ui.ctx(), source),
+                (None, None) => ImageState::Failed,
+            };
+
+            match state {
+                ImageState::Ready(texture_id) => {
                     ui.painter().image(
-                        texture_id.id(),
+                        texture_id,
                         image_rect,
-                        egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                        Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
                         Color32::WHITE,
                     );
-                } else {
-                    failed = true;
                 }
-
-                if failed {
-                    // Debug: Print when showing X marks
-                    println!("SHOWING X MARK for item: {}", item.label);
-                    // Draw a simple "X" to indicate failed image load
-                    let line_color = get_global_color("error");
-                    ui.painter().line_segment(
-                        [image_rect.min, image_rect.max],
-                        Stroke::new(2.0, line_color),
-                    );
+                ImageState::Loading => {}
+                ImageState::Failed => {
+                    let stroke = Stroke::new(2.0, m3.color(ColorRole::Error));
+                    ui.painter()
+                        .line_segment([image_rect.min, image_rect.max], stroke);
                     ui.painter().line_segment(
                         [
                             egui::pos2(image_rect.min.x, image_rect.max.y),
                             egui::pos2(image_rect.max.x, image_rect.min.y),
                         ],
-                        Stroke::new(2.0, line_color),
+                        stroke,
                     );
                 }
+            }
 
-                // Draw text overlay or below image
-                let text_color = if text_protected {
-                    Color32::WHITE
-                } else {
-                    get_global_color("onSurface")
-                };
+            // M3 state layer (StateTokens) of onSurface over the tile.
+            crate::paint::paint_state_layer(
+                ui.painter(),
+                item_rect,
+                corner_radius,
+                on_surface,
+                InteractionState::from_response(&item_response),
+            );
 
-                if text_protected {
-                    // Draw dark overlay for text protection
-                    let overlay_rect = Rect::from_min_size(
-                        egui::pos2(image_rect.min.x, image_rect.max.y - 40.0),
-                        Vec2::new(image_rect.width(), 40.0),
-                    );
-                    let overlay_color = Color32::from_rgba_unmultiplied(0, 0, 0, 128);
-                    ui.painter()
-                        .rect_filled(overlay_rect, CornerRadius::ZERO, overlay_color);
+            if text_protected {
+                // A dark band keeps white text readable over any image.
+                let overlay_rect = Rect::from_min_size(
+                    egui::pos2(image_rect.min.x, image_rect.max.y - 40.0),
+                    Vec2::new(image_rect.width(), 40.0),
+                );
+                ui.painter().rect_filled(
+                    overlay_rect,
+                    CornerRadius::ZERO,
+                    Color32::from_black_alpha(128),
+                );
 
-                    // Draw text on overlay
-                    let text_pos = egui::pos2(image_rect.min.x + 8.0, image_rect.max.y - 30.0);
+                ui.painter().text(
+                    egui::pos2(image_rect.min.x + 8.0, image_rect.max.y - 30.0),
+                    egui::Align2::LEFT_TOP,
+                    &item.label,
+                    label_font.clone(),
+                    Color32::WHITE,
+                );
+
+                if let Some(supporting_text) = &item.supporting_text {
                     ui.painter().text(
-                        text_pos,
+                        egui::pos2(image_rect.min.x + 8.0, image_rect.max.y - 16.0),
                         egui::Align2::LEFT_TOP,
-                        &item.label,
-                        egui::FontId::proportional(12.0),
-                        text_color,
+                        supporting_text,
+                        supporting_font.clone(),
+                        Color32::from_white_alpha(200),
                     );
+                }
+            } else {
+                // Draw text below image
+                let text_y = item_rect.max.y - 30.0;
+                ui.painter().text(
+                    egui::pos2(item_rect.min.x + 4.0, text_y),
+                    egui::Align2::LEFT_TOP,
+                    &item.label,
+                    label_font.clone(),
+                    on_surface,
+                );
 
-                    if let Some(supporting_text) = &item.supporting_text {
-                        let support_text_pos =
-                            egui::pos2(image_rect.min.x + 8.0, image_rect.max.y - 16.0);
-                        ui.painter().text(
-                            support_text_pos,
-                            egui::Align2::LEFT_TOP,
-                            supporting_text,
-                            egui::FontId::proportional(10.0),
-                            get_global_color("onSurfaceVariant"),
-                        );
-                    }
-                } else {
-                    // Draw text below image
-                    let text_y = item_rect.max.y - 30.0;
-                    let text_pos = egui::pos2(item_rect.min.x + 4.0, text_y);
-
+                // Supporting text, or else the source for anything but
+                // embedded data (a hex or base64 blob is no use as a label).
+                let second_line = item.supporting_text.as_deref().or_else(|| {
+                    item.image_source
+                        .as_deref()
+                        .filter(|source| !is_in_memory(source))
+                });
+                if let Some(text) = second_line {
                     ui.painter().text(
-                        text_pos,
+                        egui::pos2(item_rect.min.x + 4.0, text_y + 14.0),
                         egui::Align2::LEFT_TOP,
-                        &item.label,
-                        egui::FontId::proportional(12.0),
-                        text_color,
+                        text,
+                        supporting_font.clone(),
+                        on_surface_variant,
                     );
-                    // draw image_source if avalilable
-                    if let Some(image_source) = &item.image_source {
-                        let source_pos = egui::pos2(item_rect.min.x + 4.0, text_y + 14.0);
-                        ui.painter().text(
-                            source_pos,
-                            egui::Align2::LEFT_TOP,
-                            image_source,
-                            egui::FontId::proportional(10.0),
-                            get_global_color("onSurfaceVariant"),
-                        );
-                    }
-
-                    if let Some(supporting_text) = &item.supporting_text {
-                        let support_text_pos = egui::pos2(item_rect.min.x + 4.0, text_y + 14.0);
-                        ui.painter().text(
-                            support_text_pos,
-                            egui::Align2::LEFT_TOP,
-                            supporting_text,
-                            egui::FontId::proportional(10.0),
-                            get_global_color("onSurfaceVariant"),
-                        );
-                    }
                 }
             }
         }
@@ -699,4 +789,156 @@ pub fn masonry_image_list() -> MaterialImageList<'static> {
 /// Convenience function to create a woven image list.
 pub fn woven_image_list() -> MaterialImageList<'static> {
     MaterialImageList::woven()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{Duration, Instant};
+
+    fn frame(ctx: &egui::Context, mut app: impl FnMut(&mut Ui)) {
+        ctx.run_ui(Default::default(), |ui| app(ui))
+            .textures_delta
+            .clear();
+    }
+
+    fn png(width: u32, height: u32) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        let image = image::RgbaImage::from_pixel(width, height, image::Rgba([10, 20, 30, 255]));
+        let written = image::DynamicImage::ImageRgba8(image).write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageFormat::Png,
+        );
+        assert!(written.is_ok(), "encoding the test PNG should work");
+        bytes
+    }
+
+    /// Runs frames until `source` leaves the loading state, or 10 s pass.
+    fn settle(ctx: &egui::Context, source: &str) -> ImageState {
+        let started = Instant::now();
+        loop {
+            frame(ctx, |ui| {
+                ui.add(image_list().item("Image", source));
+            });
+            match image_for(ctx, source) {
+                ImageState::Loading if started.elapsed() < Duration::from_secs(10) => {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                state => return state,
+            }
+        }
+    }
+
+    /// Regression test for nikescar/egui-material3#19: drawing an image list
+    /// with a remote image does not wait for the server.
+    #[cfg(feature = "ondemand")]
+    #[test]
+    fn test_remote_image_does_not_block_the_frame() -> std::io::Result<()> {
+        // A server that accepts the connection and never answers.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+        let url = format!("http://{}/image.png", listener.local_addr()?);
+        let ctx = egui::Context::default();
+        let started = Instant::now();
+        for _ in 0..3 {
+            frame(&ctx, |ui| {
+                ui.add(image_list().item("Remote", url.clone()));
+            });
+        }
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "drawing the list should not wait for the download"
+        );
+        assert!(
+            matches!(image_for(&ctx, &url), ImageState::Loading),
+            "the stalled download should still be loading"
+        );
+        Ok(())
+    }
+
+    /// A local file is read on a worker and shows up on a later frame.
+    #[test]
+    fn test_local_file_loads_off_the_frame() -> std::io::Result<()> {
+        let dir = std::env::temp_dir().join(format!(
+            "egui-material3-imagelist-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        std::fs::create_dir_all(&dir)?;
+        let path = dir.join("tile.png");
+        std::fs::write(&path, png(4, 4))?;
+        let source = path.to_string_lossy().to_string();
+
+        let ctx = egui::Context::default();
+        let state = settle(&ctx, &source);
+        // Best-effort cleanup of the temporary directory.
+        std::fs::remove_dir_all(&dir).ok();
+        assert!(
+            matches!(state, ImageState::Ready(_)),
+            "the local file should load"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_missing_file_fails() {
+        let ctx = egui::Context::default();
+        let source = "this/file/does/not/exist.png";
+        assert!(
+            matches!(settle(&ctx, source), ImageState::Failed),
+            "a missing file should fail"
+        );
+    }
+
+    #[test]
+    fn test_embedded_bytes_load() {
+        let ctx = egui::Context::default();
+        let source = format!("bytes:{}", hex::encode(png(3, 2)));
+        assert!(
+            matches!(settle(&ctx, &source), ImageState::Ready(_)),
+            "embedded bytes should load"
+        );
+    }
+
+    #[test]
+    fn test_body_over_the_cap_is_rejected() {
+        let body = vec![0_u8; 101];
+        assert!(
+            read_capped(body.as_slice(), 100).is_none(),
+            "a body over the cap should be rejected"
+        );
+        assert_eq!(
+            read_capped(body.get(..100).unwrap_or_default(), 100).map(|b| b.len()),
+            Some(100),
+            "a body at the cap should be read"
+        );
+    }
+
+    #[test]
+    fn test_image_over_the_dimension_limit_is_rejected() {
+        let too_wide = png(MAX_DECODED_DIMENSION + 1, 1);
+        assert!(
+            decode_limited(&too_wide).is_none(),
+            "an image wider than the limit should not be decoded"
+        );
+        let decoded = decode_limited(&png(1024, 8));
+        assert_eq!(
+            decoded.map(|image| image.size),
+            Some([512, 4]),
+            "a large image should be scaled to fit 512 x 512"
+        );
+    }
+
+    #[test]
+    fn test_oversized_inline_sources_are_rejected_before_decoding() {
+        let hex_len = usize::try_from(MAX_SOURCE_BYTES * 2 + 2).unwrap_or(usize::MAX);
+        assert!(
+            decode_hex(&"0".repeat(hex_len)).is_none(),
+            "hex over the cap should be rejected"
+        );
+        let b64_len = usize::try_from(MAX_SOURCE_BYTES * 2).unwrap_or(usize::MAX);
+        assert!(
+            decode_data_url(&format!("image/png;base64,{}", "A".repeat(b64_len))).is_none(),
+            "a data URL over the cap should be rejected"
+        );
+    }
 }

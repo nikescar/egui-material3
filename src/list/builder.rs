@@ -67,7 +67,7 @@ impl<'a> MaterialList<'a> {
     /// # Example
     /// ```rust
     /// let list = MaterialList::new()
-    ///     .id(egui::Id::new("my_list"))
+    ///     .id(egui::Id::unique("my_list"))
     ///     .dividers(false);
     /// ```
     pub fn id(mut self, id: impl Into<egui::Id>) -> Self {

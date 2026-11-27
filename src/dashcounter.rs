@@ -2,15 +2,24 @@
 //!
 //! # M3 Color Role Usage
 //!
-//! - **surface**: Card background
-//! - **onSurface**: Text and content
-//! - **surfaceContainerHighest**: Container background
-//! - **primary**: Counter text and highlights
-//! - **onSurfaceVariant**: Category text
+//! Colours come from the context's [`MaterialTheme`], type from the M3 type
+//! scale ([`TypeRole`]). Each card is an outlined card
+//! (`OutlinedCardTokens`):
+//!
+//! - **surface**: card background (`ContainerColor`)
+//! - **outlineVariant**: card outline (`OutlineColor`)
+//! - **onSurface**: title text, and the state layer on a hovered or pressed
+//!   counter
+//! - **primary**: counter text
+//! - **onSurfaceVariant**: category and description text
 
-use crate::get_global_color;
+use crate::tokens::{ColorRole, InteractionState, TypeRole};
+use crate::MaterialTheme;
 use egui::epaint::CornerRadius;
-use egui::{self, FontId, Pos2, Rect, Response, Sense, Ui, Vec2};
+use egui::{self, Pos2, Rect, Response, Sense, Ui, Vec2};
+
+/// Callback that adds controls to the title area of a dashboard counter.
+type TitleUiFn<'a> = Box<dyn FnMut(&mut Ui) + 'a>;
 
 /// A Material Design 3 Dashboard Counter component.
 ///
@@ -54,7 +63,7 @@ pub struct MaterialDashCounter<'a> {
     /// Optional color for description text (defaults to onSurfaceVariant)
     description_color: Option<egui::Color32>,
     /// Optional callback to add UI controls in the title area
-    title_ui: Option<Box<dyn FnMut(&mut Ui) + 'a>>,
+    title_ui: Option<TitleUiFn<'a>>,
 }
 
 /// A single counter card with category and counter display.
@@ -197,6 +206,7 @@ impl<'a> MaterialDashCounter<'a> {
     /// * `category_color` - Color for category text
     /// * `counter_color` - Color for counter numbers
     /// * `description_color` - Color for description text
+    #[allow(clippy::too_many_arguments)]
     pub fn card_with_description_colored(
         mut self,
         category: impl Into<String>,
@@ -304,20 +314,22 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
         }
 
         // Theme colors
-        let on_surface = get_global_color("onSurface");
-        let surface = get_global_color("surface");
-        let outline = get_global_color("outline");
+        let m3 = MaterialTheme::of(ui.ctx());
+        let on_surface = m3.color(ColorRole::OnSurface);
+        let surface = m3.color(ColorRole::Surface);
+        // OutlinedCardTokens.OutlineColor.
+        let outline = m3.color(ColorRole::OutlineVariant);
 
         // Use custom colors if provided, otherwise use theme defaults
         let category_color = self
             .category_color
-            .unwrap_or_else(|| get_global_color("onSurfaceVariant"));
+            .unwrap_or_else(|| m3.color(ColorRole::OnSurfaceVariant));
         let counter_color = self
             .counter_color
-            .unwrap_or_else(|| get_global_color("primary"));
+            .unwrap_or_else(|| m3.color(ColorRole::Primary));
         let description_color = self
             .description_color
-            .unwrap_or_else(|| get_global_color("onSurfaceVariant"));
+            .unwrap_or_else(|| m3.color(ColorRole::OnSurfaceVariant));
 
         let painter = ui.painter_at(outer_rect);
 
@@ -335,11 +347,11 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                 .max_rect(title_rect)
                 .layout(egui::Layout::left_to_right(egui::Align::BOTTOM)),
         );
-        title_ui.label(
-            egui::RichText::new(&self.title)
-                .size(18.0)
-                .color(on_surface),
-        );
+        title_ui.label(TypeRole::TitleLarge.style().layout_job(
+            ui.ctx(),
+            self.title.as_str(),
+            on_surface,
+        ));
 
         // Call custom title UI callback if provided
         if let Some(mut callback) = self.title_ui {
@@ -392,8 +404,13 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             (((scroll + available_width) / card_step).ceil() as usize).min(card_count);
 
         // Draw cards
-        for i in first_visible..last_visible {
-            let card = &self.cards[i];
+        for (i, card) in self
+            .cards
+            .iter()
+            .enumerate()
+            .take(last_visible)
+            .skip(first_visible)
+        {
             let card_left = i as f32 * card_step + self.padding - scroll;
             let screen_x = outer_rect.left() + card_left;
 
@@ -416,8 +433,11 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                 card_rect,
                 rounding,
                 egui::Stroke::new(1.0, outline),
-                egui::epaint::StrokeKind::Outside,
+                egui::epaint::StrokeKind::Inside,
             );
+            // The state layer goes under the text; its colour is known once
+            // the counter has been interacted with, below.
+            let state_layer_slot = painter.add(egui::Shape::Noop);
 
             // Card content layout - vertically centered
             let content_padding = 12.0;
@@ -432,11 +452,11 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             let card_description_color = card.description_color.unwrap_or(description_color);
 
             // Calculate total content height for vertical centering
-            let category_height = 15.0; // Approximate height for 12pt font
+            let category_height = 15.0; // Label Medium, 12 sp
             let gap_after_category = 10.0; // Space between category and counter
-            let counter_height = 32.0; // Approximate height for 32pt font
+            let counter_height = 32.0; // Headline Large, 32 sp
             let desc_gap = 3.0; // Gap before descriptions
-            let desc_height = 12.0; // Approximate height for 10pt font
+            let desc_height = 13.0; // Label Small, 11 sp
 
             let total_content_height = if has_descriptions {
                 category_height + gap_after_category + counter_height + desc_gap + desc_height
@@ -457,7 +477,7 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                 Pos2::new(card_rect.center().x, category_y),
                 egui::Align2::CENTER_TOP,
                 &card.category,
-                FontId::proportional(12.0),
+                TypeRole::LabelMedium.style().font_id(ui.ctx()),
                 card_category_color,
             );
 
@@ -466,9 +486,9 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
             let total_text = format!("/{}", card.total_counter);
 
             // Measure text widths to position them correctly
-            let sub_font = FontId::proportional(32.0);
-            let total_font = FontId::proportional(20.0);
-            let desc_font = FontId::proportional(10.0);
+            let sub_font = TypeRole::HeadlineLarge.style().font_id(ui.ctx());
+            let total_font = TypeRole::TitleLarge.style().font_id(ui.ctx());
+            let desc_font = TypeRole::LabelSmall.style().font_id(ui.ctx());
 
             let sub_galley =
                 painter.layout_no_wrap(sub_text.clone(), sub_font.clone(), card_counter_color);
@@ -507,10 +527,10 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                 let desc_padding = 4.0; // Small padding between the two descriptions
 
                 // If both descriptions exist, center them as a pair
-                if card.sub_description.is_some() && card.total_description.is_some() {
-                    let sub_desc = card.sub_description.as_ref().unwrap();
-                    let total_desc = card.total_description.as_ref().unwrap();
-
+                if let (Some(sub_desc), Some(total_desc)) = (
+                    card.sub_description.as_ref(),
+                    card.total_description.as_ref(),
+                ) {
                     // Measure description text widths
                     let sub_desc_galley = painter.layout_no_wrap(
                         sub_desc.clone(),
@@ -584,6 +604,27 @@ impl<'a> egui::Widget for MaterialDashCounter<'a> {
                 ui.make_persistent_id(format!("{}_{}", id_salt, i)),
                 Sense::click(),
             );
+
+            crate::a11y::button(
+                &counter_sense,
+                true,
+                &format!(
+                    "{} {}/{}",
+                    card.category, card.sub_counter, card.total_counter
+                ),
+            );
+            // M3 state layer (StateTokens) of onSurface over the card.
+            let opacity = InteractionState::from_response(&counter_sense).opacity();
+            if opacity > 0.0 {
+                painter.set(
+                    state_layer_slot,
+                    egui::epaint::RectShape::filled(
+                        card_rect,
+                        rounding,
+                        on_surface.gamma_multiply(opacity),
+                    ),
+                );
+            }
 
             if counter_sense.clicked() {
                 if let Some(callback) = &mut self.on_click {

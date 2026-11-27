@@ -325,14 +325,25 @@ impl<'a> Widget for MaterialTabs<'a> {
 
             // Create unique ID for each tab using optional salt
             let tab_id = if let Some(ref salt) = self.id_salt {
-                egui::Id::new((salt, "tab", index))
+                egui::Id::unique((salt, "tab", index))
             } else {
-                egui::Id::new(("tab", index))
+                egui::Id::unique(("tab", index))
             };
 
-            let tab_response = ui.interact(tab_rect, tab_id, Sense::click());
+            let tab_response = ui.interact(
+                tab_rect,
+                tab_id,
+                crate::a11y::sense(self.enabled, Sense::click()),
+            );
 
             let is_selected = *self.selected == index;
+            crate::a11y::toggle(
+                &tab_response,
+                egui::Role::Tab,
+                self.enabled,
+                &tab.label,
+                is_selected,
+            );
             let is_hovered = tab_response.hovered();
 
             // Draw custom background if color is specified

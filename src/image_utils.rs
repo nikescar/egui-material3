@@ -11,6 +11,11 @@ use resvg::{
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+/// Largest width or height an SVG is rasterised at, or a PNG is decoded at.
+/// An SVG declaring `width="100000"` would otherwise allocate tens of
+/// gigabytes for its pixmap.
+const MAX_DIMENSION: u32 = 4096;
+
 lazy_static::lazy_static! {
     static ref TEXTURE_CACHE: Mutex<HashMap<String, TextureHandle>> = Mutex::new(HashMap::new());
 }
@@ -24,6 +29,11 @@ pub fn svg_to_png_bytes(svg_data: &str) -> Result<Vec<u8>, String> {
     let size = tree.size().to_int_size();
     let width = size.width();
     let height = size.height();
+    if width > MAX_DIMENSION || height > MAX_DIMENSION {
+        return Err(format!(
+            "SVG is {width} x {height}; the limit is {MAX_DIMENSION} x {MAX_DIMENSION}"
+        ));
+    }
 
     // Create a new Pixmap to draw on
     let mut pixmap =
@@ -51,7 +61,9 @@ pub fn create_texture_from_svg(
 ) -> Result<TextureHandle, String> {
     // Check if texture is already cached
     {
-        let cache = TEXTURE_CACHE.lock().unwrap();
+        let cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(texture) = cache.get(name) {
             return Ok(texture.clone());
         }
@@ -61,8 +73,7 @@ pub fn create_texture_from_svg(
     let png_bytes = svg_to_png_bytes(svg_data)?;
 
     // Decode PNG to image data
-    let image =
-        image::load_from_memory(&png_bytes).map_err(|e| format!("Failed to decode PNG: {}", e))?;
+    let image = decode_png_limited(&png_bytes)?;
 
     let size = [image.width() as usize, image.height() as usize];
     let rgba_image = image.to_rgba8();
@@ -73,7 +84,9 @@ pub fn create_texture_from_svg(
 
     // Cache the texture
     {
-        let mut cache = TEXTURE_CACHE.lock().unwrap();
+        let mut cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.insert(name.to_string(), texture.clone());
     }
 
@@ -87,15 +100,16 @@ pub fn create_texture_from_png_bytes(
 ) -> Result<TextureHandle, String> {
     // Check if texture is already cached
     {
-        let cache = TEXTURE_CACHE.lock().unwrap();
+        let cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(texture) = cache.get(name) {
             return Ok(texture.clone());
         }
     }
 
     // Decode PNG to image data
-    let image =
-        image::load_from_memory(png_bytes).map_err(|e| format!("Failed to decode PNG: {}", e))?;
+    let image = decode_png_limited(png_bytes)?;
 
     let size = [image.width() as usize, image.height() as usize];
     let rgba_image = image.to_rgba8();
@@ -106,11 +120,45 @@ pub fn create_texture_from_png_bytes(
 
     // Cache the texture
     {
-        let mut cache = TEXTURE_CACHE.lock().unwrap();
+        let mut cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.insert(name.to_string(), texture.clone());
     }
 
     Ok(texture)
+}
+
+/// Decodes a PNG no larger than [`MAX_DIMENSION`] on either side.
+fn decode_png_limited(png_bytes: &[u8]) -> Result<image::DynamicImage, String> {
+    let mut reader =
+        image::ImageReader::with_format(std::io::Cursor::new(png_bytes), image::ImageFormat::Png);
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(MAX_DIMENSION);
+    limits.max_image_height = Some(MAX_DIMENSION);
+    reader.limits(limits);
+    reader
+        .decode()
+        .map_err(|e| format!("Failed to decode PNG: {}", e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_oversized_svg_is_refused() {
+        let svg = r#"<svg xmlns="http://www.w3.org/2000/svg" width="100000" height="100000"/>"#;
+        assert!(
+            svg_to_png_bytes(svg).is_err(),
+            "an SVG over the size limit should be refused, not rasterised"
+        );
+        let small = r#"<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>"#;
+        assert!(
+            svg_to_png_bytes(small).is_ok(),
+            "a small SVG should rasterise"
+        );
+    }
 }
 
 // Material Icons support - using Unicode characters

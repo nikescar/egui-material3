@@ -39,8 +39,9 @@ struct MyApp {
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Material Design 3 Components 테스트");
             ui.add_space(20.0);
             egui::ScrollArea::vertical().show(ui, |ui| {

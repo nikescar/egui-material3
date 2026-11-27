@@ -1,11 +1,13 @@
 //! Rendering implementation for MaterialDataTable
 
 use super::{types::*, MaterialDataTable};
-use crate::{button::MaterialButton, theme::get_global_color};
+use crate::tokens::typography::{font_family, WEIGHT_MEDIUM, WEIGHT_REGULAR};
+use crate::tokens::{state, ColorRole};
+use crate::{button::MaterialButton, MaterialTheme};
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Stroke},
-    FontFamily, FontId, Id, Rect, Response, Sense, Ui, Vec2, Widget, WidgetText,
+    FontId, Id, Rect, Response, Sense, Ui, Vec2, Widget,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -16,12 +18,12 @@ const COMPACT_THRESHOLD: f32 = 500.0; // Compact tables: 14px fonts, 18px paddin
                                       // Wide tables (≥500px): 16px fonts, 24px padding (default)
 
 impl<'a> MaterialDataTable<'a> {
-    fn get_table_style(&self) -> (Color32, Stroke) {
+    fn get_table_style(&self, m3: &MaterialTheme) -> (Color32, Stroke) {
         let md_surface = self
             .theme
             .decoration
-            .unwrap_or_else(|| get_global_color("surface"));
-        let md_outline = get_global_color("outline");
+            .unwrap_or_else(|| m3.color(ColorRole::Surface));
+        let md_outline = m3.color(ColorRole::OutlineVariant);
         let border_stroke = self
             .theme
             .border_stroke
@@ -31,7 +33,13 @@ impl<'a> MaterialDataTable<'a> {
 
     /// Show the data table and return both UI response and selection state
     pub fn show(self, ui: &mut Ui) -> DataTableResponse {
-        let (background_color, border_stroke) = self.get_table_style();
+        let m3 = MaterialTheme::of(ui.ctx());
+        let (background_color, border_stroke) = self.get_table_style(&m3);
+        // Header text in the Medium weight (TypeScaleTokens.TitleSmallWeight),
+        // cells in Regular (BodyMediumWeight); measuring and painting both use
+        // these, so a row's measured height matches what is drawn.
+        let header_family = font_family(ui.ctx(), WEIGHT_MEDIUM);
+        let cell_family = font_family(ui.ctx(), WEIGHT_REGULAR);
 
         // Generate table ID for state persistence
         let table_id = self.id.unwrap_or_else(|| {
@@ -54,7 +62,7 @@ impl<'a> MaterialDataTable<'a> {
                 }
             }
             self.rows.len().hash(&mut hasher);
-            Id::new(format!("datatable_{}", hasher.finish()))
+            Id::unique(format!("datatable_{}", hasher.finish()))
         });
 
         // Get or create persistent state
@@ -85,9 +93,9 @@ impl<'a> MaterialDataTable<'a> {
 
         // Sync selection state only for rows where the caller explicitly set `.selected()`.
         // Rows without an explicit `.selected()` call preserve their internally-clicked state.
-        for (i, row) in self.rows.iter().enumerate() {
-            if i < state.selected_rows.len() && row.selection_externally_set {
-                state.selected_rows[i] = row.selected;
+        for (selected, row) in state.selected_rows.iter_mut().zip(self.rows.iter()) {
+            if row.selection_externally_set {
+                *selected = row.selected;
             }
         }
 
@@ -109,7 +117,7 @@ impl<'a> MaterialDataTable<'a> {
             default_row_height,
             theme,
             auto_height,
-            refresh_interval,
+            refresh_interval: _,
             compact_mode,
             ..
         } = self;
@@ -264,17 +272,17 @@ impl<'a> MaterialDataTable<'a> {
 
             for column in &columns {
                 let available_width = column.width - responsive_padding; // Account for padding and sort icon
-                let header_font =
-                    FontId::new(responsive_header_font_size, FontFamily::Proportional);
+                let header_font = FontId::new(responsive_header_font_size, header_family.clone());
 
                 let galley = ui.painter().layout_job(egui::text::LayoutJob {
                     text: column.title.clone(),
                     sections: vec![egui::text::LayoutSection {
                         leading_space: 0.0,
-                        byte_range: 0..column.title.len(),
+                        byte_range: egui::text::ByteIndex(0)
+                            ..egui::text::ByteIndex(column.title.len()),
                         format: egui::TextFormat {
                             font_id: header_font,
-                            color: get_global_color("onSurface"),
+                            color: m3.color(ColorRole::OnSurface),
                             ..Default::default()
                         },
                     }],
@@ -287,6 +295,7 @@ impl<'a> MaterialDataTable<'a> {
                     justify: false,
                     first_row_min_height: 0.0,
                     round_output_to_gui: true,
+                    keep_trailing_whitespace: false,
                 });
 
                 let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -330,19 +339,18 @@ impl<'a> MaterialDataTable<'a> {
                                         } else {
                                             base_cell_font_size
                                         };
-                                    let cell_font = FontId::new(
-                                        responsive_cell_font_size,
-                                        FontFamily::Proportional,
-                                    );
+                                    let cell_font =
+                                        FontId::new(responsive_cell_font_size, cell_family.clone());
 
                                     let galley = ui.painter().layout_job(egui::text::LayoutJob {
                                         text: cell_text.text().to_string(),
                                         sections: vec![egui::text::LayoutSection {
                                             leading_space: 0.0,
-                                            byte_range: 0..cell_text.text().len(),
+                                            byte_range: egui::text::ByteIndex(0)
+                                                ..egui::text::ByteIndex(cell_text.text().len()),
                                             format: egui::TextFormat {
                                                 font_id: cell_font,
-                                                color: get_global_color("onSurface"),
+                                                color: m3.color(ColorRole::OnSurface),
                                                 ..Default::default()
                                             },
                                         }],
@@ -355,6 +363,7 @@ impl<'a> MaterialDataTable<'a> {
                                         justify: false,
                                         first_row_min_height: 0.0,
                                         round_output_to_gui: true,
+                                        keep_trailing_whitespace: false,
                                     });
 
                                     let content_height: f32 = galley.size().y + 16.0; // Add padding
@@ -410,30 +419,34 @@ impl<'a> MaterialDataTable<'a> {
         let mut all_row_actions: Vec<RowAction> = Vec::new();
 
         // Apply Material theme styling
-        let surface = get_global_color("surface");
-        let on_surface = get_global_color("onSurface");
-        let primary = get_global_color("primary");
+        let surface = m3.color(ColorRole::Surface);
+        let on_surface = m3.color(ColorRole::OnSurface);
+        let primary = m3.color(ColorRole::Primary);
+        // Alternate rows: surfaceContainerHighest, not the M2 surfaceVariant.
+        let stripe_color = m3.color(ColorRole::SurfaceContainerHighest);
+        // Read-only rows sit a step below the table surface.
+        let readonly_color = m3.color(ColorRole::SurfaceContainerLow);
 
-        let mut style = (*ui.ctx().style()).clone();
+        // Style only this table's drawing: the caller's style is restored
+        // before returning, and the app's global style is never touched.
+        let previous_style = ui.style().clone();
+        let mut style = (**ui.style()).clone();
         style.visuals.widgets.noninteractive.bg_fill = surface;
         style.visuals.widgets.inactive.bg_fill = surface;
+        // Hovered and pressed are the M3 state layers (StateTokens) of
+        // onSurface over the table's surface.
         style.visuals.widgets.hovered.bg_fill =
-            egui::Color32::from_rgba_premultiplied(primary.r(), primary.g(), primary.b(), 20);
+            crate::paint::state_layer_over(surface, on_surface, state::HOVER_OPACITY);
         style.visuals.widgets.active.bg_fill =
-            egui::Color32::from_rgba_premultiplied(primary.r(), primary.g(), primary.b(), 40);
+            crate::paint::state_layer_over(surface, on_surface, state::PRESSED_OPACITY);
         style.visuals.selection.bg_fill = primary;
         style.visuals.widgets.noninteractive.fg_stroke.color = on_surface;
         style.visuals.widgets.inactive.fg_stroke.color = on_surface;
         style.visuals.widgets.hovered.fg_stroke.color = on_surface;
         style.visuals.widgets.active.fg_stroke.color = on_surface;
         style.visuals.striped = true;
-        style.visuals.faint_bg_color = egui::Color32::from_rgba_premultiplied(
-            on_surface.r(),
-            on_surface.g(),
-            on_surface.b(),
-            10,
-        );
-        ui.ctx().set_style(style);
+        style.visuals.faint_bg_color = stripe_color;
+        ui.set_style(style);
 
         let desired_size = Vec2::new(total_width, total_height);
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
@@ -448,7 +461,7 @@ impl<'a> MaterialDataTable<'a> {
                 rect,
                 corner_radius,
                 border_stroke,
-                egui::epaint::StrokeKind::Outside,
+                egui::epaint::StrokeKind::Inside,
             );
 
             let mut current_y = rect.min.y;
@@ -457,7 +470,7 @@ impl<'a> MaterialDataTable<'a> {
             let header_rect = Rect::from_min_size(rect.min, Vec2::new(total_width, header_height));
             let header_bg = theme
                 .heading_row_color
-                .unwrap_or_else(|| get_global_color("surfaceVariant"));
+                .unwrap_or_else(|| m3.color(ColorRole::SurfaceContainerHigh));
             ui.painter()
                 .rect_filled(header_rect, CornerRadius::ZERO, header_bg);
 
@@ -475,7 +488,7 @@ impl<'a> MaterialDataTable<'a> {
                 let checkbox_inner_rect = Rect::from_center_size(checkbox_center, checkbox_size);
 
                 let checkbox_color = if state.header_checkbox {
-                    get_global_color("primary")
+                    m3.color(ColorRole::Primary)
                 } else {
                     Color32::TRANSPARENT
                 };
@@ -488,8 +501,8 @@ impl<'a> MaterialDataTable<'a> {
                 ui.painter().rect_stroke(
                     checkbox_inner_rect,
                     CornerRadius::from(2.0),
-                    Stroke::new(2.0, get_global_color("outline")),
-                    egui::epaint::StrokeKind::Outside,
+                    Stroke::new(2.0, m3.color(ColorRole::OnSurfaceVariant)),
+                    egui::epaint::StrokeKind::Inside,
                 );
 
                 if state.header_checkbox {
@@ -552,17 +565,17 @@ impl<'a> MaterialDataTable<'a> {
                 } else {
                     base_header_font_size // 16px for normal
                 };
-                let header_font =
-                    FontId::new(responsive_header_font_size, FontFamily::Proportional);
+                let header_font = FontId::new(responsive_header_font_size, header_family.clone());
 
                 let galley = ui.painter().layout_job(egui::text::LayoutJob {
                     text: column.title.clone(),
                     sections: vec![egui::text::LayoutSection {
                         leading_space: 0.0,
-                        byte_range: 0..column.title.len(),
+                        byte_range: egui::text::ByteIndex(0)
+                            ..egui::text::ByteIndex(column.title.len()),
                         format: egui::TextFormat {
                             font_id: header_font,
-                            color: get_global_color("onSurface"),
+                            color: m3.color(ColorRole::OnSurface),
                             ..Default::default()
                         },
                     }],
@@ -575,6 +588,7 @@ impl<'a> MaterialDataTable<'a> {
                     justify: false,
                     first_row_min_height: 0.0,
                     round_output_to_gui: true,
+                    keep_trailing_whitespace: false,
                 });
 
                 let text_pos = egui::pos2(
@@ -583,7 +597,7 @@ impl<'a> MaterialDataTable<'a> {
                 );
 
                 ui.painter()
-                    .galley(text_pos, galley, get_global_color("onSurface"));
+                    .galley(text_pos, galley, m3.color(ColorRole::OnSurface));
 
                 // Handle column header clicks for sorting
                 if column.sortable {
@@ -633,11 +647,11 @@ impl<'a> MaterialDataTable<'a> {
                     let arrow_color = if is_sorted {
                         theme
                             .sort_active_color
-                            .unwrap_or_else(|| get_global_color("primary")) // Highlight active sort column
+                            .unwrap_or_else(|| m3.color(ColorRole::Primary)) // Highlight active sort column
                     } else {
                         theme
                             .sort_inactive_color
-                            .unwrap_or_else(|| get_global_color("onSurfaceVariant"))
+                            .unwrap_or_else(|| m3.color(ColorRole::OnSurfaceVariant))
                     };
 
                     let center = icon_rect.center();
@@ -749,20 +763,12 @@ impl<'a> MaterialDataTable<'a> {
                 } else if row_selected {
                     theme
                         .selected_row_color
-                        .unwrap_or_else(|| get_global_color("primaryContainer"))
+                        .unwrap_or_else(|| m3.color(ColorRole::SecondaryContainer))
                 } else if row.readonly {
                     // Subtle background for readonly rows
-                    let surface_variant = get_global_color("surfaceVariant");
-                    Color32::from_rgba_premultiplied(
-                        surface_variant.r(),
-                        surface_variant.g(),
-                        surface_variant.b(),
-                        (surface_variant.a() as f32 * 0.3) as u8,
-                    )
+                    readonly_color
                 } else if row_idx % 2 == 1 {
-                    theme
-                        .data_row_color
-                        .unwrap_or_else(|| get_global_color("surfaceVariant"))
+                    theme.data_row_color.unwrap_or(stripe_color)
                 } else {
                     background_color
                 };
@@ -779,7 +785,7 @@ impl<'a> MaterialDataTable<'a> {
                     let divider_thickness = theme.divider_thickness.unwrap_or(1.0);
                     let divider_color = theme
                         .divider_color
-                        .unwrap_or_else(|| get_global_color("outlineVariant"));
+                        .unwrap_or_else(|| m3.color(ColorRole::OutlineVariant));
                     ui.painter().line_segment(
                         [
                             egui::pos2(rect.min.x, divider_y),
@@ -804,15 +810,19 @@ impl<'a> MaterialDataTable<'a> {
                         Rect::from_center_size(checkbox_center, checkbox_size);
 
                     let checkbox_color = if row_selected {
-                        get_global_color("primary")
+                        m3.color(ColorRole::Primary)
                     } else {
                         Color32::TRANSPARENT
                     };
 
                     let border_color = if row.readonly {
-                        get_global_color("outline").linear_multiply(0.5) // Dimmed for readonly
+                        // CheckboxTokens.UnselectedDisabledOutlineColor:
+                        // onSurface at the disabled opacity.
+                        m3.color(ColorRole::OnSurface)
+                            .gamma_multiply(state::DISABLED_CONTENT_OPACITY)
                     } else {
-                        get_global_color("outline")
+                        // CheckboxTokens.UnselectedOutlineColor.
+                        m3.color(ColorRole::OnSurfaceVariant)
                     };
 
                     ui.painter().rect_filled(
@@ -824,7 +834,7 @@ impl<'a> MaterialDataTable<'a> {
                         checkbox_inner_rect,
                         CornerRadius::from(2.0),
                         Stroke::new(2.0, border_color),
-                        egui::epaint::StrokeKind::Outside,
+                        egui::epaint::StrokeKind::Inside,
                     );
 
                     if row_selected {
@@ -887,7 +897,7 @@ impl<'a> MaterialDataTable<'a> {
 
                     if row.drawer.is_some() {
                         let is_open = state.drawer_open_rows.contains(&row_idx);
-                        let arrow_color = get_global_color("onSurfaceVariant");
+                        let arrow_color = m3.color(ColorRole::OnSurfaceVariant);
                         let center = arrow_area_rect.center();
 
                         if is_open {
@@ -1008,14 +1018,17 @@ impl<'a> MaterialDataTable<'a> {
                                 edit_data.resize(cell_idx + 1, String::new());
                             }
 
-                            let edit_text = &mut edit_data[cell_idx];
-
-                            ui.scope_builder(egui::UiBuilder::new().max_rect(edit_rect), |ui| {
-                                ui.add(
-                                    egui::TextEdit::singleline(edit_text)
-                                        .desired_width(column.width - 16.0),
+                            if let Some(edit_text) = edit_data.get_mut(cell_idx) {
+                                ui.scope_builder(
+                                    egui::UiBuilder::new().max_rect(edit_rect),
+                                    |ui| {
+                                        ui.add(
+                                            egui::TextEdit::singleline(edit_text)
+                                                .desired_width(column.width - 16.0),
+                                        );
+                                    },
                                 );
-                            });
+                            }
                         } else {
                             // Determine alignment from cell or column
                             let h_align = cell.h_align.as_ref().unwrap_or(&column.h_align);
@@ -1046,30 +1059,23 @@ impl<'a> MaterialDataTable<'a> {
                                         } else {
                                             base_cell_font_size // e.g., 14px for normal
                                         };
-                                    let cell_font = FontId::new(
-                                        responsive_cell_font_size,
-                                        FontFamily::Proportional,
-                                    );
+                                    let cell_font =
+                                        FontId::new(responsive_cell_font_size, cell_family.clone());
 
                                     let text_color = if cell.placeholder {
-                                        let base_color = get_global_color("onSurface");
-                                        Color32::from_rgba_premultiplied(
-                                            base_color.r(),
-                                            base_color.g(),
-                                            base_color.b(),
-                                            (base_color.a() as f32 * 0.6) as u8,
-                                        )
+                                        m3.color(ColorRole::OnSurfaceVariant)
                                     } else if let Some((_, ref color)) = theme.data_text_style {
                                         *color
                                     } else {
-                                        get_global_color("onSurface")
+                                        m3.color(ColorRole::OnSurface)
                                     };
 
                                     let galley = ui.painter().layout_job(egui::text::LayoutJob {
                                         text: cell_text.text().to_string(),
                                         sections: vec![egui::text::LayoutSection {
                                             leading_space: 0.0,
-                                            byte_range: 0..cell_text.text().len(),
+                                            byte_range: egui::text::ByteIndex(0)
+                                                ..egui::text::ByteIndex(cell_text.text().len()),
                                             format: egui::TextFormat {
                                                 font_id: cell_font,
                                                 color: text_color,
@@ -1085,6 +1091,7 @@ impl<'a> MaterialDataTable<'a> {
                                         justify: false,
                                         first_row_min_height: 0.0,
                                         round_output_to_gui: true,
+                                        keep_trailing_whitespace: false,
                                     });
 
                                     // Calculate horizontal position based on alignment
@@ -1157,7 +1164,7 @@ impl<'a> MaterialDataTable<'a> {
                                             Vec2::splat(icon_size),
                                         );
                                         // Draw simple pencil icon
-                                        let icon_color = get_global_color("onSurfaceVariant");
+                                        let icon_color = m3.color(ColorRole::OnSurfaceVariant);
                                         ui.painter().line_segment(
                                             [
                                                 icon_rect.left_top() + Vec2::new(4.0, 10.0),
@@ -1274,20 +1281,12 @@ impl<'a> MaterialDataTable<'a> {
                             } else if row_selected {
                                 theme
                                     .selected_row_color
-                                    .unwrap_or_else(|| get_global_color("primaryContainer"))
+                                    .unwrap_or_else(|| m3.color(ColorRole::SecondaryContainer))
                             } else if row.readonly {
                                 // Subtle background for readonly rows
-                                let surface_variant = get_global_color("surfaceVariant");
-                                Color32::from_rgba_premultiplied(
-                                    surface_variant.r(),
-                                    surface_variant.g(),
-                                    surface_variant.b(),
-                                    (surface_variant.a() as f32 * 0.3) as u8,
-                                )
+                                readonly_color
                             } else if row_idx % 2 == 1 {
-                                theme
-                                    .data_row_color
-                                    .unwrap_or_else(|| get_global_color("surfaceVariant"))
+                                theme.data_row_color.unwrap_or(stripe_color)
                             } else {
                                 background_color
                             };
@@ -1295,7 +1294,7 @@ impl<'a> MaterialDataTable<'a> {
                                 .rect_filled(drawer_rect, CornerRadius::ZERO, drawer_bg);
 
                             // Left accent stripe in primary color
-                            let primary = get_global_color("primary");
+                            let primary = m3.color(ColorRole::Primary);
                             ui.painter().rect_filled(
                                 Rect::from_min_size(
                                     drawer_rect.left_top(),
@@ -1325,7 +1324,6 @@ impl<'a> MaterialDataTable<'a> {
                             child_ui.set_clip_rect(clipped_rect);
 
                             // Remove default top spacing for visual consistency
-                            let original_spacing = child_ui.spacing().clone();
                             child_ui.style_mut().spacing.item_spacing.y = 0.0;
 
                             drawer_fn(&mut child_ui);
@@ -1345,7 +1343,7 @@ impl<'a> MaterialDataTable<'a> {
                             let divider_thickness = theme.divider_thickness.unwrap_or(1.0);
                             let divider_color = theme
                                 .divider_color
-                                .unwrap_or_else(|| get_global_color("outlineVariant"));
+                                .unwrap_or_else(|| m3.color(ColorRole::OutlineVariant));
                             ui.painter().line_segment(
                                 [
                                     egui::pos2(rect.min.x, current_y + open_drawer_height),
@@ -1368,7 +1366,9 @@ impl<'a> MaterialDataTable<'a> {
 
             // Draw progress indicator if visible
             if progress_visible {
-                let scrim_color = Color32::from_rgba_unmultiplied(255, 255, 255, 128);
+                // Dim the rows with the table's own surface, so the scrim
+                // follows light and dark themes.
+                let scrim_color = background_color.gamma_multiply(0.5);
                 ui.painter().rect_filled(rect, corner_radius, scrim_color);
 
                 // Draw progress bar
@@ -1377,7 +1377,7 @@ impl<'a> MaterialDataTable<'a> {
                     Vec2::new(total_width, 4.0),
                 );
 
-                let progress_color = get_global_color("primary");
+                let progress_color = m3.color(ColorRole::Primary);
                 ui.painter()
                     .rect_filled(progress_rect, CornerRadius::ZERO, progress_color);
             }
@@ -1420,6 +1420,7 @@ impl<'a> MaterialDataTable<'a> {
         // Ensure the UI cursor is advanced past the full table height
         // This is critical when child UIs are used for drawer content
         ui.expand_to_include_rect(rect);
+        ui.set_style(previous_style);
 
         DataTableResponse {
             response,
@@ -1435,5 +1436,43 @@ impl<'a> MaterialDataTable<'a> {
 impl Widget for MaterialDataTable<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         self.show(ui).response
+    }
+}
+
+#[cfg(test)]
+mod style_tests {
+    use crate::datatable::data_table;
+
+    /// Regression test for nikescar/egui-material3#20: showing a data table
+    /// changes neither the global style nor the style of widgets after it.
+    #[test]
+    fn test_table_does_not_leak_style() {
+        let ctx = egui::Context::default();
+        let marker = egui::Color32::from_rgb(1, 2, 3);
+        ctx.global_style_mut(|style| {
+            style.visuals.widgets.inactive.bg_fill = marker;
+            style.visuals.striped = false;
+        });
+        let mut after = None;
+        ctx.run_ui(Default::default(), |ui| {
+            data_table()
+                .column("Col", 100.0, false)
+                .row(|row| row.cell("A"))
+                .show(ui);
+            after = Some(ui.style().visuals.clone());
+        })
+        .textures_delta
+        .clear();
+        let global = ctx.global_style().visuals.clone();
+        assert_eq!(
+            global.widgets.inactive.bg_fill, marker,
+            "the global style must keep the app's colours"
+        );
+        assert!(!global.striped, "the global style must not become striped");
+        assert_eq!(
+            after.map(|v| (v.widgets.inactive.bg_fill, v.striped)),
+            Some((marker, false)),
+            "widgets after the table must keep the caller's style"
+        );
     }
 }
