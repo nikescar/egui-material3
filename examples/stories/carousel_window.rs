@@ -1,135 +1,118 @@
+// ============================================================================
+// Module:       stories::carousel_window (example)
+// Description:  Story window demonstrating the multi-browse, uncontained,
+//               hero and full-screen carousels.
+//
+// Dependencies: eframe, egui; crate::{MaterialCarousel, CarouselStrategy}
+// ============================================================================
+
+//! Story window demonstrating the carousel component.
+
 #![doc(hidden)]
 
-use crate::MaterialButton;
-use eframe::egui::{self, Window};
-use egui_material3::carousel;
+use crate::{CarouselStrategy, MaterialButton, MaterialCarousel};
+use eframe::egui::{self, Color32, Window};
 
 #[doc(hidden)]
-pub struct CarouselWindow {
+#[derive(Default)]
+pub(crate) struct CarouselWindow {
     pub open: bool,
-    scroll_offset_1: f32,
-    scroll_offset_2: f32,
+    offsets: [f32; 4],
+    clicked: Option<usize>,
 }
 
-impl Default for CarouselWindow {
-    fn default() -> Self {
-        Self {
-            open: false,
-            scroll_offset_1: 0.0,
-            scroll_offset_2: 0.0,
-        }
-    }
-}
+/// Colours for the story's placeholder items.
+const SWATCHES: [Color32; 6] = [
+    Color32::from_rgb(0x6f, 0x8f, 0xaf),
+    Color32::from_rgb(0xaf, 0x7f, 0x6f),
+    Color32::from_rgb(0x7f, 0xaf, 0x7f),
+    Color32::from_rgb(0xa0, 0x80, 0xb0),
+    Color32::from_rgb(0xc0, 0xa0, 0x60),
+    Color32::from_rgb(0x60, 0xa0, 0xa0),
+];
 
 impl CarouselWindow {
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub(crate) fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         Window::new("Carousel Stories")
             .open(&mut open)
-            .default_size([800.0, 700.0])
+            .default_size([800.0, 760.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     self.render_intro(ui);
-                    ui.add_space(20.0);
-                    self.render_uncontained_carousel(ui);
-                    ui.add_space(20.0);
-                    self.render_snapping_carousel(ui);
+                    self.render_carousels(ui);
                 });
             });
         self.open = open;
     }
 
     fn render_intro(&mut self, ui: &mut egui::Ui) {
-        ui.push_id("carousel_intro", |ui| {
-            ui.horizontal(|ui| {
-                ui.heading("Carousel Stories");
+        ui.horizontal(|ui| {
+            ui.heading("Carousel Stories");
+            if ui
+                .add(MaterialButton::filled("Material 3 Docs").small())
+                .clicked()
+            {
+                // Opening a browser is best effort; the story works without it.
+                let _ = webbrowser::open("https://m3.material.io/components/carousel/overview");
+            }
+        });
+        ui.label(
+            "Drag, or shift + scroll, to browse. Items snap one at a time (except \
+             uncontained). Tab into a carousel and use the arrow keys, Home and End.",
+        );
+    }
 
-                if ui
-                    .add(MaterialButton::filled("Material 3 Docs").small())
-                    .clicked()
-                {
-                    let _ = webbrowser::open("https://m3.material.io/components/carousel/overview");
-                }
-
-                if ui
-                    .add(MaterialButton::filled("Flutter Carousel").small())
-                    .clicked()
-                {
-                    let _ = webbrowser::open(
-                        "https://api.flutter.dev/flutter/material/CarouselView-class.html",
+    fn render_carousels(&mut self, ui: &mut egui::Ui) {
+        let strategies = [
+            (
+                "Multi-browse",
+                CarouselStrategy::MultiBrowse {
+                    preferred_item_width: 186.0,
+                },
+            ),
+            (
+                "Uncontained",
+                CarouselStrategy::Uncontained { item_width: 186.0 },
+            ),
+            (
+                "Hero (centred)",
+                CarouselStrategy::Hero {
+                    preferred_item_width: None,
+                    centered: true,
+                },
+            ),
+            ("Full-screen", CarouselStrategy::FullScreen),
+        ];
+        for ((name, strategy), offset) in strategies.into_iter().zip(self.offsets.iter_mut()) {
+            ui.add_space(16.0);
+            ui.heading(name);
+            let mut carousel = MaterialCarousel::new(offset)
+                .strategy(strategy)
+                .item_spacing(8.0)
+                .height(200.0)
+                .label(name)
+                .id_salt(name);
+            for (n, color) in SWATCHES.iter().cycle().take(12).enumerate() {
+                let color = *color;
+                carousel = carousel.labeled_item(format!("Item {n}"), move |ui, rect| {
+                    ui.painter().rect_filled(ui.clip_rect(), 28.0, color);
+                    ui.painter().text(
+                        rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        format!("{n}"),
+                        egui::FontId::proportional(24.0),
+                        Color32::WHITE,
                     );
-                }
-            });
-
+                });
+            }
+            if let Some(clicked) = carousel.show(ui).clicked {
+                self.clicked = Some(clicked);
+            }
+        }
+        if let Some(clicked) = self.clicked {
             ui.add_space(8.0);
-            ui.label("Material Design 3 Carousel component - horizontally scrollable lists with smooth transitions.");
-            ui.label("Items at the edges shrink while center items display at full size.");
-        });
-    }
-
-    fn render_uncontained_carousel(&mut self, ui: &mut egui::Ui) {
-        ui.push_id("uncontained_carousel", |ui| {
-            ui.heading("Uncontained Carousel");
-            ui.label("Basic carousel with 20 items, no snapping");
-            ui.add_space(10.0);
-
-            // Create carousel with 20 text items
-            let mut carousel_widget = carousel(&mut self.scroll_offset_1)
-                .id_salt("uncontained")
-                .item_extent(200.0)
-                .shrink_extent(120.0)
-                .height(180.0);
-
-            // Add 20 items
-            for i in 0..20 {
-                carousel_widget = carousel_widget.item_text(format!("Item {}", i));
-            }
-
-            ui.add(carousel_widget);
-
-            ui.add_space(10.0);
-            ui.label(format!("Scroll offset: {:.0}px", self.scroll_offset_1));
-        });
-    }
-
-    fn render_snapping_carousel(&mut self, ui: &mut egui::Ui) {
-        ui.push_id("snapping_carousel", |ui| {
-            ui.heading("Snapping Carousel");
-            ui.label("Carousel with item snapping enabled - items snap to alignment");
-            ui.add_space(10.0);
-
-            // Create carousel with item snapping
-            let mut carousel_widget = carousel(&mut self.scroll_offset_2)
-                .id_salt("snapping")
-                .item_extent(200.0)
-                .shrink_extent(120.0)
-                .height(180.0)
-                .item_snapping(true);
-
-            // Add 20 items with more elaborate content
-            for i in 0..20 {
-                carousel_widget =
-                    carousel_widget.item(Box::new(move |ui: &mut egui::Ui, _rect| {
-                        ui.vertical_centered(|ui| {
-                            ui.add_space(20.0);
-                            ui.heading(format!("#{}", i + 1));
-                            ui.add_space(10.0);
-                            ui.label(format!("Item {}", i));
-                            ui.add_space(10.0);
-                            ui.label("📦");
-                            ui.add_space(10.0);
-                            if ui.add(MaterialButton::filled("Action").small()).clicked() {
-                                println!("Item {} action clicked", i);
-                            }
-                        });
-                    }));
-            }
-
-            ui.add(carousel_widget);
-
-            ui.add_space(10.0);
-            ui.label(format!("Scroll offset: {:.0}px", self.scroll_offset_2));
-            ui.label("Scroll and release - items will snap to alignment");
-        });
+            ui.label(format!("Last clicked item: {clicked}"));
+        }
     }
 }

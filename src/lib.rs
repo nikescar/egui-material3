@@ -285,7 +285,10 @@ pub use {
     breadcrumbs::{breadcrumbs, MaterialBreadcrumbs},
     button::{MaterialButton, MaterialButtonVariant},
     card2::{elevated_card2, filled_card2, outlined_card2, Card2Variant, MaterialCard2},
-    carousel::{carousel, CarouselItem, MaterialCarousel},
+    carousel::{
+        carousel, CarouselItem, CarouselItemLayout, CarouselMetrics, CarouselResponse,
+        CarouselStrategy, MaterialCarousel,
+    },
     checkbox::{checkbox, MaterialCheckbox},
     chips::{assist_chip, filter_chip, input_chip, suggestion_chip, ChipVariant, MaterialChip},
     dashcounter::{dashcounter, CounterCard, MaterialDashCounter},
