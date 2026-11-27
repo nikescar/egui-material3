@@ -1,14 +1,14 @@
 #![doc(hidden)]
 
 use crate::{
-    snackbar, snackbar_with_action, MaterialButton, MaterialCheckbox, SnackBarBehavior,
-    SnackbarPosition,
+    snackbar, snackbar_with_action, MaterialButton, MaterialCheckbox, MaterialSnackbar,
+    SnackBarBehavior, SnackbarDuration, SnackbarHost, SnackbarPosition, SnackbarVisuals,
 };
 use eframe::egui::{self, Ui, Window};
-use std::time::Instant;
+use std::time::Duration;
 
 #[doc(hidden)]
-pub struct SnackbarWindow {
+pub(crate) struct SnackbarWindow {
     pub open: bool,
     show_basic_snackbar: bool,
     show_action_snackbar: bool,
@@ -17,10 +17,7 @@ pub struct SnackbarWindow {
     action_text: String,
     auto_dismiss_seconds: f32,
     use_auto_dismiss: bool,
-    // Add timing for auto-dismiss
-    basic_snackbar_start: Option<Instant>,
-    action_snackbar_start: Option<Instant>,
-    top_snackbar_start: Option<Instant>,
+    last_host_result: Option<String>,
     // New fields for enhanced features
     behavior: SnackBarBehavior,
     use_custom_width: bool,
@@ -42,10 +39,8 @@ impl Default for SnackbarWindow {
             action_text: "Undo".to_string(),
             auto_dismiss_seconds: 4.0,
             use_auto_dismiss: true,
-            basic_snackbar_start: None,
-            action_snackbar_start: None,
-            top_snackbar_start: None,
-            behavior: SnackBarBehavior::Fixed,
+            last_host_result: None,
+            behavior: SnackBarBehavior::Floating,
             use_custom_width: false,
             custom_width: 500.0,
             show_close_icon: false,
@@ -57,7 +52,7 @@ impl Default for SnackbarWindow {
 }
 
 impl SnackbarWindow {
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub(crate) fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         Window::new("Snackbar Stories")
             .open(&mut open)
@@ -67,17 +62,14 @@ impl SnackbarWindow {
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     self.render_snackbar_examples(ui);
+                    ui.add_space(20.0);
+                    self.render_host_controls(ui);
                 });
             });
         self.open = open;
 
         // Render snackbars outside the window (they should overlay everything)
         self.render_active_snackbars(ctx);
-
-        // Request repaint to ensure auto-dismiss works properly
-        if self.show_basic_snackbar || self.show_action_snackbar || self.show_top_snackbar {
-            ctx.request_repaint();
-        }
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
@@ -166,16 +158,13 @@ impl SnackbarWindow {
             if ui.add(MaterialButton::filled("Show Snackbar")).clicked() {
                 if self.action_text.is_empty() {
                     self.show_basic_snackbar = true;
-                    self.basic_snackbar_start = Some(Instant::now());
                 } else {
                     self.show_action_snackbar = true;
-                    self.action_snackbar_start = Some(Instant::now());
                 }
             }
 
             if ui.add(MaterialButton::outlined("Top Position")).clicked() {
                 self.show_top_snackbar = true;
-                self.top_snackbar_start = Some(Instant::now());
             }
         });
 
@@ -185,7 +174,6 @@ impl SnackbarWindow {
                 self.leading_icon = "✓".to_string();
                 self.show_leading_icon = true;
                 self.show_basic_snackbar = true;
-                self.basic_snackbar_start = Some(Instant::now());
             }
 
             if ui.add(MaterialButton::outlined("Error Icon")).clicked() {
@@ -194,7 +182,6 @@ impl SnackbarWindow {
                 self.show_leading_icon = true;
                 self.show_action_snackbar = true;
                 self.action_text = "Retry".to_string();
-                self.action_snackbar_start = Some(Instant::now());
             }
 
             if ui.add(MaterialButton::outlined("Info Icon")).clicked() {
@@ -203,7 +190,6 @@ impl SnackbarWindow {
                 self.show_leading_icon = true;
                 self.show_action_snackbar = true;
                 self.action_text = "Learn More".to_string();
-                self.action_snackbar_start = Some(Instant::now());
             }
         });
 
@@ -212,7 +198,6 @@ impl SnackbarWindow {
                 self.message_text = "This is a very long message that should demonstrate text wrapping functionality in the snackbar. It should properly wrap to multiple lines without overlapping the action button area.".to_string();
                 self.show_action_snackbar = true;
                 self.action_text = "Dismiss".to_string();
-                self.action_snackbar_start = Some(Instant::now());
             }
 
             if ui.add(MaterialButton::outlined("Reset Settings")).clicked() {
@@ -230,7 +215,6 @@ impl SnackbarWindow {
                 self.message_text = "Fixed snackbar at bottom of screen".to_string();
                 self.behavior = SnackBarBehavior::Fixed;
                 self.show_basic_snackbar = true;
-                self.basic_snackbar_start = Some(Instant::now());
             }
 
             if ui
@@ -240,7 +224,6 @@ impl SnackbarWindow {
                 self.message_text = "Floating snackbar with margins".to_string();
                 self.behavior = SnackBarBehavior::Floating;
                 self.show_basic_snackbar = true;
-                self.basic_snackbar_start = Some(Instant::now());
             }
 
             if ui.add(MaterialButton::filled("Custom Width")).clicked() {
@@ -249,14 +232,12 @@ impl SnackbarWindow {
                 self.use_custom_width = true;
                 self.custom_width = 450.0;
                 self.show_basic_snackbar = true;
-                self.basic_snackbar_start = Some(Instant::now());
             }
 
             if ui.add(MaterialButton::filled("With Close Icon")).clicked() {
                 self.message_text = "Snackbar with closable icon".to_string();
                 self.show_close_icon = true;
                 self.show_basic_snackbar = true;
-                self.basic_snackbar_start = Some(Instant::now());
             }
         });
 
@@ -266,7 +247,6 @@ impl SnackbarWindow {
                 self.action_text = "Very Long Action Text".to_string();
                 self.action_overflow_threshold = 0.20;
                 self.show_action_snackbar = true;
-                self.action_snackbar_start = Some(Instant::now());
             }
 
             if ui.add(MaterialButton::outlined("All Features")).clicked() {
@@ -277,174 +257,100 @@ impl SnackbarWindow {
                 self.show_close_icon = true;
                 self.action_text = "View".to_string();
                 self.show_action_snackbar = true;
-                self.action_snackbar_start = Some(Instant::now());
             }
         });
     }
 
+    fn render_host_controls(&mut self, ui: &mut Ui) {
+        ui.heading("Snackbar Host (queue)");
+        ui.label(
+            "SnackbarHost keeps a queue in the context and shows one snackbar at a time.              Queue several and watch them follow each other.",
+        );
+        let host = SnackbarHost::new();
+        ui.horizontal_wrapped(|ui| {
+            if ui.add(MaterialButton::filled("Short (4 s)")).clicked() {
+                host.enqueue(ui.ctx(), SnackbarVisuals::new("Photo saved"));
+            }
+            if ui.add(MaterialButton::filled("Long (10 s)")).clicked() {
+                host.enqueue(
+                    ui.ctx(),
+                    SnackbarVisuals::new("Backup finished: 1,204 files copied")
+                        .duration(SnackbarDuration::Long),
+                );
+            }
+            if ui
+                .add(MaterialButton::filled("Indefinite + action"))
+                .clicked()
+            {
+                host.enqueue(
+                    ui.ctx(),
+                    SnackbarVisuals::new("Message archived")
+                        .action("Undo")
+                        .with_dismiss_action(true)
+                        .duration(SnackbarDuration::Indefinite),
+                );
+            }
+            if ui
+                .add(MaterialButton::outlined("Dismiss current"))
+                .clicked()
+            {
+                host.dismiss_current(ui.ctx());
+            }
+        });
+        ui.label(format!(
+            "Waiting: {}. Last result: {}",
+            host.pending(ui.ctx()),
+            self.last_host_result.as_deref().unwrap_or("none")
+        ));
+    }
+
     fn render_active_snackbars(&mut self, ctx: &egui::Context) {
-        // Handle auto-dismiss timing at window level for better control
-        if self.show_basic_snackbar && self.use_auto_dismiss {
-            if let Some(start_time) = self.basic_snackbar_start {
-                if start_time.elapsed().as_secs_f32() >= self.auto_dismiss_seconds {
-                    self.show_basic_snackbar = false;
-                    self.basic_snackbar_start = None;
-                }
+        if let Some(outcome) = SnackbarHost::new().show(ctx) {
+            self.last_host_result = Some(format!("{:?}", outcome.result));
+        }
+
+        let auto_dismiss = self
+            .use_auto_dismiss
+            .then(|| Duration::from_secs_f32(self.auto_dismiss_seconds));
+        let behavior = self.behavior;
+        let threshold = self.action_overflow_threshold;
+        let width = self.use_custom_width.then_some(self.custom_width);
+        let close_icon = self.show_close_icon;
+        let leading_icon = (self.show_leading_icon && !self.leading_icon.is_empty())
+            .then(|| self.leading_icon.clone());
+        let configure = |snackbar: MaterialSnackbar<'static>| {
+            let mut snackbar = snackbar
+                .auto_dismiss(auto_dismiss)
+                .behavior(behavior)
+                .action_overflow_threshold(threshold)
+                .show_close_icon(close_icon);
+            if let Some(width) = width {
+                snackbar = snackbar.width(width);
             }
-        }
-
-        if self.show_action_snackbar && self.use_auto_dismiss {
-            if let Some(start_time) = self.action_snackbar_start {
-                if start_time.elapsed().as_secs_f32() >= self.auto_dismiss_seconds {
-                    self.show_action_snackbar = false;
-                    self.action_snackbar_start = None;
-                }
+            if let Some(icon) = &leading_icon {
+                snackbar = snackbar.leading_icon(icon.clone());
             }
-        }
+            snackbar
+        };
 
-        if self.show_top_snackbar && self.use_auto_dismiss {
-            if let Some(start_time) = self.top_snackbar_start {
-                if start_time.elapsed().as_secs_f32() >= self.auto_dismiss_seconds {
-                    self.show_top_snackbar = false;
-                    self.top_snackbar_start = None;
-                }
-            }
-        }
+        // The snackbar draws in its own foreground layer and writes `false`
+        // back to the flag when it times out or is dismissed.
+        egui::Area::new(egui::Id::unique("snackbar_story_overlay"))
+            .order(egui::Order::Foreground)
+            .show(ctx, |ui| {
+                let basic = configure(snackbar(self.message_text.clone()));
+                ui.add(basic.show_with_offset(&mut self.show_basic_snackbar, 0.0));
 
-        // Calculate stacking offsets for each position
-        let bottom_offset = 0.0;
-        let top_offset = 0.0;
-        let _snackbar_spacing = 56.0; // Material Design spacing (48px height + 8px margin)
+                let action = configure(snackbar_with_action(
+                    self.message_text.clone(),
+                    self.action_text.clone(),
+                    || println!("Snackbar action clicked!"),
+                ));
+                ui.add(action.show_with_offset(&mut self.show_action_snackbar, 0.0));
 
-        // Render bottom-positioned snackbars with stacking
-        if self.show_basic_snackbar {
-            egui::Area::new(egui::Id::unique("basic_snackbar"))
-                .order(egui::Order::Foreground)
-                .show(ctx, |ui| {
-                    ui.set_clip_rect(ctx.content_rect());
-
-                    let mut snackbar = snackbar(&self.message_text)
-                        .auto_dismiss(None)
-                        .behavior(self.behavior)
-                        .action_overflow_threshold(self.action_overflow_threshold);
-
-                    if self.use_custom_width {
-                        snackbar = snackbar.width(self.custom_width);
-                    }
-
-                    if self.show_close_icon {
-                        snackbar = snackbar.show_close_icon(true);
-                    }
-
-                    if self.show_leading_icon && !self.leading_icon.is_empty() {
-                        snackbar = snackbar.leading_icon(&self.leading_icon);
-                    }
-
-                    let mut show_snackbar = self.show_basic_snackbar;
-                    let response =
-                        ui.add(snackbar.show_with_offset(&mut show_snackbar, bottom_offset));
-
-                    // Update state based on snackbar widget's decision
-                    if !show_snackbar && self.show_basic_snackbar {
-                        self.show_basic_snackbar = false;
-                        self.basic_snackbar_start = None;
-                    }
-
-                    // Force close if clicked on snackbar (but not action)
-                    if response.clicked() {
-                        self.show_basic_snackbar = false;
-                        self.basic_snackbar_start = None;
-                    }
-                });
-        }
-
-        if self.show_action_snackbar {
-            egui::Area::new(egui::Id::unique("action_snackbar"))
-                .order(egui::Order::Foreground)
-                .show(ctx, |ui| {
-                    ui.set_clip_rect(ctx.content_rect());
-
-                    let message = self.message_text.clone();
-                    let action_text = self.action_text.clone();
-
-                    let mut snackbar = snackbar_with_action(message, action_text, || {
-                        println!("Snackbar action clicked!");
-                    })
-                    .auto_dismiss(None)
-                    .behavior(self.behavior)
-                    .action_overflow_threshold(self.action_overflow_threshold);
-
-                    if self.use_custom_width {
-                        snackbar = snackbar.width(self.custom_width);
-                    }
-
-                    if self.show_close_icon {
-                        snackbar = snackbar.show_close_icon(true);
-                    }
-
-                    if self.show_leading_icon && !self.leading_icon.is_empty() {
-                        snackbar = snackbar.leading_icon(&self.leading_icon);
-                    }
-
-                    let mut show_snackbar = self.show_action_snackbar;
-                    let response =
-                        ui.add(snackbar.show_with_offset(&mut show_snackbar, bottom_offset));
-
-                    // Update state based on snackbar widget's decision
-                    if !show_snackbar && self.show_action_snackbar {
-                        self.show_action_snackbar = false;
-                        self.action_snackbar_start = None;
-                    }
-
-                    // Force close if clicked on message area (not action button)
-                    if response.clicked() && self.action_text.is_empty() {
-                        self.show_action_snackbar = false;
-                        self.action_snackbar_start = None;
-                    }
-                });
-        }
-
-        // Render top-positioned snackbars with stacking
-        if self.show_top_snackbar {
-            egui::Area::new(egui::Id::unique("top_snackbar"))
-                .order(egui::Order::Foreground)
-                .show(ctx, |ui| {
-                    ui.set_clip_rect(ctx.content_rect());
-
-                    let mut snackbar = snackbar(&self.message_text)
-                        .position(SnackbarPosition::Top)
-                        .auto_dismiss(None)
-                        .behavior(self.behavior)
-                        .action_overflow_threshold(self.action_overflow_threshold);
-
-                    if self.use_custom_width {
-                        snackbar = snackbar.width(self.custom_width);
-                    }
-
-                    if self.show_close_icon {
-                        snackbar = snackbar.show_close_icon(true);
-                    }
-
-                    if self.show_leading_icon && !self.leading_icon.is_empty() {
-                        snackbar = snackbar.leading_icon(&self.leading_icon);
-                    }
-
-                    let mut show_snackbar = self.show_top_snackbar;
-                    let response =
-                        ui.add(snackbar.show_with_offset(&mut show_snackbar, top_offset));
-
-                    // Update state based on snackbar widget's decision
-                    if !show_snackbar && self.show_top_snackbar {
-                        self.show_top_snackbar = false;
-                        self.top_snackbar_start = None;
-                    }
-
-                    // Force close if clicked
-                    if response.clicked() {
-                        self.show_top_snackbar = false;
-                        self.top_snackbar_start = None;
-                    }
-                });
-        }
+                let top =
+                    configure(snackbar(self.message_text.clone())).position(SnackbarPosition::Top);
+                ui.add(top.show_with_offset(&mut self.show_top_snackbar, 0.0));
+            });
     }
 }

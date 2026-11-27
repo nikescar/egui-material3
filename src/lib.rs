@@ -338,7 +338,9 @@ pub use {
         ThumbShape,
     },
     snackbar::{
-        snackbar, snackbar_with_action, MaterialSnackbar, SnackBarBehavior, SnackbarPosition,
+        snackbar, snackbar_with_action, MaterialSnackbar, MaterialSnackbarWithOffset,
+        SnackBarBehavior, SnackbarDuration, SnackbarHost, SnackbarId, SnackbarOutcome,
+        SnackbarPosition, SnackbarResult, SnackbarVisuals,
     },
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
