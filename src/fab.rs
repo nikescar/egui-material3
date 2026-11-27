@@ -229,6 +229,9 @@ impl<'a> MaterialFab<'a> {
     }
 
     /// Set raw SVG data for the FAB icon
+    ///
+    /// Rasterising needs the `svg` cargo feature; without it the FAB draws
+    /// no icon.
     pub fn svg_data(mut self, svg_data: impl Into<String>) -> Self {
         self.svg_data = Some(svg_data.into());
         self
@@ -638,6 +641,7 @@ fn draw_google_logo(ui: &mut Ui, center: Pos2, size: f32) {
 }
 
 // Helper function to render SVG data to texture
+#[cfg(feature = "svg")]
 fn render_svg_to_texture(
     ctx: &egui::Context,
     svg_data: &str,
@@ -670,6 +674,17 @@ fn render_svg_to_texture(
     let key = format!("fab_svg_{:x}", hasher.finish());
 
     Ok(ctx.load_texture(key, color_image, egui::TextureOptions::LINEAR))
+}
+
+/// Without the `svg` feature there is no rasteriser: the FAB draws no SVG
+/// icon.
+#[cfg(not(feature = "svg"))]
+fn render_svg_to_texture(
+    _ctx: &egui::Context,
+    _svg_data: &str,
+    _size: u32,
+) -> Result<egui::TextureHandle, String> {
+    Err("SVG rendering needs the `svg` feature of egui-material3".to_string())
 }
 
 pub fn fab_surface() -> MaterialFab<'static> {

@@ -18,7 +18,11 @@ cargo add egui-material3
 cargo add egui-material3 --features ondemand
 cargo add egui-material3 --features "svg_solar,spreadsheet"
 cargo add egui-material3 --features svg_emoji  # All icon collections
+cargo add egui-material3 --features "svg,system-theme"  # SVG icons, OS dark mode
 ```
+
+No feature is on by default. SVG rendering (`svg`) and OS light/dark
+detection (`system-theme`) are opt-in; see [Features](#features).
 
 Or manually in `Cargo.toml`:
 
@@ -468,6 +472,34 @@ if let Some(svg) = TWEMOJI.get("1f600") {
 
 ## Features
 
+| Feature | Default | What it adds |
+|---|---|---|
+| `svg` | off | SVG icons rasterised with resvg: `MaterialIconButton::svg` / `svg_data`, `MaterialFab::svg_data`, `image_utils::svg_to_png_bytes` / `create_texture_from_svg`. |
+| `system-theme` | off | `detect_os_theme()` (and so `ThemeMode::Auto`) follows the OS light/dark setting, through the dark-light crate. |
+| `ondemand` | off | Online images in `MaterialImageList`, and Google Fonts downloads in `setup_google_fonts`. |
+| `spreadsheet` | off | `MaterialSpreadsheet`. |
+| `svg_solar`, `svg_noto`, `svg_twemoji`, `svg_emoji` | off | Embedded SVG icon and emoji collections (each turns on `svg`). |
+
+### SVG rendering and OS theme detection
+
+Both are off by default, so an app that does not need them does not
+build resvg or dark-light and their dependencies.
+
+- **Without `svg`**, an SVG icon paints nothing (the widget still lays
+  out and draws its container), and the `image_utils` SVG functions
+  return an error. Use an icon font or a texture instead, or enable the
+  feature.
+- **Without `system-theme`**, `detect_os_theme()` returns
+  `ThemeMode::Light`. To follow the OS without the feature, read egui's
+  `ctx.system_theme()` (eframe fills it in) and set `ThemeMode::Dark` or
+  `ThemeMode::Light` yourself.
+
+To keep the behaviour of earlier releases, where both were always on:
+
+```toml
+egui-material3 = { version = "...", features = ["svg", "system-theme"] }
+```
+
 ### OnDemand Feature
 
 Enable online image support for `MaterialImageList`:
@@ -593,8 +625,8 @@ cd examples/package && cargo run
 ### Running with Features
 
 ```bash
-# Run with spreadsheet support
-cargo run --example stories --features spreadsheet
+# Run with spreadsheet support, SVG icons and OS dark-mode detection
+cargo run --example stories --features spreadsheet,svg,system-theme
 
 # Run with all SVG icon collections
 cargo run --example stories --features svg_emoji

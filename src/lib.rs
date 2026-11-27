@@ -181,6 +181,20 @@
 //!     ]));
 //! ```
 //!
+//! ### SVG and OS theme features
+//!
+//! No feature is on by default. `svg` rasterises SVG icons with resvg
+//! (without it an SVG icon paints nothing and the `image_utils` SVG
+//! functions return an error); `system-theme` lets `detect_os_theme`
+//! follow the OS light/dark setting (without it, it returns
+//! `ThemeMode::Light`). Enable both to keep the behaviour of releases
+//! where they were always on:
+//!
+//! ```toml
+//! [dependencies]
+//! egui-material3 = { version = "...", features = ["svg", "system-theme"] }
+//! ```
+//!
 //! ### OnDemand Feature
 //!
 //! Enable the `ondemand` feature for online image support:

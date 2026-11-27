@@ -1545,14 +1545,17 @@ pub fn get_global_color_role(role: ColorRole) -> Color32 {
 
 /// Detect OS theme preference using the dark-light crate (desktop platforms only)
 ///
-/// On Android, this function will return `ThemeMode::Light` as a fallback.
-/// Android apps should provide their own theme detection using JNI.
+/// The detection needs the `system-theme` cargo feature. Without it, and on
+/// Android, this function returns `ThemeMode::Light`: an app that wants to
+/// follow the OS without the feature reads the preference itself (egui's
+/// `ctx.system_theme()`, or JNI on Android) and sets the mode it chose.
 ///
 /// # Returns
 /// - `ThemeMode::Dark` if OS dark mode is detected
-/// - `ThemeMode::Light` if OS light mode is detected or on unsupported platforms
+/// - `ThemeMode::Light` if OS light mode is detected, on unsupported
+///   platforms, or without the `system-theme` feature
 pub fn detect_os_theme() -> ThemeMode {
-    #[cfg(not(target_os = "android"))]
+    #[cfg(all(feature = "system-theme", not(target_os = "android")))]
     {
         match dark_light::detect() {
             Ok(dark_light::Mode::Dark) => ThemeMode::Dark,
@@ -1562,9 +1565,10 @@ pub fn detect_os_theme() -> ThemeMode {
         }
     }
 
-    #[cfg(target_os = "android")]
+    #[cfg(any(not(feature = "system-theme"), target_os = "android"))]
     {
-        // Default to Light on Android - apps should provide their own detector
+        // Default to Light on Android and without the `system-theme`
+        // feature - apps should provide their own detector
         ThemeMode::Light
     }
 }
