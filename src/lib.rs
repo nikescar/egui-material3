@@ -240,6 +240,7 @@ pub mod checkbox;
 pub mod chips;
 pub mod dashcounter;
 pub mod datatable;
+pub mod date_picker;
 pub mod dialog;
 pub mod drawer;
 #[cfg(feature = "spreadsheet")]
@@ -269,6 +270,7 @@ pub mod svg_emoji;
 pub mod switch;
 pub mod tabs;
 pub mod theme;
+pub mod time_picker;
 pub mod timeline;
 pub mod tokens;
 pub mod toolbar;
