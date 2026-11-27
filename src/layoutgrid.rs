@@ -2,11 +2,16 @@
 //!
 //! # M3 Color Role Usage
 //!
-//! - **surface**: Grid cell background
-//! - **onSurface**: Grid content
-//! - **outlineVariant**: Grid lines (debug mode)
+//! Colours come from the context's [`MaterialTheme`]:
+//!
+//! - **primary**: Cell fill and grid outline (debug mode)
+//! - **outlineVariant**: Column guides (debug mode)
+//!
+//! [`GridTileBar`] text is white whatever the theme: it sits on its own
+//! translucent bar over arbitrary image content, not on a theme surface.
 
-use crate::theme::get_global_color;
+use crate::tokens::{ColorRole, Shape, TypeRole};
+use crate::MaterialTheme;
 use egui::{epaint::CornerRadius, Color32, Rect, Response, Sense, Ui, Vec2, Widget};
 
 /// Material Design layout grid component.
@@ -149,6 +154,7 @@ impl<'a> Default for MaterialLayoutGrid<'a> {
 
 impl Widget for MaterialLayoutGrid<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
+        let m3 = MaterialTheme::of(ui.ctx());
         let available_width = ui.available_width();
         let column_width = self.calculate_column_width(available_width);
 
@@ -208,9 +214,12 @@ impl Widget for MaterialLayoutGrid<'_> {
                 ui.scope_builder(egui::UiBuilder::new().max_rect(cell_rect), |ui| {
                     // Debug visualization
                     if debug_mode {
-                        let debug_color = get_global_color("primary").linear_multiply(0.12);
-                        ui.painter()
-                            .rect_filled(cell_rect, CornerRadius::from(2.0), debug_color);
+                        let debug_color = m3.color(ColorRole::Primary).gamma_multiply(0.12);
+                        ui.painter().rect_filled(
+                            cell_rect,
+                            Shape::EXTRA_SMALL.corner_radius(cell_rect, m3.layout_direction),
+                            debug_color,
+                        );
                     }
 
                     (cell.content)(ui)
@@ -230,12 +239,12 @@ impl Widget for MaterialLayoutGrid<'_> {
 
         // Debug: Draw grid outline
         if debug_mode {
-            let outline_color = get_global_color("primary");
+            let outline_color = m3.color(ColorRole::Primary);
             ui.painter().rect_stroke(
                 grid_rect,
-                CornerRadius::from(4.0),
+                Shape::EXTRA_SMALL.corner_radius(grid_rect, m3.layout_direction),
                 egui::epaint::Stroke::new(1.0, outline_color),
-                egui::epaint::StrokeKind::Outside,
+                egui::epaint::StrokeKind::Inside,
             );
 
             // Draw column guides
@@ -244,7 +253,7 @@ impl Widget for MaterialLayoutGrid<'_> {
                 if i > 0 && i < columns {
                     ui.painter().line_segment(
                         [egui::pos2(x, start_pos.y + margin), egui::pos2(x, max_y)],
-                        egui::epaint::Stroke::new(0.5, get_global_color("outlineVariant")),
+                        egui::epaint::Stroke::new(0.5, m3.color(ColorRole::OutlineVariant)),
                     );
                 }
             }
@@ -400,13 +409,21 @@ impl Widget for GridTileBar<'_> {
                     ui.add_space((height - if subtitle.is_some() { 40.0 } else { 20.0 }) / 2.0);
 
                     if let Some(title_text) = &title {
-                        ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
-                        ui.label(egui::RichText::new(title_text).color(Color32::WHITE));
+                        let job = TypeRole::TitleMedium.style().layout_job(
+                            ui.ctx(),
+                            title_text.as_str(),
+                            Color32::WHITE,
+                        );
+                        ui.label(job);
                     }
 
                     if let Some(subtitle_text) = &subtitle {
-                        ui.style_mut().override_text_style = Some(egui::TextStyle::Small);
-                        ui.label(egui::RichText::new(subtitle_text).color(Color32::WHITE));
+                        let job = TypeRole::BodySmall.style().layout_job(
+                            ui.ctx(),
+                            subtitle_text.as_str(),
+                            Color32::WHITE,
+                        );
+                        ui.label(job);
                     }
                 });
             }

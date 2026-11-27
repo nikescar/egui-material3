@@ -2,12 +2,18 @@
 //!
 //! # M3 Color Role Usage
 //!
+//! Colours come from the context's [`MaterialTheme`], type from the M3 type
+//! scale ([`TypeRole`]).
+//!
 //! - **outlineVariant**: Timeline axis line
+//! - **outline**: Default (grey) markers
 //! - **primary**: Event markers, active indicators
-//! - **onSurface**: Event text
+//! - **onSurface**: Event text, and the state layer on a hovered or pressed
+//!   item with an action
 //! - **onSurfaceVariant**: Timestamps, supporting text
 
-use crate::get_global_color;
+use crate::tokens::{ColorRole, InteractionState, Shape, TypeRole};
+use crate::MaterialTheme;
 use egui::{self, Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2, Widget};
 
 /// Position where timeline content appears relative to the timeline axis.
@@ -500,9 +506,13 @@ impl<'a> Widget for MaterialTimeline<'a> {
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::hover());
 
         // Material Design 3 colors
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline = get_global_color("outline");
+        let m3 = MaterialTheme::of(ui.ctx());
+        let on_surface = m3.color(ColorRole::OnSurface);
+        let on_surface_variant = m3.color(ColorRole::OnSurfaceVariant);
+        let outline = m3.color(ColorRole::Outline);
+        let connector_color = m3.color(ColorRole::OutlineVariant);
+        let label_font = TypeRole::BodyMedium.style().font_id(ui.ctx());
+        let content_font = TypeRole::BodyLarge.style().font_id(ui.ctx());
 
         let mut current_y = rect.min.y;
 
@@ -671,7 +681,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                     ui.with_layout(layout, |ui| {
                         let label = egui::Label::new(
                             egui::RichText::new(opposite_text)
-                                .size(14.0)
+                                .font(label_font.clone())
                                 .color(opposite_color),
                         )
                         .wrap_mode(egui::TextWrapMode::Truncate);
@@ -690,12 +700,14 @@ impl<'a> Widget for MaterialTimeline<'a> {
                     custom
                 } else {
                     match dot.color {
-                        TimelineDotColor::Grey => get_global_color("outline"),
+                        TimelineDotColor::Grey => m3.color(ColorRole::Outline),
                         TimelineDotColor::Inherit => on_surface,
-                        TimelineDotColor::Primary => get_global_color("primary"),
-                        TimelineDotColor::Secondary => get_global_color("secondary"),
-                        TimelineDotColor::Error => get_global_color("error"),
-                        TimelineDotColor::Info => get_global_color("tertiary"),
+                        TimelineDotColor::Primary => m3.color(ColorRole::Primary),
+                        TimelineDotColor::Secondary => m3.color(ColorRole::Secondary),
+                        TimelineDotColor::Error => m3.color(ColorRole::Error),
+                        TimelineDotColor::Info => m3.color(ColorRole::Tertiary),
+                        // M3 has no success or warning colour role: these
+                        // two stay fixed hues in every theme.
                         TimelineDotColor::Success => Color32::from_rgb(76, 175, 80),
                         TimelineDotColor::Warning => Color32::from_rgb(255, 152, 0),
                     }
@@ -829,7 +841,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                 let connector_end = Pos2::new(separator_x, current_y + item_spacing);
                 ui.painter().line_segment(
                     [connector_start, connector_end],
-                    Stroke::new(CONNECTOR_WIDTH, outline),
+                    Stroke::new(CONNECTOR_WIDTH, connector_color),
                 );
             }
 
@@ -876,15 +888,20 @@ impl<'a> Widget for MaterialTimeline<'a> {
                         };
                         let interact_response = ui.interact(content_rect, item_id, sense);
 
-                        // Draw hover effect
-                        if interact_response.hovered() && has_action {
-                            let hover_color = Color32::from_rgba_unmultiplied(
-                                on_surface.r(),
-                                on_surface.g(),
-                                on_surface.b(),
-                                10,
+                        // M3 state layer (StateTokens) on an item with an action.
+                        if has_action {
+                            crate::a11y::button(
+                                &interact_response,
+                                true,
+                                item.content.as_deref().unwrap_or("Timeline item"),
                             );
-                            ui.painter().rect_filled(content_rect, 4.0, hover_color);
+                            crate::paint::paint_state_layer(
+                                ui.painter(),
+                                content_rect,
+                                Shape::EXTRA_SMALL.corner_radius(content_rect, m3.layout_direction),
+                                on_surface,
+                                InteractionState::from_response(&interact_response),
+                            );
                         }
 
                         // Render custom content or text label
@@ -911,7 +928,7 @@ impl<'a> Widget for MaterialTimeline<'a> {
                             ui.with_layout(layout, |ui| {
                                 let label = egui::Label::new(
                                     egui::RichText::new(content_text)
-                                        .size(16.0)
+                                        .font(content_font.clone())
                                         .color(content_color),
                                 )
                                 .wrap_mode(egui::TextWrapMode::Wrap);
