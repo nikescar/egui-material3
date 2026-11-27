@@ -6,9 +6,16 @@
 //! - **onSurfaceVariant**: Inactive breadcrumb text, separators
 //! - **primary**: Breadcrumb links (hover)
 //! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//!
+//! The current (active) breadcrumb is plain `LabelLarge` text in
+//! `onSurface`: it is the page you are on, so it is not a button, but it
+//! is not disabled either (it reads at full contrast and is reported
+//! enabled to AccessKit, as a label).
 
-use crate::{get_global_color, MaterialButton};
-use egui::{Response, RichText, Ui, Widget};
+use crate::material_theme::MaterialTheme;
+use crate::tokens::{ColorRole, TypeRole};
+use crate::MaterialButton;
+use egui::{Response, RichText, Sense, Ui, Widget};
 
 /// Material Design breadcrumbs component.
 ///
@@ -207,7 +214,9 @@ impl MaterialBreadcrumbs {
 impl Widget for MaterialBreadcrumbs {
     fn ui(mut self, ui: &mut Ui) -> Response {
         // Material Design colors
-        let on_surface_variant = get_global_color("onSurfaceVariant");
+        let theme = MaterialTheme::of(ui.ctx());
+        let on_surface_variant = theme.color(ColorRole::OnSurfaceVariant);
+        let on_surface = theme.color(ColorRole::OnSurface);
 
         // Use horizontal layout
         ui.horizontal_wrapped(|ui| {
@@ -232,12 +241,24 @@ impl Widget for MaterialBreadcrumbs {
                         }
                     }
                 } else {
-                    // Active (non-clickable) breadcrumb item - use filled tonal button
-                    let button = MaterialButton::filled_tonal(&item.text)
-                        .small()
-                        .enabled(false);
-
-                    ui.add(button);
+                    // The current page: full-contrast text, not a disabled
+                    // button.
+                    let galley = ui
+                        .painter()
+                        .layout_job(TypeRole::LabelLarge.style().layout_job(
+                            ui.ctx(),
+                            item.text.clone(),
+                            on_surface,
+                        ));
+                    // Same height as the small text buttons beside it.
+                    let height = ui.spacing().interact_size.y.max(galley.size().y).max(32.0);
+                    let (rect, response) = ui.allocate_exact_size(
+                        egui::vec2(galley.size().x + 2.0 * 12.0, height),
+                        Sense::hover(),
+                    );
+                    let at = rect.center() - galley.size() / 2.0;
+                    ui.painter().galley(at, galley, on_surface);
+                    crate::a11y::describe(&response, egui::Role::Label, true, &item.text, None);
                 }
 
                 // Add separator if not the last item and separator is enabled
