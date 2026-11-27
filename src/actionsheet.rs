@@ -2,17 +2,21 @@
 //!
 //! # M3 Color Role Usage
 //!
-//! - **surfaceContainerLow**: Sheet background
+//! - **surfaceContainerLow**: Sheet background (from `BottomSheet`)
 //! - **onSurface**: Action text
 //! - **onSurfaceVariant**: Supporting text
 //! - **scrim @ 32%**: Modal overlay
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//! - **State layers**: onSurface (`StateLayerTokens`)
+//!
+//! Built on a modal [`BottomSheet`]: drag handle, spring motion, drag to
+//! dismiss, Escape and focus handling come from there.
 
-use crate::theme::get_global_color;
+use crate::bottom_sheet::BottomSheet;
+use crate::tokens::{ColorRole, InteractionState, TypeRole};
+use crate::MaterialTheme;
 use egui::{
-    ecolor::Color32,
     epaint::{CornerRadius, Stroke},
-    pos2, Area, Id, Order, Rect, Response, Sense, Ui, Vec2,
+    pos2, Area, Id, Response, Sense, Ui, Vec2,
 };
 
 /// Material Design action sheet component.
@@ -177,7 +181,12 @@ impl<'a> MaterialActionSheet<'a> {
         self
     }
 
-    /// Show the action sheet
+    /// Show the action sheet: a modal [`BottomSheet`] holding the groups.
+    ///
+    /// Clicking an enabled button runs its callback and closes the sheet;
+    /// so do Escape, a click on the backdrop (when
+    /// [`backdrop_dismissible`](Self::backdrop_dismissible)), a drag down
+    /// and the drag handle.
     pub fn show(mut self, ctx: &egui::Context) -> Response {
         // Finalize any remaining group
         if !self.current_group.buttons.is_empty() || self.current_group.label.is_some() {
@@ -191,188 +200,112 @@ impl<'a> MaterialActionSheet<'a> {
             self.groups.push(group);
         }
 
-        if !*self.open {
-            // Return empty response when closed
-            return Area::new(self.id.with("dummy"))
-                .fixed_pos(pos2(-1000.0, -1000.0))
-                .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
-                .response;
-        }
-
-        // Handle ESC key
-        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-            *self.open = false;
-        }
-
-        let screen_rect = ctx.viewport_rect();
-        let backdrop_dismissible = self.backdrop_dismissible;
-
-        // Draw backdrop/scrim
-        if self.backdrop {
-            let scrim_color = Color32::from_rgba_unmultiplied(0, 0, 0, 128);
-
-            Area::new(self.id.with("backdrop"))
-                .order(Order::Middle)
-                .fixed_pos(pos2(0.0, 0.0))
-                .show(ctx, |ui| {
-                    let scrim_response = ui.allocate_response(screen_rect.size(), Sense::click());
-                    ui.painter()
-                        .rect_filled(screen_rect, CornerRadius::ZERO, scrim_color);
-
-                    if scrim_response.clicked() && backdrop_dismissible {
-                        *self.open = false;
-                    }
-                });
-        }
-
-        // Draw action sheet
-        Area::new(self.id.with("sheet"))
-            .order(Order::Foreground)
-            .anchor(egui::Align2::CENTER_BOTTOM, Vec2::new(0.0, 0.0))
-            .show(ctx, |ui| {
-                let width = self.max_width.min(screen_rect.width());
-                ui.set_width(width);
-
-                self.render_content(ui)
-            })
-            .response
-    }
-
-    fn render_content(self, ui: &mut Ui) -> Response {
-        let background_color = get_global_color("surfaceContainer");
-        let corner_radius = CornerRadius {
-            nw: 16,
-            ne: 16,
-            sw: 0,
-            se: 0,
-        };
-
-        let mut total_height = 0.0;
-        let button_height = 48.0; // Material Design 3 touch target
-
-        // Calculate total height
-        for group in &self.groups {
-            if group.label.is_some() {
-                total_height += button_height;
-            }
-            total_height += group.buttons.len() as f32 * button_height;
-        }
-
-        // Add safe area padding at bottom
-        total_height += 8.0;
-
-        let available_rect = ui.available_rect_before_wrap();
-        let sheet_size = Vec2::new(available_rect.width(), total_height);
-        let sheet_rect = Rect::from_min_size(
-            pos2(available_rect.min.x, available_rect.max.y - total_height),
-            sheet_size,
-        );
-
-        // Draw background
-        ui.painter()
-            .rect_filled(sheet_rect, corner_radius, background_color);
-
-        let mut current_y = sheet_rect.min.y;
-        let mut response = ui.allocate_response(sheet_size, Sense::hover());
-
-        // Collect callbacks to execute after rendering
-        let mut callbacks_to_execute: Vec<Box<dyn FnOnce()>> = Vec::new();
-
-        // Store groups length before moving
-        let groups_len = self.groups.len();
-
-        // Render groups
-        for (group_idx, group) in self.groups.into_iter().enumerate() {
-            // Draw label if present
-            if let Some(label) = &group.label {
-                let label_rect = Rect::from_min_size(
-                    pos2(sheet_rect.min.x, current_y),
-                    Vec2::new(sheet_rect.width(), button_height),
-                );
-
-                let text_color = get_global_color("primary");
-                let text_pos = pos2(label_rect.min.x + 16.0, current_y + button_height / 2.0);
-
-                ui.painter().text(
-                    text_pos,
-                    egui::Align2::LEFT_CENTER,
-                    label,
-                    egui::FontId::proportional(14.0),
-                    text_color,
-                );
-
-                current_y += button_height;
-            }
-
-            // Draw buttons
-            for (button_idx, mut button) in group.buttons.into_iter().enumerate() {
-                let button_id = self.id.with("group").with(group_idx).with(button_idx);
-                let button_rect = Rect::from_min_size(
-                    pos2(sheet_rect.min.x, current_y),
-                    Vec2::new(sheet_rect.width(), button_height),
-                );
-
-                let button_response = ui.interact(button_rect, button_id, Sense::click());
-                crate::a11y::button(&button_response, button.enabled, &button.text);
-
-                // Hover effect
-                if button_response.hovered() && button.enabled {
-                    let hover_color = get_global_color("onSurface").linear_multiply(0.08);
-                    ui.painter()
-                        .rect_filled(button_rect, CornerRadius::ZERO, hover_color);
+        let id = self.id;
+        let groups = self.groups;
+        let mut clicked: Option<Option<ActionCallback<'a>>> = None;
+        let shown = BottomSheet::modal(id, self.open)
+            .max_width(self.max_width)
+            .scrim(self.backdrop)
+            .dismiss_on_scrim(self.backdrop_dismissible)
+            .label("Action sheet")
+            .show(ctx, |ui, open| {
+                clicked = render_groups(ui, groups);
+                if clicked.is_some() {
+                    *open = false;
                 }
-
-                // Draw button text
-                let text_color = if !button.enabled {
-                    get_global_color("onSurface").linear_multiply(0.38)
-                } else {
-                    get_global_color("onSurface")
-                };
-
-                let font_id = egui::FontId::proportional(16.0);
-
-                let text_pos = pos2(button_rect.min.x + 16.0, current_y + button_height / 2.0);
-
-                ui.painter().text(
-                    text_pos,
-                    egui::Align2::LEFT_CENTER,
-                    &button.text,
-                    font_id,
-                    text_color,
-                );
-
-                // Handle click
-                if button_response.clicked() && button.enabled {
-                    *self.open = false;
-                    if let Some(callback) = button.on_click.take() {
-                        callbacks_to_execute.push(callback);
-                    }
-                }
-
-                response = response.union(button_response);
-                current_y += button_height;
-            }
-
-            // Draw divider between groups
-            if group_idx < groups_len - 1 {
-                let divider_y = current_y;
-                ui.painter().line_segment(
-                    [
-                        pos2(sheet_rect.min.x, divider_y),
-                        pos2(sheet_rect.max.x, divider_y),
-                    ],
-                    Stroke::new(1.0, get_global_color("outlineVariant")),
-                );
-            }
-        }
-
-        // Execute callbacks after rendering
-        for callback in callbacks_to_execute {
+            });
+        if let Some(Some(callback)) = clicked {
             callback();
         }
-
-        response
+        match shown.response {
+            Some(response) => response,
+            // Closed: an empty response, as before.
+            None => {
+                Area::new(id.with("dummy"))
+                    .fixed_pos(pos2(-1000.0, -1000.0))
+                    .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
+                    .response
+            }
+        }
     }
+}
+
+/// A button's click callback.
+type ActionCallback<'a> = Box<dyn FnOnce() + 'a>;
+
+/// `ListTokens.ListItemOneLineContainerHeight`: one row per action.
+const ROW_HEIGHT: f32 = 56.0;
+/// `ListTokens.ListItemLeadingSpace`.
+const ROW_PADDING: f32 = 16.0;
+
+/// Draws the groups. Returns `Some(callback)` when an enabled button was
+/// clicked (its callback may itself be `None`).
+fn render_groups<'a>(
+    ui: &mut Ui,
+    groups: Vec<ActionGroup<'a>>,
+) -> Option<Option<ActionCallback<'a>>> {
+    let theme = MaterialTheme::of(ui.ctx());
+    let width = ui.available_width();
+    let left = ui.max_rect().left();
+    let groups_len = groups.len();
+    let mut clicked = None;
+    for (group_idx, group) in groups.into_iter().enumerate() {
+        if let Some(label) = &group.label {
+            let (rect, _) = ui.allocate_exact_size(Vec2::new(width, ROW_HEIGHT), Sense::hover());
+            ui.painter().text(
+                pos2(rect.min.x + ROW_PADDING, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                label,
+                TypeRole::TitleSmall.style().font_id(ui.ctx()),
+                theme.color(ColorRole::Primary),
+            );
+        }
+        for button in group.buttons {
+            let (rect, response) = ui.allocate_exact_size(
+                Vec2::new(width, ROW_HEIGHT),
+                crate::a11y::sense(button.enabled, Sense::click()),
+            );
+            crate::a11y::button(&response, button.enabled, &button.text);
+            let on_surface = theme.color(ColorRole::OnSurface);
+            crate::paint::paint_state_layer(
+                ui.painter(),
+                rect,
+                CornerRadius::ZERO,
+                on_surface,
+                InteractionState::from_response(&response),
+            );
+            crate::paint::paint_focus_ring_if_focused(ui.painter(), &response, CornerRadius::ZERO);
+            let text_color = if button.enabled {
+                on_surface
+            } else {
+                on_surface.gamma_multiply(crate::tokens::state::DISABLED_CONTENT_OPACITY)
+            };
+            let style = if button.bold {
+                TypeRole::BodyLarge.emphasized()
+            } else {
+                TypeRole::BodyLarge.style()
+            };
+            ui.painter().text(
+                pos2(rect.min.x + ROW_PADDING, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                &button.text,
+                style.font_id(ui.ctx()),
+                text_color,
+            );
+            if response.clicked() && button.enabled && clicked.is_none() {
+                clicked = Some(button.on_click);
+            }
+        }
+        if group_idx + 1 < groups_len {
+            let y = ui.cursor().top();
+            ui.painter().line_segment(
+                [pos2(left, y), pos2(left + width, y)],
+                Stroke::new(1.0, theme.color(ColorRole::OutlineVariant)),
+            );
+        }
+    }
+    ui.add_space(8.0);
+    clicked
 }
 
 /// Convenience function to create an action sheet
