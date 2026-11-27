@@ -394,9 +394,9 @@ impl Widget for MaterialSnackbar<'_> {
         } = self;
 
         // Material 3 design tokens
-        let label_text_color = get_global_color("onInverseSurface");
+        let label_text_color = get_global_color("inverseOnSurface");
         let action_text_color = get_global_color("inversePrimary");
-        let _default_close_icon_color = get_global_color("onInverseSurface");
+        let _default_close_icon_color = get_global_color("inverseOnSurface");
 
         // Calculate leading icon size if present
         let icon_galley = leading_icon.as_ref().map(|icon| {
@@ -584,10 +584,12 @@ impl Widget for MaterialSnackbar<'_> {
             );
 
             let action_response = ui.interact(action_rect, ui.next_auto_id(), Sense::click());
+            crate::a11y::button(&action_response, true, action_galley.text());
 
             // Material Design state layers for action button
             if action_response.hovered() {
-                let hover_color = action_text_color.linear_multiply(0.04); // Material hover opacity
+                let hover_color =
+                    action_text_color.gamma_multiply(crate::tokens::state::HOVER_OPACITY);
                 ui.painter()
                     .rect_filled(action_rect, CornerRadius::from(4.0), hover_color);
             }
@@ -684,9 +686,9 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
         } = self.snackbar;
 
         // Material 3 design tokens
-        let label_text_color = get_global_color("onInverseSurface");
+        let label_text_color = get_global_color("inverseOnSurface");
         let action_text_color = get_global_color("inversePrimary");
-        let default_close_icon_color = get_global_color("onInverseSurface");
+        let default_close_icon_color = get_global_color("inverseOnSurface");
 
         // Calculate leading icon size if present
         let icon_galley = leading_icon.as_ref().map(|icon| {
@@ -905,15 +907,18 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             };
 
             let action_response = ui.interact(action_rect, ui.next_auto_id(), Sense::click());
+            crate::a11y::button(&action_response, true, action_galley.text());
 
             // Material Design state layers for action button
             if action_response.hovered() {
-                let hover_color = action_text_color.linear_multiply(0.08);
+                let hover_color =
+                    action_text_color.gamma_multiply(crate::tokens::state::HOVER_OPACITY);
                 ui.painter()
                     .rect_filled(action_rect, CornerRadius::from(4.0), hover_color);
             }
             if action_response.is_pointer_button_down_on() {
-                let pressed_color = action_text_color.linear_multiply(0.12);
+                let pressed_color =
+                    action_text_color.gamma_multiply(crate::tokens::state::PRESSED_OPACITY);
                 ui.painter()
                     .rect_filled(action_rect, CornerRadius::from(4.0), pressed_color);
             }
@@ -947,15 +952,18 @@ impl Widget for MaterialSnackbarWithOffset<'_> {
             );
 
             let close_response = ui.interact(close_rect, ui.next_auto_id(), Sense::click());
+            crate::a11y::button(&close_response, true, "Close");
 
             // State layer for close button
             if close_response.hovered() {
-                let hover_color = close_icon_color.linear_multiply(0.08);
+                let hover_color =
+                    close_icon_color.gamma_multiply(crate::tokens::state::HOVER_OPACITY);
                 ui.painter()
                     .circle_filled(close_rect.center(), 20.0, hover_color);
             }
             if close_response.is_pointer_button_down_on() {
-                let pressed_color = close_icon_color.linear_multiply(0.12);
+                let pressed_color =
+                    close_icon_color.gamma_multiply(crate::tokens::state::PRESSED_OPACITY);
                 ui.painter()
                     .circle_filled(close_rect.center(), 20.0, pressed_color);
             }

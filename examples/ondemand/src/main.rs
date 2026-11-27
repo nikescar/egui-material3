@@ -42,11 +42,12 @@ struct MyApp {
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // image_list control with offline images on /home/wj/Desktop/work/egui-material3/examples/ondemand/resources/*.png
         let offline_images = glob::glob("/home/wj/Desktop/work/egui-material3/examples/ondemand/resources/*.png");
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
 
                 ui.heading("Material Design Ondemand Imagelist Example 고");
