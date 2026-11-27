@@ -24,7 +24,7 @@ exclude = [
 [features]
 default = []
 ondemand = ["dep:ureq"]
-spreadsheet = ["dep:diesel", "dep:egui_extras", "dep:csv", "dep:calamine", "dep:futures", "dep:smol", "dep:async-channel", "dep:wasm-bindgen-futures", "dep:rusqlite"]
+spreadsheet = ["dep:diesel", "dep:egui_extras", "dep:csv", "dep:futures", "dep:smol", "dep:async-channel", "dep:wasm-bindgen-futures", "dep:rusqlite"]
 
 # SVG icon/emoji features - embed SVG assets at compile time
 # Binary size impact (measured on release build with LTO):
@@ -38,7 +38,7 @@ svg_twemoji = []
 svg_emoji = ["svg_solar", "svg_noto", "svg_twemoji"]
 
 [dependencies]
-egui = "0.33"
+egui = "0.37"
 # egui = { git = "https://github.com/emilk/egui", default-features = false, features = ["default_fonts"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -55,36 +55,41 @@ dark-light = "2.0"
 # For spreadsheet feature - SQLite (desktop/native)
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 rusqlite = { version = "0.38", default-features = false, features = ["bundled"], optional = true }
-libsqlite3-hotbundle = { version = "1.510300", optional = true, git = "https://github.com/nikescar/libsqlite3-hotbundle" }
 smol = { version = "2.0", optional = true } # for spreadsheet feature
 async-channel = { version = "2.3", optional = true } # for spreadsheet feature
 # diesel = { version = "2.3", default-features = false, features = ["sqlite"], optional = true }
 
 ureq = { version = "2.12", features = ["json"], optional = true } # for ondemand feature
-egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
+egui_extras = { version = "0.37", default-features = false, features = ["serde"], optional = true }
 csv = { version = "1.4", optional = true } # for spreadsheet feature
-calamine = { version = "0.26", optional = true } # for spreadsheet feature (xls/xlsx)
 futures = { version = "0.3", optional = true } # for spreadsheet feature (async Mutex)
 # async-std for native spreadsheet feature - moved to target-specific section below
 
 [dev-dependencies]
-egui_extras = { version = "0.33", default-features = false, features = ["image", "svg", "svg_text"] }
+# Headless widget tests: AccessKit queries, simulated input, wgpu snapshots.
+egui_kittest = { version = "0.37", features = ["snapshot", "wgpu"] }
+egui_extras = { version = "0.37", default-features = false, features = ["image", "svg", "svg_text"] }
 # egui_extras = { git = "https://github.com/emilk/egui", default-features = false, features = ["image", "svg", "svg_text"] }
 
 ureq = { version = "2.12", features = ["json"] }
-egui-file-dialog = "0.12"
+egui-file-dialog = "0.16"
 webbrowser = { version = "1.2.0", default-features = false }
 glob = "0.3"
 smol = { version = "2.0" }
 async-channel = { version = "2.3" }
 
+# Windows/macOS: the examples need eframe (Linux/BSD and Android get it from the
+# target-specific sections below)
+[target.'cfg(any(target_os = "windows", target_os = "macos"))'.dev-dependencies]
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "glow", "links"] }
+
 # Android specific dependencies
 [target.'cfg(target_os = "android")'.dependencies]
-eframe = { version = "0.33", default-features = false, features = ["default_fonts", "glow", "android-native-activity"] }
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "android-native-activity"] }
 
 # Linux/BSD-specific dependencies for proper windowing support
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
-eframe = { version = "0.33", features = ["default_fonts", "glow", "x11", "wayland"] }
+eframe = { version = "0.37", features = ["default_fonts", "glow", "x11", "wayland"] }
 
 # Wasm specific dependencies
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
@@ -92,10 +97,9 @@ eframe = { version = "0.33", features = ["default_fonts", "glow", "x11", "waylan
 diesel = { version = "2.3", default-features = false, features = ["sqlite", "returning_clauses_for_sqlite_3_35"], optional = true }
 sqlite-wasm-vfs = { version = "0.2.0", optional = true }
 sqlite-wasm-rs = { version = "0.5.2", optional = true }
-egui_extras = { version = "0.33", default-features = false, features = ["serde"], optional = true }
+egui_extras = { version = "0.37", default-features = false, features = ["serde"], optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 csv = { version = "1.4", optional = true }
-calamine = { version = "0.26", optional = true }
 futures = { version = "0.3", optional = true }
 
 [[example]]
@@ -117,6 +121,11 @@ path = "examples/mvvm_counter_example.rs"
 [[example]]
 name = "mvvm_todo_example"
 path = "examples/mvvm_todo_example.rs"
+
+[[example]]
+name = "svg_icon_demo"
+path = "examples/svg_icon_demo.rs"
+required-features = ["svg_emoji"]
 
 [package.metadata.docs.rs]
 all-features = true

@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Color32};
+use eframe::egui::{self};
 use egui_file_dialog::FileDialog;
 use egui_material3::theme::{
     load_fonts, load_themes, setup_google_fonts, setup_local_fonts_from_bytes, setup_local_theme,
@@ -30,6 +30,7 @@ mod input_window;
 mod layoutgrid_window;
 mod list_window;
 mod menu_window;
+mod navigation_window;
 mod notification_window;
 mod progress_window;
 mod radio_window;
@@ -46,9 +47,6 @@ mod toolbar_window;
 mod tooltip_window;
 mod topappbar_window;
 mod treeview_window;
-
-#[cfg(test)]
-mod theme_test;
 
 use actionsheet_window::ActionSheetWindow;
 use badge_window::BadgeWindow;
@@ -70,6 +68,7 @@ use input_window::InputWindow;
 use layoutgrid_window::LayoutGridWindow;
 use list_window::ListWindow;
 use menu_window::MenuWindow;
+use navigation_window::NavigationWindow;
 use notification_window::NotificationWindow;
 use progress_window::ProgressWindow;
 use radio_window::RadioWindow;
@@ -104,10 +103,6 @@ fn main() -> Result<(), eframe::Error> {
             setup_local_fonts_from_bytes(
                 "MaterialSymbolsOutlined",
                 include_bytes!("../../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"),
-            );
-            setup_local_fonts_from_bytes(
-                "Nanum Gothic",
-                include_bytes!("../../resources/nanum-gothic.ttf"),
             );
             // Prepare Google Sans Code font for Material Design (default)
             setup_google_fonts(Some("Google Sans Code"));
@@ -144,6 +139,7 @@ struct MaterialApp {
     input_window: InputWindow,
     list_window: ListWindow,
     menu_window: MenuWindow,
+    navigation_window: NavigationWindow,
     notification_window: NotificationWindow,
     progress_window: ProgressWindow,
     radio_window: RadioWindow,
@@ -188,6 +184,7 @@ impl Default for MaterialApp {
             input_window: InputWindow::default(),
             list_window: ListWindow::default(),
             menu_window: MenuWindow::default(),
+            navigation_window: NavigationWindow::default(),
             notification_window: NotificationWindow::default(),
             progress_window: ProgressWindow::default(),
             radio_window: RadioWindow::default(),
@@ -228,7 +225,7 @@ impl MaterialApp {
         F: FnOnce(&mut MaterialThemeContext),
     {
         if let Ok(mut theme) = get_global_theme().lock() {
-            update_fn(&mut *theme);
+            update_fn(&mut theme);
         }
     }
 
@@ -285,7 +282,7 @@ impl MaterialApp {
             ThemeMode::Dark => egui::Visuals::dark(),
             ThemeMode::Auto => {
                 // Use system preference or default to light
-                if ctx.style().visuals.dark_mode {
+                if ctx.global_style().visuals.dark_mode {
                     egui::Visuals::dark()
                 } else {
                     egui::Visuals::light()
@@ -390,6 +387,7 @@ impl MaterialApp {
         self.input_window.open = false;
         self.list_window.open = false;
         self.menu_window.open = false;
+        self.navigation_window.open = false;
         self.progress_window.open = false;
         self.radio_window.open = false;
         self.select_window.open = false;
@@ -414,7 +412,8 @@ impl MaterialApp {
 }
 
 impl eframe::App for MaterialApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // Apply theme based on settings
         self.apply_theme(ctx);
 
@@ -442,7 +441,7 @@ impl eframe::App for MaterialApp {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let theme = self.get_theme();
 
@@ -764,6 +763,13 @@ impl eframe::App for MaterialApp {
                     }
 
                     if ui
+                        .add(MaterialButton::filled("Navigation Stories"))
+                        .clicked()
+                    {
+                        self.navigation_window.open = true;
+                    }
+
+                    if ui
                         .add(MaterialButton::filled("Notification Stories"))
                         .clicked()
                     {
@@ -857,6 +863,7 @@ impl eframe::App for MaterialApp {
         self.input_window.show(ctx);
         self.list_window.show(ctx);
         self.menu_window.show(ctx);
+        self.navigation_window.show(ctx);
         self.notification_window.show(ctx);
         self.progress_window.show(ctx);
         self.radio_window.show(ctx);

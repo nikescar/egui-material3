@@ -188,7 +188,7 @@ impl MenuButtonThemeData {
     fn resolve(&self) -> ResolvedMenuButtonTheme {
         let on_surface = get_global_color("onSurface");
         let on_surface_variant = get_global_color("onSurfaceVariant");
-        let disabled_color = Color32::from_rgba_premultiplied(
+        let disabled_color = Color32::from_rgba_unmultiplied(
             on_surface.r(),
             on_surface.g(),
             on_surface.b(),
@@ -529,7 +529,7 @@ impl<'a> MaterialMenu<'a> {
             .resolve();
 
         // Use a stable ID for the menu
-        let stable_id = egui::Id::new(format!("menu_{}", self.id.value()));
+        let stable_id = egui::Id::unique(format!("menu_{}", self.id.value()));
 
         // Track how many frames the menu has been open. A mouse click can span
         // two frames (press on frame N, release on frame N+1), so we need to
@@ -660,7 +660,7 @@ fn render_menu_content<'a>(
     ui.painter().rect_filled(
         shadow_rect,
         style.corner_radius,
-        Color32::from_rgba_premultiplied(
+        Color32::from_rgba_unmultiplied(
             style.shadow_color.r(),
             style.shadow_color.g(),
             style.shadow_color.b(),
@@ -692,8 +692,15 @@ fn render_menu_content<'a>(
 
         let item_response = ui.interact(
             item_rect,
-            egui::Id::new(format!("menu_item_{}_{}", rect.min.x as i32, index)),
-            Sense::click(),
+            response.id.with(("menu_item", index)),
+            crate::a11y::sense(item.enabled, Sense::click()),
+        );
+        crate::a11y::describe(
+            &item_response,
+            egui::Role::MenuItem,
+            item.enabled,
+            &item.text,
+            None,
         );
 
         // Draw item background on hover/press
@@ -709,7 +716,7 @@ fn render_menu_content<'a>(
             if overlay_opacity > 0.0 {
                 let on_surface = button_theme.foreground_color;
                 let overlay_alpha = (overlay_opacity * 255.0) as u8;
-                let hover_color = Color32::from_rgba_premultiplied(
+                let hover_color = Color32::from_rgba_unmultiplied(
                     on_surface.r(),
                     on_surface.g(),
                     on_surface.b(),
@@ -945,4 +952,58 @@ pub fn menu(id: impl Into<egui::Id>, open: &mut bool) -> MaterialMenu<'_> {
 /// ```
 pub fn menu_item(text: impl Into<String>) -> MenuItem<'static> {
     MenuItem::new(text)
+}
+
+#[cfg(test)]
+mod id_tests {
+    use super::*;
+    use std::cell::Cell;
+
+    /// Regression test for nikescar/egui-material3#16: two menus at the same
+    /// x do not share item ids, so clicking an item of one does not click
+    /// the other's.
+    #[test]
+    fn test_menus_at_same_x_have_distinct_item_ids() {
+        let ctx = egui::Context::default();
+        let a_clicks = Cell::new(0);
+        let b_clicks = Cell::new(0);
+        let anchor_a = Rect::from_min_size(Pos2::new(100.0, 50.0), Vec2::new(10.0, 10.0));
+        let anchor_b = Rect::from_min_size(Pos2::new(100.0, 400.0), Vec2::new(10.0, 10.0));
+        let frame = |events: Vec<egui::Event>| {
+            let mut open_a = true;
+            let mut open_b = true;
+            let input = egui::RawInput {
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                menu(egui::Id::unique("menu_a"), &mut open_a)
+                    .anchor_rect(anchor_a)
+                    .stay_open_on_outside_click(true)
+                    .item(menu_item("A").on_click(|| a_clicks.set(a_clicks.get() + 1)))
+                    .show(ui.ctx());
+                menu(egui::Id::unique("menu_b"), &mut open_b)
+                    .anchor_rect(anchor_b)
+                    .stay_open_on_outside_click(true)
+                    .item(menu_item("B").on_click(|| b_clicks.set(b_clicks.get() + 1)))
+                    .show(ui.ctx());
+            })
+            .textures_delta
+            .clear();
+        };
+        // Inside menu A's first item: 4 px below the anchor, then padding.
+        let pos = Pos2::new(anchor_a.min.x + 40.0, anchor_a.max.y + 4.0 + 24.0);
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        frame(Vec::new());
+        frame(Vec::new());
+        frame(vec![egui::Event::PointerMoved(pos), button(true)]);
+        frame(vec![button(false)]);
+        assert_eq!(a_clicks.get(), 1, "clicking menu A's item should click it");
+        assert_eq!(b_clicks.get(), 0, "menu B's item must not be clicked too");
+    }
 }

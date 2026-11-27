@@ -1,26 +1,55 @@
 //! Material Design 3 Navigation Drawer Components
 //!
-//! # M3 Color Role Usage
+//! Values from the Jetpack Compose material3 token files
+//! (`androidx.compose.material3.tokens`, `androidx-main`),
+//! `NavigationDrawerTokens` unless noted:
 //!
-//! - **surface**: Drawer background (permanent/dismissible)
-//! - **surfaceContainerLow**: Modal drawer background (slightly elevated)
-//! - **onSurface**: Drawer content text
-//! - **onSurfaceVariant**: Supporting text, icons
-//! - **secondaryContainer**: Selected item background
-//! - **onSecondaryContainer**: Selected item text/icon
-//! - **scrim @ 32%**: Modal overlay behind drawer
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
+//! - **surface** (`StandardContainerColor`, `Level0`): permanent and
+//!   dismissible drawers, square-cornered.
+//! - **surfaceContainerLow** (`ModalContainerColor`, `Level1`): the modal
+//!   drawer, with `CornerLargeEnd` (16 dp on the edge facing the page).
+//! - **secondaryContainer** (`ActiveIndicatorColor`): the active item's
+//!   56 dp `CornerFull` indicator, 12 dp in from each side (336 dp wide in a
+//!   360 dp drawer).
+//! - **onSecondaryContainer**: active icon and label; **onSurfaceVariant**:
+//!   inactive icon, label and section headline (`TitleSmall`); labels are
+//!   `LabelLarge`.
+//! - **scrim @ 32%** (`ScrimTokens`): behind the modal drawer, above the
+//!   page and its windows, so it blocks clicks.
+//! - **State layers**: onSecondaryContainer (active) or onSurface
+//!   (inactive) at the `StateLayerTokens` opacities.
 //!
-//! ## Dimensions
-//! - **Width**: 360dp (standard), 256dp (compact)
-//! - **Elevation**: 0dp (permanent), 1dp (dismissible), 1dp (modal)
+//! Start and end alignment follow the theme's layout direction, and the
+//! dismissible and modal drawers slide in with the `DefaultSpatial` spring.
 
+use crate::navigation::{
+    describe_item, modal_scrim, paint_icon, rove_focus, scrim_color, text_galley, RoveAxis,
+};
 use crate::theme::get_global_color;
+use crate::tokens::state::DISABLED_CONTENT_OPACITY;
+use crate::tokens::{
+    animate_value_with_spring, ColorRole, InteractionState, LayoutDirection, Shape, SpringSpeed,
+    TypeRole,
+};
+use crate::MaterialTheme;
 use egui::{
     ecolor::Color32,
     epaint::{CornerRadius, Stroke},
-    pos2, Area, Id, Order, Rect, Response, Sense, SidePanel, Ui, Vec2, Widget,
+    pos2, Area, Id, Order, Rect, Response, Sense, Ui, Vec2, Widget,
 };
+
+/// `NavigationDrawerTokens.ContainerWidth`.
+pub const DRAWER_WIDTH: f32 = 360.0;
+/// `NavigationDrawerTokens.ActiveIndicatorHeight`: one item.
+pub const ITEM_HEIGHT: f32 = 56.0;
+/// `NavigationDrawerItemDefaults.ItemPadding`: items sit 12 dp in from each
+/// side.
+pub const ITEM_INSET: f32 = 12.0;
+/// `NavigationDrawerTokens.IconSize`.
+pub const ICON_SIZE: f32 = 24.0;
+/// Where headlines, the header and dividers start: 28 dp, lined up with the
+/// item labels' 12 + 16 dp.
+const HEADLINE_INSET: f32 = 28.0;
 
 /// Material Design navigation drawer variants.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -55,16 +84,19 @@ pub struct DrawerThemeData {
 
 impl DrawerThemeData {
     /// Create Material 3 defaults for drawer theming.
+    ///
+    /// Colours, scrim and corners are left unset: they depend on the variant
+    /// and come from the context's [`MaterialTheme`] when the drawer is drawn.
     pub fn material3_defaults() -> Self {
         Self {
-            background_color: Some(get_global_color("surfaceContainerLow")),
-            scrim_color: Some(Color32::from_rgba_unmultiplied(0, 0, 0, 138)),
+            background_color: None,
+            scrim_color: None,
             elevation: Some(1.0),
             shadow_color: Some(Color32::TRANSPARENT),
             surface_tint_color: Some(Color32::TRANSPARENT),
-            shape: Some(CornerRadius::same(16)),
-            end_shape: Some(CornerRadius::same(16)),
-            width: Some(360.0),
+            shape: None,
+            end_shape: None,
+            width: Some(DRAWER_WIDTH),
             clip_behavior: Some(true),
         }
     }
@@ -155,10 +187,11 @@ impl DrawerHeader {
             Vec2::new(rect.width(), self.height),
         );
 
+        let theme = MaterialTheme::of(ui.ctx());
         // Draw decoration background
         let bg_color = self
             .decoration_color
-            .unwrap_or_else(|| get_global_color("surfaceContainerHigh"));
+            .unwrap_or_else(|| theme.color(ColorRole::SurfaceContainerHigh));
         ui.painter()
             .rect_filled(header_rect, CornerRadius::ZERO, bg_color);
 
@@ -169,7 +202,7 @@ impl DrawerHeader {
                 egui::pos2(header_rect.min.x, border_y),
                 egui::pos2(header_rect.max.x, border_y),
             ],
-            Stroke::new(1.0, get_global_color("outlineVariant")),
+            Stroke::new(1.0, theme.color(ColorRole::OutlineVariant)),
         );
 
         // Draw content with padding
@@ -181,8 +214,8 @@ impl DrawerHeader {
                 title_pos,
                 egui::Align2::LEFT_TOP,
                 title,
-                egui::FontId::proportional(22.0),
-                get_global_color("onSurface"),
+                TypeRole::TitleLarge.style().font_id(ui.ctx()),
+                theme.color(ColorRole::OnSurface),
             );
         }
 
@@ -192,12 +225,12 @@ impl DrawerHeader {
                 subtitle_pos,
                 egui::Align2::LEFT_TOP,
                 subtitle,
-                egui::FontId::proportional(14.0),
-                get_global_color("onSurfaceVariant"),
+                TypeRole::BodyMedium.style().font_id(ui.ctx()),
+                theme.color(ColorRole::OnSurfaceVariant),
             );
         }
 
-        ui.interact(rect, ui.id().with("drawer_header"), Sense::hover())
+        ui.interact(rect, ui.scope_id().with("drawer_header"), Sense::hover())
     }
 }
 
@@ -228,7 +261,7 @@ pub struct MaterialDrawer<'a> {
     header_subtitle: Option<String>,
     items: Vec<DrawerItem>,
     sections: Vec<DrawerSection>,
-    corner_radius: CornerRadius,
+    corner_radius: Option<CornerRadius>,
     elevation: Option<f32>,
     theme: DrawerThemeData,
     enable_drag_gesture: bool,
@@ -298,10 +331,10 @@ impl DrawerItem {
 impl<'a> MaterialDrawer<'a> {
     /// Create a new navigation drawer with Material 3 defaults.
     pub fn new(variant: DrawerVariant, open: &'a mut bool) -> Self {
-        let id = Id::new(format!("material_drawer_{:?}", variant));
+        let id = Id::unique(format!("material_drawer_{:?}", variant));
         let theme = DrawerThemeData::material3_defaults();
-        let width = theme.width.unwrap_or(360.0);
-        let corner_radius = theme.shape.unwrap_or(CornerRadius::same(16));
+        let width = theme.width.unwrap_or(DRAWER_WIDTH);
+        let corner_radius = theme.shape;
         let elevation = theme.elevation;
 
         Self {
@@ -327,8 +360,8 @@ impl<'a> MaterialDrawer<'a> {
     /// Create a new navigation drawer with custom ID.
     pub fn new_with_id(variant: DrawerVariant, open: &'a mut bool, id: Id) -> Self {
         let theme = DrawerThemeData::material3_defaults();
-        let width = theme.width.unwrap_or(360.0);
-        let corner_radius = theme.shape.unwrap_or(CornerRadius::same(16));
+        let width = theme.width.unwrap_or(DRAWER_WIDTH);
+        let corner_radius = theme.shape;
         let elevation = theme.elevation;
 
         Self {
@@ -369,7 +402,7 @@ impl<'a> MaterialDrawer<'a> {
             self.width = width;
         }
         if let Some(shape) = theme.shape {
-            self.corner_radius = shape;
+            self.corner_radius = Some(shape);
         }
         if let Some(elevation) = theme.elevation {
             self.elevation = Some(elevation);
@@ -466,7 +499,7 @@ impl<'a> MaterialDrawer<'a> {
 
     /// Set corner radius.
     pub fn corner_radius(mut self, corner_radius: impl Into<CornerRadius>) -> Self {
-        self.corner_radius = corner_radius.into();
+        self.corner_radius = Some(corner_radius.into());
         self
     }
 
@@ -476,116 +509,161 @@ impl<'a> MaterialDrawer<'a> {
         self
     }
 
-    fn get_drawer_style(&self) -> (Color32, Option<Stroke>, f32) {
-        let background_color = self
-            .theme
-            .background_color
-            .unwrap_or_else(|| get_global_color("surfaceContainerLow"));
+    /// Whether the drawer sits on the left edge: start in left-to-right
+    /// layouts, end in right-to-left ones.
+    fn on_left(&self, direction: LayoutDirection) -> bool {
+        matches!(
+            (self.alignment, direction),
+            (DrawerAlignment::Start, LayoutDirection::Ltr)
+                | (DrawerAlignment::End, LayoutDirection::Rtl)
+        )
+    }
 
-        let elevation = self.elevation.unwrap_or(1.0);
-
-        match self.variant {
-            DrawerVariant::Permanent => {
-                // Permanent drawer: surface with subtle border
-                let border_color = get_global_color("outlineVariant");
-                (
-                    background_color,
-                    Some(Stroke::new(1.0, border_color)),
-                    elevation,
-                )
-            }
+    /// The container colour and corners for this variant: standard drawers
+    /// are `surface` and square (`StandardContainerColor`, Compose's
+    /// `RectangleShape` sheets), the modal drawer `surfaceContainerLow` with
+    /// `CornerLargeEnd` (`ModalContainerColor`, `ContainerShape`), the
+    /// rounded corners facing the page.
+    fn container_style(&self, theme: &MaterialTheme, rect: Rect) -> (Color32, CornerRadius) {
+        let background = self.theme.background_color.unwrap_or_else(|| {
+            theme.color(match self.variant {
+                DrawerVariant::Permanent | DrawerVariant::Dismissible => ColorRole::Surface,
+                DrawerVariant::Modal => ColorRole::SurfaceContainerLow,
+            })
+        });
+        let radius = self.corner_radius.unwrap_or_else(|| match self.variant {
+            DrawerVariant::Permanent | DrawerVariant::Dismissible => CornerRadius::ZERO,
             DrawerVariant::Modal => {
-                // Modal drawer: elevated surface, no border
-                (background_color, None, elevation)
+                // Round the edge facing the page.
+                let shape = match self.alignment {
+                    DrawerAlignment::Start => Shape::LARGE_END,
+                    DrawerAlignment::End => Shape::LARGE_START,
+                };
+                shape.corner_radius(rect, theme.layout_direction)
             }
-            DrawerVariant::Dismissible => {
-                // Dismissible drawer: surface with subtle border
-                let border_color = get_global_color("outlineVariant");
-                (
-                    background_color,
-                    Some(Stroke::new(1.0, border_color)),
-                    elevation,
-                )
-            }
-        }
+        });
+        (background, radius)
+    }
+
+    /// The open fraction, 0 (closed) to 1 (open), sliding with Compose's
+    /// `DefaultSpatial` spring. A drawer shown open on its first frame
+    /// starts open.
+    fn slide(&self, ctx: &egui::Context, theme: &MaterialTheme) -> f32 {
+        animate_value_with_spring(
+            ctx,
+            self.id.with("slide"),
+            if *self.open { 1.0 } else { 0.0 },
+            theme.motion.spatial(SpringSpeed::Default),
+        )
+        .clamp(0.0, 1.0)
     }
 
     /// Show the drawer using appropriate egui layout.
-    pub fn show(self, ctx: &egui::Context) -> Response {
+    ///
+    /// Permanent and dismissible drawers are shown as an [`egui::Panel`] on
+    /// the drawer's side inside `ui` (typically the root `Ui` passed to
+    /// `eframe::App::ui`); modal drawers are shown as overlay areas above a
+    /// scrim.
+    pub fn show(self, ui: &mut Ui) -> Response {
         match self.variant {
-            DrawerVariant::Permanent => self.show_permanent(ctx),
-            DrawerVariant::Dismissible => self.show_dismissible(ctx),
-            DrawerVariant::Modal => self.show_modal(ctx),
+            DrawerVariant::Permanent => self.show_permanent(ui),
+            DrawerVariant::Dismissible => self.show_dismissible(ui),
+            DrawerVariant::Modal => self.show_modal(ui.ctx()),
         }
     }
 
-    fn show_permanent(self, ctx: &egui::Context) -> Response {
-        SidePanel::left(self.id.with("permanent"))
-            .default_width(self.width)
-            .resizable(false)
-            .show(ctx, |ui| self.render_drawer_content(ui))
-            .response
-    }
-
-    fn show_dismissible(self, ctx: &egui::Context) -> Response {
-        if *self.open {
-            SidePanel::left(self.id.with("dismissible"))
-                .default_width(self.width)
-                .resizable(false)
-                .show(ctx, |ui| self.render_drawer_content(ui))
-                .response
+    fn panel(&self, theme: &MaterialTheme, salt: &str, width: f32) -> egui::Panel {
+        let id = self.id.with(salt);
+        let panel = if self.on_left(theme.layout_direction) {
+            egui::Panel::left(id)
         } else {
-            // Return empty response when closed
-            Area::new(self.id.with("dismissible_dummy"))
-                .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
-                .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
-                .response
+            egui::Panel::right(id)
+        };
+        panel
+            .exact_size(width)
+            .resizable(false)
+            .show_separator_line(false)
+            .frame(egui::Frame::NONE)
+    }
+
+    fn show_permanent(self, ui: &mut Ui) -> Response {
+        let theme = MaterialTheme::of(ui.ctx());
+        self.panel(&theme, "permanent", self.width)
+            .show(ui, |ui| self.render_drawer_content(ui, 0.0))
+            .inner
+    }
+
+    fn show_dismissible(self, ui: &mut Ui) -> Response {
+        let theme = MaterialTheme::of(ui.ctx());
+        let open_fraction = self.slide(ui.ctx(), &theme);
+        if open_fraction <= 0.0 {
+            return ui.allocate_response(Vec2::ZERO, Sense::hover());
         }
+        // The panel narrows as the drawer slides out; its content slides
+        // with it rather than squashing.
+        let hidden = self.width * (1.0 - open_fraction);
+        let shift = if self.on_left(theme.layout_direction) {
+            -hidden
+        } else {
+            0.0
+        };
+        self.panel(&theme, "dismissible", self.width * open_fraction)
+            .show(ui, |ui| {
+                ui.set_clip_rect(ui.max_rect());
+                self.render_drawer_content(ui, shift)
+            })
+            .inner
     }
 
     fn show_modal(self, ctx: &egui::Context) -> Response {
-        if *self.open {
-            // Draw scrim background
-            let screen_rect = ctx.content_rect();
-            let scrim_color = self
-                .theme
-                .scrim_color
-                .unwrap_or(Color32::from_rgba_unmultiplied(0, 0, 0, 138));
-
-            Area::new(self.id.with("modal_scrim"))
-                .order(Order::Background)
-                .show(ctx, |ui| {
-                    let scrim_response = ui.allocate_response(screen_rect.size(), Sense::click());
-                    ui.painter()
-                        .rect_filled(screen_rect, CornerRadius::ZERO, scrim_color);
-
-                    // Close drawer if scrim is clicked and barrier is dismissible
-                    if scrim_response.clicked() && self.barrier_dismissible {
-                        *self.open = false;
-                    }
-                });
-
-            // Draw the actual modal drawer
-            Area::new(self.id.with("modal_drawer"))
-                .order(Order::Foreground)
-                .fixed_pos(pos2(0.0, 0.0))
-                .show(ctx, |ui| {
-                    ui.set_width(self.width);
-                    ui.set_height(screen_rect.height());
-                    self.render_drawer_content(ui)
-                })
-                .response
-        } else {
-            // Return empty response when closed
-            Area::new(self.id.with("modal_dummy"))
-                .fixed_pos(pos2(-1000.0, -1000.0)) // Place offscreen
+        let theme = MaterialTheme::of(ctx);
+        let open_fraction = self.slide(ctx, &theme);
+        let screen_rect = ctx.content_rect();
+        if open_fraction <= 0.0 {
+            // Closed: take no space and nothing else.
+            return Area::new(self.id.with("modal_dummy"))
+                .fixed_pos(screen_rect.min)
                 .show(ctx, |ui| ui.allocate_response(Vec2::ZERO, Sense::hover()))
-                .response
+                .response;
         }
+
+        // The scrim covers the whole page, above panels and windows, so it
+        // dims the page and blocks interaction with it. It fades with the
+        // slide (`ScrimTokens`: `scrim` at 32 %).
+        let scrim_color = match self.theme.scrim_color {
+            Some(color) => color.gamma_multiply(open_fraction),
+            None => scrim_color(&theme, open_fraction),
+        };
+        let scrim = modal_scrim(ctx, self.id.with("modal_scrim"), scrim_color);
+        if scrim.clicked() && self.barrier_dismissible {
+            *self.open = false;
+        }
+
+        // The sheet itself, kept above its scrim, sliding in from its edge.
+        let x = if self.on_left(theme.layout_direction) {
+            screen_rect.min.x - self.width * (1.0 - open_fraction)
+        } else {
+            screen_rect.max.x - self.width * open_fraction
+        };
+        let drawer_id = self.id.with("modal_drawer");
+        ctx.move_to_top(egui::LayerId::new(Order::Foreground, drawer_id));
+        Area::new(drawer_id)
+            .order(Order::Foreground)
+            .fade_in(false)
+            .fixed_pos(pos2(x, screen_rect.min.y))
+            .show(ctx, |ui| {
+                ui.set_width(self.width);
+                ui.set_height(screen_rect.height());
+                self.render_drawer_content(ui, 0.0)
+            })
+            .inner
     }
 
-    fn render_drawer_content(self, ui: &mut Ui) -> Response {
-        let (background_color, border_stroke, _elevation) = self.get_drawer_style();
+    /// Draws the sheet, header, sections and items, `shift` points along x
+    /// from where the ui would put it.
+    fn render_drawer_content(self, ui: &mut Ui, shift: f32) -> Response {
+        let theme = MaterialTheme::of(ui.ctx());
+        let rtl = theme.layout_direction == LayoutDirection::Rtl;
 
         // Handle ESC key for dismissible and modal drawers
         if matches!(
@@ -598,234 +676,218 @@ impl<'a> MaterialDrawer<'a> {
 
         let available_rect = ui.available_rect_before_wrap();
         let drawer_rect = Rect::from_min_size(
-            available_rect.min,
+            pos2(available_rect.min.x + shift, available_rect.min.y),
             Vec2::new(self.width, available_rect.height()),
         );
+        // A span `from_start` points in from the drawer's start edge.
+        let span = |from_start: f32, width: f32| -> (f32, f32) {
+            if rtl {
+                let max = drawer_rect.max.x - from_start;
+                (max - width, max)
+            } else {
+                let min = drawer_rect.min.x + from_start;
+                (min, min + width)
+            }
+        };
 
-        // Draw drawer background with corner radius
-        ui.painter()
-            .rect_filled(drawer_rect, self.corner_radius, background_color);
-
-        // Draw border if present
-        if let Some(stroke) = border_stroke {
-            ui.painter().rect_stroke(
-                drawer_rect,
-                self.corner_radius,
-                stroke,
-                egui::epaint::StrokeKind::Outside,
-            );
-        }
+        let (background_color, corner_radius) = self.container_style(&theme, drawer_rect);
+        let painter = ui.painter().clone();
+        painter.rect_filled(drawer_rect, corner_radius, background_color);
 
         let mut current_y = drawer_rect.min.y;
-        let item_height = 56.0; // Material 3 standard item height
-        let section_padding_top = 16.0;
-        let section_padding_bottom = 10.0;
-        let horizontal_padding = 12.0; // Container padding
 
-        // Draw header if present
         if let Some(title) = &self.header_title {
             let header_height = 64.0;
-            let header_rect = Rect::from_min_size(
-                egui::pos2(drawer_rect.min.x, current_y),
-                Vec2::new(self.width, header_height),
-            );
-
-            // Header text with proper padding
-            let title_pos = egui::pos2(header_rect.min.x + 28.0, header_rect.min.y + 16.0);
-            ui.painter().text(
-                title_pos,
-                egui::Align2::LEFT_TOP,
+            let title = text_galley(
+                &painter,
+                TypeRole::TitleLarge,
                 title,
-                egui::FontId::proportional(22.0),
-                get_global_color("onSurfaceVariant"),
+                theme.color(ColorRole::OnSurface),
             );
-
+            let (x, _) = span(HEADLINE_INSET, title.size().x);
+            painter.galley(
+                pos2(x, current_y + 16.0),
+                title,
+                theme.color(ColorRole::OnSurface),
+            );
             if let Some(subtitle) = &self.header_subtitle {
-                let subtitle_pos = egui::pos2(header_rect.min.x + 28.0, header_rect.min.y + 42.0);
-                ui.painter().text(
-                    subtitle_pos,
-                    egui::Align2::LEFT_TOP,
+                let subtitle = text_galley(
+                    &painter,
+                    TypeRole::BodyMedium,
                     subtitle,
-                    egui::FontId::proportional(14.0),
-                    get_global_color("onSurfaceVariant"),
+                    theme.color(ColorRole::OnSurfaceVariant),
+                );
+                let (x, _) = span(HEADLINE_INSET, subtitle.size().x);
+                painter.galley(
+                    pos2(x, current_y + 42.0),
+                    subtitle,
+                    theme.color(ColorRole::OnSurfaceVariant),
                 );
             }
-
             current_y += header_height;
         }
 
         let mut response = ui.allocate_response(drawer_rect.size(), Sense::hover());
+        let interactive = *self.open || self.variant == DrawerVariant::Permanent;
+        let mut ids = Vec::new();
 
-        // Render sections if any
-        if !self.sections.is_empty() {
-            for (section_idx, section) in self.sections.iter().enumerate() {
-                // Draw section label if present
-                if let Some(label) = &section.label {
-                    current_y += section_padding_top;
-                    let label_pos = egui::pos2(drawer_rect.min.x + 28.0, current_y);
-                    ui.painter().text(
-                        label_pos,
-                        egui::Align2::LEFT_TOP,
-                        label,
-                        egui::FontId::proportional(14.0),
-                        get_global_color("onSurfaceVariant"),
-                    );
-                    current_y += section_padding_bottom + 10.0;
-                }
-
-                // Draw section items
-                for (index, item) in section.items.iter().enumerate() {
-                    let item_response = self.render_navigation_item(
-                        ui,
-                        item,
-                        drawer_rect,
-                        current_y,
-                        item_height,
-                        horizontal_padding,
-                        self.id.with("section").with(section_idx).with(index),
-                    );
-                    response = response.union(item_response);
-                    current_y += item_height;
-                }
-
-                // Add divider between sections (except after last section)
-                if section_idx < self.sections.len() - 1 {
-                    current_y += 8.0;
-                    let divider_y = current_y;
-                    ui.painter().line_segment(
-                        [
-                            egui::pos2(drawer_rect.min.x + 28.0, divider_y),
-                            egui::pos2(drawer_rect.max.x - 28.0, divider_y),
-                        ],
-                        Stroke::new(1.0, get_global_color("outlineVariant")),
-                    );
-                    current_y += 8.0;
-                }
-            }
+        let mut groups: Vec<(Option<&String>, &[DrawerItem], &str)> = Vec::new();
+        if self.sections.is_empty() {
+            groups.push((None, &self.items, "item"));
         } else {
-            // Render simple items list if no sections
-            for (index, item) in self.items.iter().enumerate() {
-                let item_response = self.render_navigation_item(
-                    ui,
-                    item,
-                    drawer_rect,
-                    current_y,
-                    item_height,
-                    horizontal_padding,
-                    self.id.with("item").with(index),
-                );
-                response = response.union(item_response);
-                current_y += item_height;
+            for section in &self.sections {
+                groups.push((section.label.as_ref(), &section.items, "section"));
             }
         }
+        let group_count = groups.len();
+        for (group_index, (label, items, salt)) in groups.into_iter().enumerate() {
+            if let Some(label) = label {
+                // `NavigationDrawerTokens.HeadlineFont` / `HeadlineColor`.
+                current_y += 16.0;
+                let color = theme.color(ColorRole::OnSurfaceVariant);
+                let galley = text_galley(&painter, TypeRole::TitleSmall, label, color);
+                let (x, _) = span(HEADLINE_INSET, galley.size().x);
+                painter.galley(pos2(x, current_y), galley, color);
+                current_y += 20.0;
+            }
+            for (index, item) in items.iter().enumerate() {
+                let item_id = if salt == "section" {
+                    self.id.with("section").with(group_index).with(index)
+                } else {
+                    self.id.with("item").with(index)
+                };
+                let (min_x, max_x) = span(ITEM_INSET, self.width - ITEM_INSET * 2.0);
+                let item_rect = Rect::from_min_max(
+                    pos2(min_x, current_y),
+                    pos2(max_x, current_y + ITEM_HEIGHT),
+                );
+                let item_response =
+                    self.render_navigation_item(ui, &theme, item, item_rect, item_id, interactive);
+                if interactive {
+                    ids.push((item_id, item.enabled));
+                }
+                response = response.union(item_response);
+                current_y += ITEM_HEIGHT;
+            }
+            if group_index + 1 < group_count {
+                current_y += 8.0;
+                let (min_x, max_x) = span(HEADLINE_INSET, self.width - HEADLINE_INSET * 2.0);
+                painter.line_segment(
+                    [pos2(min_x, current_y), pos2(max_x, current_y)],
+                    Stroke::new(1.0, theme.color(ColorRole::OutlineVariant)),
+                );
+                current_y += 8.0;
+            }
+        }
+        rove_focus(ui, &ids, RoveAxis::Vertical, rtl);
 
         response
     }
 
-    #[allow(clippy::too_many_arguments)]
+    /// One destination: the 56 dp `CornerFull` indicator when active, the
+    /// state layer, the 24 dp icon, the `LabelLarge` label and the badge
+    /// text (`NavigationDrawerTokens`; padding from `NavigationDrawerItem`:
+    /// 16 dp start, 12 dp after the icon and before the badge, 24 dp end).
     fn render_navigation_item(
         &self,
         ui: &mut Ui,
+        theme: &MaterialTheme,
         item: &DrawerItem,
-        drawer_rect: Rect,
-        y_pos: f32,
-        item_height: f32,
-        horizontal_padding: f32,
+        item_rect: Rect,
         item_id: Id,
+        interactive: bool,
     ) -> Response {
-        // Item container with padding
-        let item_outer_rect = Rect::from_min_size(
-            egui::pos2(drawer_rect.min.x + horizontal_padding, y_pos),
-            Vec2::new(self.width - horizontal_padding * 2.0, item_height),
-        );
-
-        let item_response = ui.interact(item_outer_rect, item_id, Sense::click());
-
-        // Active indicator (rounded rectangle on the left)
-        if item.active {
-            let indicator_width = item_outer_rect.width();
-            let indicator_height = 32.0;
-            let indicator_y = y_pos + (item_height - indicator_height) / 2.0;
-
-            let indicator_rect = Rect::from_min_size(
-                egui::pos2(item_outer_rect.min.x, indicator_y),
-                Vec2::new(indicator_width, indicator_height),
-            );
-
-            let active_color = get_global_color("secondaryContainer");
-            ui.painter()
-                .rect_filled(indicator_rect, CornerRadius::same(16), active_color);
-        } else if item_response.hovered() && item.enabled {
-            let indicator_width = item_outer_rect.width();
-            let indicator_height = 32.0;
-            let indicator_y = y_pos + (item_height - indicator_height) / 2.0;
-
-            let indicator_rect = Rect::from_min_size(
-                egui::pos2(item_outer_rect.min.x, indicator_y),
-                Vec2::new(indicator_width, indicator_height),
-            );
-
-            let hover_color = get_global_color("onSurface").linear_multiply(0.08);
-            ui.painter()
-                .rect_filled(indicator_rect, CornerRadius::same(16), hover_color);
-        }
-
-        let mut current_x = item_outer_rect.min.x + 16.0;
-
-        // Draw icon if present
-        if let Some(_icon) = &item.icon {
-            let icon_center = egui::pos2(current_x + 12.0, y_pos + item_height / 2.0);
-            let icon_color = if !item.enabled {
-                get_global_color("onSurface").linear_multiply(0.38)
-            } else if item.active {
-                get_global_color("onSecondaryContainer")
-            } else {
-                get_global_color("onSurfaceVariant")
-            };
-
-            ui.painter().circle_filled(icon_center, 12.0, icon_color);
-            current_x += 40.0;
-        }
-
-        // Draw item text
-        let text_color = if !item.enabled {
-            get_global_color("onSurface").linear_multiply(0.38)
-        } else if item.active {
-            get_global_color("onSecondaryContainer")
+        let rtl = theme.layout_direction == LayoutDirection::Rtl;
+        let sense = if interactive {
+            crate::a11y::sense(item.enabled, Sense::click())
         } else {
-            get_global_color("onSurfaceVariant")
+            Sense::hover()
         };
+        let item_response = ui.interact(item_rect, item_id, sense);
+        describe_item(&item_response, item.enabled, &item.text, item.active);
 
-        let text_pos = egui::pos2(current_x, y_pos + (item_height - 20.0) / 2.0);
-
-        ui.painter().text(
-            text_pos,
-            egui::Align2::LEFT_CENTER,
-            &item.text,
-            egui::FontId::proportional(14.0),
-            text_color,
+        let painter = ui.painter();
+        let pill = CornerRadius::same((ITEM_HEIGHT / 2.0) as u8);
+        if item.active {
+            painter.rect_filled(item_rect, pill, theme.color(ColorRole::SecondaryContainer));
+        }
+        let content_color = match (item.enabled, item.active) {
+            (false, _) => theme
+                .color(ColorRole::OnSurface)
+                .gamma_multiply(DISABLED_CONTENT_OPACITY),
+            (true, true) => theme.color(ColorRole::OnSecondaryContainer),
+            (true, false) => theme.color(ColorRole::OnSurfaceVariant),
+        };
+        // Hovered, focused and pressed labels are onSurface when inactive
+        // (`InactiveHoverLabelTextColor` etc.); the state layer follows.
+        let layer_color = if item.active {
+            theme.color(ColorRole::OnSecondaryContainer)
+        } else {
+            theme.color(ColorRole::OnSurface)
+        };
+        crate::paint::paint_state_layer(
+            painter,
+            item_rect,
+            pill,
+            layer_color,
+            InteractionState::from_response(&item_response),
         );
 
-        // Draw badge if present
+        // x of a point `from_start` in from the item's start edge.
+        let at = |from_start: f32| {
+            if rtl {
+                item_rect.max.x - from_start
+            } else {
+                item_rect.min.x + from_start
+            }
+        };
+        let center_y = item_rect.center().y;
+        let mut label_start = 16.0;
+        if let Some(icon) = &item.icon {
+            paint_icon(
+                painter,
+                pos2(at(16.0 + ICON_SIZE / 2.0), center_y),
+                icon,
+                ICON_SIZE,
+                content_color,
+                item.active,
+            );
+            label_start += ICON_SIZE + 12.0;
+        }
+        let label = text_galley(painter, TypeRole::LabelLarge, &item.text, content_color);
+        let label_x = if rtl {
+            at(label_start) - label.size().x
+        } else {
+            at(label_start)
+        };
+        painter.galley(
+            pos2(label_x, center_y - label.size().y / 2.0),
+            label,
+            content_color,
+        );
         if let Some(badge) = &item.badge {
-            let badge_x = item_outer_rect.max.x - 40.0;
-            let badge_center = egui::pos2(badge_x, y_pos + item_height / 2.0);
-
-            // Badge background
-            ui.painter()
-                .circle_filled(badge_center, 10.0, get_global_color("error"));
-
-            // Badge text
-            ui.painter().text(
-                badge_center,
-                egui::Align2::CENTER_CENTER,
-                badge,
-                egui::FontId::proportional(10.0),
-                get_global_color("onError"),
+            // `LargeBadgeLabelFont`: the badge is a trailing label.
+            let galley = text_galley(painter, TypeRole::LabelLarge, badge, content_color);
+            let x = if rtl {
+                at(24.0)
+            } else {
+                at(24.0) - galley.size().x
+            };
+            painter.galley(
+                pos2(x, center_y - galley.size().y / 2.0),
+                galley,
+                content_color,
+            );
+        }
+        if item_response.has_focus() {
+            crate::paint::paint_focus_ring(
+                painter,
+                item_rect,
+                pill,
+                theme.color(ColorRole::Secondary),
             );
         }
 
-        // Handle item click
         if item_response.clicked() && item.enabled {
             if let Some(callback) = &item.on_click {
                 callback();
@@ -840,7 +902,7 @@ impl Widget for MaterialDrawer<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         // This implementation is kept for backward compatibility
         // but the preferred way is to use the show() method
-        self.render_drawer_content(ui)
+        self.render_drawer_content(ui, 0.0)
     }
 }
 
@@ -862,4 +924,72 @@ pub fn modal_drawer(open: &mut bool) -> MaterialDrawer<'_> {
 // Legacy support - these will be deprecated
 pub fn standard_drawer(open: &mut bool) -> MaterialDrawer<'_> {
     permanent_drawer(open)
+}
+
+#[cfg(test)]
+mod modal_tests {
+    use super::*;
+
+    /// Regression test for nikescar/egui-material3#14: the modal drawer's
+    /// scrim sits above the page, so a click outside the drawer dismisses
+    /// it and does not reach the page underneath.
+    #[test]
+    fn test_modal_scrim_blocks_page_and_dismisses() {
+        let ctx = egui::Context::default();
+        let mut open = true;
+        let mut page_clicked = false;
+        let frame = |events: Vec<egui::Event>, open: &mut bool, page_clicked: &mut bool| {
+            let input = egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    Vec2::new(800.0, 600.0),
+                )),
+                events,
+                ..Default::default()
+            };
+            ctx.run_ui(input, |ui| {
+                egui::CentralPanel::default().show(ui, |ui| {
+                    let size = ui.available_size();
+                    if ui.add_sized(size, egui::Button::new("page")).clicked() {
+                        *page_clicked = true;
+                    }
+                });
+                egui::Window::new("window")
+                    .fixed_pos(pos2(400.0, 200.0))
+                    .show(ui.ctx(), |ui| {
+                        let button = egui::Button::new("window button");
+                        if ui.add_sized(Vec2::new(200.0, 200.0), button).clicked() {
+                            *page_clicked = true;
+                        }
+                    });
+                MaterialDrawer::new(DrawerVariant::Modal, open)
+                    .width(200.0)
+                    .show(ui);
+            })
+            .textures_delta
+            .clear();
+        };
+        let pos = pos2(500.0, 300.0);
+        let button = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        // Two frames: a new area is invisible on its first frame.
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        frame(
+            vec![egui::Event::PointerMoved(pos), button(true)],
+            &mut open,
+            &mut page_clicked,
+        );
+        frame(vec![button(false)], &mut open, &mut page_clicked);
+        frame(Vec::new(), &mut open, &mut page_clicked);
+        assert!(
+            !page_clicked,
+            "the page and windows under a modal drawer must not get the click"
+        );
+        assert!(!open, "clicking the scrim should dismiss the drawer");
+    }
 }
