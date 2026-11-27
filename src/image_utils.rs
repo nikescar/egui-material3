@@ -2,12 +2,11 @@
 //!
 //! Helper functions for loading and caching images and SVG graphics.
 //! Icons rendered from these utilities should use M3 color roles.
+//!
+//! The SVG functions need the `svg` cargo feature. Without it they keep
+//! their signatures and return an error, so callers compile either way.
 
 use egui::{self, ColorImage, Context, TextureHandle};
-use resvg::{
-    tiny_skia::Pixmap,
-    usvg::{Options, Tree},
-};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -15,7 +14,18 @@ lazy_static::lazy_static! {
     static ref TEXTURE_CACHE: Mutex<HashMap<String, TextureHandle>> = Mutex::new(HashMap::new());
 }
 
+/// Renders SVG markup to PNG bytes at the SVG's own size.
+///
+/// # Errors
+/// When the markup does not parse or the image cannot be encoded, and
+/// always without the `svg` feature.
+#[cfg(feature = "svg")]
 pub fn svg_to_png_bytes(svg_data: &str) -> Result<Vec<u8>, String> {
+    use resvg::{
+        tiny_skia::Pixmap,
+        usvg::{Options, Tree},
+    };
+
     // Parse the SVG data into a usvg::Tree
     let tree = Tree::from_str(svg_data, &Options::default())
         .map_err(|e| format!("Failed to parse SVG: {}", e))?;
@@ -44,6 +54,21 @@ pub fn svg_to_png_bytes(svg_data: &str) -> Result<Vec<u8>, String> {
     Ok(png_bytes)
 }
 
+/// Renders SVG markup to PNG bytes.
+///
+/// # Errors
+/// Always: this build has no SVG rasteriser. Enable the `svg` feature of
+/// egui-material3 to render SVG.
+#[cfg(not(feature = "svg"))]
+pub fn svg_to_png_bytes(_svg_data: &str) -> Result<Vec<u8>, String> {
+    Err("SVG rendering needs the `svg` feature of egui-material3".to_string())
+}
+
+/// Renders SVG markup to a texture, cached under `name`.
+///
+/// # Errors
+/// As [`svg_to_png_bytes`]: always without the `svg` feature (unless a
+/// texture is already cached under `name`).
 pub fn create_texture_from_svg(
     ctx: &Context,
     svg_data: &str,
@@ -51,7 +76,9 @@ pub fn create_texture_from_svg(
 ) -> Result<TextureHandle, String> {
     // Check if texture is already cached
     {
-        let cache = TEXTURE_CACHE.lock().unwrap();
+        let cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(texture) = cache.get(name) {
             return Ok(texture.clone());
         }
@@ -73,7 +100,9 @@ pub fn create_texture_from_svg(
 
     // Cache the texture
     {
-        let mut cache = TEXTURE_CACHE.lock().unwrap();
+        let mut cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.insert(name.to_string(), texture.clone());
     }
 
@@ -87,7 +116,9 @@ pub fn create_texture_from_png_bytes(
 ) -> Result<TextureHandle, String> {
     // Check if texture is already cached
     {
-        let cache = TEXTURE_CACHE.lock().unwrap();
+        let cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(texture) = cache.get(name) {
             return Ok(texture.clone());
         }
@@ -106,7 +137,9 @@ pub fn create_texture_from_png_bytes(
 
     // Cache the texture
     {
-        let mut cache = TEXTURE_CACHE.lock().unwrap();
+        let mut cache = TEXTURE_CACHE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.insert(name.to_string(), texture.clone());
     }
 

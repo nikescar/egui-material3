@@ -112,6 +112,8 @@ pub struct MaterialFab<'a> {
     svg_icon: Option<SvgIcon>,
     /// Raw SVG data string
     svg_data: Option<String>,
+    /// Accessible name; defaults to the text, then the icon name
+    label: Option<String>,
     /// Whether the FAB is interactive
     enabled: bool,
     /// Action callback when FAB is pressed
@@ -149,6 +151,7 @@ impl<'a> MaterialFab<'a> {
             text: None,
             svg_icon: None,
             svg_data: None,
+            label: None,
             enabled: true,
             action: None,
         }
@@ -198,6 +201,14 @@ impl<'a> MaterialFab<'a> {
         self
     }
 
+    /// Accessible name for screen readers and UI tests. The visible content
+    /// is often only an icon, so set this to say what the button does
+    /// (defaults to the text, then the icon name).
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
     /// Enable or disable the FAB
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
@@ -218,6 +229,9 @@ impl<'a> MaterialFab<'a> {
     }
 
     /// Set raw SVG data for the FAB icon
+    ///
+    /// Rasterising needs the `svg` cargo feature; without it the FAB draws
+    /// no icon.
     pub fn svg_data(mut self, svg_data: impl Into<String>) -> Self {
         self.svg_data = Some(svg_data.into());
         self
@@ -264,7 +278,15 @@ impl<'a> Widget for MaterialFab<'a> {
             }
         };
 
-        let (rect, response) = ui.allocate_exact_size(size, Sense::click());
+        let (rect, response) =
+            ui.allocate_exact_size(size, crate::a11y::sense(self.enabled, Sense::click()));
+        let a11y_label = self
+            .label
+            .as_deref()
+            .or(self.text.as_deref())
+            .or(self.icon.as_deref())
+            .unwrap_or_default();
+        crate::a11y::button(&response, self.enabled, a11y_label);
 
         // Extract all needed data before partial move
         let action = self.action;
@@ -321,15 +343,23 @@ impl<'a> Widget for MaterialFab<'a> {
                     let base_color = primary;
                     let content_color = on_primary;
                     if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onPrimary overlay (M3 interaction state)
+                        // Pressed state: 10% onPrimary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.12),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::PRESSED_OPACITY,
+                            ),
                             content_color,
                         )
                     } else if response.hovered() {
                         // Hover state: 8% onPrimary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.08),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::HOVER_OPACITY,
+                            ),
                             content_color,
                         )
                     } else {
@@ -341,15 +371,23 @@ impl<'a> Widget for MaterialFab<'a> {
                     let base_color = secondary;
                     let content_color = on_secondary;
                     if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onSecondary overlay (M3 interaction state)
+                        // Pressed state: 10% onSecondary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.12),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::PRESSED_OPACITY,
+                            ),
                             content_color,
                         )
                     } else if response.hovered() {
                         // Hover state: 8% onSecondary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.08),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::HOVER_OPACITY,
+                            ),
                             content_color,
                         )
                     } else {
@@ -361,15 +399,23 @@ impl<'a> Widget for MaterialFab<'a> {
                     let base_color = tertiary;
                     let content_color = on_tertiary;
                     if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onTertiary overlay (M3 interaction state)
+                        // Pressed state: 10% onTertiary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.12),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::PRESSED_OPACITY,
+                            ),
                             content_color,
                         )
                     } else if response.hovered() {
                         // Hover state: 8% onTertiary overlay (M3 interaction state)
                         (
-                            blend_state_layer(base_color, content_color, 0.08),
+                            blend_state_layer(
+                                base_color,
+                                content_color,
+                                crate::tokens::state::HOVER_OPACITY,
+                            ),
                             content_color,
                         )
                     } else {
@@ -381,15 +427,23 @@ impl<'a> Widget for MaterialFab<'a> {
                     let google_brand = Color32::from_rgb(66, 133, 244);
                     let content_color = Color32::WHITE; // White icon/text on branded background
                     if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% white overlay
+                        // Pressed state: 10% white overlay
                         (
-                            blend_state_layer(google_brand, content_color, 0.12),
+                            blend_state_layer(
+                                google_brand,
+                                content_color,
+                                crate::tokens::state::PRESSED_OPACITY,
+                            ),
                             content_color,
                         )
                     } else if response.hovered() {
                         // Hover state: 8% white overlay
                         (
-                            blend_state_layer(google_brand, content_color, 0.08),
+                            blend_state_layer(
+                                google_brand,
+                                content_color,
+                                crate::tokens::state::HOVER_OPACITY,
+                            ),
                             content_color,
                         )
                     } else {
@@ -536,20 +590,7 @@ impl<'a> Widget for MaterialFab<'a> {
 ///
 /// Used for M3 interactive states (hover: 8%, press: 12%).
 fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
-    let alpha = (opacity * 255.0) as u8;
-    let overlay_with_alpha =
-        Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
-    // Alpha blending
-    let inv_alpha = 255 - alpha;
-    Color32::from_rgba_unmultiplied(
-        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255)
-            as u8,
-        base.a(),
-    )
+    crate::paint::state_layer_over(base, overlay, opacity)
 }
 
 // Helper function to draw Google logo
@@ -600,6 +641,7 @@ fn draw_google_logo(ui: &mut Ui, center: Pos2, size: f32) {
 }
 
 // Helper function to render SVG data to texture
+#[cfg(feature = "svg")]
 fn render_svg_to_texture(
     ctx: &egui::Context,
     svg_data: &str,
@@ -632,6 +674,17 @@ fn render_svg_to_texture(
     let key = format!("fab_svg_{:x}", hasher.finish());
 
     Ok(ctx.load_texture(key, color_image, egui::TextureOptions::LINEAR))
+}
+
+/// Without the `svg` feature there is no rasteriser: the FAB draws no SVG
+/// icon.
+#[cfg(not(feature = "svg"))]
+fn render_svg_to_texture(
+    _ctx: &egui::Context,
+    _svg_data: &str,
+    _size: u32,
+) -> Result<egui::TextureHandle, String> {
+    Err("SVG rendering needs the `svg` feature of egui-material3".to_string())
 }
 
 pub fn fab_surface() -> MaterialFab<'static> {

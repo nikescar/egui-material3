@@ -63,8 +63,8 @@
 //! }
 //!
 //! impl eframe::App for MyApp {
-//!     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-//!         egui::CentralPanel::default().show(ctx, |ui| {
+//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+//!         egui::CentralPanel::default().show(ui, |ui| {
 //!             ui.heading("Material Design Components");
 //!             
 //!             // Use Material Design components
@@ -181,6 +181,20 @@
 //!     ]));
 //! ```
 //!
+//! ### SVG and OS theme features
+//!
+//! No feature is on by default. `svg` rasterises SVG icons with resvg
+//! (without it an SVG icon paints nothing and the `image_utils` SVG
+//! functions return an error); `system-theme` lets `detect_os_theme`
+//! follow the OS light/dark setting (without it, it returns
+//! `ThemeMode::Light`). Enable both to keep the behaviour of releases
+//! where they were always on:
+//!
+//! ```toml
+//! [dependencies]
+//! egui-material3 = { version = "...", features = ["svg", "system-theme"] }
+//! ```
+//!
 //! ### OnDemand Feature
 //!
 //! Enable the `ondemand` feature for online image support:
@@ -229,6 +243,7 @@
 //! This crate follows the Material Design 3 specifications and guidelines for consistent,
 //! accessible, and beautiful user interfaces.
 
+pub mod a11y;
 pub mod actionsheet;
 pub mod badge;
 pub mod breadcrumbs;
@@ -252,9 +267,11 @@ pub mod input;
 pub mod layoutgrid;
 pub mod list;
 pub mod material_symbol;
+pub mod material_theme;
 pub mod menu;
 pub mod notification;
 pub mod noto_emoji;
+pub mod paint;
 pub mod progress;
 pub mod radio;
 pub mod select;
@@ -267,6 +284,7 @@ pub mod switch;
 pub mod tabs;
 pub mod theme;
 pub mod timeline;
+pub mod tokens;
 pub mod toolbar;
 pub mod tooltip;
 pub mod topappbar;
@@ -312,9 +330,10 @@ pub use {
     input::{InputVariant, MaterialInput},
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{
-        ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, MaterialListState,
-        VisualDensity,
+        list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList,
+        MaterialListState, VisualDensity,
     },
+    material_theme::MaterialTheme,
     menu::{
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
         MenuItem, MenuStyle, MenuThemeData, Positioning,
@@ -338,13 +357,14 @@ pub use {
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
     theme::{
-        get_global_color, get_global_theme, update_global_theme, ContrastLevel,
-        MaterialThemeContext, MaterialThemeFile, ThemeMode,
+        get_global_color, get_global_color_role, get_global_theme, update_global_theme,
+        ContrastLevel, MaterialThemeContext, MaterialThemeFile, ThemeMode,
     },
     timeline::{
         timeline, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant,
         TimelineItem, TimelinePosition,
     },
+    tokens::{ColorRole, ColorScheme},
     toolbar::{toolbar, MaterialToolbar, ToolbarElevation},
     tooltip::{
         show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip,

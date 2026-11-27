@@ -343,7 +343,7 @@ impl DialogWindow {
         // Standard Dialog
         if self.standard_dialog_open {
             dialog(
-                "standard_dialog",
+                egui::Id::unique("standard_dialog"),
                 &self.headline,
                 &mut self.standard_dialog_open,
             )
@@ -363,7 +363,7 @@ impl DialogWindow {
 
         // Alert Dialog
         if self.alert_dialog_open {
-            dialog("alert_dialog", "Alert", &mut self.alert_dialog_open)
+            dialog(egui::Id::unique("alert_dialog"), "Alert", &mut self.alert_dialog_open)
                 .max_width(320.0)
                 .content(|ui, _open| {
                     ui.label("This is a standard alert dialog. Alert dialogs interrupt users with urgent information, details, or actions.");
@@ -377,7 +377,7 @@ impl DialogWindow {
         // Confirm Dialog - demonstrates icon usage
         if self.confirm_dialog_open {
             dialog(
-                "confirm_dialog",
+                egui::Id::unique("confirm_dialog"),
                 "Permanently delete?",
                 &mut self.confirm_dialog_open,
             )
@@ -400,7 +400,7 @@ impl DialogWindow {
         // Choice Dialog - demonstrates radio buttons
         if self.choice_dialog_open {
             dialog(
-                "choice_dialog",
+                egui::Id::unique("choice_dialog"),
                 "Choose your favorite pet",
                 &mut self.choice_dialog_open,
             )
@@ -423,7 +423,7 @@ impl DialogWindow {
         // Form Dialog - demonstrates form inputs
         if self.form_dialog_open {
             dialog(
-                "form_dialog",
+                egui::Id::unique("form_dialog"),
                 "Create new contact",
                 &mut self.form_dialog_open,
             )
@@ -467,7 +467,7 @@ impl DialogWindow {
         // Icon Dialog - demonstrates centered icon above title
         if self.icon_dialog_open {
             dialog(
-                "icon_dialog",
+                egui::Id::unique("icon_dialog"),
                 "Save your changes?",
                 &mut self.icon_dialog_open,
             )
@@ -491,7 +491,7 @@ impl DialogWindow {
         // Scrollable Dialog - demonstrates scrollable content
         if self.scrollable_dialog_open {
             dialog(
-                "scrollable_dialog",
+                egui::Id::unique("scrollable_dialog"),
                 "Terms and Conditions",
                 &mut self.scrollable_dialog_open,
             )
@@ -518,7 +518,7 @@ impl DialogWindow {
         // Long Content Dialog
         if self.long_content_dialog_open {
             dialog(
-                "long_content_dialog",
+                egui::Id::unique("long_content_dialog"),
                 "Important Information",
                 &mut self.long_content_dialog_open,
             )
@@ -541,7 +541,7 @@ impl DialogWindow {
         // Custom Padding Dialog - uses user-defined padding
         if self.custom_padding_dialog_open {
             dialog(
-                "custom_padding_dialog",
+                egui::Id::unique("custom_padding_dialog"),
                 "Custom Padding",
                 &mut self.custom_padding_dialog_open,
             )
@@ -565,7 +565,7 @@ impl DialogWindow {
         // Multi-Action Dialog - demonstrates many action buttons
         if self.multi_action_dialog_open {
             dialog(
-                "multi_action_dialog",
+                egui::Id::unique("multi_action_dialog"),
                 "Multiple Actions",
                 &mut self.multi_action_dialog_open,
             )
@@ -593,7 +593,7 @@ impl DialogWindow {
 
         // Floating Sheet
         if self.floating_sheet_open {
-            dialog("floating_sheet", "Floating Sheet", &mut self.floating_sheet_open)
+            dialog(egui::Id::unique("floating_sheet"), "Floating Sheet", &mut self.floating_sheet_open)
                 .max_width(400.0)
                 .content(|ui, _open| {
                     ui.label("This is a floating sheet with title. Floating sheets offer no action buttons at the bottom, but there's a close icon button at the top right. They accept any HTML content.");
@@ -604,7 +604,7 @@ impl DialogWindow {
         // Scrollable Settings Dialog
         if self.settings_dialog_open {
             dialog(
-                "settings_dialog",
+                egui::Id::unique("settings_dialog"),
                 "Settings",
                 &mut self.settings_dialog_open,
             )
@@ -630,7 +630,7 @@ impl DialogWindow {
         // Wizard Dialog - using enhanced dialog() builder with programmatic close
         if self.wizard_dialog_open {
             let mut open = self.wizard_dialog_open;
-            dialog("wizard_dialog", "Setup Wizard", &mut open)
+            dialog(egui::Id::unique("wizard_dialog"), "Setup Wizard", &mut open)
                 .max_width(500.0)
                 .content(|ui, open| {
                     // Step indicator
@@ -667,10 +667,9 @@ impl DialogWindow {
                         if ui
                             .add(MaterialButton::outlined("Previous").enabled(can_go_back))
                             .clicked()
+                            && self.wizard_current_step > 0
                         {
-                            if self.wizard_current_step > 0 {
-                                self.wizard_current_step -= 1;
-                            }
+                            self.wizard_current_step -= 1;
                         }
 
                         ui.add_space(10.0);

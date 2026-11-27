@@ -18,7 +18,11 @@ cargo add egui-material3
 cargo add egui-material3 --features ondemand
 cargo add egui-material3 --features "svg_solar,spreadsheet"
 cargo add egui-material3 --features svg_emoji  # All icon collections
+cargo add egui-material3 --features "svg,system-theme"  # SVG icons, OS dark mode
 ```
+
+No feature is on by default. SVG rendering (`svg`) and OS light/dark
+detection (`system-theme`) are opt-in; see [Features](#features).
 
 Or manually in `Cargo.toml`:
 
@@ -79,8 +83,8 @@ struct MyApp {
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Material Design Components");
 
             // Buttons with different variants
@@ -120,8 +124,8 @@ use egui_material3::{
 };
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Toolbar with actions
             ui.add(MaterialToolbar::new()
                 .title("My Application")
@@ -308,9 +312,9 @@ Combine components to create rich user interfaces:
 use egui_material3::*;
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // Top app bar
-        egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
+        egui::Panel::top("top_bar").show(ui, |ui| {
             ui.add(MaterialTopAppBar::new()
                 .title("My App")
                 .add_action("notifications", |ui| {
@@ -322,14 +326,14 @@ impl eframe::App for MyApp {
         });
 
         // Navigation drawer
-        egui::SidePanel::left("drawer").show(ctx, |ui| {
+        egui::Panel::left("drawer").show(ui, |ui| {
             ui.add(MaterialDrawer::new()
                 .add_item("Home", "home", || println!("Home"))
                 .add_item("Settings", "settings", || println!("Settings")));
         });
 
         // Main content
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Action buttons with tooltips
             ui.horizontal(|ui| {
                 MaterialTooltip::new("Create new item").show(ui, |ui| {
@@ -365,9 +369,9 @@ impl eframe::App for MyApp {
         }
 
         // FAB (Floating Action Button)
-        egui::Area::new("fab")
+        egui::Area::new(egui::Id::unique("fab"))
             .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -16.0))
-            .show(ctx, |ui| {
+            .show(ui.ctx(), |ui| {
                 if ui.add(MaterialFab::primary().icon("add")).clicked() {
                     println!("FAB clicked");
                 }
@@ -467,6 +471,34 @@ if let Some(svg) = TWEMOJI.get("1f600") {
 **Note**: SVG files are embedded at compile time when features are enabled. If building from crates.io (not git), files are automatically downloaded during build.
 
 ## Features
+
+| Feature | Default | What it adds |
+|---|---|---|
+| `svg` | off | SVG icons rasterised with resvg: `MaterialIconButton::svg` / `svg_data`, `MaterialFab::svg_data`, `image_utils::svg_to_png_bytes` / `create_texture_from_svg`. |
+| `system-theme` | off | `detect_os_theme()` (and so `ThemeMode::Auto`) follows the OS light/dark setting, through the dark-light crate. |
+| `ondemand` | off | Online images in `MaterialImageList`, and Google Fonts downloads in `setup_google_fonts`. |
+| `spreadsheet` | off | `MaterialSpreadsheet`. |
+| `svg_solar`, `svg_noto`, `svg_twemoji`, `svg_emoji` | off | Embedded SVG icon and emoji collections (each turns on `svg`). |
+
+### SVG rendering and OS theme detection
+
+Both are off by default, so an app that does not need them does not
+build resvg or dark-light and their dependencies.
+
+- **Without `svg`**, an SVG icon paints nothing (the widget still lays
+  out and draws its container), and the `image_utils` SVG functions
+  return an error. Use an icon font or a texture instead, or enable the
+  feature.
+- **Without `system-theme`**, `detect_os_theme()` returns
+  `ThemeMode::Light`. To follow the OS without the feature, read egui's
+  `ctx.system_theme()` (eframe fills it in) and set `ThemeMode::Dark` or
+  `ThemeMode::Light` yourself.
+
+To keep the behaviour of earlier releases, where both were always on:
+
+```toml
+egui-material3 = { version = "...", features = ["svg", "system-theme"] }
+```
 
 ### OnDemand Feature
 
@@ -593,8 +625,8 @@ cd examples/package && cargo run
 ### Running with Features
 
 ```bash
-# Run with spreadsheet support
-cargo run --example stories --features spreadsheet
+# Run with spreadsheet support, SVG icons and OS dark-mode detection
+cargo run --example stories --features spreadsheet,svg,system-theme
 
 # Run with all SVG icon collections
 cargo run --example stories --features svg_emoji

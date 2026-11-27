@@ -7,4 +7,5 @@ mod types;
 #[cfg(test)]
 mod tests;
 
+pub use rendering::{list, list_item};
 pub use types::*;
