@@ -30,6 +30,7 @@ mod input_window;
 mod layoutgrid_window;
 mod list_window;
 mod menu_window;
+mod navigation_window;
 mod notification_window;
 mod progress_window;
 mod radio_window;
@@ -67,6 +68,7 @@ use input_window::InputWindow;
 use layoutgrid_window::LayoutGridWindow;
 use list_window::ListWindow;
 use menu_window::MenuWindow;
+use navigation_window::NavigationWindow;
 use notification_window::NotificationWindow;
 use progress_window::ProgressWindow;
 use radio_window::RadioWindow;
@@ -137,6 +139,7 @@ struct MaterialApp {
     input_window: InputWindow,
     list_window: ListWindow,
     menu_window: MenuWindow,
+    navigation_window: NavigationWindow,
     notification_window: NotificationWindow,
     progress_window: ProgressWindow,
     radio_window: RadioWindow,
@@ -181,6 +184,7 @@ impl Default for MaterialApp {
             input_window: InputWindow::default(),
             list_window: ListWindow::default(),
             menu_window: MenuWindow::default(),
+            navigation_window: NavigationWindow::default(),
             notification_window: NotificationWindow::default(),
             progress_window: ProgressWindow::default(),
             radio_window: RadioWindow::default(),
@@ -383,6 +387,7 @@ impl MaterialApp {
         self.input_window.open = false;
         self.list_window.open = false;
         self.menu_window.open = false;
+        self.navigation_window.open = false;
         self.progress_window.open = false;
         self.radio_window.open = false;
         self.select_window.open = false;
@@ -758,6 +763,13 @@ impl eframe::App for MaterialApp {
                     }
 
                     if ui
+                        .add(MaterialButton::filled("Navigation Stories"))
+                        .clicked()
+                    {
+                        self.navigation_window.open = true;
+                    }
+
+                    if ui
                         .add(MaterialButton::filled("Notification Stories"))
                         .clicked()
                     {
@@ -851,6 +863,7 @@ impl eframe::App for MaterialApp {
         self.input_window.show(ctx);
         self.list_window.show(ctx);
         self.menu_window.show(ctx);
+        self.navigation_window.show(ctx);
         self.notification_window.show(ctx);
         self.progress_window.show(ctx);
         self.radio_window.show(ctx);
