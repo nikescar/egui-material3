@@ -277,7 +277,7 @@ impl<'a> MaterialCard2<'a> {
         let tint_opacity = self.calculate_tint_overlay(elevation);
 
         // Blend tint color over base color
-        Color32::from_rgba_premultiplied(
+        Color32::from_rgba_unmultiplied(
             (base_color.r() as f32 * (1.0 - tint_opacity) + tint_color.r() as f32 * tint_opacity)
                 as u8,
             (base_color.g() as f32 * (1.0 - tint_opacity) + tint_color.g() as f32 * tint_opacity)

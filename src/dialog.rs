@@ -36,6 +36,9 @@ pub enum DialogType {
     Form,
 }
 
+/// Renders the dialog body; receives the UI and the dialog's open flag.
+type DialogContentFn<'a> = Box<dyn FnOnce(&mut Ui, &mut bool) + 'a>;
+
 /// Material Design dialog component following Material Design 3 specifications
 ///
 /// Dialogs interrupt users with overlaid content that requires a response.
@@ -80,7 +83,7 @@ pub struct MaterialDialog<'a> {
     /// Optional icon to display in dialog header
     icon: Option<String>,
     /// Content rendering function called once with UI and open state
-    content: Box<dyn FnOnce(&mut Ui, &mut bool) + 'a>,
+    content: DialogContentFn<'a>,
     /// List of action buttons at the bottom of the dialog
     actions: Vec<DialogAction<'a>>,
     /// Whether this is a quick/temporary dialog
@@ -691,12 +694,13 @@ impl<'a> MaterialDialog<'a> {
         let desired_size = Vec2::new(button_width, button_height);
 
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
+        crate::a11y::button(&response, true, &action.text);
 
         let (bg_color, text_color, _border_color) = match action.action_type {
             ActionType::Text => {
                 if response.hovered() {
                     (
-                        Color32::from_rgba_premultiplied(primary.r(), primary.g(), primary.b(), 20), // 8% opacity state layer
+                        Color32::from_rgba_unmultiplied(primary.r(), primary.g(), primary.b(), 20), // 8% opacity state layer
                         primary,
                         Color32::TRANSPARENT,
                     )
@@ -720,12 +724,8 @@ impl<'a> MaterialDialog<'a> {
 
         // Draw state layer for pressed state
         if response.is_pointer_button_down_on() {
-            let pressed_overlay = Color32::from_rgba_premultiplied(
-                text_color.r(),
-                text_color.g(),
-                text_color.b(),
-                31,
-            ); // 12% opacity
+            let pressed_overlay =
+                Color32::from_rgba_unmultiplied(text_color.r(), text_color.g(), text_color.b(), 26); // 10% opacity (StateLayerTokens.PressedOpacity)
             ui.painter().rect_filled(rect, 20.0, pressed_overlay);
         }
 

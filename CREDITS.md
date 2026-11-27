@@ -25,6 +25,8 @@ This project is built upon the foundation of several outstanding open source pro
 | Project | Summary | Version | License |
 |---------|---------|---------|---------|
 | [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) | C++ headers for icon fonts | - | zlib |
+| [Roboto](https://github.com/googlefonts/roboto-classic) | Material 3 typeface, bundled as static 400/500/700 instances in `resources/fonts/` | 3.015 | OFL-1.1 |
+| [Material Symbols](https://github.com/google/material-design-icons) | Icon font, bundled as static FILL 0/1 instances in `resources/fonts/` | 2.978 | Apache-2.0 |
 
 ## Special Thanks
 

@@ -153,8 +153,7 @@ impl InputWindow {
                             .text_color(egui::Color32::from_rgb(0, 255, 0)) // Change active text color
                             .background_color(egui::Color32::BLACK) // Box background
                             .margin(egui::vec2(10.0, 10.0)) // Padding around text
-                            .font(egui::FontId::monospace(16.0)) // Custom text font/size
-                            .frame(true), // False strips the background border entirely
+                            .font(egui::FontId::monospace(16.0)), // Custom text font/size
                     );
                 });
             });

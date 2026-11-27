@@ -3,6 +3,7 @@
 use crate::{icon_button_filled, icon_button_standard, toolbar, MaterialButton};
 use eframe::egui::{self, Ui, Window};
 use egui_material3::material_symbol::material_symbol_text;
+use egui_material3::{FloatingToolbarStyle, MaterialBottomAppBar, MaterialFloatingToolbar};
 
 #[doc(hidden)]
 pub struct ToolbarWindow {
@@ -12,6 +13,9 @@ pub struct ToolbarWindow {
     tabbar_mode: bool,
     min_height: f32,
     item_spacing: f32,
+    bold: bool,
+    italic: bool,
+    vibrant: bool,
 }
 
 impl Default for ToolbarWindow {
@@ -21,8 +25,11 @@ impl Default for ToolbarWindow {
             show_outline: true,
             is_top: false,
             tabbar_mode: false,
-            min_height: 56.0,
+            min_height: 64.0,
             item_spacing: 8.0,
+            bold: true,
+            italic: false,
+            vibrant: false,
         }
     }
 }
@@ -35,6 +42,8 @@ impl ToolbarWindow {
             .default_size([900.0, 700.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
+                    self.render_m3_bars(ui);
+                    ui.add_space(20.0);
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     self.render_basic_toolbar(ui);
@@ -53,6 +62,53 @@ impl ToolbarWindow {
                 });
             });
         self.open = open;
+    }
+
+    fn render_m3_bars(&mut self, ui: &mut Ui) {
+        ui.heading("Bottom App Bar");
+        ui.label("80dp, surfaceContainer, up to four actions and a FAB slot.");
+        ui.add(
+            MaterialBottomAppBar::new()
+                .id_salt("story_bottom_app_bar")
+                .action("check_box", "Select", || println!("Select"))
+                .action("edit", "Edit", || println!("Edit"))
+                .action("mic", "Voice", || println!("Voice"))
+                .action("image", "Image", || println!("Image"))
+                .fab("add", "New item", || println!("FAB")),
+        );
+
+        ui.add_space(20.0);
+        ui.heading("Floating Toolbars (M3 Expressive)");
+        ui.label("64dp pill, Level 3, 8dp padding, 4dp gaps, FAB 8dp after it.");
+        ui.checkbox(&mut self.vibrant, "Vibrant");
+        let style = if self.vibrant {
+            FloatingToolbarStyle::Vibrant
+        } else {
+            FloatingToolbarStyle::Standard
+        };
+        ui.add(
+            MaterialFloatingToolbar::horizontal()
+                .id_salt("story_floating_h")
+                .style(style)
+                .toggle("format_bold", "Bold", &mut self.bold)
+                .toggle("format_italic", "Italic", &mut self.italic)
+                .action("format_underlined", "Underline", || println!("Underline"))
+                .action("format_list_bulleted", "List", || println!("List"))
+                .fab("add", "Insert", || println!("Insert")),
+        );
+        ui.add_space(12.0);
+        ui.add(
+            MaterialFloatingToolbar::vertical()
+                .id_salt("story_floating_v")
+                .style(style)
+                .action("undo", "Undo", || println!("Undo"))
+                .action("redo", "Redo", || println!("Redo"))
+                .action("share", "Share", || println!("Share"))
+                .fab("edit", "Edit", || println!("Edit")),
+        );
+        ui.add_space(20.0);
+        ui.heading("Docked Toolbars (M3 Expressive)");
+        ui.label("64dp, surfaceContainer, 16dp side padding.");
     }
 
     fn render_controls(&mut self, ui: &mut Ui) {
@@ -100,10 +156,10 @@ impl ToolbarWindow {
 
         ui.add(
             toolbar()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("home"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("search"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("favorite"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("settings"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("search"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("favorite"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("settings"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -129,11 +185,11 @@ impl ToolbarWindow {
         ui.label("Multiple spacers:");
         ui.add(
             toolbar()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("menu"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("menu"))))
                 .spacer()
                 .item(MaterialButton::text("Center"))
                 .spacer()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("more_vert"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("more_vert"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -146,15 +202,11 @@ impl ToolbarWindow {
 
         ui.add(
             toolbar()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("home"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("explore"))))
-                .item_fn(|ui| ui.add(icon_button_filled(&material_symbol_text("add"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("notifications"))))
-                .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text(
-                        "account_circle",
-                    )))
-                })
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("explore"))))
+                .item_fn(|ui| ui.add(icon_button_filled(material_symbol_text("add"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("notifications"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("account_circle"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -182,17 +234,15 @@ impl ToolbarWindow {
         ui.add(
             toolbar()
                 .tabbar(true)
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home")).size(32.0)))
                 .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("home")).size(32.0))
+                    ui.add(icon_button_standard(material_symbol_text("search")).size(32.0))
                 })
                 .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("search")).size(32.0))
+                    ui.add(icon_button_standard(material_symbol_text("favorite")).size(32.0))
                 })
                 .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("favorite")).size(32.0))
-                })
-                .item_fn(|ui| {
-                    ui.add(icon_button_standard(&material_symbol_text("person")).size(32.0))
+                    ui.add(icon_button_standard(material_symbol_text("person")).size(32.0))
                 })
                 .min_height(self.min_height)
                 .outline(self.show_outline),
@@ -206,11 +256,11 @@ impl ToolbarWindow {
         ui.add(
             toolbar()
                 .top(true)
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("menu"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("menu"))))
                 .item(MaterialButton::text("My App").small())
                 .spacer()
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("search"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("more_vert"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("search"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("more_vert"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline),
@@ -227,7 +277,7 @@ impl ToolbarWindow {
                 .item(MaterialButton::filled_tonal("Action 2").small())
                 .item(MaterialButton::filled_tonal("Action 3").small())
                 .spacer()
-                .item_fn(|ui| ui.add(icon_button_filled(&material_symbol_text("settings"))))
+                .item_fn(|ui| ui.add(icon_button_filled(material_symbol_text("settings"))))
                 .min_height(self.min_height)
                 .item_spacing(self.item_spacing)
                 .outline(self.show_outline)
@@ -240,10 +290,10 @@ impl ToolbarWindow {
         ui.add(
             toolbar()
                 .outline(false)
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("home"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("explore"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("library_books"))))
-                .item_fn(|ui| ui.add(icon_button_standard(&material_symbol_text("person"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("home"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("explore"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("library_books"))))
+                .item_fn(|ui| ui.add(icon_button_standard(material_symbol_text("person"))))
                 .min_height(64.0)
                 .item_spacing(16.0),
         );

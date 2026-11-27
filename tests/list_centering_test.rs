@@ -8,8 +8,8 @@ fn test_multiline_vertical_centering() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new().item(
                 ListItem::new("Backend Development")
                     .overline("Engineering")
@@ -23,7 +23,9 @@ fn test_multiline_vertical_centering() {
             // Visual balance verified manually
             assert!(response.rect.height() > 0.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that 3-line centering remains unchanged
@@ -32,8 +34,8 @@ fn test_3line_centering_unchanged() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new().item(
                 ListItem::new("Primary Text")
                     .overline("Overline")
@@ -52,7 +54,9 @@ fn test_3line_centering_unchanged() {
                 response.rect.height()
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that 2-line items (primary + secondary) work correctly
@@ -61,8 +65,8 @@ fn test_2line_with_multiline_secondary() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
                 .item(ListItem::new("Primary Text").secondary_text("Line 1\nLine 2"));
 
@@ -78,7 +82,9 @@ fn test_2line_with_multiline_secondary() {
                 response.rect.height()
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test dense mode with multi-line items
@@ -87,8 +93,8 @@ fn test_dense_multiline_centering() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new().item(
                 ListItem::new("Primary")
                     .overline("Overline")
@@ -108,7 +114,9 @@ fn test_dense_multiline_centering() {
                 response.rect.height()
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that items without overline don't get offset adjustment
@@ -117,8 +125,8 @@ fn test_no_overline_centering() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
                 .item(ListItem::new("Primary").secondary_text("Line 1\nLine 2\nLine 3"));
 
@@ -127,5 +135,7 @@ fn test_no_overline_centering() {
             // Should render without issues
             assert!(response.rect.height() > 0.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
