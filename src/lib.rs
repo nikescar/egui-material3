@@ -252,6 +252,7 @@ pub mod imagelist;
 pub mod input;
 pub mod layoutgrid;
 pub mod list;
+pub mod loading_indicator;
 pub mod material_symbol;
 pub mod material_theme;
 pub mod menu;
@@ -261,6 +262,7 @@ pub mod paint;
 pub mod progress;
 pub mod radio;
 pub mod select;
+pub mod shapes;
 pub mod slider;
 pub mod snackbar;
 pub mod spreadsheet;
@@ -319,6 +321,7 @@ pub use {
         list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList,
         MaterialListState, VisualDensity,
     },
+    loading_indicator::LoadingIndicator,
     material_theme::MaterialTheme,
     menu::{
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
@@ -335,7 +338,7 @@ pub use {
     select::{select, MaterialSelect, MenuAlignment, SelectVariant},
     slider::{
         range_slider, slider, MaterialRangeSlider, MaterialSlider, RangeValues, SliderInteraction,
-        ThumbShape,
+        SliderSize, ThumbShape,
     },
     snackbar::{
         snackbar, snackbar_with_action, MaterialSnackbar, SnackBarBehavior, SnackbarPosition,
