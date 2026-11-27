@@ -5,7 +5,7 @@ use eframe::egui::{self, Ui, Window};
 use std::time::{Duration, Instant};
 
 #[doc(hidden)]
-pub struct NotificationWindow {
+pub(crate) struct NotificationWindow {
     pub open: bool,
     // State for different notification examples
     show_basic: bool,
@@ -72,7 +72,7 @@ impl Default for NotificationWindow {
 }
 
 impl NotificationWindow {
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub(crate) fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         Window::new("Notification Stories")
             .open(&mut open)
@@ -154,11 +154,9 @@ impl NotificationWindow {
                 self.show_basic = true;
                 self.basic_show_time = Some(Instant::now());
             }
-            if self.show_basic {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_basic = false;
-                    self.basic_show_time = None;
-                }
+            if self.show_basic && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_basic = false;
+                self.basic_show_time = None;
             }
         });
 
@@ -199,11 +197,9 @@ impl NotificationWindow {
                 self.show_with_icon = true;
                 self.with_icon_show_time = Some(Instant::now());
             }
-            if self.show_with_icon {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_with_icon = false;
-                    self.with_icon_show_time = None;
-                }
+            if self.show_with_icon && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_with_icon = false;
+                self.with_icon_show_time = None;
             }
         });
 
@@ -247,11 +243,9 @@ impl NotificationWindow {
                 self.show_with_subtitle = true;
                 self.with_subtitle_show_time = Some(Instant::now());
             }
-            if self.show_with_subtitle {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_with_subtitle = false;
-                    self.with_subtitle_show_time = None;
-                }
+            if self.show_with_subtitle && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_with_subtitle = false;
+                self.with_subtitle_show_time = None;
             }
         });
 
@@ -292,11 +286,9 @@ impl NotificationWindow {
                 self.show_full = true;
                 self.full_show_time = Some(Instant::now());
             }
-            if self.show_full {
-                if ui.add(MaterialButton::text("Hide")).clicked() {
-                    self.show_full = false;
-                    self.full_show_time = None;
-                }
+            if self.show_full && ui.add(MaterialButton::text("Hide")).clicked() {
+                self.show_full = false;
+                self.full_show_time = None;
             }
         });
 
@@ -341,16 +333,8 @@ impl NotificationWindow {
             }
         });
 
-        // Check for auto-dismiss
-        if self.show_closeable {
-            if let Some(show_time) = self.closeable_show_time {
-                if show_time.elapsed() >= Duration::from_secs(5) {
-                    self.show_closeable = false;
-                    self.closeable_show_time = None;
-                }
-            }
-        }
-
+        // The notification times itself out (`auto_dismiss`) and reports it
+        // as a change, like a click on its close button.
         if self.show_closeable {
             let response = ui.add(
                 notification()
@@ -358,11 +342,12 @@ impl NotificationWindow {
                     .text("Click the close button or anywhere on notification to dismiss")
                     .icon("info")
                     .closeable(true)
+                    .auto_dismiss(Duration::from_secs(5))
                     .align(self.notification_align)
                     .opened(true),
             );
 
-            // Close button was clicked or notification was clicked
+            // Timed out, close button clicked, or notification clicked
             if response.changed() || response.clicked() {
                 self.show_closeable = false;
                 self.closeable_show_time = None;

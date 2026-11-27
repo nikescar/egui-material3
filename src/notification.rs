@@ -15,7 +15,8 @@
 //! - **Corner radius**: 12dp
 
 use crate::material_symbol::material_symbol_text;
-use crate::theme::get_global_color;
+use crate::tokens::ColorRole;
+use crate::MaterialTheme;
 use egui::{
     ecolor::Color32, pos2, Area, FontId, Id, Order, Rect, Response, Sense, Stroke, Ui, Vec2, Widget,
 };
@@ -141,7 +142,9 @@ impl MaterialNotification {
         self
     }
 
-    /// Set auto-dismiss duration
+    /// Hide the notification `duration` after it is first shown. On that
+    /// frame the response is marked changed, as a click on the close button
+    /// marks it, so the caller can clear its "showing" flag.
     pub fn auto_dismiss(mut self, duration: Duration) -> Self {
         self.auto_dismiss = Some(duration);
         self
@@ -175,6 +178,15 @@ impl MaterialNotification {
     }
 }
 
+/// A notification's auto-dismiss timer, kept in egui memory.
+#[derive(Clone, Copy, Debug)]
+struct NotificationTimer {
+    shown_at: f64,
+    dismissed: bool,
+    /// The last pass the notification was added in.
+    last_pass: u64,
+}
+
 /// Notification with vertical offset for stacking
 pub struct MaterialNotificationWithOffset {
     notification: MaterialNotification,
@@ -194,16 +206,97 @@ impl Widget for MaterialNotification {
 }
 
 impl MaterialNotification {
+    /// The memory key for this notification's auto-dismiss timer.
+    fn timer_id(&self, ui: &Ui, vertical_offset: f32) -> Id {
+        ui.scope_id().with((
+            "material_notification",
+            self.title.as_deref().unwrap_or(""),
+            self.text.as_deref().unwrap_or(""),
+            vertical_offset.to_bits(),
+        ))
+    }
+
+    /// Tracks when the notification was first shown (the widget is rebuilt
+    /// every frame) and returns whether its `auto_dismiss` time has passed.
+    /// Once timed out it stays dismissed until it is shown with
+    /// `opened(false)` and then opened again.
+    fn timed_out(&self, ui: &Ui, id: Id) -> bool {
+        if !self.opened {
+            ui.data_mut(|d| d.remove::<NotificationTimer>(id));
+            return false;
+        }
+        let Some(auto_dismiss) = self.auto_dismiss else {
+            return false;
+        };
+        let now = ui.input(|i| i.time);
+        let pass = ui.ctx().cumulative_pass_nr();
+        let timer = ui.data_mut(|d| {
+            // Not added last pass: the caller stopped showing it, so this
+            // is a new notification with a new timer.
+            let timer = d
+                .get_temp::<NotificationTimer>(id)
+                .filter(|t| t.last_pass.saturating_add(1) >= pass)
+                .unwrap_or(NotificationTimer {
+                    shown_at: now,
+                    dismissed: false,
+                    last_pass: pass,
+                });
+            let timer = NotificationTimer {
+                last_pass: pass,
+                ..timer
+            };
+            d.insert_temp(id, timer);
+            timer
+        });
+        if timer.dismissed {
+            return true;
+        }
+        let remaining = auto_dismiss.as_secs_f64() - (now - timer.shown_at);
+        if remaining <= 0.0 {
+            ui.data_mut(|d| {
+                d.insert_temp(
+                    id,
+                    NotificationTimer {
+                        dismissed: true,
+                        ..timer
+                    },
+                );
+            });
+            return true;
+        }
+        ui.ctx()
+            .request_repaint_after(Duration::from_secs_f64(remaining));
+        false
+    }
+
     fn ui_with_offset(self, ui: &mut Ui, vertical_offset: f32) -> Response {
+        let timer_id = self.timer_id(ui, vertical_offset);
+        if self.timed_out(ui, timer_id) {
+            // Report the dismissal like a click on the close button does.
+            let mut response = ui.allocate_response(Vec2::ZERO, Sense::hover());
+            let first_frame = ui.data_mut(|d| {
+                let reported = d
+                    .get_temp::<bool>(timer_id.with("reported"))
+                    .unwrap_or(false);
+                d.insert_temp(timer_id.with("reported"), true);
+                !reported
+            });
+            if first_frame {
+                response.mark_changed();
+            }
+            return response;
+        }
+        ui.data_mut(|d| d.remove::<bool>(timer_id.with("reported")));
         if !self.opened {
             return ui.allocate_response(Vec2::ZERO, Sense::hover());
         }
 
         // Get Material Design colors
-        let surface_container_highest = get_global_color("surfaceContainerHighest");
-        let on_surface = get_global_color("onSurface");
-        let on_surface_variant = get_global_color("onSurfaceVariant");
-        let outline = get_global_color("outline");
+        let theme = MaterialTheme::of(ui.ctx());
+        let surface_container_highest = theme.color(ColorRole::SurfaceContainerHighest);
+        let on_surface = theme.color(ColorRole::OnSurface);
+        let on_surface_variant = theme.color(ColorRole::OnSurfaceVariant);
+        let outline = theme.color(ColorRole::Outline);
 
         let bg_color = self.bg_color.unwrap_or(surface_container_highest);
 
@@ -297,7 +390,7 @@ impl MaterialNotification {
         let notification_pos = pos2(notification_x, notification_y);
 
         // Create a unique ID for this notification based on its content
-        let notification_id = Id::new("notification")
+        let notification_id = Id::unique("notification")
             .with(self.title.as_deref().unwrap_or(""))
             .with(self.text.as_deref().unwrap_or(""))
             .with(vertical_offset as i32); // Convert f32 to i32 for Hash
@@ -401,6 +494,7 @@ impl MaterialNotification {
 
                     let close_response =
                         ui.interact(close_rect, response.id.with("close"), Sense::click());
+                    crate::a11y::button(&close_response, true, "Close");
 
                     if close_response.hovered() {
                         ui.painter().circle_filled(

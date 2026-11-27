@@ -1,7 +1,6 @@
 //! Integration tests for full-item drawer toggle behavior
 
 use egui_material3::{ListItem, MaterialList, MaterialListState};
-use std::sync::{Arc, Mutex};
 
 /// Test that clicking anywhere on an item with drawer toggles the drawer
 #[test]
@@ -10,9 +9,9 @@ fn test_item_click_toggles_drawer_when_drawer_present() {
     ctx.set_pixels_per_point(1.0);
 
     // First frame: drawer closed
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list_id = egui::Id::new("test_list_toggle");
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list_id = egui::Id::unique("test_list_toggle");
 
             let list = MaterialList::new().id(list_id).allow_drawer(true).item(
                 ListItem::new("Test Item").drawer(|ui| {
@@ -20,7 +19,7 @@ fn test_item_click_toggles_drawer_when_drawer_present() {
                 }),
             );
 
-            let response = ui.add(list);
+            ui.add(list);
 
             // Get drawer state - should be closed initially
             let state = ui
@@ -35,7 +34,9 @@ fn test_item_click_toggles_drawer_when_drawer_present() {
             // Simulate click on the item
             // In real implementation, clicking item_rect should toggle drawer
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that clicking an item closes an already-open drawer
@@ -44,9 +45,9 @@ fn test_item_click_closes_open_drawer() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list_id = egui::Id::new("test_list_close");
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list_id = egui::Id::unique("test_list_close");
 
             // Pre-set drawer to open state
             let mut state = ui
@@ -61,7 +62,7 @@ fn test_item_click_closes_open_drawer() {
                 }),
             );
 
-            let response = ui.add(list);
+            ui.add(list);
 
             // Verify drawer is open
             let state = ui
@@ -75,7 +76,9 @@ fn test_item_click_closes_open_drawer() {
 
             // TODO: After implementation, clicking item should close drawer
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that chevron click still works (backwards compatibility)
@@ -84,9 +87,9 @@ fn test_chevron_still_works() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list_id = egui::Id::new("test_chevron");
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list_id = egui::Id::unique("test_chevron");
 
             let list = MaterialList::new().id(list_id).allow_drawer(true).item(
                 ListItem::new("Test Item").drawer(|ui| {
@@ -95,12 +98,10 @@ fn test_chevron_still_works() {
             );
 
             ui.add(list);
-
-            // Chevron click behavior is tested separately
-            // This test ensures chevron rendering doesn't break
-            assert!(true, "Chevron should still be rendered and functional");
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that items without drawer don't respond to drawer toggle
@@ -109,19 +110,17 @@ fn test_item_without_drawer_uses_action_callback() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
                 .allow_drawer(true)
                 .item(ListItem::new("Test Item"));
 
             ui.add(list);
-
-            // Item without drawer should not respond to drawer toggle
-            // This test just verifies structure compiles
-            assert!(true);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that action callback is ignored when drawer is present
@@ -130,9 +129,9 @@ fn test_action_callback_ignored_when_drawer_present() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list_id = egui::Id::new("test_priority");
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list_id = egui::Id::unique("test_priority");
 
             let list = MaterialList::new().id(list_id).allow_drawer(true).item(
                 ListItem::new("Test Item").drawer(|ui| {
@@ -148,12 +147,10 @@ fn test_action_callback_ignored_when_drawer_present() {
             let _state = ui
                 .data_mut(|d| d.get_persisted::<MaterialListState>(list_id))
                 .unwrap_or_default();
-
-            // This test will fully work after implementation
-            // For now, it just verifies the structure compiles
-            assert!(true);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that disabled items don't toggle drawer
@@ -162,9 +159,9 @@ fn test_disabled_item_no_toggle() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list_id = egui::Id::new("test_disabled");
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list_id = egui::Id::unique("test_disabled");
 
             let list = MaterialList::new().id(list_id).allow_drawer(true).item(
                 ListItem::new("Disabled Item").enabled(false).drawer(|ui| {
@@ -183,5 +180,7 @@ fn test_disabled_item_no_toggle() {
                 "Disabled item drawer should remain closed"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
