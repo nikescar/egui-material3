@@ -37,6 +37,11 @@ svg_noto = []
 svg_twemoji = []
 svg_emoji = ["svg_solar", "svg_noto", "svg_twemoji"]
 
+# Material Symbols styles bundled besides Outlined (static FILL 0/1 faces,
+# about 2 MB per style; see src/fonts.rs)
+symbols_rounded = []
+symbols_sharp = []
+
 [dependencies]
 egui = "0.37"
 # egui = { git = "https://github.com/emilk/egui", default-features = false, features = ["default_fonts"] }

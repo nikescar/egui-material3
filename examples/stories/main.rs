@@ -102,8 +102,8 @@ fn main() -> Result<(), eframe::Error> {
                 "MaterialSymbolsOutlined",
                 include_bytes!("../../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"),
             );
-            // Prepare Google Sans Code font for Material Design (default)
-            setup_google_fonts(Some("Google Sans Code"));
+            // Roboto, the Material 3 typeface (bundled with the crate)
+            setup_google_fonts(None);
             setup_google_fonts(Some("Nanum Gothic"));
             // Prepare themes from build-time constants
             setup_local_theme(None);
