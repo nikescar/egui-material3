@@ -225,7 +225,6 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
         let mut items_vec: Vec<Option<CarouselItem<'a>>> =
             self.items.into_iter().map(Some).collect();
 
-        #[allow(clippy::needless_range_loop)]
         for i in first_visible..last_visible {
             let item_content_left = i as f32 * item_step + padding;
             let item_content_right = item_content_left + item_extent;
@@ -279,7 +278,7 @@ impl<'a> egui::Widget for MaterialCarousel<'a> {
             );
 
             // Render content
-            if let Some(item) = items_vec[i].take() {
+            if let Some(item) = items_vec.get_mut(i).and_then(Option::take) {
                 // Create a child UI clipped to the item rect
                 let mut child_ui =
                     ui.new_child(egui::UiBuilder::new().max_rect(clipped_rect).layout(

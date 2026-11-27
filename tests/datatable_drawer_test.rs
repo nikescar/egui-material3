@@ -11,7 +11,7 @@ fn test_drawer_if_api_compiles_with_true_condition() {
 
     // Act - verify API compiles and creates table
     let _table = data_table()
-        .id(Id::new("test_drawer_if_true"))
+        .id(Id::unique("test_drawer_if_true"))
         .allow_drawer(true)
         .column("Product", 100.0, false)
         .column("Stock", 80.0, true)
@@ -31,7 +31,7 @@ fn test_drawer_if_api_compiles_with_false_condition() {
 
     // Act - verify API compiles and creates table
     let _table = data_table()
-        .id(Id::new("test_drawer_if_false"))
+        .id(Id::unique("test_drawer_if_false"))
         .allow_drawer(true)
         .column("Product", 100.0, false)
         .column("Stock", 80.0, true)
@@ -48,7 +48,7 @@ fn test_drawer_if_api_compiles_with_false_condition() {
 fn test_mixed_drawer_conditions_api() {
     // Arrange & Act - build table with mixed conditions
     let table = data_table()
-        .id(Id::new("test_mixed_drawers"))
+        .id(Id::unique("test_mixed_drawers"))
         .allow_drawer(true)
         .column("Product", 100.0, false)
         .column("Stock", 80.0, true)
@@ -81,7 +81,7 @@ fn test_mixed_drawer_conditions_api() {
 fn test_drawer_if_with_different_conditions() {
     // Arrange & Act - verify different condition expressions work
     let table = data_table()
-        .id(Id::new("test_dynamic_condition"))
+        .id(Id::unique("test_dynamic_condition"))
         .allow_drawer(true)
         .column("Product", 100.0, false)
         .column("Stock", 80.0, true)

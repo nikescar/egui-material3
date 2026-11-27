@@ -297,7 +297,7 @@ impl MaterialNotification {
         let notification_pos = pos2(notification_x, notification_y);
 
         // Create a unique ID for this notification based on its content
-        let notification_id = Id::new("notification")
+        let notification_id = Id::unique("notification")
             .with(self.title.as_deref().unwrap_or(""))
             .with(self.text.as_deref().unwrap_or(""))
             .with(vertical_offset as i32); // Convert f32 to i32 for Hash
@@ -401,6 +401,7 @@ impl MaterialNotification {
 
                     let close_response =
                         ui.interact(close_rect, response.id.with("close"), Sense::click());
+                    crate::a11y::button(&close_response, true, "Close");
 
                     if close_response.hovered() {
                         ui.painter().circle_filled(
