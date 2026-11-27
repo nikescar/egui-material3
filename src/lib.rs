@@ -261,6 +261,7 @@ pub mod noto_emoji;
 pub mod paint;
 pub mod progress;
 pub mod radio;
+pub mod search;
 pub mod select;
 pub mod slider;
 pub mod snackbar;
