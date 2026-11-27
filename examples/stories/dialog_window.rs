@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{dialog, MaterialButton};
+use crate::{dialog, FullScreenDialog, MaterialButton};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -25,6 +25,10 @@ pub struct DialogWindow {
     custom_padding_dialog_open: bool,
     multi_action_dialog_open: bool,
     wizard_dialog_open: bool,
+    rename_dialog_open: bool,
+    rename_value: String,
+    full_screen_open: bool,
+    last_close: String,
     wizard_current_step: usize,
     wizard_name: String,
     wizard_email: String,
@@ -71,6 +75,10 @@ impl Default for DialogWindow {
             custom_padding_dialog_open: false,
             multi_action_dialog_open: false,
             wizard_dialog_open: false,
+            rename_dialog_open: false,
+            rename_value: "Untitled".to_string(),
+            full_screen_open: false,
+            last_close: String::new(),
             wizard_current_step: 0,
             wizard_name: String::new(),
             wizard_email: String::new(),
@@ -336,10 +344,62 @@ impl DialogWindow {
                 self.wizard_dialog_open = true;
                 self.wizard_current_step = 0; // Reset to first step
             }
+
+            if ui
+                .add(MaterialButton::filled("Rename (response)"))
+                .clicked()
+            {
+                self.rename_dialog_open = true;
+            }
+
+            if ui
+                .add(MaterialButton::filled("Full-screen Dialog"))
+                .clicked()
+            {
+                self.full_screen_open = true;
+            }
         });
+        if !self.last_close.is_empty() {
+            ui.label(format!("Last dialog closed by: {}", self.last_close));
+        }
+    }
+
+    // Shown every frame (not only while open) so they animate out, and
+    // report how they closed through the response.
+    fn show_response_dialogs(&mut self, ctx: &egui::Context) {
+        let mut value = self.rename_value.clone();
+        let rename = dialog(
+            egui::Id::unique("rename_dialog"),
+            "Rename",
+            &mut self.rename_dialog_open,
+        )
+        .icon("edit")
+        .close_button(true)
+        .content(|ui, _| ui.text_edit_singleline(&mut value).changed())
+        .text_action("Cancel", || {})
+        .filled_action("Rename", || {})
+        .show(ctx);
+        if rename.close_reason == Some(crate::DialogCloseReason::Action(1)) {
+            self.rename_value = value;
+        }
+        let full = FullScreenDialog::new(
+            egui::Id::unique("full_screen_dialog"),
+            "New event",
+            &mut self.full_screen_open,
+        )
+        .action("Save")
+        .show(ctx, |ui, _| {
+            ui.label("A full-screen dialog covers the window.");
+            ui.label("Close it with the X, Save, or Escape.");
+        });
+        if let Some(reason) = rename.close_reason.or(full.close_reason) {
+            self.last_close = format!("{reason:?}");
+        }
     }
 
     fn show_dialogs(&mut self, ctx: &egui::Context) {
+        self.show_response_dialogs(ctx);
+
         // Standard Dialog
         if self.standard_dialog_open {
             dialog(
