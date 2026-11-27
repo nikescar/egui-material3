@@ -195,7 +195,17 @@ impl<'a> Widget for MaterialCheckbox<'a> {
         let desired_width = checkbox_size + spacing + text_width;
         let desired_size = Vec2::new(desired_width, 24.0);
 
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        let (rect, mut response) = ui.allocate_exact_size(
+            desired_size,
+            crate::a11y::sense(self.enabled, Sense::click()),
+        );
+        crate::a11y::describe(
+            &response,
+            egui::Role::CheckBox,
+            self.enabled,
+            &self.text,
+            (!self.indeterminate).then_some(*self.checked),
+        );
 
         if response.clicked() && self.enabled {
             if self.indeterminate {

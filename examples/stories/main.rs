@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Color32};
+use eframe::egui::{self};
 use egui_file_dialog::FileDialog;
 use egui_material3::theme::{
     load_fonts, load_themes, setup_google_fonts, setup_local_fonts_from_bytes, setup_local_theme,
@@ -33,6 +33,7 @@ mod menu_window;
 mod notification_window;
 mod progress_window;
 mod radio_window;
+mod search_window;
 mod select_window;
 mod slider_window;
 mod snackbar_window;
@@ -46,9 +47,6 @@ mod toolbar_window;
 mod tooltip_window;
 mod topappbar_window;
 mod treeview_window;
-
-#[cfg(test)]
-mod theme_test;
 
 use actionsheet_window::ActionSheetWindow;
 use badge_window::BadgeWindow;
@@ -73,6 +71,7 @@ use menu_window::MenuWindow;
 use notification_window::NotificationWindow;
 use progress_window::ProgressWindow;
 use radio_window::RadioWindow;
+use search_window::SearchWindow;
 use select_window::SelectWindow;
 use slider_window::SliderWindow;
 use snackbar_window::SnackbarWindow;
@@ -105,12 +104,8 @@ fn main() -> Result<(), eframe::Error> {
                 "MaterialSymbolsOutlined",
                 include_bytes!("../../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"),
             );
-            setup_local_fonts_from_bytes(
-                "Nanum Gothic",
-                include_bytes!("../../resources/nanum-gothic.ttf"),
-            );
-            // Prepare Google Sans Code font for Material Design (default)
-            setup_google_fonts(Some("Google Sans Code"));
+            // Roboto, the Material 3 typeface (bundled with the crate)
+            setup_google_fonts(None);
             setup_google_fonts(Some("Nanum Gothic"));
             // Prepare themes from build-time constants
             setup_local_theme(None);
@@ -163,6 +158,7 @@ struct MaterialApp {
     symbol_window: SymbolWindow,
     timeline_window: TimelineWindow,
     toolbar_window: ToolbarWindow,
+    search_window: SearchWindow,
     tooltip_window: TooltipWindow,
     treeview_window: TreeViewWindow,
     svgemoji_window: SvgEmojiWindow,
@@ -207,6 +203,7 @@ impl Default for MaterialApp {
             symbol_window: SymbolWindow::default(),
             timeline_window: TimelineWindow::default(),
             toolbar_window: ToolbarWindow::default(),
+            search_window: SearchWindow::default(),
             tooltip_window: TooltipWindow::default(),
             treeview_window: TreeViewWindow::default(),
             svgemoji_window: SvgEmojiWindow::default(),
@@ -228,7 +225,7 @@ impl MaterialApp {
         F: FnOnce(&mut MaterialThemeContext),
     {
         if let Ok(mut theme) = get_global_theme().lock() {
-            update_fn(&mut *theme);
+            update_fn(&mut theme);
         }
     }
 
@@ -285,7 +282,7 @@ impl MaterialApp {
             ThemeMode::Dark => egui::Visuals::dark(),
             ThemeMode::Auto => {
                 // Use system preference or default to light
-                if ctx.style().visuals.dark_mode {
+                if ctx.global_style().visuals.dark_mode {
                     egui::Visuals::dark()
                 } else {
                     egui::Visuals::light()
@@ -407,6 +404,7 @@ impl MaterialApp {
         self.carousel_window.open = false;
         self.timeline_window.open = false;
         self.toolbar_window.open = false;
+        self.search_window.open = false;
         self.svgemoji_window.open = false;
         self.symbol_window.open = false;
         self.color_pickers_open.clear(); // Also close all color pickers
@@ -414,7 +412,8 @@ impl MaterialApp {
 }
 
 impl eframe::App for MaterialApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // Apply theme based on settings
         self.apply_theme(ctx);
 
@@ -442,7 +441,7 @@ impl eframe::App for MaterialApp {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let theme = self.get_theme();
 
@@ -782,6 +781,10 @@ impl eframe::App for MaterialApp {
                         self.select_window.open = true;
                     }
 
+                    if ui.add(MaterialButton::filled("Search Stories")).clicked() {
+                        self.search_window.open = true;
+                    }
+
                     if ui.add(MaterialButton::filled("Slider Stories")).clicked() {
                         self.slider_window.open = true;
                     }
@@ -877,6 +880,7 @@ impl eframe::App for MaterialApp {
         self.dashcounter_window.show(ctx);
         self.timeline_window.show(ctx);
         self.toolbar_window.show(ctx);
+        self.search_window.show(ctx);
         self.tooltip_window.show(ctx);
         self.treeview_window.show(ctx);
         self.svgemoji_window.show(ctx);
