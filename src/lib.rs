@@ -141,7 +141,10 @@
 //! ### Navigation Components
 //! - [`MaterialTabs`] - Tab navigation
 //! - [`MaterialDrawer`] - Navigation drawers
-//! - [`MaterialTopAppBar`] - App bars and toolbars
+//! - [`MaterialTopAppBar`] - Top app bars
+//! - [`MaterialBottomAppBar`] - Bottom app bar with a FAB slot
+//! - [`MaterialToolbar`] - Docked toolbar
+//! - [`MaterialFloatingToolbar`] - Floating toolbar
 //!
 //! ### Icons and Visual Elements
 //! - [`MaterialIcon`] - Material Design icons with font support
@@ -232,6 +235,7 @@
 pub mod a11y;
 pub mod actionsheet;
 pub mod badge;
+pub mod bottom_app_bar;
 pub mod breadcrumbs;
 pub mod button;
 pub mod card2;
@@ -245,6 +249,7 @@ pub mod drawer;
 #[cfg(feature = "spreadsheet")]
 pub mod egui_smol;
 pub mod fab;
+pub mod floating_toolbar;
 pub mod fonts;
 pub mod icon;
 pub mod iconbutton;
@@ -283,6 +288,7 @@ pub mod mvvm;
 pub use {
     actionsheet::{action_sheet, ActionButton, ActionGroup, MaterialActionSheet},
     badge::{badge, badge_dot, BadgeColor, BadgePosition, BadgeSize, MaterialBadge},
+    bottom_app_bar::{bottom_app_bar, MaterialBottomAppBar, BOTTOM_APP_BAR_HEIGHT},
     breadcrumbs::{breadcrumbs, MaterialBreadcrumbs},
     button::{MaterialButton, MaterialButtonVariant},
     card2::{elevated_card2, filled_card2, outlined_card2, Card2Variant, MaterialCard2},
@@ -304,6 +310,10 @@ pub use {
     fab::{
         fab_branded, fab_primary, fab_secondary, fab_surface, fab_tertiary, google_branded_icon,
         FabSize, FabVariant, MaterialFab, SvgIcon, SvgPath,
+    },
+    floating_toolbar::{
+        floating_toolbar, FloatingToolbarOrientation, FloatingToolbarStyle,
+        MaterialFloatingToolbar, FLOATING_TOOLBAR_SIZE,
     },
     icon::{icon, paint_icon, Icon, MaterialIcon},
     iconbutton::{
@@ -352,14 +362,18 @@ pub use {
         TimelineItem, TimelinePosition,
     },
     tokens::{ColorRole, ColorScheme},
-    toolbar::{toolbar, MaterialToolbar, ToolbarElevation},
+    toolbar::{
+        docked_toolbar, scroll_area_id, scroll_area_offset, toolbar, MaterialToolbar,
+        ToolbarElevation,
+    },
     tooltip::{
         show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip,
         MaterialTooltip, TooltipPosition,
     },
     topappbar::{
-        center_aligned_top_app_bar, large_top_app_bar, medium_top_app_bar, top_app_bar,
-        MaterialTopAppBar, TopAppBarVariant,
+        center_aligned_top_app_bar, large_flexible_top_app_bar, large_top_app_bar,
+        medium_flexible_top_app_bar, medium_top_app_bar, top_app_bar, MaterialTopAppBar,
+        TopAppBarScrollBehavior, TopAppBarVariant,
     },
     treeview::{tree_view, MaterialTreeView, TreeViewItem, TreeViewState},
 };
