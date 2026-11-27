@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use eframe::egui::{self, Color32};
+use eframe::egui::{self};
 use egui_file_dialog::FileDialog;
 use egui_material3::theme::{
     load_fonts, load_themes, setup_google_fonts, setup_local_fonts_from_bytes, setup_local_theme,
@@ -33,6 +33,7 @@ mod menu_window;
 mod notification_window;
 mod progress_window;
 mod radio_window;
+mod segmented_button_window;
 mod select_window;
 mod slider_window;
 mod snackbar_window;
@@ -46,9 +47,6 @@ mod toolbar_window;
 mod tooltip_window;
 mod topappbar_window;
 mod treeview_window;
-
-#[cfg(test)]
-mod theme_test;
 
 use actionsheet_window::ActionSheetWindow;
 use badge_window::BadgeWindow;
@@ -73,6 +71,7 @@ use menu_window::MenuWindow;
 use notification_window::NotificationWindow;
 use progress_window::ProgressWindow;
 use radio_window::RadioWindow;
+use segmented_button_window::SegmentedButtonWindow;
 use select_window::SelectWindow;
 use slider_window::SliderWindow;
 use snackbar_window::SnackbarWindow;
@@ -104,10 +103,6 @@ fn main() -> Result<(), eframe::Error> {
             setup_local_fonts_from_bytes(
                 "MaterialSymbolsOutlined",
                 include_bytes!("../../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"),
-            );
-            setup_local_fonts_from_bytes(
-                "Nanum Gothic",
-                include_bytes!("../../resources/nanum-gothic.ttf"),
             );
             // Prepare Google Sans Code font for Material Design (default)
             setup_google_fonts(Some("Google Sans Code"));
@@ -165,6 +160,7 @@ struct MaterialApp {
     toolbar_window: ToolbarWindow,
     tooltip_window: TooltipWindow,
     treeview_window: TreeViewWindow,
+    segmented_button_window: SegmentedButtonWindow,
     svgemoji_window: SvgEmojiWindow,
 }
 
@@ -209,6 +205,7 @@ impl Default for MaterialApp {
             toolbar_window: ToolbarWindow::default(),
             tooltip_window: TooltipWindow::default(),
             treeview_window: TreeViewWindow::default(),
+            segmented_button_window: SegmentedButtonWindow::default(),
             svgemoji_window: SvgEmojiWindow::default(),
         }
     }
@@ -228,7 +225,7 @@ impl MaterialApp {
         F: FnOnce(&mut MaterialThemeContext),
     {
         if let Ok(mut theme) = get_global_theme().lock() {
-            update_fn(&mut *theme);
+            update_fn(&mut theme);
         }
     }
 
@@ -285,7 +282,7 @@ impl MaterialApp {
             ThemeMode::Dark => egui::Visuals::dark(),
             ThemeMode::Auto => {
                 // Use system preference or default to light
-                if ctx.style().visuals.dark_mode {
+                if ctx.global_style().visuals.dark_mode {
                     egui::Visuals::dark()
                 } else {
                     egui::Visuals::light()
@@ -414,7 +411,8 @@ impl MaterialApp {
 }
 
 impl eframe::App for MaterialApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // Apply theme based on settings
         self.apply_theme(ctx);
 
@@ -442,7 +440,7 @@ impl eframe::App for MaterialApp {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let theme = self.get_theme();
 
@@ -833,6 +831,13 @@ impl eframe::App for MaterialApp {
                     }
 
                     if ui
+                        .add(MaterialButton::filled("Segmented Button & Divider Stories"))
+                        .clicked()
+                    {
+                        self.segmented_button_window.open = true;
+                    }
+
+                    if ui
                         .add(MaterialButton::filled("Top App Bar Stories"))
                         .clicked()
                     {
@@ -879,6 +884,7 @@ impl eframe::App for MaterialApp {
         self.toolbar_window.show(ctx);
         self.tooltip_window.show(ctx);
         self.treeview_window.show(ctx);
+        self.segmented_button_window.show(ctx);
         self.svgemoji_window.show(ctx);
         self.symbol_window.show(ctx);
 

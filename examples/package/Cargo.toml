@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 egui-material3 = { path = "../../" }
-eframe = "0.32"
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "glow", "links"] }

@@ -11,8 +11,8 @@ fn test_wrapped_text_without_overline_balanced_padding() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Create a list item with very long secondary text that will wrap
             // No overline - this is the case that's currently broken
             let long_text = "This is a very long description that will definitely wrap to multiple lines when rendered in a normal width container. It needs to be long enough to trigger wrapping.";
@@ -37,7 +37,9 @@ fn test_wrapped_text_without_overline_balanced_padding() {
             // The actual padding balance can't be directly tested in integration tests,
             // but this test will serve as a regression test to ensure the fix doesn't break
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that wrapped text with overline works correctly (this already works)
@@ -46,8 +48,8 @@ fn test_wrapped_text_with_overline_works() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let long_text = "This is a very long description that will definitely wrap to multiple lines when rendered in a normal width container.";
 
             let list = MaterialList::new()
@@ -58,7 +60,10 @@ fn test_wrapped_text_with_overline_works() {
                         .leading_icon("folder".to_string())
                 );
 
-            let response = ui.add(list);
+            // A narrow container, so the long text really wraps.
+            let response = ui
+                .allocate_ui(egui::vec2(360.0, 1000.0), |ui| ui.add(list))
+                .inner;
 
             // Verify item height increased
             let base_three_line_height = 88.0;
@@ -67,7 +72,9 @@ fn test_wrapped_text_with_overline_works() {
                 "Wrapped text with overline should work correctly"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that trailing widgets still align correctly with wrapped text
@@ -76,8 +83,8 @@ fn test_wrapped_text_with_trailing_widget() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let long_text = "This is a very long description that will wrap and the trailing widget should align with the primary text.";
 
             let list = MaterialList::new()
@@ -90,10 +97,15 @@ fn test_wrapped_text_with_trailing_widget() {
                         })
                 );
 
-            let response = ui.add(list);
+            // A narrow container, so the long text really wraps.
+            let response = ui
+                .allocate_ui(egui::vec2(360.0, 1000.0), |ui| ui.add(list))
+                .inner;
 
             // Should render without panic and height should increase
             assert!(response.rect.height() > 72.0);
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }

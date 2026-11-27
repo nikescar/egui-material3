@@ -8,9 +8,10 @@ use std::future::Future;
 use std::sync::Arc;
 
 /// State of an async operation
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum StateWithData<T, E> {
     /// Operation hasn't started or has been reset
+    #[default]
     Idle,
     /// Operation is in progress
     Pending,
@@ -18,12 +19,6 @@ pub enum StateWithData<T, E> {
     Finished(T),
     /// Operation failed with an error
     Failed(E),
-}
-
-impl<T, E> Default for StateWithData<T, E> {
-    fn default() -> Self {
-        Self::Idle
-    }
 }
 
 /// Bind an async future to UI state, automatically updating when the future completes

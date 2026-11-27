@@ -8,16 +8,16 @@ fn test_multiline_item_height_applied() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Single-line item
             let single = MaterialList::new()
-                .id(egui::Id::new("single"))
+                .id(egui::Id::unique("single"))
                 .item(ListItem::new("Primary").secondary_text("One line"));
 
             // Multi-line item (should be taller)
             let multi = MaterialList::new()
-                .id(egui::Id::new("multi"))
+                .id(egui::Id::unique("multi"))
                 .item(ListItem::new("Primary").secondary_text("Line 1\nLine 2\nLine 3"));
 
             let single_response = ui.add(single);
@@ -29,7 +29,9 @@ fn test_multiline_item_height_applied() {
                 "Multi-line item should be taller than single-line"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that 5-line items have proper spacing
@@ -38,8 +40,8 @@ fn test_five_line_item_spacing() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new().item(
                 ListItem::new("Backend Development")
                     .overline("Engineering")
@@ -59,7 +61,9 @@ fn test_five_line_item_spacing() {
                 expected_min_height
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that multiple items don't accumulate spacing at bottom
@@ -68,8 +72,8 @@ fn test_no_accumulated_bottom_spacing() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
                 .item(ListItem::new("Item 1").secondary_text("Line A\nLine B"))
                 .item(ListItem::new("Item 2").secondary_text("Line C\nLine D"))
@@ -77,9 +81,10 @@ fn test_no_accumulated_bottom_spacing() {
 
             let response = ui.add(list);
 
-            // Each item: base 72px + 1 extra line * 18px = 90px
-            // 3 items * 90px = 270px total
-            let expected_height = 3.0 * (72.0 + 18.0);
+            // Headline + two lines of supporting text is an M3 three-line
+            // item: 88dp (Compose ListTokens.ListItemThreeLineContainerHeight)
+            // 3 items * 88px = 264px total
+            let expected_height = 3.0 * 88.0;
 
             // Allow small tolerance for rounding
             let diff = (response.rect.height() - expected_height).abs();
@@ -91,7 +96,9 @@ fn test_no_accumulated_bottom_spacing() {
                 diff
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that dividers don't cause spacing issues
@@ -100,8 +107,8 @@ fn test_dividers_with_multiline() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let list = MaterialList::new()
                 .dividers(true)
                 .item(ListItem::new("Item 1").secondary_text("Line A\nLine B"))
@@ -109,8 +116,8 @@ fn test_dividers_with_multiline() {
 
             let response = ui.add(list);
 
-            // 2 items * 90px + 1 divider * 1px = 181px
-            let expected_height = 2.0 * (72.0 + 18.0) + 1.0;
+            // 2 three-line items * 88px + 1 divider * 1px = 177px
+            let expected_height = 2.0 * 88.0 + 1.0;
 
             let diff = (response.rect.height() - expected_height).abs();
             assert!(
@@ -120,5 +127,7 @@ fn test_dividers_with_multiline() {
                 expected_height
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }

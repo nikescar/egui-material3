@@ -23,7 +23,16 @@ impl<'a> MaterialList<'a> {
             id: None,
             allow_drawer: false,
             fill_width: false,
+            segmented: false,
         }
+    }
+
+    /// M3 Expressive segmented list: every item sits in its own `surface`
+    /// container, 2 dp apart (`ListTokens.SegmentedGap`), with large outer
+    /// corners and extra-small inner ones. Dividers are not drawn.
+    pub fn segmented(mut self, segmented: bool) -> Self {
+        self.segmented = segmented;
+        self
     }
 
     /// Add an item to the list.
@@ -67,7 +76,7 @@ impl<'a> MaterialList<'a> {
     /// # Example
     /// ```rust
     /// let list = MaterialList::new()
-    ///     .id(egui::Id::new("my_list"))
+    ///     .id(egui::Id::unique("my_list"))
     ///     .dividers(false);
     /// ```
     pub fn id(mut self, id: impl Into<egui::Id>) -> Self {
@@ -156,8 +165,64 @@ impl<'a> ListItem<'a> {
             icon_color: None,
             text_color: None,
             action: None,
+            leading: None,
+            dragged: false,
             drawer: None,
         }
+    }
+
+    /// A round avatar with a short text (initials) at the start.
+    pub fn leading_avatar(mut self, text: impl Into<String>) -> Self {
+        self.leading = Some(ListLeading::Avatar(text.into()));
+        self
+    }
+
+    /// A 56 dp square image at the start.
+    pub fn leading_image(mut self, source: impl Into<egui::ImageSource<'static>>) -> Self {
+        self.leading = Some(ListLeading::Image(source.into()));
+        self
+    }
+
+    /// A video thumbnail at the start: 100 x 56 dp, or 114 x 64 dp when
+    /// `large`.
+    pub fn leading_video(
+        mut self,
+        source: impl Into<egui::ImageSource<'static>>,
+        large: bool,
+    ) -> Self {
+        self.leading = Some(ListLeading::Video {
+            source: source.into(),
+            large,
+        });
+        self
+    }
+
+    /// A checkbox at the start showing `checked`. Toggle your state in
+    /// [`ListItem::on_click`].
+    pub fn leading_checkbox(mut self, checked: bool) -> Self {
+        self.leading = Some(ListLeading::Checkbox(checked));
+        self
+    }
+
+    /// A radio button at the start showing `selected`. Update your state in
+    /// [`ListItem::on_click`].
+    pub fn leading_radio(mut self, selected: bool) -> Self {
+        self.leading = Some(ListLeading::Radio(selected));
+        self
+    }
+
+    /// Any [`ListLeading`] element at the start.
+    pub fn leading(mut self, leading: ListLeading) -> Self {
+        self.leading = Some(leading);
+        self
+    }
+
+    /// Show the item as being dragged (for reorderable lists): the dragged
+    /// state layer (`StateLayerTokens.DraggedOpacity`) and
+    /// `ListTokens.ItemDraggedContainerElevation` (`Level4`).
+    pub fn dragged(mut self, dragged: bool) -> Self {
+        self.dragged = dragged;
+        self
     }
 
     /// Set the secondary text for the item.
