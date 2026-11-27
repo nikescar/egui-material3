@@ -255,6 +255,9 @@ pub mod list;
 pub mod material_symbol;
 pub mod material_theme;
 pub mod menu;
+pub mod navigation;
+pub mod navigation_bar;
+pub mod navigation_rail;
 pub mod notification;
 pub mod noto_emoji;
 pub mod paint;
@@ -324,6 +327,9 @@ pub use {
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
         MenuItem, MenuStyle, MenuThemeData, Positioning,
     },
+    navigation::{NavigationBadge, NavigationItem},
+    navigation_bar::{NavigationBar, NavigationBarVariant},
+    navigation_rail::{NavigationRail, RailHeader},
     notification::{
         notification, MaterialNotification, MaterialNotificationWithOffset, NotificationAlign,
     },
@@ -341,7 +347,7 @@ pub use {
         snackbar, snackbar_with_action, MaterialSnackbar, SnackBarBehavior, SnackbarPosition,
     },
     switch::{switch, MaterialSwitch},
-    tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
+    tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabItem, TabLayout, TabVariant},
     theme::{
         get_global_color, get_global_color_role, get_global_theme, update_global_theme,
         ContrastLevel, MaterialThemeContext, MaterialThemeFile, ThemeMode,

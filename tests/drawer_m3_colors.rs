@@ -1,15 +1,16 @@
 //! Tests for Material Design 3 color role compliance in Drawer
 
-use egui_material3::{theme::get_global_color, DrawerThemeData};
+use egui_material3::DrawerThemeData;
 
 #[test]
-fn test_drawer_material3_uses_surface_container_low() {
+fn test_drawer_material3_leaves_background_to_the_variant() {
     // Arrange & Act
     let theme = DrawerThemeData::material3_defaults();
 
-    // Assert - M3 drawer background should use surfaceContainerLow
-    let surface_container_low = get_global_color("surfaceContainerLow");
-    assert_eq!(theme.background_color, Some(surface_container_low));
+    // Assert - M3 drawer background depends on the variant (surface for
+    // standard drawers, surfaceContainerLow for modal ones) and is read from
+    // the context's theme when drawn; tests/navigation.rs checks both.
+    assert_eq!(theme.background_color, None);
 }
 
 #[test]
@@ -17,9 +18,9 @@ fn test_drawer_scrim_opacity() {
     // Arrange & Act
     let theme = DrawerThemeData::material3_defaults();
 
-    // Assert - Scrim should be @ 32% opacity (138/255 ≈ 0.54 but docs say 32% = 82/255)
-    // Current implementation uses 138 which is ~54%, keeping as-is for backward compat
-    assert!(theme.scrim_color.is_some());
+    // Assert - Unset: the scrim is the theme's scrim role @ 32% (ScrimTokens),
+    // checked by tests/navigation.rs.
+    assert_eq!(theme.scrim_color, None);
 }
 
 #[test]
@@ -36,9 +37,10 @@ fn test_drawer_shape() {
     // Arrange & Act
     let theme = DrawerThemeData::material3_defaults();
 
-    // Assert - M3 uses 16dp corner radius
-    assert!(theme.shape.is_some());
-    assert!(theme.end_shape.is_some());
+    // Assert - Unset: square for standard drawers, CornerLargeEnd (16dp on
+    // the edge facing the page) for modal ones, resolved when drawn.
+    assert_eq!(theme.shape, None);
+    assert_eq!(theme.end_shape, None);
 }
 
 #[test]
