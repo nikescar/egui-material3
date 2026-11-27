@@ -238,6 +238,7 @@ pub mod card2;
 pub mod carousel;
 pub mod checkbox;
 pub mod chips;
+pub mod color;
 pub mod dashcounter;
 pub mod datatable;
 pub mod dialog;
