@@ -283,10 +283,10 @@ impl LayoutGridWindow {
             if ui.add(MaterialButton::filled("Add Card")).clicked() {
                 self.interactive_card_count += 1;
             }
-            if ui.add(MaterialButton::outlined("Remove Card")).clicked() {
-                if self.interactive_card_count > 0 {
-                    self.interactive_card_count -= 1;
-                }
+            if ui.add(MaterialButton::outlined("Remove Card")).clicked()
+                && self.interactive_card_count > 0
+            {
+                self.interactive_card_count -= 1;
             }
             if ui.add(MaterialButton::text("Reset Layout")).clicked() {
                 self.interactive_card_count = 6;

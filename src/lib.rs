@@ -63,8 +63,8 @@
 //! }
 //!
 //! impl eframe::App for MyApp {
-//!     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-//!         egui::CentralPanel::default().show(ctx, |ui| {
+//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+//!         egui::CentralPanel::default().show(ui, |ui| {
 //!             ui.heading("Material Design Components");
 //!             
 //!             // Use Material Design components
@@ -229,6 +229,7 @@
 //! This crate follows the Material Design 3 specifications and guidelines for consistent,
 //! accessible, and beautiful user interfaces.
 
+pub mod a11y;
 pub mod actionsheet;
 pub mod badge;
 pub mod breadcrumbs;
@@ -244,6 +245,8 @@ pub mod drawer;
 #[cfg(feature = "spreadsheet")]
 pub mod egui_smol;
 pub mod fab;
+pub mod fab_menu;
+pub mod fonts;
 pub mod icon;
 pub mod iconbutton;
 pub mod image_utils;
@@ -252,9 +255,11 @@ pub mod input;
 pub mod layoutgrid;
 pub mod list;
 pub mod material_symbol;
+pub mod material_theme;
 pub mod menu;
 pub mod notification;
 pub mod noto_emoji;
+pub mod paint;
 pub mod progress;
 pub mod radio;
 pub mod select;
@@ -267,10 +272,18 @@ pub mod switch;
 pub mod tabs;
 pub mod theme;
 pub mod timeline;
+pub mod tokens;
 pub mod toolbar;
 pub mod tooltip;
 pub mod topappbar;
 pub mod treeview;
+
+// Deprecated FAB items, kept so existing callers compile.
+#[expect(
+    deprecated,
+    reason = "re-exports deprecated items for existing callers"
+)]
+pub use fab::{fab_branded, google_branded_icon, SvgIcon, SvgPath};
 
 // MVVM support module
 pub mod mvvm;
@@ -297,13 +310,16 @@ pub use {
     },
     egui::TextEdit, // Re-export egui's TextEdit
     fab::{
-        fab_branded, fab_primary, fab_secondary, fab_surface, fab_tertiary, google_branded_icon,
-        FabSize, FabVariant, MaterialFab, SvgIcon, SvgPath,
+        fab_primary, fab_primary_container, fab_secondary, fab_secondary_container, fab_surface,
+        fab_tertiary, fab_tertiary_container, ExtendedFabMetrics, FabMetrics, FabSize, FabVariant,
+        MaterialFab,
     },
-    icon::{icon, MaterialIcon},
+    fab_menu::{FabMenu, FabMenuColors, FabMenuResponse},
+    icon::{icon, paint_icon, Icon, MaterialIcon},
     iconbutton::{
         icon_button_filled, icon_button_filled_tonal, icon_button_outlined, icon_button_standard,
-        icon_button_toggle, IconButtonVariant, MaterialIconButton,
+        icon_button_toggle, IconButtonColors, IconButtonMetrics, IconButtonShape, IconButtonSize,
+        IconButtonVariant, IconButtonWidth, MaterialIconButton,
     },
     imagelist::{
         image_list, masonry_image_list, woven_image_list, ImageListItem, ImageListVariant,
@@ -312,9 +328,10 @@ pub use {
     input::{InputVariant, MaterialInput},
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{
-        ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, MaterialListState,
-        VisualDensity,
+        list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList,
+        MaterialListState, VisualDensity,
     },
+    material_theme::MaterialTheme,
     menu::{
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
         MenuItem, MenuStyle, MenuThemeData, Positioning,
@@ -338,13 +355,14 @@ pub use {
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
     theme::{
-        get_global_color, get_global_theme, update_global_theme, ContrastLevel,
-        MaterialThemeContext, MaterialThemeFile, ThemeMode,
+        get_global_color, get_global_color_role, get_global_theme, update_global_theme,
+        ContrastLevel, MaterialThemeContext, MaterialThemeFile, ThemeMode,
     },
     timeline::{
         timeline, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant,
         TimelineItem, TimelinePosition,
     },
+    tokens::{ColorRole, ColorScheme},
     toolbar::{toolbar, MaterialToolbar, ToolbarElevation},
     tooltip::{
         show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip,

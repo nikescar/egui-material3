@@ -8,8 +8,8 @@ fn test_drawer_closed_height() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let item_height = 56.0; // Single-line item default height
 
             let list =
@@ -29,7 +29,9 @@ fn test_drawer_closed_height() {
                 item_height
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that a list with open drawer expands to include drawer content
@@ -38,13 +40,13 @@ fn test_drawer_open_expands_height() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let item_height = 56.0;
 
             let list = MaterialList::new()
                 .allow_drawer(true)
-                .id(egui::Id::new("test_list_1"))
+                .id(egui::Id::unique("test_list_1"))
                 .item(ListItem::new("Test Item").drawer(|ui| {
                     // Create drawer content with known height
                     ui.label("Line 1");
@@ -61,15 +63,17 @@ fn test_drawer_open_expands_height() {
                 "Initial height should not include drawer"
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 
     // Second frame: open the drawer
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             let item_height = 56.0;
 
             // Manually open the drawer by inserting state
-            let list_id = egui::Id::new("test_list_1");
+            let list_id = egui::Id::unique("test_list_1");
             let mut state = ui
                 .data_mut(|d| d.get_persisted::<MaterialListState>(list_id))
                 .unwrap_or_default();
@@ -93,7 +97,9 @@ fn test_drawer_open_expands_height() {
                 response.rect.height()
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that multiple open drawers all contribute to total height
@@ -102,9 +108,9 @@ fn test_multiple_drawers_open() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list_id = egui::Id::new("test_list_multi");
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list_id = egui::Id::unique("test_list_multi");
 
             // Open both drawers
             let mut state = ui
@@ -137,7 +143,9 @@ fn test_multiple_drawers_open() {
                 min_expected
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }
 
 /// Test that drawer content is fully visible (not clipped)
@@ -146,9 +154,9 @@ fn test_drawer_content_not_clipped() {
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(1.0);
 
-    ctx.run(Default::default(), |ctx| {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let list_id = egui::Id::new("test_list_clip");
+    ctx.run_ui(Default::default(), |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
+            let list_id = egui::Id::unique("test_list_clip");
 
             // Open drawer
             let mut state = ui
@@ -179,5 +187,7 @@ fn test_drawer_content_not_clipped() {
                 min_height
             );
         });
-    });
+    })
+    .textures_delta
+    .clear();
 }

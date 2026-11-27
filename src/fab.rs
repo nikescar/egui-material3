@@ -1,229 +1,415 @@
-//! Material Design 3 Floating Action Button (FAB) Components
-//!
-//! This module implements FAB controls following Material Design 3 color system.
-//!
-//! # M3 Color Role Usage
-//!
-//! ## Surface FAB (Neutral Actions)
-//! - **surface**: FAB container background (neutral emphasis)
-//! - **onSurface**: Icon and text color on surface
-//! - **surfaceContainerHigh**: Hover state background
-//! - **surfaceContainerHighest**: Pressed state background
-//! - **State layers**: onSurface @ 8% (hover), 12% (press)
-//!
-//! ## Primary FAB (Main Actions - Most Common)
-//! - **primary**: FAB container background (high emphasis for primary actions)
-//! - **onPrimary**: Icon and text color on primary background
-//! - **State layers**: onPrimary @ 8% (hover), 12% (press)
-//! - **Disabled**: surfaceContainer background, outline @ 38% icon
-//!
-//! ## Secondary FAB (Secondary Actions)
-//! - **secondary**: FAB container background (secondary emphasis)
-//! - **onSecondary**: Icon and text color on secondary background
-//! - **State layers**: onSecondary @ 8% (hover), 12% (press)
-//!
-//! ## Tertiary FAB (Alternative Actions)
-//! - **tertiary**: FAB container background (alternative emphasis)
-//! - **onTertiary**: Icon and text color on tertiary background
-//! - **State layers**: onTertiary @ 8% (hover), 12% (press)
-//!
-//! ## Elevation
-//! - **Standard elevation**: 6dp shadow (raised above content)
-//! - **Hover elevation**: 8dp shadow (slight increase on hover)
-//! - **Pressed elevation**: 6dp shadow (returns to standard on press)
+// ============================================================================
+// Module:       fab
+// Description:  Material 3 floating action buttons: small, baseline, medium
+//               and large FABs, and extended FABs that expand and collapse.
+//
+// Dependencies: egui; crate::{a11y, icon, iconbutton, material_theme, paint,
+//               tokens}
+// ============================================================================
 
-use crate::get_global_color;
-use crate::icon::MaterialIcon;
-use crate::material_symbol::material_symbol_text;
-use egui::{self, Color32, Pos2, Rect, Response, Sense, Ui, Vec2, Widget};
+//! Material 3 floating action buttons (FABs).
+//!
+//! [`MaterialFab`] is a FAB of four sizes ([`FabSize`]: small 40, baseline
+//! 56, medium 80, large 96) and, with [`MaterialFab::text`], an extended FAB
+//! of three (56, 80, 96) whose label slides away when
+//! [`MaterialFab::expanded`] turns false.
+//!
+//! Values come from the Compose material3 token files
+//! (`androidx.compose.material3.tokens`, `androidx-main`): `FabSmallTokens`,
+//! `FabBaselineTokens`, `FabMediumTokens`, `FabLargeTokens`,
+//! `ExtendedFabSmallTokens`, `ExtendedFabMediumTokens`,
+//! `ExtendedFabLargeTokens`, and for colour and elevation
+//! `FabPrimaryContainerTokens` (the Compose default), `FabSecondaryContainerTokens`,
+//! `FabPrimaryTokens`, `FabSecondaryTokens`, `FabTertiaryTokens` and their
+//! `ExtendedFab*` counterparts. Medium FABs and the medium and large extended
+//! FABs are M3 Expressive tokens.
+//!
+//! Every FAB sits at `Level3` and rises to `Level4` on hover
+//! (`ContainerElevation`, `HoveredContainerElevation`); a lowered FAB uses
+//! Compose's `FloatingActionButtonDefaults.loweredElevation` (`Level1`,
+//! `Level2` on hover).
 
-/// Material Design FAB (Floating Action Button) variants
-#[derive(Clone, Copy, PartialEq)]
+use egui::{self, Color32, CornerRadius, Rect, Response, Sense, Ui, Vec2, Widget};
+
+use crate::icon::Icon;
+use crate::iconbutton::{icon_label, paint_widget_icon};
+use crate::tokens::{
+    animate_value_with_spring, state, ColorRole, CornerSize, Elevation, InteractionState,
+    SpringSpeed, TypeRole,
+};
+use crate::MaterialTheme;
+
+/// The colour scheme of a FAB.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum FabVariant {
-    /// Surface FAB - uses surface colors for neutral actions
+    /// `surfaceContainerHigh` with a `primary` icon: the retired M3 surface
+    /// FAB (`FabSurfaceTokens`), kept for existing callers.
     Surface,
-    /// Primary FAB - uses primary colors for main actions (most common)
+    /// `primary` / `onPrimary` (`FabPrimaryTokens`).
     Primary,
-    /// Secondary FAB - uses secondary colors for secondary actions
+    /// `secondary` / `onSecondary` (`FabSecondaryTokens`).
     Secondary,
-    /// Tertiary FAB - uses tertiary colors for alternative actions
+    /// `tertiary` / `onTertiary` (`FabTertiaryTokens`).
     Tertiary,
-    /// Branded FAB - uses custom brand colors
+    /// `primaryContainer` / `onPrimaryContainer`
+    /// (`FabPrimaryContainerTokens`): Compose's default FAB colours.
+    PrimaryContainer,
+    /// `secondaryContainer` / `onSecondaryContainer`
+    /// (`FabSecondaryContainerTokens`).
+    SecondaryContainer,
+    /// `tertiaryContainer` / `onTertiaryContainer`, the tertiary member of
+    /// the same container family.
+    TertiaryContainer,
+    /// A hard-coded brand blue (#4285F4) with white content, outside the
+    /// theme.
+    #[deprecated(
+        note = "brand colours are not a Material role; use any variant with `container_color` and `content_color` (see the FAB story)"
+    )]
     Branded,
 }
 
-/// Material Design FAB sizes following Material Design 3 specifications
-#[derive(Clone, Copy, PartialEq, Debug)]
+impl FabVariant {
+    /// Every colour scheme.
+    pub const ALL: [FabVariant; 7] = [
+        FabVariant::Surface,
+        FabVariant::Primary,
+        FabVariant::Secondary,
+        FabVariant::Tertiary,
+        FabVariant::PrimaryContainer,
+        FabVariant::SecondaryContainer,
+        FabVariant::TertiaryContainer,
+    ];
+
+    /// The container and content roles. The deprecated `Branded` variant
+    /// has no roles and reports `primary` / `onPrimary`; it paints its
+    /// fixed brand colours instead.
+    #[expect(deprecated, reason = "matches the deprecated Branded variant")]
+    pub const fn roles(self) -> (ColorRole, ColorRole) {
+        match self {
+            FabVariant::Branded => (ColorRole::Primary, ColorRole::OnPrimary),
+            FabVariant::Surface => (ColorRole::SurfaceContainerHigh, ColorRole::Primary),
+            FabVariant::Primary => (ColorRole::Primary, ColorRole::OnPrimary),
+            FabVariant::Secondary => (ColorRole::Secondary, ColorRole::OnSecondary),
+            FabVariant::Tertiary => (ColorRole::Tertiary, ColorRole::OnTertiary),
+            FabVariant::PrimaryContainer => {
+                (ColorRole::PrimaryContainer, ColorRole::OnPrimaryContainer)
+            }
+            FabVariant::SecondaryContainer => (
+                ColorRole::SecondaryContainer,
+                ColorRole::OnSecondaryContainer,
+            ),
+            FabVariant::TertiaryContainer => {
+                (ColorRole::TertiaryContainer, ColorRole::OnTertiaryContainer)
+            }
+        }
+    }
+}
+
+/// The size of a FAB.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum FabSize {
-    /// Small FAB - 40x40dp, used in compact layouts
+    /// `FabSmallTokens`: 40, 24 icon, `CornerMedium`. Extended: the same as
+    /// [`FabSize::Regular`].
     Small,
-    /// Regular FAB - 56x56dp, the standard size
+    /// `FabBaselineTokens`: 56, 24 icon, `CornerLarge`. Extended:
+    /// `ExtendedFabSmallTokens`.
+    #[default]
     Regular,
-    /// Large FAB - 96x96dp, used for prominent actions
+    /// `FabMediumTokens`: 80, 28 icon, `CornerLargeIncreased`. Extended:
+    /// `ExtendedFabMediumTokens`.
+    Medium,
+    /// `FabLargeTokens`: 96, 36 icon, `CornerExtraLarge`. Extended:
+    /// `ExtendedFabLargeTokens`.
     Large,
-    /// Extended FAB - Variable width with text, at least 80dp wide
+    /// The baseline extended FAB; the same as [`FabSize::Regular`] with a
+    /// [`MaterialFab::text`] label.
     Extended,
 }
 
-/// Material Design Floating Action Button (FAB) component
+impl FabSize {
+    /// The four FAB sizes, smallest first.
+    pub const ALL: [FabSize; 4] = [
+        FabSize::Small,
+        FabSize::Regular,
+        FabSize::Medium,
+        FabSize::Large,
+    ];
+
+    /// The geometry of the icon-only FAB of this size.
+    pub const fn metrics(self) -> FabMetrics {
+        match self {
+            FabSize::Small => FabMetrics {
+                size: 40.0,
+                icon_size: 24.0,
+                shape: CornerSize::Medium,
+            },
+            FabSize::Regular | FabSize::Extended => FabMetrics {
+                size: 56.0,
+                icon_size: 24.0,
+                shape: CornerSize::Large,
+            },
+            FabSize::Medium => FabMetrics {
+                size: 80.0,
+                icon_size: 28.0,
+                shape: CornerSize::LargeIncreased,
+            },
+            FabSize::Large => FabMetrics {
+                size: 96.0,
+                icon_size: 36.0,
+                shape: CornerSize::ExtraLarge,
+            },
+        }
+    }
+
+    /// The geometry of the extended FAB of this size.
+    pub const fn extended_metrics(self) -> ExtendedFabMetrics {
+        match self {
+            // ExtendedFabSmallTokens: Space100 gap, Space200 padding.
+            FabSize::Small | FabSize::Regular | FabSize::Extended => ExtendedFabMetrics {
+                height: 56.0,
+                icon_size: 24.0,
+                icon_label_space: 8.0,
+                leading_space: 16.0,
+                trailing_space: 16.0,
+                shape: CornerSize::Large,
+                label: TypeRole::LabelLarge,
+            },
+            // ExtendedFabMediumTokens: Space150 gap.
+            FabSize::Medium => ExtendedFabMetrics {
+                height: 80.0,
+                icon_size: 28.0,
+                icon_label_space: 12.0,
+                leading_space: 26.0,
+                trailing_space: 26.0,
+                shape: CornerSize::LargeIncreased,
+                label: TypeRole::TitleLarge,
+            },
+            // ExtendedFabLargeTokens: Space200 gap.
+            FabSize::Large => ExtendedFabMetrics {
+                height: 96.0,
+                icon_size: 36.0,
+                icon_label_space: 16.0,
+                leading_space: 28.0,
+                trailing_space: 28.0,
+                shape: CornerSize::ExtraLarge,
+                label: TypeRole::HeadlineSmall,
+            },
+        }
+    }
+}
+
+/// The geometry of a FAB size.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FabMetrics {
+    /// `ContainerWidth` and `ContainerHeight`.
+    pub size: f32,
+    /// `IconSize`.
+    pub icon_size: f32,
+    /// `ContainerShape`.
+    pub shape: CornerSize,
+}
+
+/// The geometry of an extended FAB size.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ExtendedFabMetrics {
+    /// `ContainerHeight` (the collapsed FAB is this wide too).
+    pub height: f32,
+    /// `IconSize`.
+    pub icon_size: f32,
+    /// `IconLabelSpace`.
+    pub icon_label_space: f32,
+    /// `LeadingSpace`.
+    pub leading_space: f32,
+    /// `TrailingSpace`.
+    pub trailing_space: f32,
+    /// `ContainerShape`.
+    pub shape: CornerSize,
+    /// `LabelText`.
+    pub label: TypeRole,
+}
+
+/// The elevation of a FAB in `state`: `Level3`, `Level4` on hover; lowered
+/// `Level1`, `Level2` on hover. Focus and press keep the resting level.
+pub fn fab_elevation(state: InteractionState, lowered: bool) -> Elevation {
+    let hovered = state.hovered && !state.pressed && !state.focused;
+    match (lowered, hovered) {
+        (false, false) => Elevation::Level3,
+        (false, true) => Elevation::Level4,
+        (true, false) => Elevation::Level1,
+        (true, true) => Elevation::Level2,
+    }
+}
+
+/// A Material 3 floating action button, or an extended FAB when it has a
+/// [`text`](Self::text) label.
 ///
-/// FABs help users take primary actions within an app. They appear in front of all screen content,
-/// typically as a circular button with an icon in the center.
-///
-/// ## Usage Examples
-/// ```rust
+/// ```
 /// # egui::__run_test_ui(|ui| {
-/// // Primary FAB with add icon
-/// ui.add(MaterialFab::primary()
-///     .icon("add")
-///     .action(|| println!("Add clicked")));
+/// use egui_material3::{FabSize, MaterialFab};
 ///
-/// // Extended FAB with text
-/// ui.add(MaterialFab::primary()
-///     .size(FabSize::Extended)
-///     .icon("edit")
-///     .text("Compose")
-///     .action(|| println!("Compose clicked")));
-///
-/// // Large FAB for prominent action
-/// ui.add(MaterialFab::primary()
-///     .size(FabSize::Large)
-///     .icon("camera")
-///     .action(|| println!("Camera clicked")));
+/// if ui.add(MaterialFab::primary_container().icon("edit").label("Compose")).clicked() {
+///     // compose
+/// }
+/// let expanded = true; // e.g. the list is scrolled to the top
+/// ui.add(
+///     MaterialFab::primary_container()
+///         .icon("edit")
+///         .text("Compose")
+///         .size(FabSize::Medium)
+///         .expanded(expanded),
+/// );
 /// # });
 /// ```
-///
-/// ## Material Design Spec
-/// - Elevation: 6dp (raised above content)
-/// - Corner radius: 50% (fully rounded)
-/// - Sizes: Small (40dp), Regular (56dp), Large (96dp), Extended (≥80dp)
-/// - Icon size: 24dp for regular, 32dp for large
-/// - Placement: 16dp from screen edge, above navigation bars
+#[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct MaterialFab<'a> {
-    /// Color variant of the FAB
     variant: FabVariant,
-    /// Size of the FAB
     size: FabSize,
-    /// Material Design icon name
-    icon: Option<String>,
-    /// Text content (for extended FABs)
+    icon: Option<Icon>,
     text: Option<String>,
-    /// Custom SVG icon data
-    svg_icon: Option<SvgIcon>,
-    /// Raw SVG data string
-    svg_data: Option<String>,
-    /// Whether the FAB is interactive
+    label: Option<String>,
     enabled: bool,
-    /// Action callback when FAB is pressed
+    lowered: bool,
+    expanded: bool,
+    container_color: Option<Color32>,
+    content_color: Option<Color32>,
     action: Option<Box<dyn Fn() + 'a>>,
 }
 
-/// SVG icon data for custom FAB icons
-#[derive(Clone)]
-pub struct SvgIcon {
-    /// Vector of SVG paths that make up the icon
-    pub paths: Vec<SvgPath>,
-    /// Viewbox dimensions of the SVG
-    pub viewbox_size: Vec2,
-}
-
-/// Individual SVG path with styling
-#[derive(Clone)]
-pub struct SvgPath {
-    /// SVG path data string
-    pub path: String,
-    /// Fill color for the path
-    pub fill: Color32,
-}
-
 impl<'a> MaterialFab<'a> {
-    /// Create a new FAB with the specified variant
-    ///
-    /// ## Parameters
-    /// - `variant`: The color variant to use for the FAB
+    /// A FAB of `variant` showing the `add` icon until another is set.
     pub fn new(variant: FabVariant) -> Self {
         Self {
             variant,
             size: FabSize::Regular,
             icon: None,
             text: None,
-            svg_icon: None,
-            svg_data: None,
+            label: None,
             enabled: true,
+            lowered: false,
+            expanded: true,
+            container_color: None,
+            content_color: None,
             action: None,
         }
     }
 
-    /// Create a surface FAB
+    /// A surface FAB.
     pub fn surface() -> Self {
         Self::new(FabVariant::Surface)
     }
 
-    /// Create a primary FAB
+    /// A primary FAB.
     pub fn primary() -> Self {
         Self::new(FabVariant::Primary)
     }
 
-    /// Create a secondary FAB
+    /// A secondary FAB.
     pub fn secondary() -> Self {
         Self::new(FabVariant::Secondary)
     }
 
-    /// Create a tertiary FAB
+    /// A tertiary FAB.
     pub fn tertiary() -> Self {
         Self::new(FabVariant::Tertiary)
     }
 
-    /// Create a branded FAB
-    pub fn branded() -> Self {
-        Self::new(FabVariant::Branded)
+    /// A primary-container FAB (the Compose default).
+    pub fn primary_container() -> Self {
+        Self::new(FabVariant::PrimaryContainer)
     }
 
-    /// Set the size of the FAB
+    /// A secondary-container FAB.
+    pub fn secondary_container() -> Self {
+        Self::new(FabVariant::SecondaryContainer)
+    }
+
+    /// A tertiary-container FAB.
+    pub fn tertiary_container() -> Self {
+        Self::new(FabVariant::TertiaryContainer)
+    }
+
+    /// The size.
     pub fn size(mut self, size: FabSize) -> Self {
         self.size = size;
         self
     }
 
-    /// Set the icon of the FAB
-    pub fn icon(mut self, icon: impl Into<String>) -> Self {
+    /// The icon: a Material Symbol name, or any [`Icon`].
+    pub fn icon(mut self, icon: impl Into<Icon>) -> Self {
         self.icon = Some(icon.into());
         self
     }
 
-    /// Set the text of the FAB (for extended FABs)
+    /// The label of an extended FAB.
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
-        self.size = FabSize::Extended;
         self
     }
 
-    /// Enable or disable the FAB
+    /// The accessible name. Defaults to the text, then the symbol name.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    /// Whether the FAB reacts. Compose FABs have no disabled state; a
+    /// disabled one here uses the common disabled colours (`onSurface` at
+    /// 0.1 and 0.38) and no shadow.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
     }
 
-    /// Set the lowered state of the FAB (elevation effect)
-    pub fn lowered(self, _lowered: bool) -> Self {
-        // Placeholder for lowered state (elevation effect)
-        // In a real implementation, this would affect the visual elevation
+    /// Lowered elevation (`Level1`, `Level2` on hover), for a FAB on a
+    /// surface that is itself raised.
+    pub fn lowered(mut self, lowered: bool) -> Self {
+        self.lowered = lowered;
         self
     }
 
-    /// Set a custom SVG icon for the FAB
+    /// For an extended FAB: `false` collapses it to an icon-only FAB of the
+    /// same height, animating the width with the default spatial spring.
+    pub fn expanded(mut self, expanded: bool) -> Self {
+        self.expanded = expanded;
+        self
+    }
+
+    /// A FAB in the fixed brand blue.
+    #[deprecated(
+        note = "use any variant with `container_color` and `content_color` (see the FAB story)"
+    )]
+    #[expect(deprecated, reason = "builds the deprecated Branded variant")]
+    pub fn branded() -> Self {
+        Self::new(FabVariant::Branded)
+    }
+
+    /// Shows a list of filled paths as the icon.
+    #[deprecated(note = "pass an SVG document as the icon: `.icon(Icon::svg(bytes))`")]
+    #[expect(deprecated, reason = "takes the deprecated SvgIcon")]
     pub fn svg_icon(mut self, svg_icon: SvgIcon) -> Self {
-        self.svg_icon = Some(svg_icon);
+        self.icon = Some(Icon::svg(svg_icon.to_svg_document().into_bytes()));
         self
     }
 
-    /// Set raw SVG data for the FAB icon
+    /// Shows an SVG document given as text as the icon.
     pub fn svg_data(mut self, svg_data: impl Into<String>) -> Self {
-        self.svg_data = Some(svg_data.into());
+        self.icon = Some(Icon::svg(svg_data.into().into_bytes()));
         self
     }
 
-    /// Set the action to perform when the FAB is clicked
+    /// Overrides the container colour, for brand colours outside the theme.
+    pub fn container_color(mut self, color: Color32) -> Self {
+        self.container_color = Some(color);
+        self
+    }
+
+    /// Overrides the icon and label colour.
+    pub fn content_color(mut self, color: Color32) -> Self {
+        self.content_color = Some(color);
+        self
+    }
+
+    /// Runs `f` when the FAB is clicked.
     pub fn on_click<F>(mut self, f: F) -> Self
     where
         F: Fn() + 'a,
@@ -233,448 +419,276 @@ impl<'a> MaterialFab<'a> {
     }
 }
 
-impl<'a> Widget for MaterialFab<'a> {
+impl Widget for MaterialFab<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let size = match self.size {
-            FabSize::Small => Vec2::splat(40.0),
-            FabSize::Regular => Vec2::splat(56.0),
-            FabSize::Large => Vec2::splat(96.0),
-            FabSize::Extended => {
-                let left_margin = 16.0;
-                let right_margin = 24.0;
-                let icon_width =
-                    if self.icon.is_some() || self.svg_icon.is_some() || self.svg_data.is_some() {
-                        24.0 + 12.0
-                    } else {
-                        0.0
-                    };
+        let theme = MaterialTheme::of(ui.ctx());
+        let icon = self.icon.unwrap_or_else(|| Icon::from("add"));
+        let text = self.text.filter(|t| !t.is_empty());
 
-                let text_width = if let Some(ref text) = self.text {
-                    let font_id = egui::FontId::proportional(14.0);
-                    ui.painter()
-                        .layout_no_wrap(text.clone(), font_id, Color32::WHITE)
-                        .size()
-                        .x
-                } else {
-                    0.0
-                };
+        let (container_role, content_role) = self.variant.roles();
+        let (role_container, role_content) = if is_branded(self.variant) {
+            (BRAND_BLUE, Color32::WHITE)
+        } else {
+            (theme.color(container_role), theme.color(content_role))
+        };
+        let (container, content) = if self.enabled {
+            (
+                self.container_color.unwrap_or(role_container),
+                self.content_color.unwrap_or(role_content),
+            )
+        } else {
+            let on_surface = theme.color(ColorRole::OnSurface);
+            (
+                on_surface.gamma_multiply(state::DISABLED_CONTAINER_OPACITY),
+                on_surface.gamma_multiply(state::DISABLED_CONTENT_OPACITY),
+            )
+        };
 
-                let total_width = left_margin + icon_width + text_width + right_margin;
-                Vec2::new(total_width.max(80.0), 56.0) // Minimum width of 80px
+        // Size: an icon FAB, or an extended FAB between its collapsed
+        // (square) and expanded widths.
+        let anim_id = ui.next_auto_id().with("fab_expanded");
+        let (size, icon_size, shape, label_galley, expansion, extended) = match &text {
+            Some(text) => {
+                let m = self.size.extended_metrics();
+                let galley = ui.painter().layout_job(m.label.style().layout_job(
+                    ui.ctx(),
+                    text.as_str(),
+                    content,
+                ));
+                let expansion = animate_value_with_spring(
+                    ui.ctx(),
+                    anim_id,
+                    if self.expanded { 1.0 } else { 0.0 },
+                    theme.motion.spatial(SpringSpeed::Default),
+                )
+                .max(0.0);
+                let full = m.leading_space
+                    + m.icon_size
+                    + m.icon_label_space
+                    + galley.size().x
+                    + m.trailing_space;
+                let width = (m.height + (full - m.height) * expansion).max(m.height);
+                (
+                    Vec2::new(width, m.height),
+                    m.icon_size,
+                    m.shape,
+                    Some(galley),
+                    expansion,
+                    Some(m),
+                )
+            }
+            None => {
+                let m = self.size.metrics();
+                (Vec2::splat(m.size), m.icon_size, m.shape, None, 0.0, None)
             }
         };
 
-        let (rect, response) = ui.allocate_exact_size(size, Sense::click());
+        let (rect, response) =
+            ui.allocate_exact_size(size, crate::a11y::sense(self.enabled, Sense::click()));
+        let label = self
+            .label
+            .clone()
+            .or_else(|| text.clone())
+            .unwrap_or_else(|| icon_label(&icon).to_owned());
+        crate::a11y::button(&response, self.enabled, &label);
 
-        // Extract all needed data before partial move
-        let action = self.action;
-        let enabled = self.enabled;
-        let variant = self.variant;
-        let size_enum = self.size;
-        let icon = self.icon;
-        let text = self.text;
-        let svg_icon = self.svg_icon;
-        let svg_data = self.svg_data;
-
-        let clicked = response.clicked() && enabled;
-
-        if clicked {
-            if let Some(action) = action {
+        if response.clicked() && self.enabled {
+            if let Some(action) = &self.action {
                 action();
             }
         }
 
-        // M3 Color Roles - FAB Variants
-        let primary = get_global_color("primary"); // Primary FAB container background (high emphasis)
-        let on_primary = get_global_color("onPrimary"); // Icon/text on primary background
-        let secondary = get_global_color("secondary"); // Secondary FAB container background
-        let on_secondary = get_global_color("onSecondary"); // Icon/text on secondary background
-        let tertiary = get_global_color("tertiary"); // Tertiary FAB container background
-        let on_tertiary = get_global_color("onTertiary"); // Icon/text on tertiary background
-        let surface = get_global_color("surface"); // Surface FAB container (neutral emphasis)
-        let on_surface = get_global_color("onSurface"); // Icon/text on surface
-        let surface_container = get_global_color("surfaceContainer"); // Disabled FAB background
-        let surface_container_high = get_global_color("surfaceContainerHigh"); // Surface FAB hover state
-        let surface_container_highest = get_global_color("surfaceContainerHighest"); // Surface FAB pressed state
-        let outline = get_global_color("outline"); // Disabled icon color
+        if !ui.is_rect_visible(rect.expand(16.0)) {
+            return response;
+        }
 
-        let (bg_color, icon_color) = if !enabled {
-            // Disabled state: surfaceContainer background with outline @ 38% for icon (M3 spec)
-            (surface_container, outline.linear_multiply(0.38))
-        } else {
-            match variant {
-                FabVariant::Surface => {
-                    // Surface FAB: use surface container variants for state layers
-                    if response.is_pointer_button_down_on() {
-                        // Pressed state: surfaceContainerHighest (highest emphasis surface)
-                        (surface_container_highest, on_surface)
-                    } else if response.hovered() {
-                        // Hover state: surfaceContainerHigh (high emphasis surface)
-                        (surface_container_high, on_surface)
-                    } else {
-                        // Default state: surface with onSurface for neutral emphasis
-                        (surface, on_surface)
-                    }
-                }
-                FabVariant::Primary => {
-                    // Primary FAB: use primary background with state layer overlay
-                    let base_color = primary;
-                    let content_color = on_primary;
-                    if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onPrimary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(base_color, content_color, 0.12),
-                            content_color,
-                        )
-                    } else if response.hovered() {
-                        // Hover state: 8% onPrimary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(base_color, content_color, 0.08),
-                            content_color,
-                        )
-                    } else {
-                        (base_color, content_color)
-                    }
-                }
-                FabVariant::Secondary => {
-                    // Secondary FAB: use secondary background with state layer overlay
-                    let base_color = secondary;
-                    let content_color = on_secondary;
-                    if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onSecondary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(base_color, content_color, 0.12),
-                            content_color,
-                        )
-                    } else if response.hovered() {
-                        // Hover state: 8% onSecondary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(base_color, content_color, 0.08),
-                            content_color,
-                        )
-                    } else {
-                        (base_color, content_color)
-                    }
-                }
-                FabVariant::Tertiary => {
-                    // Tertiary FAB: use tertiary background with state layer overlay
-                    let base_color = tertiary;
-                    let content_color = on_tertiary;
-                    if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% onTertiary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(base_color, content_color, 0.12),
-                            content_color,
-                        )
-                    } else if response.hovered() {
-                        // Hover state: 8% onTertiary overlay (M3 interaction state)
-                        (
-                            blend_state_layer(base_color, content_color, 0.08),
-                            content_color,
-                        )
-                    } else {
-                        (base_color, content_color)
-                    }
-                }
-                FabVariant::Branded => {
-                    // Branded FAB: custom brand colors (e.g., Google brand blue)
-                    let google_brand = Color32::from_rgb(66, 133, 244);
-                    let content_color = Color32::WHITE; // White icon/text on branded background
-                    if response.is_pointer_button_down_on() {
-                        // Pressed state: 12% white overlay
-                        (
-                            blend_state_layer(google_brand, content_color, 0.12),
-                            content_color,
-                        )
-                    } else if response.hovered() {
-                        // Hover state: 8% white overlay
-                        (
-                            blend_state_layer(google_brand, content_color, 0.08),
-                            content_color,
-                        )
-                    } else {
-                        (google_brand, content_color)
-                    }
-                }
-            }
-        };
+        let interaction = InteractionState::from_response(&response);
+        let radius = shape.radius(rect);
+        let corner_radius = CornerRadius::same(radius.round().clamp(0.0, 255.0) as u8);
+        let painter = ui.painter();
 
-        // Calculate corner radius for FAB
-        let corner_radius = match size_enum {
-            FabSize::Small => 12.0,
-            FabSize::Large => 16.0,
-            _ => 14.0,
-        };
+        if self.enabled {
+            crate::paint::paint_elevation(
+                painter,
+                rect,
+                corner_radius,
+                fab_elevation(interaction, self.lowered),
+                theme.color(ColorRole::Shadow),
+            );
+        }
+        painter.rect_filled(rect, corner_radius, container);
+        crate::paint::paint_state_layer(painter, rect, corner_radius, content, interaction);
 
-        // Draw FAB background with less rounded corners
-        ui.painter().rect_filled(rect, corner_radius, bg_color);
-
-        // Draw content
-        match size_enum {
-            FabSize::Extended => {
-                // Draw icon and text with proper spacing
-                let left_margin = 16.0;
-                let _right_margin = 24.0;
-                let icon_text_gap = 12.0;
-                let mut content_x = rect.min.x + left_margin;
-
-                if let Some(ref svg_str) = svg_data {
-                    // Render SVG data
-                    if let Ok(texture) = render_svg_to_texture(ui.ctx(), svg_str, 24) {
-                        let icon_rect = Rect::from_center_size(
-                            Pos2::new(content_x + 12.0, rect.center().y),
-                            Vec2::splat(24.0),
-                        );
-                        ui.painter().image(
-                            texture.id(),
-                            icon_rect,
-                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                            Color32::WHITE,
-                        );
-                    }
-                    content_x += 24.0 + icon_text_gap;
-                } else if let Some(ref icon_name) = icon {
-                    let icon_rect = Rect::from_min_size(
-                        Pos2::new(content_x, rect.center().y - 12.0),
-                        Vec2::splat(24.0),
+        match (extended, label_galley) {
+            (Some(m), Some(galley)) => {
+                // The icon moves from the centre (collapsed) to the leading
+                // space (expanded); the label fades in after it.
+                let collapsed_x = rect.center().x;
+                let expanded_x = rect.min.x + m.leading_space + m.icon_size / 2.0;
+                let t = expansion.min(1.0);
+                let icon_x = collapsed_x + (expanded_x - collapsed_x) * t;
+                let icon_rect = Rect::from_center_size(
+                    egui::pos2(icon_x, rect.center().y),
+                    Vec2::splat(icon_size),
+                );
+                paint_widget_icon(
+                    painter,
+                    icon_rect,
+                    &icon,
+                    false,
+                    content,
+                    theme.layout_direction,
+                );
+                if t > 0.0 {
+                    let pos = egui::pos2(
+                        icon_rect.max.x + m.icon_label_space,
+                        rect.center().y - galley.size().y / 2.0,
                     );
-
-                    // Draw material icon
-                    let icon_char = material_symbol_text(icon_name);
-                    let icon = MaterialIcon::new(icon_char).size(24.0).color(icon_color);
-                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-                        ui.add(icon);
-                    });
-
-                    content_x += 24.0 + icon_text_gap;
-                } else if let Some(ref _svg_icon) = svg_icon {
-                    // Render simplified Google logo for branded FAB
-                    draw_google_logo(ui, Pos2::new(content_x + 12.0, rect.center().y), 24.0);
-                    content_x += 24.0 + icon_text_gap;
-                }
-
-                if let Some(ref text) = text {
-                    let text_pos = Pos2::new(content_x, rect.center().y);
-                    ui.painter().text(
-                        text_pos,
-                        egui::Align2::LEFT_CENTER,
-                        text,
-                        egui::FontId::proportional(14.0),
-                        icon_color,
-                    );
+                    let clipped = painter.with_clip_rect(rect.intersect(painter.clip_rect()));
+                    clipped.galley(pos, galley, content.gamma_multiply(t * t));
                 }
             }
-            _ => {
-                // Draw centered icon
-                if let Some(ref svg_str) = svg_data {
-                    let icon_size = match size_enum {
-                        FabSize::Small => 18,
-                        FabSize::Large => 36,
-                        _ => 24,
-                    };
-
-                    // Render SVG data
-                    if let Ok(texture) = render_svg_to_texture(ui.ctx(), svg_str, icon_size) {
-                        let icon_rect =
-                            Rect::from_center_size(rect.center(), Vec2::splat(icon_size as f32));
-                        ui.painter().image(
-                            texture.id(),
-                            icon_rect,
-                            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                            Color32::WHITE,
-                        );
-                    }
-                } else if let Some(ref _svg_icon) = svg_icon {
-                    let icon_size = match size_enum {
-                        FabSize::Small => 18.0,
-                        FabSize::Large => 36.0,
-                        _ => 24.0,
-                    };
-
-                    // Render simplified Google logo for branded FAB
-                    draw_google_logo(ui, rect.center(), icon_size);
-                } else if let Some(ref icon_name) = icon {
-                    let icon_size = match size_enum {
-                        FabSize::Small => 18.0,
-                        FabSize::Large => 36.0,
-                        _ => 24.0,
-                    };
-
-                    let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
-                    let icon_char = material_symbol_text(icon_name);
-                    let icon = MaterialIcon::new(icon_char)
-                        .size(icon_size)
-                        .color(icon_color);
-                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-                        ui.add(icon);
-                    });
-                } else {
-                    // Default add icon
-                    let icon_size = match size_enum {
-                        FabSize::Small => 18.0,
-                        FabSize::Large => 36.0,
-                        _ => 24.0,
-                    };
-
-                    let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
-                    let icon_char = material_symbol_text("add");
-                    let icon = MaterialIcon::new(icon_char)
-                        .size(icon_size)
-                        .color(icon_color);
-                    ui.scope_builder(egui::UiBuilder::new().max_rect(icon_rect), |ui| {
-                        ui.add(icon);
-                    });
-                }
+            (Some(_), None) | (None, Some(_)) | (None, None) => {
+                let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(icon_size));
+                paint_widget_icon(
+                    painter,
+                    icon_rect,
+                    &icon,
+                    false,
+                    content,
+                    theme.layout_direction,
+                );
             }
+        }
+
+        if response.has_focus() {
+            crate::paint::paint_focus_ring(
+                painter,
+                rect,
+                corner_radius,
+                theme.color(ColorRole::Secondary),
+            );
         }
 
         response
     }
 }
 
-/// Blend a state layer overlay on top of a base color.
-///
-/// Used for M3 interactive states (hover: 8%, press: 12%).
-fn blend_state_layer(base: Color32, overlay: Color32, opacity: f32) -> Color32 {
-    let alpha = (opacity * 255.0) as u8;
-    let overlay_with_alpha =
-        Color32::from_rgba_unmultiplied(overlay.r(), overlay.g(), overlay.b(), alpha);
-    // Alpha blending
-    let inv_alpha = 255 - alpha;
-    Color32::from_rgba_unmultiplied(
-        ((base.r() as u16 * inv_alpha as u16 + overlay_with_alpha.r() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.g() as u16 * inv_alpha as u16 + overlay_with_alpha.g() as u16 * alpha as u16) / 255)
-            as u8,
-        ((base.b() as u16 * inv_alpha as u16 + overlay_with_alpha.b() as u16 * alpha as u16) / 255)
-            as u8,
-        base.a(),
-    )
+/// The brand blue of the deprecated `Branded` variant.
+const BRAND_BLUE: Color32 = Color32::from_rgb(66, 133, 244);
+
+#[expect(deprecated, reason = "detects the deprecated Branded variant")]
+fn is_branded(variant: FabVariant) -> bool {
+    variant == FabVariant::Branded
 }
 
-// Helper function to draw Google logo
-fn draw_google_logo(ui: &mut Ui, center: Pos2, size: f32) {
-    let half_size = size / 2.0;
-    let quarter_size = size / 4.0;
-
-    // Google 4-color logo - simplified version
-    // Green (top right)
-    ui.painter().rect_filled(
-        Rect::from_min_size(
-            Pos2::new(center.x, center.y - half_size),
-            Vec2::new(half_size, quarter_size),
-        ),
-        0.0,
-        Color32::from_rgb(52, 168, 83), // Green #34A853
-    );
-
-    // Blue (right)
-    ui.painter().rect_filled(
-        Rect::from_min_size(
-            Pos2::new(center.x, center.y - quarter_size),
-            Vec2::new(half_size, half_size),
-        ),
-        0.0,
-        Color32::from_rgb(66, 133, 244), // Blue #4285F4
-    );
-
-    // Yellow (bottom left)
-    ui.painter().rect_filled(
-        Rect::from_min_size(
-            Pos2::new(center.x - half_size, center.y + quarter_size),
-            Vec2::new(half_size, quarter_size),
-        ),
-        0.0,
-        Color32::from_rgb(251, 188, 5), // Yellow #FBBC05
-    );
-
-    // Red (left)
-    ui.painter().rect_filled(
-        Rect::from_min_size(
-            Pos2::new(center.x - half_size, center.y - half_size),
-            Vec2::new(quarter_size, size),
-        ),
-        0.0,
-        Color32::from_rgb(234, 67, 53), // Red #EA4335
-    );
+/// An icon made of filled SVG paths.
+#[deprecated(note = "pass an SVG document as the icon: `Icon::svg(bytes)`")]
+#[derive(Clone, Debug)]
+pub struct SvgIcon {
+    /// The paths, painted in order.
+    #[expect(deprecated, reason = "holds the deprecated SvgPath")]
+    pub paths: Vec<SvgPath>,
+    /// The size of the paths' coordinate space.
+    pub viewbox_size: Vec2,
 }
 
-// Helper function to render SVG data to texture
-fn render_svg_to_texture(
-    ctx: &egui::Context,
-    svg_data: &str,
-    size: u32,
-) -> Result<egui::TextureHandle, String> {
-    use resvg::{tiny_skia, usvg};
-
-    let tree =
-        usvg::Tree::from_str(svg_data, &usvg::Options::default()).map_err(|e| e.to_string())?;
-    let mut pixmap =
-        tiny_skia::Pixmap::new(size, size).ok_or_else(|| "pixmap alloc failed".to_string())?;
-
-    let ts = tree.size();
-    let scale = (size as f32 / ts.width()).min(size as f32 / ts.height());
-    resvg::render(
-        &tree,
-        tiny_skia::Transform::from_scale(scale, scale),
-        &mut pixmap.as_mut(),
-    );
-
-    let color_image =
-        egui::ColorImage::from_rgba_unmultiplied([size as usize, size as usize], pixmap.data());
-
-    // Create a unique key for this texture
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    let mut hasher = DefaultHasher::new();
-    svg_data.hash(&mut hasher);
-    size.hash(&mut hasher);
-    let key = format!("fab_svg_{:x}", hasher.finish());
-
-    Ok(ctx.load_texture(key, color_image, egui::TextureOptions::LINEAR))
+/// One filled path of an [`SvgIcon`].
+#[deprecated(note = "pass an SVG document as the icon: `Icon::svg(bytes)`")]
+#[derive(Clone, Debug)]
+pub struct SvgPath {
+    /// The SVG path data (`d` attribute).
+    pub path: String,
+    /// The fill colour.
+    pub fill: Color32,
 }
 
-pub fn fab_surface() -> MaterialFab<'static> {
-    MaterialFab::surface()
+#[expect(deprecated, reason = "converts the deprecated SvgIcon")]
+impl SvgIcon {
+    /// The icon as an SVG document.
+    fn to_svg_document(&self) -> String {
+        let mut svg = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}">"#,
+            self.viewbox_size.x, self.viewbox_size.y
+        );
+        for p in &self.paths {
+            let escaped = p
+                .path
+                .replace('&', "&amp;")
+                .replace('"', "&quot;")
+                .replace('<', "&lt;");
+            svg.push_str(&format!(
+                r##"<path d="{escaped}" fill="#{:02x}{:02x}{:02x}" fill-opacity="{}"/>"##,
+                p.fill.r(),
+                p.fill.g(),
+                p.fill.b(),
+                f32::from(p.fill.a()) / 255.0
+            ));
+        }
+        svg.push_str("</svg>");
+        svg
+    }
 }
 
-pub fn fab_primary() -> MaterialFab<'static> {
-    MaterialFab::primary()
-}
-
-pub fn fab_secondary() -> MaterialFab<'static> {
-    MaterialFab::secondary()
-}
-
-pub fn fab_tertiary() -> MaterialFab<'static> {
-    MaterialFab::tertiary()
-}
-
+/// A FAB in the fixed brand blue.
+#[deprecated(
+    note = "use any variant with `container_color` and `content_color` (see the FAB story)"
+)]
+#[expect(deprecated, reason = "builds the deprecated Branded FAB")]
 pub fn fab_branded() -> MaterialFab<'static> {
     MaterialFab::branded()
 }
 
-/// Create Google branded icon (4-color logo)
+/// The four-colour mark the deprecated branded FAB showed.
+#[deprecated(note = "pass an SVG document as the icon: `Icon::svg(bytes)`")]
+#[expect(deprecated, reason = "builds the deprecated SvgIcon")]
 pub fn google_branded_icon() -> SvgIcon {
+    let path = |path: &str, fill| SvgPath {
+        path: path.to_owned(),
+        fill,
+    };
     SvgIcon {
         paths: vec![
-            SvgPath {
-                path: "M16 16v14h4V20z".to_string(),
-                fill: Color32::from_rgb(52, 168, 83), // Green #34A853
-            },
-            SvgPath {
-                path: "M30 16H20l-4 4h14z".to_string(),
-                fill: Color32::from_rgb(66, 133, 244), // Blue #4285F4
-            },
-            SvgPath {
-                path: "M6 16v4h10l4-4z".to_string(),
-                fill: Color32::from_rgb(251, 188, 5), // Yellow #FBBC05
-            },
-            SvgPath {
-                path: "M20 16V6h-4v14z".to_string(),
-                fill: Color32::from_rgb(234, 67, 53), // Red #EA4335
-            },
+            path("M16 16v14h4V20z", Color32::from_rgb(52, 168, 83)),
+            path("M30 16H20l-4 4h14z", Color32::from_rgb(66, 133, 244)),
+            path("M6 16v4h10l4-4z", Color32::from_rgb(251, 188, 5)),
+            path("M20 16V6h-4v14z", Color32::from_rgb(234, 67, 53)),
         ],
         viewbox_size: Vec2::new(36.0, 36.0),
     }
+}
+
+/// A surface FAB.
+pub fn fab_surface() -> MaterialFab<'static> {
+    MaterialFab::surface()
+}
+
+/// A primary FAB.
+pub fn fab_primary() -> MaterialFab<'static> {
+    MaterialFab::primary()
+}
+
+/// A secondary FAB.
+pub fn fab_secondary() -> MaterialFab<'static> {
+    MaterialFab::secondary()
+}
+
+/// A tertiary FAB.
+pub fn fab_tertiary() -> MaterialFab<'static> {
+    MaterialFab::tertiary()
+}
+
+/// A primary-container FAB (the Compose default).
+pub fn fab_primary_container() -> MaterialFab<'static> {
+    MaterialFab::primary_container()
+}
+
+/// A secondary-container FAB.
+pub fn fab_secondary_container() -> MaterialFab<'static> {
+    MaterialFab::secondary_container()
+}
+
+/// A tertiary-container FAB.
+pub fn fab_tertiary_container() -> MaterialFab<'static> {
+    MaterialFab::tertiary_container()
 }

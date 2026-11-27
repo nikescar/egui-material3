@@ -2,17 +2,12 @@
 
 use eframe::egui::{self, Color32, Ui, Window};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 enum Enum {
+    #[default]
     First,
     Second,
     Third,
-}
-
-impl Default for Enum {
-    fn default() -> Self {
-        Self::First
-    }
 }
 
 #[doc(hidden)]

@@ -6,22 +6,12 @@ use crate::MaterialButton;
 use eframe::egui::{self, epaint::Stroke, Ui, Vec2, Window};
 
 #[doc(hidden)]
+#[derive(Default)]
 pub struct ButtonWindow {
     pub open: bool,
     label: String,
     disabled: bool,
     soft_disabled: bool,
-}
-
-impl Default for ButtonWindow {
-    fn default() -> Self {
-        Self {
-            open: false,
-            label: String::new(),
-            disabled: false,
-            soft_disabled: false,
-        }
-    }
 }
 
 impl ButtonWindow {
@@ -192,7 +182,7 @@ impl ButtonWindow {
     fn render_small_buttons_with_svg_icons(&mut self, ui: &mut Ui) {
         ui.heading("Small Buttons with SVG Icons");
 
-        let disabled = self.is_disabled();
+        let _disabled = self.is_disabled();
 
         #[cfg(feature = "svg_emoji")]
         {

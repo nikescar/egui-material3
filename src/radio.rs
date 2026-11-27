@@ -207,7 +207,18 @@ impl<'a, T: PartialEq + Clone> Widget for MaterialRadio<'a, T> {
     fn ui(self, ui: &mut Ui) -> Response {
         let desired_size = Vec2::new(ui.available_width().min(300.0), 24.0);
 
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        let is_selected_now = self.selected.as_ref() == Some(&self.value);
+        let (rect, mut response) = ui.allocate_exact_size(
+            desired_size,
+            crate::a11y::sense(self.enabled, Sense::click()),
+        );
+        crate::a11y::toggle(
+            &response,
+            egui::Role::RadioButton,
+            self.enabled,
+            &self.text,
+            is_selected_now,
+        );
 
         let is_selected = self.selected.as_ref() == Some(&self.value);
 
@@ -577,7 +588,18 @@ impl<'a, T: PartialEq + Clone> Widget for RadioListTile<'a, T> {
         let available_width = ui.available_width();
         let desired_size = Vec2::new(available_width, height);
 
-        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        let is_selected_now = self.selected.as_ref() == Some(&self.value);
+        let (rect, mut response) = ui.allocate_exact_size(
+            desired_size,
+            crate::a11y::sense(self.enabled, Sense::click()),
+        );
+        crate::a11y::toggle(
+            &response,
+            egui::Role::RadioButton,
+            self.enabled,
+            self.title.as_deref().unwrap_or_default(),
+            is_selected_now,
+        );
 
         // Handle click
         if response.clicked() && self.enabled {
