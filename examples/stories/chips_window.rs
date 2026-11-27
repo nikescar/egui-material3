@@ -1,15 +1,24 @@
+// ============================================================================
+// Module:       stories::chips_window (example)
+// Description:  Story window demonstrating the chips component.
+//
+// Dependencies: eframe, egui; crate::svg_emoji
+// ============================================================================
+
+//! Story window demonstrating the chips component.
+
 #![doc(hidden)]
 
 #[cfg(feature = "svg_emoji")]
 use crate::svg_emoji::SOLAR_ICONS;
 use crate::{
-    assist_chip, filter_chip, image_utils, input_chip, suggestion_chip, MaterialButton,
-    MaterialCheckbox,
+    assist_chip, chip_set, filter_chip, image_utils, input_chip, suggestion_chip, MaterialButton,
+    MaterialCheckbox, MaterialChip,
 };
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
-pub struct ChipsWindow {
+pub(crate) struct ChipsWindow {
     pub open: bool,
     label: String,
     elevated: bool,
@@ -20,6 +29,11 @@ pub struct ChipsWindow {
     filter_icon_selected: bool,
     filter_removable_selected: bool,
     filter_elevated_selected: bool,
+    expressive: bool,
+    // Input chips: (name, selected), removable
+    contacts: Vec<(String, bool)>,
+    // Chip set: (tag, selected)
+    tags: Vec<(String, bool)>,
     // Font testing
     system_fonts: Vec<(String, String)>,
     system_fonts_loaded: bool,
@@ -39,6 +53,25 @@ impl Default for ChipsWindow {
             filter_icon_selected: false,
             filter_removable_selected: true,
             filter_elevated_selected: false,
+            expressive: false,
+            contacts: ["Ada", "Grace", "Linus", "Margaret"]
+                .into_iter()
+                .map(|name| (name.to_owned(), false))
+                .collect(),
+            tags: [
+                "Rust",
+                "egui",
+                "Material",
+                "Compose",
+                "Desktop",
+                "Web",
+                "Mobile",
+                "Accessible",
+            ]
+            .into_iter()
+            .enumerate()
+            .map(|(i, tag)| (tag.to_owned(), i % 3 == 0))
+            .collect(),
             system_fonts: Vec::new(),
             system_fonts_loaded: false,
             selected_font_name: "Default".to_string(),
@@ -128,7 +161,7 @@ impl ChipsWindow {
         fonts
     }
 
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub(crate) fn show(&mut self, ctx: &egui::Context) {
         // Load system fonts on first show
         if !self.system_fonts_loaded {
             self.system_fonts = Self::enumerate_system_fonts();
@@ -155,11 +188,9 @@ impl ChipsWindow {
                         "custom".to_owned(),
                         std::sync::Arc::new(egui::FontData::from_owned(font_data)),
                     );
-                    fonts
-                        .families
-                        .get_mut(&egui::FontFamily::Proportional)
-                        .unwrap()
-                        .insert(0, "custom".to_owned());
+                    if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
+                        family.insert(0, "custom".to_owned());
+                    }
                     ctx.set_fonts(fonts);
                 }
             }
@@ -187,6 +218,12 @@ impl ChipsWindow {
                     ui.add_space(20.0);
                     self.render_suggestion_chips(ui);
                     ui.add_space(20.0);
+                    self.render_input_chip_set(ui);
+                    ui.add_space(20.0);
+                    self.render_expressive_chips(ui);
+                    ui.add_space(20.0);
+                    self.render_filter_chip_set(ui);
+                    ui.add_space(20.0);
                     self.render_font_variations(ui);
                 });
             });
@@ -209,6 +246,10 @@ impl ChipsWindow {
 
         ui.add(MaterialCheckbox::new(&mut self.elevated, "Elevated"));
         ui.add(MaterialCheckbox::new(&mut self.disabled, "Disabled"));
+        ui.add(MaterialCheckbox::new(
+            &mut self.expressive,
+            "Expressive shapes (Expressive section)",
+        ));
 
         ui.separator();
         ui.label("System Font (for testing vertical centering):");
@@ -372,8 +413,10 @@ impl ChipsWindow {
     fn render_small_assist_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Small Assist Chips");
 
+        #[cfg(feature = "svg_emoji")]
         let label = self.label.clone();
-        let _l = |default: &str| -> String {
+        #[cfg(feature = "svg_emoji")]
+        let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {
@@ -473,8 +516,10 @@ impl ChipsWindow {
     fn render_small_filter_chips(&mut self, ui: &mut egui::Ui) {
         ui.heading("Small Filter Chips");
 
+        #[cfg(feature = "svg_emoji")]
         let label = self.label.clone();
-        let _l = |default: &str| -> String {
+        #[cfg(feature = "svg_emoji")]
+        let l = |default: &str| -> String {
             if label.is_empty() {
                 default.to_string()
             } else {
@@ -644,6 +689,76 @@ impl ChipsWindow {
         });
     }
 
+    fn render_input_chip_set(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Input Chips: Avatars, Selection and Removal");
+        ui.label(
+            "Click a chip to select it; click its X, or focus it and press Delete, to remove it.",
+        );
+        let mut removed = None;
+        chip_set(ui, |ui| {
+            for (index, (name, selected)) in self.contacts.iter_mut().enumerate() {
+                let chip = MaterialChip::input(name.as_str())
+                    .selected(selected)
+                    .leading_icon_svg(image_utils::AVATAR_SVG)
+                    .avatar(true)
+                    .removable(true);
+                if chip.show(ui).removed() {
+                    removed = Some(index);
+                }
+            }
+        });
+        if let Some(index) = removed {
+            if index < self.contacts.len() {
+                self.contacts.remove(index);
+            }
+        }
+        if ui.add(MaterialButton::text("Reset contacts")).clicked() {
+            self.contacts = ["Ada", "Grace", "Linus", "Margaret"]
+                .into_iter()
+                .map(|name| (name.to_owned(), false))
+                .collect();
+        }
+    }
+
+    fn render_expressive_chips(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Expressive Shapes");
+        ui.label(
+            "With \"Expressive shapes\" on: corner 12 unselected, fully round selected, 8 while pressed.",
+        );
+        let expressive = self.expressive;
+        chip_set(ui, |ui| {
+            ui.add(
+                assist_chip("Assist")
+                    .leading_icon(image_utils::material_icons::EVENT)
+                    .expressive(expressive),
+            );
+            ui.add(
+                filter_chip("Filter", &mut self.filter_icon_selected)
+                    .leading_icon(image_utils::material_icons::LOCAL_LAUNDRY_SERVICE)
+                    .expressive(expressive),
+            );
+            ui.add(
+                filter_chip("Elevated filter", &mut self.filter_elevated_selected)
+                    .elevated(true)
+                    .expressive(expressive),
+            );
+            ui.add(suggestion_chip("Suggestion").expressive(expressive));
+        });
+    }
+
+    fn render_filter_chip_set(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Chip Set");
+        ui.label("chip_set wraps chips onto new rows with 8 between chips and rows.");
+        ui.scope(|ui| {
+            ui.set_max_width(320.0);
+            chip_set(ui, |ui| {
+                for (tag, selected) in &mut self.tags {
+                    ui.add(filter_chip(tag.as_str(), selected));
+                }
+            });
+        });
+    }
+
     fn render_font_variations(&mut self, ui: &mut egui::Ui) {
         ui.heading("Font Variations (Vertical Centering Test)");
         ui.label("Chips with different fonts/sizes should maintain vertical centering:");
@@ -683,85 +798,6 @@ impl ChipsWindow {
                     ui.add_space(8.0);
 
                     ui.add(suggestion_chip("Suggestion").elevated(true));
-                });
-            });
-        }
-
-        // Test with custom font sizes (Proportional family)
-        ui.add_space(16.0);
-        ui.strong("Proportional Font - Custom Sizes:");
-
-        let font_sizes = [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0];
-
-        for size in font_sizes {
-            ui.add_space(8.0);
-            ui.label(format!("  {}px:", size));
-
-            ui.horizontal_wrapped(|ui| {
-                ui.scope(|ui| {
-                    let font_id = egui::FontId::proportional(size);
-                    ui.style_mut().override_text_style = None;
-                    // Store font_id in temporary var to modify text rendering
-                    let old_text_styles = ui.style().text_styles.clone();
-                    ui.style_mut()
-                        .text_styles
-                        .insert(egui::TextStyle::Body, font_id.clone());
-
-                    let mut filter_selected = true;
-                    ui.add(filter_chip("Filter", &mut filter_selected).elevated(true));
-                    ui.add_space(8.0);
-
-                    ui.add(
-                        assist_chip("Assist")
-                            .elevated(true)
-                            .leading_icon(image_utils::material_icons::EVENT),
-                    );
-                    ui.add_space(8.0);
-
-                    ui.add(input_chip("Input").elevated(true).removable(true));
-                    ui.add_space(8.0);
-
-                    ui.add(suggestion_chip("Suggestion").elevated(true));
-
-                    ui.style_mut().text_styles = old_text_styles;
-                });
-            });
-        }
-
-        // Test with custom font sizes (Monospace family)
-        ui.add_space(16.0);
-        ui.strong("Monospace Font - Custom Sizes:");
-
-        for size in [10.0, 12.0, 14.0, 16.0, 18.0, 20.0] {
-            ui.add_space(8.0);
-            ui.label(format!("  {}px:", size));
-
-            ui.horizontal_wrapped(|ui| {
-                ui.scope(|ui| {
-                    let font_id = egui::FontId::monospace(size);
-                    ui.style_mut().override_text_style = None;
-                    let old_text_styles = ui.style().text_styles.clone();
-                    ui.style_mut()
-                        .text_styles
-                        .insert(egui::TextStyle::Body, font_id.clone());
-
-                    let mut filter_selected = false;
-                    ui.add(filter_chip("Filter", &mut filter_selected).elevated(true));
-                    ui.add_space(8.0);
-
-                    ui.add(
-                        assist_chip("Assist")
-                            .elevated(true)
-                            .leading_icon(image_utils::material_icons::EVENT),
-                    );
-                    ui.add_space(8.0);
-
-                    ui.add(input_chip("Code").elevated(true).removable(true));
-                    ui.add_space(8.0);
-
-                    ui.add(suggestion_chip("Terminal").elevated(true));
-
-                    ui.style_mut().text_styles = old_text_styles;
                 });
             });
         }
