@@ -1,12 +1,24 @@
+// ============================================================================
+// Module:       stories::progress_window (example)
+// Description:  Progress stories: linear, circular, wavy, loading indicator.
+//
+// Dependencies: eframe, egui_material3
+// ============================================================================
+
+//! Progress indicator and loading indicator stories.
+
 #![doc(hidden)]
 
-use crate::{circular_progress, icon_button_standard, linear_progress, MaterialButton};
+use crate::{
+    circular_progress, icon_button_standard, linear_progress, LoadingIndicator, MaterialButton,
+    MaterialProgress,
+};
 use eframe::egui::{self, Color32, Vec2, Window};
 use egui_material3::material_symbol::{ICON_PAUSE, ICON_PLAY_ARROW};
 
 #[doc(hidden)]
-pub struct ProgressWindow {
-    pub open: bool,
+pub(crate) struct ProgressWindow {
+    pub(crate) open: bool,
     value: f32,
     max: f32,
     buffer: f32,
@@ -50,7 +62,7 @@ impl Default for ProgressWindow {
 }
 
 impl ProgressWindow {
-    pub fn show(&mut self, ctx: &egui::Context) {
+    pub(crate) fn show(&mut self, ctx: &egui::Context) {
         let mut open = self.open;
         Window::new("Progress Stories")
             .open(&mut open)
@@ -62,6 +74,8 @@ impl ProgressWindow {
                     self.render_linear_progress(ui);
                     ui.add_space(20.0);
                     self.render_circular_progress(ui);
+                    ui.add_space(20.0);
+                    self.render_expressive(ui);
                     ui.add_space(20.0);
                     self.render_loading_demo(ui);
                     ui.add_space(20.0);
@@ -273,6 +287,29 @@ impl ProgressWindow {
                     );
                 });
             }
+        });
+    }
+
+    fn render_expressive(&mut self, ui: &mut egui::Ui) {
+        ui.heading("M3 Expressive");
+        let fraction = (self.value / self.max.max(0.001)).clamp(0.0, 1.0);
+        ui.label("Wavy linear (determinate and indeterminate), large");
+        ui.add(MaterialProgress::linear().wavy(true).value(fraction));
+        ui.add(MaterialProgress::linear().wavy(true).indeterminate(true));
+        ui.add(MaterialProgress::linear().large(true).value(fraction));
+        ui.add_space(8.0);
+        ui.label("Wavy circular");
+        ui.horizontal(|ui| {
+            ui.add(MaterialProgress::circular().wavy(true).value(fraction));
+            ui.add(MaterialProgress::circular().wavy(true).indeterminate(true));
+        });
+        ui.add_space(8.0);
+        ui.label("Loading indicator: uncontained, contained, determinate");
+        ui.horizontal(|ui| {
+            ui.add(LoadingIndicator::new());
+            ui.add(LoadingIndicator::contained());
+            ui.add(LoadingIndicator::new().progress(fraction));
+            ui.add(LoadingIndicator::contained().progress(fraction));
         });
     }
 
