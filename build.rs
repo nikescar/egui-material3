@@ -1,10 +1,20 @@
 use std::env;
 use std::error::Error;
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 type BuildResult<T = ()> = Result<T, Box<dyn Error>>;
+
+/// Set to `1` to let the build download missing SVG assets from GitHub.
+/// Without it the build never touches the network.
+const DOWNLOAD_ENV: &str = "EGUI_MATERIAL3_DOWNLOAD_SVG";
+
+/// Downloads are only accepted from this prefix.
+const DOWNLOAD_PREFIX: &str = "https://raw.githubusercontent.com/nikescar/egui-material3/";
+
+/// Largest SVG file accepted from a download.
+const MAX_SVG_BYTES: u64 = 1024 * 1024;
 
 /// One embeddable SVG collection behind a cargo feature.
 struct Collection {
@@ -69,6 +79,7 @@ fn main() -> BuildResult {
 
     // Set rerun triggers
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed={DOWNLOAD_ENV}");
 
     for collection in &COLLECTIONS {
         let feature = format!("CARGO_FEATURE_SVG_{}", collection.name.to_uppercase());
@@ -132,6 +143,20 @@ fn ensure_resources(resources_dir: &Path, cache_dir: &Path, name: &str) -> Build
         return Ok(());
     }
 
+    // Downloading is opt-in: a build must not reach the network unasked.
+    if env::var(DOWNLOAD_ENV).as_deref() != Ok("1") {
+        return Err(format!(
+            "The svg_{name} feature needs the SVG files in resources/{name}, which are not \
+            included in the published crate.\n\
+            \n\
+            Options:\n\
+            1. Build from a clone: git clone https://github.com/nikescar/egui-material3\n\
+            2. Let the build download them from GitHub: set {DOWNLOAD_ENV}=1\n\
+            3. Disable the feature if not needed"
+        )
+        .into());
+    }
+
     // Download from GitHub
     println!(
         "cargo:warning=Downloading {} SVG assets from GitHub (this is a one-time download)...",
@@ -145,11 +170,11 @@ fn ensure_resources(resources_dir: &Path, cache_dir: &Path, name: &str) -> Build
             \n\
             Options:\n\
             1. Clone the repository: git clone https://github.com/nikescar/egui-material3\n\
-            2. Download will be attempted automatically (requires internet connection)\n\
+            2. Check the network connection and retry with {}=1\n\
             3. Disable the feature if not needed\n\
             \n\
             Error: {}",
-            name, e, name, e
+            name, e, name, DOWNLOAD_ENV, e
         )
         .into()
     })
@@ -204,7 +229,13 @@ fn download_resources(target_dir: &Path, name: &str) -> BuildResult {
             .filter_map(|f| {
                 let name = f.get("name")?.as_str()?;
                 let download_url = f.get("download_url")?.as_str()?;
-                if name.ends_with(".svg") {
+                // The name becomes a path and the URL a request: accept only
+                // plain file names and URLs on the expected host.
+                let plain = name
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'))
+                    && !name.starts_with('.');
+                if plain && name.ends_with(".svg") && download_url.starts_with(DOWNLOAD_PREFIX) {
                     Some((name.to_string(), download_url.to_string()))
                 } else {
                     None
@@ -227,7 +258,14 @@ fn download_resources(target_dir: &Path, name: &str) -> BuildResult {
                 .set("User-Agent", "egui-material3-build")
                 .call()?;
 
-            let content = response.into_string()?;
+            let mut content = String::new();
+            response
+                .into_reader()
+                .take(MAX_SVG_BYTES + 1)
+                .read_to_string(&mut content)?;
+            if content.len() as u64 > MAX_SVG_BYTES {
+                return Err(format!("{filename} is larger than {MAX_SVG_BYTES} bytes").into());
+            }
             let file_path = target_dir.join(filename);
             fs::write(file_path, content)?;
         }
