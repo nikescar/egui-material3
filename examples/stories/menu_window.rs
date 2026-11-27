@@ -186,22 +186,25 @@ impl MenuWindow {
 
         // ButtonAnchorExample menu
         if self.button_anchor_open {
-            let mut builder = menu("button_anchor_menu", &mut self.button_anchor_open)
-                .item(
-                    menu_item("Item 1")
-                        .leading_icon("people")
-                        .on_click(|| println!("Item 1 clicked!")),
-                )
-                .item(
-                    menu_item("Item 2")
-                        .leading_icon("eye")
-                        .on_click(|| println!("Item 2 clicked!")),
-                )
-                .item(
-                    menu_item("Item 3")
-                        .leading_icon("refresh")
-                        .on_click(|| println!("Item 3 clicked!")),
-                );
+            let mut builder = menu(
+                egui::Id::unique("button_anchor_menu"),
+                &mut self.button_anchor_open,
+            )
+            .item(
+                menu_item("Item 1")
+                    .leading_icon("people")
+                    .on_click(|| println!("Item 1 clicked!")),
+            )
+            .item(
+                menu_item("Item 2")
+                    .leading_icon("eye")
+                    .on_click(|| println!("Item 2 clicked!")),
+            )
+            .item(
+                menu_item("Item 3")
+                    .leading_icon("refresh")
+                    .on_click(|| println!("Item 3 clicked!")),
+            );
 
             if let Some(rect) = self.button_anchor_rect {
                 builder = builder.anchor_rect(rect);
@@ -218,12 +221,15 @@ impl MenuWindow {
 
         // IconButtonAnchorExample menu
         if self.icon_anchor_open {
-            let mut builder = menu("icon_anchor_menu", &mut self.icon_anchor_open)
-                .item(menu_item("Menu 1").on_click(|| println!("Menu 1 clicked!")))
-                .item(menu_item("Menu 2").on_click(|| println!("Menu 2 clicked!")))
-                .item(menu_item("Menu 3.1").on_click(|| println!("Menu 3.1 clicked!")))
-                .item(menu_item("Menu 3.2").on_click(|| println!("Menu 3.2 clicked!")))
-                .item(menu_item("Menu 3.3").on_click(|| println!("Menu 3.3 clicked!")));
+            let mut builder = menu(
+                egui::Id::unique("icon_anchor_menu"),
+                &mut self.icon_anchor_open,
+            )
+            .item(menu_item("Menu 1").on_click(|| println!("Menu 1 clicked!")))
+            .item(menu_item("Menu 2").on_click(|| println!("Menu 2 clicked!")))
+            .item(menu_item("Menu 3.1").on_click(|| println!("Menu 3.1 clicked!")))
+            .item(menu_item("Menu 3.2").on_click(|| println!("Menu 3.2 clicked!")))
+            .item(menu_item("Menu 3.3").on_click(|| println!("Menu 3.3 clicked!")));
 
             if let Some(rect) = self.icon_anchor_rect {
                 builder = builder.anchor_rect(rect);
@@ -573,29 +579,32 @@ impl MenuWindow {
             let olive_item = self.create_menu_item("Olive", "olive");
             let orange_item = self.create_menu_item("Orange", "orange");
 
-            let mut menu_builder = menu("standard_menu", &mut self.standard_menu_open)
-                .item(apple_item)
-                .item(apricot_item)
-                .item(avocado_item)
-                .item(green_apple_item)
-                .item(green_grapes_item)
-                .item(olive_item)
-                .item(orange_item)
-                .anchor_corner(self.anchor_corner)
-                .menu_corner(self.menu_corner)
-                .default_focus(self.default_focus)
-                .positioning(self.positioning)
-                .quick(self.quick)
-                .has_overflow(self.has_overflow)
-                .stay_open_on_outside_click(self.stay_open_on_outside_click)
-                .stay_open_on_focusout(self.stay_open_on_focusout)
-                .skip_restore_focus(self.skip_restore_focus)
-                .x_offset(self.x_offset)
-                .y_offset(self.y_offset)
-                .no_horizontal_flip(self.no_horizontal_flip)
-                .no_vertical_flip(self.no_vertical_flip)
-                .typeahead_delay(self.typeahead_delay)
-                .list_tab_index(self.list_tab_index);
+            let mut menu_builder = menu(
+                egui::Id::unique("standard_menu"),
+                &mut self.standard_menu_open,
+            )
+            .item(apple_item)
+            .item(apricot_item)
+            .item(avocado_item)
+            .item(green_apple_item)
+            .item(green_grapes_item)
+            .item(olive_item)
+            .item(orange_item)
+            .anchor_corner(self.anchor_corner)
+            .menu_corner(self.menu_corner)
+            .default_focus(self.default_focus)
+            .positioning(self.positioning)
+            .quick(self.quick)
+            .has_overflow(self.has_overflow)
+            .stay_open_on_outside_click(self.stay_open_on_outside_click)
+            .stay_open_on_focusout(self.stay_open_on_focusout)
+            .skip_restore_focus(self.skip_restore_focus)
+            .x_offset(self.x_offset)
+            .y_offset(self.y_offset)
+            .no_horizontal_flip(self.no_horizontal_flip)
+            .no_vertical_flip(self.no_vertical_flip)
+            .typeahead_delay(self.typeahead_delay)
+            .list_tab_index(self.list_tab_index);
 
             if let Some(rect) = self.items_button_rect {
                 menu_builder = menu_builder.anchor_rect(rect);
@@ -620,7 +629,7 @@ impl MenuWindow {
             let olive_link = self.create_link_item("Olive", "olive");
             let orange_link = self.create_link_item("Orange", "orange");
 
-            let mut menu_builder = menu("link_menu", &mut self.link_menu_open)
+            let mut menu_builder = menu(egui::Id::unique("link_menu"), &mut self.link_menu_open)
                 .item(apple_link)
                 .item(apricot_link)
                 .item(avocado_link)
@@ -681,7 +690,7 @@ impl MenuWindow {
                 self.menu_corner
             };
 
-            let mut menu_builder = menu("submenu", &mut self.submenu_open)
+            let mut menu_builder = menu(egui::Id::unique("submenu"), &mut self.submenu_open)
                 .item(
                     menu_item("Fruits")
                         .leading_icon("expand_more")
@@ -726,43 +735,46 @@ impl MenuWindow {
 
         // Context Menu
         if self.context_menu_open {
-            let mut builder = menu("context_menu", &mut self.context_menu_open)
-                .item(
-                    menu_item("Cut")
-                        .leading_icon("cut")
-                        .on_click(|| println!("Cut clicked!")),
-                )
-                .item(
-                    menu_item("Copy")
-                        .leading_icon("copy")
-                        .on_click(|| println!("Copy clicked!")),
-                )
-                .item(
-                    menu_item("Paste")
-                        .leading_icon("paste")
-                        .divider_after(true)
-                        .on_click(|| println!("Paste clicked!")),
-                )
-                .item(
-                    menu_item("Settings")
-                        .leading_icon("settings")
-                        .on_click(|| println!("Settings clicked!")),
-                )
-                .anchor_corner(self.anchor_corner)
-                .menu_corner(self.menu_corner)
-                .default_focus(self.default_focus)
-                .positioning(self.positioning)
-                .quick(self.quick)
-                .has_overflow(self.has_overflow)
-                .stay_open_on_outside_click(self.stay_open_on_outside_click)
-                .stay_open_on_focusout(self.stay_open_on_focusout)
-                .skip_restore_focus(self.skip_restore_focus)
-                .x_offset(self.x_offset)
-                .y_offset(self.y_offset)
-                .no_horizontal_flip(self.no_horizontal_flip)
-                .no_vertical_flip(self.no_vertical_flip)
-                .typeahead_delay(self.typeahead_delay)
-                .list_tab_index(self.list_tab_index);
+            let mut builder = menu(
+                egui::Id::unique("context_menu"),
+                &mut self.context_menu_open,
+            )
+            .item(
+                menu_item("Cut")
+                    .leading_icon("cut")
+                    .on_click(|| println!("Cut clicked!")),
+            )
+            .item(
+                menu_item("Copy")
+                    .leading_icon("copy")
+                    .on_click(|| println!("Copy clicked!")),
+            )
+            .item(
+                menu_item("Paste")
+                    .leading_icon("paste")
+                    .divider_after(true)
+                    .on_click(|| println!("Paste clicked!")),
+            )
+            .item(
+                menu_item("Settings")
+                    .leading_icon("settings")
+                    .on_click(|| println!("Settings clicked!")),
+            )
+            .anchor_corner(self.anchor_corner)
+            .menu_corner(self.menu_corner)
+            .default_focus(self.default_focus)
+            .positioning(self.positioning)
+            .quick(self.quick)
+            .has_overflow(self.has_overflow)
+            .stay_open_on_outside_click(self.stay_open_on_outside_click)
+            .stay_open_on_focusout(self.stay_open_on_focusout)
+            .skip_restore_focus(self.skip_restore_focus)
+            .x_offset(self.x_offset)
+            .y_offset(self.y_offset)
+            .no_horizontal_flip(self.no_horizontal_flip)
+            .no_vertical_flip(self.no_vertical_flip)
+            .typeahead_delay(self.typeahead_delay)
+            .list_tab_index(self.list_tab_index);
 
             if let Some(rect) = self.context_button_rect {
                 builder = builder.anchor_rect(rect);

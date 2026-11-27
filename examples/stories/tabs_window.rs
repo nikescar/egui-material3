@@ -743,21 +743,19 @@ impl TabsWindow {
             if ui
                 .add(MaterialButton::filled("← Previous Tab").small())
                 .clicked()
+                && self.nested_primary_selected > 0
             {
-                if self.nested_primary_selected > 0 {
-                    self.nested_primary_selected -= 1;
-                    self.nested_secondary_selected = 0; // Reset secondary
-                }
+                self.nested_primary_selected -= 1;
+                self.nested_secondary_selected = 0; // Reset secondary
             }
 
             if ui
                 .add(MaterialButton::filled("Next Tab →").small())
                 .clicked()
+                && self.nested_primary_selected < 2
             {
-                if self.nested_primary_selected < 2 {
-                    self.nested_primary_selected += 1;
-                    self.nested_secondary_selected = 0; // Reset secondary
-                }
+                self.nested_primary_selected += 1;
+                self.nested_secondary_selected = 0; // Reset secondary
             }
         });
     }

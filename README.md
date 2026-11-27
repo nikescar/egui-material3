@@ -79,8 +79,8 @@ struct MyApp {
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Material Design Components");
 
             // Buttons with different variants
@@ -120,8 +120,8 @@ use egui_material3::{
 };
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Toolbar with actions
             ui.add(MaterialToolbar::new()
                 .title("My Application")
@@ -308,9 +308,9 @@ Combine components to create rich user interfaces:
 use egui_material3::*;
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // Top app bar
-        egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
+        egui::Panel::top("top_bar").show(ui, |ui| {
             ui.add(MaterialTopAppBar::new()
                 .title("My App")
                 .add_action("notifications", |ui| {
@@ -322,14 +322,14 @@ impl eframe::App for MyApp {
         });
 
         // Navigation drawer
-        egui::SidePanel::left("drawer").show(ctx, |ui| {
+        egui::Panel::left("drawer").show(ui, |ui| {
             ui.add(MaterialDrawer::new()
                 .add_item("Home", "home", || println!("Home"))
                 .add_item("Settings", "settings", || println!("Settings")));
         });
 
         // Main content
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             // Action buttons with tooltips
             ui.horizontal(|ui| {
                 MaterialTooltip::new("Create new item").show(ui, |ui| {
@@ -365,9 +365,9 @@ impl eframe::App for MyApp {
         }
 
         // FAB (Floating Action Button)
-        egui::Area::new("fab")
+        egui::Area::new(egui::Id::unique("fab"))
             .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -16.0))
-            .show(ctx, |ui| {
+            .show(ui.ctx(), |ui| {
                 if ui.add(MaterialFab::primary().icon("add")).clicked() {
                     println!("FAB clicked");
                 }

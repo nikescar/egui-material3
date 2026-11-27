@@ -1,6 +1,6 @@
 #![doc(hidden)]
 
-use crate::{action_sheet, MaterialButton};
+use crate::{action_sheet, BottomSheet, MaterialButton, SideSheet};
 use eframe::egui::{self, Window};
 
 #[doc(hidden)]
@@ -12,6 +12,12 @@ pub struct ActionSheetWindow {
     with_labels_open: bool,
     many_actions_open: bool,
     custom_open: bool,
+    // Bottom and side sheets
+    modal_sheet_open: bool,
+    standard_sheet_open: bool,
+    modal_side_open: bool,
+    standard_side_open: bool,
+    last_close: String,
     // Customization options
     backdrop: bool,
     backdrop_dismissible: bool,
@@ -27,6 +33,11 @@ impl Default for ActionSheetWindow {
             with_labels_open: false,
             many_actions_open: false,
             custom_open: false,
+            modal_sheet_open: false,
+            standard_sheet_open: false,
+            modal_side_open: false,
+            standard_side_open: false,
+            last_close: String::new(),
             backdrop: true,
             backdrop_dismissible: true,
             max_width: 448.0,
@@ -51,6 +62,7 @@ impl ActionSheetWindow {
 
         // Show action sheets
         self.show_action_sheets(ctx);
+        self.show_sheets(ctx);
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
@@ -98,12 +110,98 @@ impl ActionSheetWindow {
                 self.custom_open = true;
             }
         });
+
+        ui.add_space(20.0);
+        ui.heading("Bottom and Side Sheets");
+        ui.horizontal_wrapped(|ui| {
+            if ui
+                .add(MaterialButton::filled("Modal Bottom Sheet"))
+                .clicked()
+            {
+                self.modal_sheet_open = true;
+            }
+            if ui
+                .add(MaterialButton::filled_tonal("Standard Bottom Sheet"))
+                .clicked()
+            {
+                self.standard_sheet_open = !self.standard_sheet_open;
+            }
+            if ui.add(MaterialButton::filled("Modal Side Sheet")).clicked() {
+                self.modal_side_open = true;
+            }
+            if ui
+                .add(MaterialButton::filled_tonal("Standard Side Sheet"))
+                .clicked()
+            {
+                self.standard_side_open = !self.standard_side_open;
+            }
+        });
+        if !self.last_close.is_empty() {
+            ui.label(format!("Last sheet closed by: {}", self.last_close));
+        }
+    }
+
+    // Sheets are shown every frame (not only while open) so they can
+    // animate out.
+    fn show_sheets(&mut self, ctx: &egui::Context) {
+        let modal = BottomSheet::modal(
+            egui::Id::unique("story_modal_sheet"),
+            &mut self.modal_sheet_open,
+        )
+        .show(ctx, |ui, open| {
+            ui.add_space(8.0);
+            ui.heading("Modal bottom sheet");
+            ui.label("Drag it down past 56 dp, click the scrim or the handle, or press Escape.");
+            ui.add_space(16.0);
+            if ui.add(MaterialButton::text("Close from content")).clicked() {
+                *open = false;
+            }
+            ui.add_space(24.0);
+        });
+        let standard = BottomSheet::standard(
+            egui::Id::unique("story_standard_sheet"),
+            &mut self.standard_sheet_open,
+        )
+        .show(ctx, |ui, _| {
+            ui.add_space(8.0);
+            ui.heading("Standard bottom sheet");
+            ui.label("Drag or click the handle to collapse to the 56 dp peek height.");
+            ui.add_space(120.0);
+        });
+        let modal_side = SideSheet::modal(
+            egui::Id::unique("story_modal_side"),
+            &mut self.modal_side_open,
+        )
+        .title("Filters")
+        .show(ctx, |ui, open| {
+            ui.label("A modal side sheet on the end edge.");
+            if ui.add(MaterialButton::filled("Apply")).clicked() {
+                *open = false;
+            }
+        });
+        let standard_side = SideSheet::standard(
+            egui::Id::unique("story_standard_side"),
+            &mut self.standard_side_open,
+        )
+        .title("Details")
+        .show(ctx, |ui, _| {
+            ui.label("A standard side sheet does not block the app.");
+        });
+        let reasons = [
+            modal.close_reason,
+            standard.close_reason,
+            modal_side.close_reason,
+            standard_side.close_reason,
+        ];
+        if let Some(reason) = reasons.into_iter().flatten().next() {
+            self.last_close = format!("{reason:?}");
+        }
     }
 
     fn show_action_sheets(&mut self, ctx: &egui::Context) {
         // One Group Action Sheet
         if self.one_group_open {
-            action_sheet("one_group", &mut self.one_group_open)
+            action_sheet(egui::Id::unique("one_group"), &mut self.one_group_open)
                 .label("Do something")
                 .bold_button("Button 1", || {
                     println!("Button 1 clicked!");
@@ -119,7 +217,7 @@ impl ActionSheetWindow {
 
         // Two Groups Action Sheet
         if self.two_groups_open {
-            action_sheet("two_groups", &mut self.two_groups_open)
+            action_sheet(egui::Id::unique("two_groups"), &mut self.two_groups_open)
                 .label("Do something")
                 .bold_button("Button 1", || {
                     println!("Button 1 clicked!");
@@ -136,7 +234,7 @@ impl ActionSheetWindow {
 
         // With Labels Action Sheet
         if self.with_labels_open {
-            action_sheet("with_labels", &mut self.with_labels_open)
+            action_sheet(egui::Id::unique("with_labels"), &mut self.with_labels_open)
                 .label("Choose an action")
                 .button("Share", || {
                     println!("Share clicked!");
@@ -158,8 +256,11 @@ impl ActionSheetWindow {
 
         // Many Actions Action Sheet
         if self.many_actions_open {
-            let mut sheet =
-                action_sheet("many_actions", &mut self.many_actions_open).label("Choose an option");
+            let mut sheet = action_sheet(
+                egui::Id::unique("many_actions"),
+                &mut self.many_actions_open,
+            )
+            .label("Choose an option");
 
             // Add many buttons
             for i in 1..=10 {
@@ -178,7 +279,7 @@ impl ActionSheetWindow {
 
         // Custom Options Action Sheet
         if self.custom_open {
-            action_sheet("custom", &mut self.custom_open)
+            action_sheet(egui::Id::unique("custom"), &mut self.custom_open)
                 .backdrop(self.backdrop)
                 .backdrop_dismissible(self.backdrop_dismissible)
                 .max_width(self.max_width)
