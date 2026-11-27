@@ -319,8 +319,8 @@ pub use {
     input::{InputVariant, MaterialInput},
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{
-        list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList,
-        MaterialListState, VisualDensity,
+        list, list_item, ListItem, ListLeading, ListTileStyle, ListTileTitleAlignment,
+        MaterialList, MaterialListState, VisualDensity,
     },
     material_theme::MaterialTheme,
     menu::{

@@ -110,6 +110,36 @@ pub struct MaterialList<'a> {
     pub(crate) allow_drawer: bool,
     /// Whether to fill available width instead of using content width
     pub(crate) fill_width: bool,
+    /// M3 Expressive segmented list: items in separate containers, 2 dp apart
+    pub(crate) segmented: bool,
+}
+
+/// What a list item shows at its start, besides a plain icon.
+///
+/// Sizes and shapes from Compose's `ListTokens.kt`.
+pub enum ListLeading {
+    /// A round avatar with a short text (initials):
+    /// `ItemLeadingAvatarSize` 40 dp, `ItemLeadingAvatarColor`
+    /// `primaryContainer`, label `TitleMedium` in `onPrimaryContainer`.
+    Avatar(String),
+    /// A square image: `ItemLeadingImageWidth`/`Height` 56 dp,
+    /// `ItemLeadingImageShape` `CornerNone`.
+    Image(egui::ImageSource<'static>),
+    /// A video thumbnail: small `ItemSmallLeadingVideoWidth` 100 x 56 dp, or
+    /// large `ItemLargeLeadingVideoWidth` 114 x 64 dp;
+    /// `ItemLeadingVideoShape` `CornerSmall`.
+    Video {
+        /// The thumbnail image.
+        source: egui::ImageSource<'static>,
+        /// The large (114 x 64) size instead of the small (100 x 56) one.
+        large: bool,
+    },
+    /// A checkbox showing the given state. The item reports itself as a
+    /// checkbox; toggle your state in `on_click`.
+    Checkbox(bool),
+    /// A radio button showing the given state. The item reports itself as a
+    /// radio button; update your state in `on_click`.
+    Radio(bool),
 }
 
 /// Persistent state for a Material Design list
@@ -184,6 +214,10 @@ pub struct ListItem<'a> {
     pub(crate) text_color: Option<Color32>,
     /// Callback function to execute when the item is clicked
     pub(crate) action: Option<Box<dyn Fn() + 'a>>,
+    /// Optional leading avatar, image, video, checkbox or radio
+    pub(crate) leading: Option<ListLeading>,
+    /// Whether the item is being dragged (shows the dragged state layer)
+    pub(crate) dragged: bool,
     /// Optional drawer content that expands below the item
     #[allow(clippy::type_complexity)]
     pub(crate) drawer: Option<std::sync::Arc<dyn Fn(&mut egui::Ui) + Send + Sync>>,

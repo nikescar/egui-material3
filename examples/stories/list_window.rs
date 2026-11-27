@@ -31,6 +31,9 @@ enum ListAction {
 #[doc(hidden)]
 pub struct ListWindow {
     pub open: bool,
+    m3_segmented: bool,
+    m3_checked: bool,
+    m3_radio: usize,
     disabled: bool,
     selected: bool,
     dense: bool,
@@ -59,6 +62,9 @@ impl Default for ListWindow {
     fn default() -> Self {
         Self {
             open: false,
+            m3_segmented: false,
+            m3_checked: true,
+            m3_radio: 0,
             disabled: false,
             selected: false,
             dense: false,
@@ -136,6 +142,8 @@ impl ListWindow {
             .default_size([800.0, 800.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
+                    self.render_m3_leading_and_segmented(ui);
+                    ui.add_space(20.0);
                     self.render_controls(ui);
                     ui.add_space(20.0);
                     self.render_standard_list(ui);
@@ -169,6 +177,80 @@ impl ListWindow {
         self.show_edit_dialog(ctx);
         self.show_delete_dialog(ctx);
         self.show_edit_drawer_dialog(ctx);
+    }
+
+    /// M3 leading elements (avatar, checkbox, radio), selection, a dragged
+    /// item, and the Expressive segmented list.
+    fn render_m3_leading_and_segmented(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Material 3 leading elements and segmented list");
+        ui.checkbox(&mut self.m3_segmented, "Segmented (Expressive)");
+        let checked = self.m3_checked;
+        let radio = self.m3_radio;
+        let toggle_checked = Arc::new(Mutex::new(false));
+        let pick: Arc<Mutex<Option<usize>>> = Arc::new(Mutex::new(None));
+        let (t, p0, p1) = (toggle_checked.clone(), pick.clone(), pick.clone());
+        ui.push_id("m3_leading_list", |ui| {
+            ui.add(
+                MaterialList::new()
+                    .segmented(self.m3_segmented)
+                    .dividers(false)
+                    .fill_width(true)
+                    .item(
+                        ListItem::new("Ada Lovelace")
+                            .leading_avatar("AL")
+                            .secondary_text("Notes on the analytical engine")
+                            .trailing_text("9:41"),
+                    )
+                    .item(
+                        ListItem::new("Wi-Fi only downloads")
+                            .leading_checkbox(checked)
+                            .on_click(move || {
+                                if let Ok(mut v) = t.lock() {
+                                    *v = true;
+                                }
+                            }),
+                    )
+                    .item(
+                        ListItem::new("Standard quality")
+                            .leading_radio(radio == 0)
+                            .on_click(move || {
+                                if let Ok(mut v) = p0.lock() {
+                                    *v = Some(0);
+                                }
+                            }),
+                    )
+                    .item(
+                        ListItem::new("High quality")
+                            .leading_radio(radio == 1)
+                            .on_click(move || {
+                                if let Ok(mut v) = p1.lock() {
+                                    *v = Some(1);
+                                }
+                            }),
+                    )
+                    .item(
+                        ListItem::new("Selected item")
+                            .leading_icon("star")
+                            .selected(true),
+                    )
+                    .item(
+                        ListItem::new("Dragged item")
+                            .leading_icon("drag_indicator")
+                            .dragged(true),
+                    )
+                    .item(
+                        ListItem::new("Disabled item")
+                            .leading_icon("block")
+                            .enabled(false),
+                    ),
+            );
+        });
+        if toggle_checked.lock().is_ok_and(|v| *v) {
+            self.m3_checked = !self.m3_checked;
+        }
+        if let Some(choice) = pick.lock().ok().and_then(|v| *v) {
+            self.m3_radio = choice;
+        }
     }
 
     fn render_controls(&mut self, ui: &mut egui::Ui) {
