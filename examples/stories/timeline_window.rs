@@ -62,41 +62,36 @@ impl TimelineWindow {
 
     /// Create sample textures for demonstration
     fn create_sample_textures(ctx: &egui::Context) -> Vec<egui::TextureHandle> {
-        let mut textures = Vec::new();
-
-        // Texture 1: Red gradient circle (YouTube-style)
-        textures.push(Self::create_circle_texture(
-            ctx,
-            "icon_1",
-            egui::Color32::from_rgb(255, 0, 0),
-            egui::Color32::from_rgb(200, 0, 0),
-        ));
-
-        // Texture 2: Blue/Green gradient circle (Chrome-style)
-        textures.push(Self::create_circle_texture(
-            ctx,
-            "icon_2",
-            egui::Color32::from_rgb(66, 133, 244),
-            egui::Color32::from_rgb(52, 168, 83),
-        ));
-
-        // Texture 3: Green gradient circle (Spotify-style)
-        textures.push(Self::create_circle_texture(
-            ctx,
-            "icon_3",
-            egui::Color32::from_rgb(30, 215, 96),
-            egui::Color32::from_rgb(25, 180, 80),
-        ));
-
-        // Texture 4: Orange/Yellow gradient square (Gmail-style)
-        textures.push(Self::create_square_texture(
-            ctx,
-            "icon_4",
-            egui::Color32::from_rgb(234, 67, 53),
-            egui::Color32::from_rgb(251, 188, 5),
-        ));
-
-        textures
+        vec![
+            // Texture 1: Red gradient circle (YouTube-style)
+            Self::create_circle_texture(
+                ctx,
+                "icon_1",
+                egui::Color32::from_rgb(255, 0, 0),
+                egui::Color32::from_rgb(200, 0, 0),
+            ),
+            // Texture 2: Blue/Green gradient circle (Chrome-style)
+            Self::create_circle_texture(
+                ctx,
+                "icon_2",
+                egui::Color32::from_rgb(66, 133, 244),
+                egui::Color32::from_rgb(52, 168, 83),
+            ),
+            // Texture 3: Green gradient circle (Spotify-style)
+            Self::create_circle_texture(
+                ctx,
+                "icon_3",
+                egui::Color32::from_rgb(30, 215, 96),
+                egui::Color32::from_rgb(25, 180, 80),
+            ),
+            // Texture 4: Orange/Yellow gradient square (Gmail-style)
+            Self::create_square_texture(
+                ctx,
+                "icon_4",
+                egui::Color32::from_rgb(234, 67, 53),
+                egui::Color32::from_rgb(251, 188, 5),
+            ),
+        ]
     }
 
     /// Create a gradient circle texture
@@ -903,7 +898,7 @@ impl TimelineWindow {
                         .opposite_content("09:00 AM")
                         .content("App Launched: YouTube")
                         .min_height(60.0)
-                        .dot(if let Some(tex) = self.sample_textures.get(0) {
+                        .dot(if let Some(tex) = self.sample_textures.first() {
                             TimelineDot::new()
                                 .color(TimelineDotColor::Primary)
                                 .texture_icon(tex.id())

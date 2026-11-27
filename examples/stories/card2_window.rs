@@ -570,10 +570,10 @@ impl Card2Window {
                     self.edit_dialog_open = true;
                 }
             }
-            if ui.add(MaterialButton::text("Delete Card")).clicked() {
-                if !self.custom_cards.is_empty() {
-                    self.custom_cards.remove(0);
-                }
+            if ui.add(MaterialButton::text("Delete Card")).clicked()
+                && !self.custom_cards.is_empty()
+            {
+                self.custom_cards.remove(0);
             }
             ui.label(format!("({} custom cards)", self.custom_cards.len()));
         });

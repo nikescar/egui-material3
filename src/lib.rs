@@ -63,8 +63,8 @@
 //! }
 //!
 //! impl eframe::App for MyApp {
-//!     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-//!         egui::CentralPanel::default().show(ctx, |ui| {
+//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+//!         egui::CentralPanel::default().show(ui, |ui| {
 //!             ui.heading("Material Design Components");
 //!             
 //!             // Use Material Design components
@@ -229,6 +229,7 @@
 //! This crate follows the Material Design 3 specifications and guidelines for consistent,
 //! accessible, and beautiful user interfaces.
 
+pub mod a11y;
 pub mod actionsheet;
 pub mod badge;
 pub mod breadcrumbs;
@@ -251,13 +252,17 @@ pub mod imagelist;
 pub mod input;
 pub mod layoutgrid;
 pub mod list;
+pub mod loading_indicator;
 pub mod material_symbol;
+pub mod material_theme;
 pub mod menu;
 pub mod notification;
 pub mod noto_emoji;
+pub mod paint;
 pub mod progress;
 pub mod radio;
 pub mod select;
+pub mod shapes;
 pub mod slider;
 pub mod snackbar;
 pub mod spreadsheet;
@@ -267,6 +272,7 @@ pub mod switch;
 pub mod tabs;
 pub mod theme;
 pub mod timeline;
+pub mod tokens;
 pub mod toolbar;
 pub mod tooltip;
 pub mod topappbar;
@@ -312,9 +318,11 @@ pub use {
     input::{InputVariant, MaterialInput},
     layoutgrid::{debug_layout_grid, layout_grid, GridTile, GridTileBar, MaterialLayoutGrid},
     list::{
-        ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList, MaterialListState,
-        VisualDensity,
+        list, list_item, ListItem, ListTileStyle, ListTileTitleAlignment, MaterialList,
+        MaterialListState, VisualDensity,
     },
+    loading_indicator::LoadingIndicator,
+    material_theme::MaterialTheme,
     menu::{
         menu, menu_item, Corner, FocusState, MaterialMenu, MenuBarThemeData, MenuButtonThemeData,
         MenuItem, MenuStyle, MenuThemeData, Positioning,
@@ -330,7 +338,7 @@ pub use {
     select::{select, MaterialSelect, MenuAlignment, SelectVariant},
     slider::{
         range_slider, slider, MaterialRangeSlider, MaterialSlider, RangeValues, SliderInteraction,
-        ThumbShape,
+        SliderSize, ThumbShape,
     },
     snackbar::{
         snackbar, snackbar_with_action, MaterialSnackbar, SnackBarBehavior, SnackbarPosition,
@@ -338,13 +346,14 @@ pub use {
     switch::{switch, MaterialSwitch},
     tabs::{tabs_primary, tabs_secondary, MaterialTabs, TabVariant},
     theme::{
-        get_global_color, get_global_theme, update_global_theme, ContrastLevel,
-        MaterialThemeContext, MaterialThemeFile, ThemeMode,
+        get_global_color, get_global_color_role, get_global_theme, update_global_theme,
+        ContrastLevel, MaterialThemeContext, MaterialThemeFile, ThemeMode,
     },
     timeline::{
         timeline, MaterialTimeline, TimelineDot, TimelineDotColor, TimelineDotVariant,
         TimelineItem, TimelinePosition,
     },
+    tokens::{ColorRole, ColorScheme},
     toolbar::{toolbar, MaterialToolbar, ToolbarElevation},
     tooltip::{
         show_tooltip_on_hover, show_tooltip_on_hover_custom, tooltip, with_tooltip,

@@ -449,9 +449,16 @@ impl<'a> Widget for MaterialSelect<'a> {
         let desired_size = Vec2::new(width, height);
 
         let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        crate::a11y::describe(
+            &response,
+            egui::Role::ComboBox,
+            ui.is_enabled(),
+            self.label.as_deref().unwrap_or(&self.placeholder),
+            None,
+        );
 
         // Use persistent state for dropdown open/close with global coordination
-        let select_id = egui::Id::new((
+        let select_id = egui::Id::unique((
             "select_widget",
             rect.min.x as i32,
             rect.min.y as i32,
@@ -467,7 +474,7 @@ impl<'a> Widget for MaterialSelect<'a> {
         }
 
         // Global state to close other select menus
-        let global_open_select_id = egui::Id::new("global_open_select");
+        let global_open_select_id = egui::Id::unique("global_open_select");
         let current_open_select =
             ui.memory(|mem| mem.data.get_temp::<egui::Id>(global_open_select_id));
 
@@ -570,8 +577,7 @@ impl<'a> Widget for MaterialSelect<'a> {
         }
 
         // Draw floating label if present and should be shown
-        if should_show_label {
-            let label_text = self.label.as_ref().unwrap();
+        if let Some(label_text) = self.label.as_ref().filter(|_| should_show_label) {
             let label_font = if should_float_label {
                 FontId::new(12.0, FontFamily::Proportional)
             } else {
@@ -779,7 +785,7 @@ impl<'a> Widget for MaterialSelect<'a> {
                     let dropdown_rect = Rect::from_min_size(dropdown_pos, dropdown_size);
 
                     // Draw subtle elevation shadow
-                    let shadow_color = Color32::from_rgba_premultiplied(0, 0, 0, 30);
+                    let shadow_color = Color32::from_rgba_unmultiplied(0, 0, 0, 30);
                     ui.painter().rect_filled(
                         dropdown_rect.translate(Vec2::new(0.0, 2.0)),
                         menu_border_radius,
@@ -828,16 +834,23 @@ impl<'a> Widget for MaterialSelect<'a> {
                                                 Vec2::new(ui.available_width(), option_height),
                                                 Sense::click(),
                                             );
+                                        crate::a11y::toggle(
+                                            &option_response,
+                                            egui::Role::ListBoxOption,
+                                            true,
+                                            &option.text,
+                                            is_selected,
+                                        );
 
                                         let option_bg_color = if is_selected {
-                                            Color32::from_rgba_premultiplied(
+                                            Color32::from_rgba_unmultiplied(
                                                 on_surface.r(),
                                                 on_surface.g(),
                                                 on_surface.b(),
                                                 30,
                                             )
                                         } else if option_response.hovered() {
-                                            Color32::from_rgba_premultiplied(
+                                            Color32::from_rgba_unmultiplied(
                                                 on_surface.r(),
                                                 on_surface.g(),
                                                 on_surface.b(),
@@ -910,19 +923,30 @@ impl<'a> Widget for MaterialSelect<'a> {
 
                             let option_response = ui.interact(
                                 option_rect,
-                                egui::Id::new(("select_option", option.value, option.text.clone())),
+                                egui::Id::unique((
+                                    "select_option",
+                                    option.value,
+                                    option.text.clone(),
+                                )),
                                 Sense::click(),
+                            );
+                            crate::a11y::toggle(
+                                &option_response,
+                                egui::Role::ListBoxOption,
+                                true,
+                                &option.text,
+                                is_selected,
                             );
 
                             let option_bg_color = if is_selected {
-                                Color32::from_rgba_premultiplied(
+                                Color32::from_rgba_unmultiplied(
                                     on_surface.r(),
                                     on_surface.g(),
                                     on_surface.b(),
                                     30,
                                 )
                             } else if option_response.hovered() {
-                                Color32::from_rgba_premultiplied(
+                                Color32::from_rgba_unmultiplied(
                                     on_surface.r(),
                                     on_surface.g(),
                                     on_surface.b(),
